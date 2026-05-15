@@ -1,0 +1,173 @@
+import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+
+// The default org ID for MVP
+const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e";
+
+// GET handler for Meta Webhook Verification
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  
+  const mode = searchParams.get('hub.mode');
+  const token = searchParams.get('hub.verify_token');
+  const challenge = searchParams.get('hub.challenge');
+
+  // Check if a token and mode is in the query string of the request
+  if (mode && token) {
+    // Check the mode and token sent is correct
+    if (mode === 'subscribe' && token === process.env.META_VERIFY_TOKEN) {
+      // Respond with the challenge token from the request
+      console.log('WEBHOOK_VERIFIED');
+      return new NextResponse(challenge, { status: 200 });
+    } else {
+      // Respond with '403 Forbidden' if verify tokens do not match
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+  }
+
+  return new NextResponse('Bad Request', { status: 400 });
+}
+
+// POST handler for receiving messages
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    console.log("\n\n🔥 WEBHOOK HIT THE SERVER! Payload:", JSON.stringify(body, null, 2), "\n\n");
+
+    // Check if this is an event from a page subscription
+    if (body.object === 'page') {
+      
+      // Iterate over each entry - there may be multiple if batched
+      for (const entry of body.entry) {
+        // Get the page ID
+        const pageId = entry.id;
+        
+        // Iterate over each messaging event
+        for (const webhook_event of entry.messaging) {
+          
+          if (webhook_event.message && !webhook_event.message.is_echo) {
+            const senderId = webhook_event.sender.id;
+            const messageText = webhook_event.message.text;
+            const messageId = webhook_event.message.mid;
+
+            if (!messageText) continue; // Ignore attachments for now
+
+            // 1. Get or Create Messenger Channel for this Org
+            let { data: channels, error: chFetchErr } = await supabaseAdmin
+              .from("channels")
+              .select("id")
+              .eq("org_id", ORG_ID)
+              .eq("type", "messenger")
+              .limit(1);
+
+            let channel = channels && channels.length > 0 ? channels[0] : null;
+
+            if (!channel) {
+              const { data: newChannel, error: channelErr } = await supabaseAdmin
+                .from("channels")
+                .insert({ 
+                  org_id: ORG_ID, 
+                  type: "messenger",
+                  config: { page_id: pageId }
+                })
+                .select("id")
+                .single();
+              if (channelErr) throw channelErr;
+              channel = newChannel;
+            }
+
+            // 2. Get or Create Contact based on Facebook Sender ID
+            let { data: contacts, error: contactFetchErr } = await supabaseAdmin
+              .from("contacts")
+              .select("id")
+              .eq("org_id", ORG_ID)
+              .eq("platform_type", "messenger")
+              .eq("platform_id", senderId)
+              .limit(1);
+
+            let contact = contacts && contacts.length > 0 ? contacts[0] : null;
+
+            if (!contact) {
+              // Try to get user profile from Graph API if we have access token
+              // For MVP, just create basic contact
+              const { data: newContact, error: contactErr } = await supabaseAdmin
+                .from("contacts")
+                .insert({
+                  org_id: ORG_ID,
+                  platform_type: "messenger",
+                  platform_id: senderId,
+                  name: `FB User ${senderId.slice(-4)}`
+                })
+                .select("id")
+                .single();
+              if (contactErr) throw contactErr;
+              contact = newContact;
+            }
+
+            // 3. Get or Create Open Conversation
+            let { data: convs, error: convFetchErr } = await supabaseAdmin
+              .from("conversations")
+              .select("id")
+              .eq("org_id", ORG_ID)
+              .eq("contact_id", contact.id)
+              .eq("status", "open")
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            let conversation = convs && convs.length > 0 ? convs[0] : null;
+
+            if (!conversation) {
+              const { data: newConv, error: convErr } = await supabaseAdmin
+                .from("conversations")
+                .insert({
+                  org_id: ORG_ID,
+                  channel_id: channel.id,
+                  contact_id: contact.id,
+                  status: "open"
+                })
+                .select("id")
+                .single();
+              if (convErr) throw convErr;
+              conversation = newConv;
+            }
+
+            // 4. Check if message already exists (prevent duplicates from retry)
+            const { data: existingMsg } = await supabaseAdmin
+              .from("messages")
+              .select("id")
+              .eq("platform_message_id", messageId)
+              .limit(1);
+
+            if (existingMsg && existingMsg.length > 0) {
+              console.log("Duplicate message dropped", messageId);
+              continue;
+            }
+
+            // 5. Insert the Message
+            const { error: msgErr } = await supabaseAdmin
+              .from("messages")
+              .insert({
+                org_id: ORG_ID,
+                conversation_id: conversation.id,
+                sender_type: "contact",
+                sender_id: contact.id,
+                content: messageText,
+                platform_message_id: messageId
+              });
+
+            if (msgErr) throw msgErr;
+          }
+        }
+      }
+
+      // Return a '200 OK' response to all requests
+      return new NextResponse('EVENT_RECEIVED', { status: 200 });
+    } else {
+      // Return a '404 Not Found' if event is not from a page subscription
+      return new NextResponse('Not Found', { status: 404 });
+    }
+  } catch (error) {
+    console.error("Webhook Error:", error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
+}
