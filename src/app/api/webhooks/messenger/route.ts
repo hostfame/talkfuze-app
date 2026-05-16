@@ -42,8 +42,16 @@ export async function POST(request: Request) {
         // Get the page ID
         const pageId = entry.id;
         
+        // Combine messaging and standby arrays to capture all incoming messages
+        // If another app (like ManyChat or an auto-responder) is the Primary Receiver,
+        // Facebook routes messages to the "standby" array instead of "messaging".
+        const allEvents = [
+          ...(entry.messaging || []),
+          ...(entry.standby || [])
+        ];
+
         // Iterate over each messaging event
-        for (const webhook_event of entry.messaging) {
+        for (const webhook_event of allEvents) {
           
           if (webhook_event.message && !webhook_event.message.is_echo) {
             const senderId = webhook_event.sender.id;
@@ -53,11 +61,13 @@ export async function POST(request: Request) {
             if (!messageText) continue; // Ignore attachments for now
 
             // 1. Get or Create Messenger Channel for this Org
+            // Note: We use the pageId from the payload to match the correct channel!
             let { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
               .select("id")
               .eq("org_id", ORG_ID)
               .eq("type", "messenger")
+              .eq("config->>page_id", pageId)
               .limit(1);
 
             let channel = channels && channels.length > 0 ? channels[0] : null;
