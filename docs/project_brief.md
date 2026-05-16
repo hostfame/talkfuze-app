@@ -232,6 +232,9 @@ Build an Intercom Fin competitor - omnichannel AI chat platform. Multi-tenant Sa
 6. **OpenAI costs scale** with message length - monitor closely
 7. **AnyChat stays running** until TalkFuze is validated
 
+*This document is the single source of truth for TalkFuze project decisions.*
+
 ---
 
-*This document is the single source of truth for TalkFuze project decisions.*
+## Developer Workflow
+All development on TalkFuze MUST follow the strict procedures outlined in [`developer_workflow_sop.md`](developer_workflow_sop.md). This includes mandatory autonomous database migrations before deploying code to avoid schema mismatches.
