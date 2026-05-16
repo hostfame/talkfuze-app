@@ -64,6 +64,8 @@ export default function InboxPage() {
     }
   }, [selectedId])
 
+  const activeConversation = conversations.find(c => c.id === selectedId)
+
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">
       <ConversationList 
@@ -76,7 +78,10 @@ export default function InboxPage() {
         messages={messages} 
         orgId={ORG_ID}
       />
-      <ContactSidebar />
+      <ContactSidebar 
+        conversation={activeConversation}
+        orgId={ORG_ID}
+      />
     </div>
   )
 }

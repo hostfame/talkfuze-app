@@ -1,4 +1,4 @@
-import { MessageCircle, Facebook, Instagram, QrCode } from "lucide-react"
+import { MessageCircle, MessageSquare, Camera, QrCode } from "lucide-react"
 
 export default function ChannelsSettingsPage() {
   return (
@@ -13,7 +13,7 @@ export default function ChannelsSettingsPage() {
         <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
           <div className="flex justify-between items-start mb-4">
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center">
-              <Facebook size={24} strokeWidth={2} />
+              <MessageSquare size={24} strokeWidth={2} />
             </div>
             <span className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[11px] font-medium px-2 py-0.5 rounded-full border border-green-200 dark:border-green-800/50">
               Connected
@@ -48,7 +48,7 @@ export default function ChannelsSettingsPage() {
         <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full opacity-60 grayscale hover:grayscale-0 transition-all cursor-not-allowed">
           <div className="flex justify-between items-start mb-4">
             <div className="w-12 h-12 bg-pink-50 dark:bg-pink-900/20 text-pink-600 rounded-xl flex items-center justify-center">
-              <Instagram size={24} strokeWidth={2} />
+              <Camera size={24} strokeWidth={2} />
             </div>
             <span className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-medium px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
               Coming Soon

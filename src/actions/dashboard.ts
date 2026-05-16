@@ -2,21 +2,41 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
-export async function getConversations(orgId: string) {
-  const { data, error } = await supabaseAdmin
+export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' = 'all', agentId?: string) {
+  let query = supabaseAdmin
     .from("conversations")
     .select(`
       *,
-      contact:contacts(*)
+      contact:contacts(*),
+      assignee:users!assigned_to(*)
     `)
     .eq("org_id", orgId)
-    .order("last_message_at", { ascending: false })
+    .order("last_message_at", { ascending: false });
+
+  if (filter === 'unassigned') {
+    query = query.is("assigned_to", null);
+  } else if (filter === 'assigned' && agentId) {
+    query = query.eq("assigned_to", agentId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error(error)
     return []
   }
   return data
+}
+
+export async function assignConversation(orgId: string, conversationId: string, agentId: string | null) {
+  const { error } = await supabaseAdmin
+    .from("conversations")
+    .update({ assigned_to: agentId })
+    .eq("id", conversationId)
+    .eq("org_id", orgId);
+
+  if (error) throw error;
+  return true;
 }
 
 export async function getMessages(conversationId: string) {
