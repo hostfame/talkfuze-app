@@ -319,6 +319,9 @@ export async function createConversation(orgId: string, phone: string) {
     if (insertConvError) throw insertConvError;
     conversation = newConversation;
   }
+  if (!conversation) {
+    throw new Error("Failed to create or find conversation");
+  }
 
   return conversation.id;
 }
