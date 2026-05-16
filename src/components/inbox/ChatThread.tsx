@@ -14,6 +14,29 @@ export default function ChatThread({
   orgId: string
 }) {
   const [input, setInput] = useState("")
+  
+  // Load draft when conversation changes
+  useEffect(() => {
+    if (conversationId) {
+      const timer = setTimeout(() => {
+        const draft = localStorage.getItem(`draft_${conversationId}`)
+        setInput(draft || "")
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [conversationId])
+
+  // Save draft when input changes
+  useEffect(() => {
+    if (conversationId) {
+      if (input) {
+        localStorage.setItem(`draft_${conversationId}`, input)
+      } else {
+        localStorage.removeItem(`draft_${conversationId}`)
+      }
+    }
+  }, [input, conversationId])
+
   const [isSending, setIsSending] = useState(false)
   const [isInternal, setIsInternal] = useState(false)
   const [optimisticMessages, setOptimisticMessages] = useState<any[]>([])
@@ -79,6 +102,7 @@ export default function ChatThread({
 
     const msg = input.trim()
     setInput("")
+    localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
     
     // Optimistic UI update
