@@ -22,15 +22,21 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   const [isCrmLoading, setIsCrmLoading] = useState(false)
 
   useEffect(() => {
+    let mounted = true
     if (conversation?.id && platformId) {
-      setIsCrmLoading(true)
-      // Format number for webhook
-      const cleanPhone = platformId.startsWith('+') ? platformId : `+${platformId}`
-      getCrmData(orgId, cleanPhone).then(data => {
-        if (data) setCrmData(data)
-        setIsCrmLoading(false)
-      })
+      const fetchCrm = async () => {
+        setIsCrmLoading(true)
+        // Format number for webhook
+        const cleanPhone = platformId.startsWith('+') ? platformId : `+${platformId}`
+        const data = await getCrmData(orgId, cleanPhone)
+        if (mounted) {
+          if (data) setCrmData(data)
+          setIsCrmLoading(false)
+        }
+      }
+      fetchCrm()
     }
+    return () => { mounted = false }
   }, [conversation?.id, platformId, orgId])
 
   const handleSummarize = async () => {

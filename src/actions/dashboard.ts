@@ -2,8 +2,6 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
-import { supabaseAdmin } from "@/lib/supabase-admin"
-
 export async function getQuickReplies(orgId: string) {
   const { data, error } = await supabaseAdmin
     .from('channels')
