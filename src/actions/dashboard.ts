@@ -139,7 +139,10 @@ export async function replyToConversation(
       conversation_id: conversationId,
       sender_type: "agent",
       sender_id: "agent-1", // Dummy agent ID for now
-      content: content
+      content: content,
+      content_type: contentType,
+      metadata: metadata,
+      is_internal: isInternal
     })
 
   if (error) throw error
@@ -281,7 +284,8 @@ export async function createConversation(orgId: string, phone: string) {
       .insert({
         org_id: orgId,
         platform_id: phone,
-        name: phone
+        name: phone,
+        status: "active"
       })
       .select()
       .single();
