@@ -63,9 +63,12 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
       *,
       contact:contacts(*),
       assignee:users!assigned_to(*),
-      channels(type)
+      channels(type),
+      messages(content, sender_type)
     `)
     .eq("org_id", orgId)
+    .order("created_at", { foreignTable: "messages", ascending: false })
+    .limit(1, { foreignTable: "messages" })
     .order("last_message_at", { ascending: false });
 
   if (filter === 'unassigned') {
@@ -229,9 +232,12 @@ export async function searchConversations(orgId: string, query: string) {
       *,
       contact:contacts(*),
       assignee:users!assigned_to(*),
-      channels(type)
+      channels(type),
+      messages(content, sender_type)
     `)
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .order("created_at", { foreignTable: "messages", ascending: false })
+    .limit(1, { foreignTable: "messages" });
     
   if (contactIds.length > 0 && msgConvIds.length > 0) {
     convQuery = convQuery.or(`contact_id.in.(${contactIds.join(',')}),id.in.(${msgConvIds.join(',')})`);

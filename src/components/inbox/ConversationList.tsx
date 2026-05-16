@@ -137,6 +137,7 @@ export default function ConversationList({
           const isFacebook = conv.channels?.type === 'facebook'
           const assigneeName = conv.assignee?.full_name || 'Hostnin' // Fallback to Hostnin for demo
           const isTyping = typingState[conv.id]
+          const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null
 
           const getInitials = (name: string) => {
             if (name.startsWith('+')) return name.substring(0, 2)
@@ -196,8 +197,15 @@ export default function ConversationList({
                       typing...
                     </p>
                   ) : (
-                    <p className="text-[13px] text-slate-500 truncate leading-snug">
-                      Waiting for reply...
+                    <p className={`text-[13px] truncate leading-snug ${lastMessage?.sender_type === 'agent' ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
+                      {lastMessage ? (
+                        <>
+                          {lastMessage.sender_type === 'agent' && <span className="text-slate-400">You: </span>}
+                          {lastMessage.content === '[Attachment]' ? '📎 Attachment' : lastMessage.content}
+                        </>
+                      ) : (
+                        <span className="text-slate-400 italic">No messages yet</span>
+                      )}
                     </p>
                   )}
                 </div>
