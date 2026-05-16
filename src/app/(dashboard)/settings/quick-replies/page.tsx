@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { Zap, Plus, Search, Trash2, Edit2, Loader2, Save, X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e" // MVP Hardcoded
+import { useAuth } from "@/lib/auth-context"
 
 type QuickReply = {
   id: string;
@@ -13,6 +12,8 @@ type QuickReply = {
 }
 
 export default function QuickRepliesSettingsPage() {
+  const currentUser = useAuth()
+  const ORG_ID = currentUser.org_id
   const [replies, setReplies] = useState<QuickReply[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")

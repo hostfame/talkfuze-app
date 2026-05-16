@@ -2,14 +2,20 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
-// Hardcoded for MVP
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e"
+import { createClient } from "@/lib/supabase/server"
 
 export async function getTeammates() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+  
+  const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
+  if (!profile) throw new Error("Profile not found")
+
   const { data, error } = await supabaseAdmin
     .from("users")
     .select("*")
-    .eq("org_id", ORG_ID)
+    .eq("org_id", profile.org_id)
     .order("created_at", { ascending: true })
 
   if (error) {
@@ -43,11 +49,17 @@ export async function addTeammate(name: string, email: string, role: string = "A
     }
 
     // 2. Insert into the public.users table
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+    const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
+    if (!profile) throw new Error("Profile not found")
+
     const { error: dbError } = await supabaseAdmin
       .from("users")
       .insert({
         id: authData.user.id,
-        org_id: ORG_ID,
+        org_id: profile.org_id,
         name: name,
         email: email,
         role: role,

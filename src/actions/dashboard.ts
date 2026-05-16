@@ -1,6 +1,7 @@
 "use server"
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { createClient } from "@/lib/supabase/server"
 
 export async function getQuickReplies(orgId: string) {
   const { data, error } = await supabaseAdmin
@@ -121,6 +122,16 @@ export async function replyToConversation(
   contentType: string = 'text',
   metadata: any = {}
 ) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+  
+  // We can trust the client's orgId if RLS is enabled, but let's fetch it securely
+  const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single();
+  if (!profile) throw new Error("Profile not found");
+  
+  const realOrgId = profile.org_id;
+  const senderId = user.id;
   // First get the conversation details to know the channel and contact
   const { data: conv, error: convError } = await supabaseAdmin
     .from("conversations")
@@ -138,10 +149,10 @@ export async function replyToConversation(
   const { error } = await supabaseAdmin
     .from("messages")
     .insert({
-      org_id: orgId,
+      org_id: realOrgId,
       conversation_id: conversationId,
       sender_type: "agent",
-      sender_id: "agent-1", // Dummy agent ID for now
+      sender_id: senderId,
       content: content,
       content_type: contentType,
       metadata: metadata,

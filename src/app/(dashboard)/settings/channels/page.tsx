@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react"
 import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, ExternalLink } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e" // Hardcoded MVP ORG
+import { useAuth } from "@/lib/auth-context"
 
 export default function ChannelsSettingsPage() {
+  const currentUser = useAuth()
+  const ORG_ID = currentUser.org_id
   // WhatsApp State
   const [waStatus, setWaStatus] = useState<string>("disconnected")
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)

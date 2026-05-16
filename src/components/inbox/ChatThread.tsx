@@ -1,9 +1,10 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2 } from "lucide-react"
+import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2, Mic, Square, X } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
+import { useMessageStore } from "@/lib/store"
 
 const AVATAR_COLORS = [
   'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
@@ -21,13 +22,15 @@ export default function ChatThread({
   messages, 
   orgId,
   isCustomerTyping = false,
-  conversation = null
+  conversation = null,
+  currentUser
 }: { 
   conversationId: string | null, 
   messages: any[],
   orgId: string,
   isCustomerTyping?: boolean,
-  conversation?: any
+  conversation?: any,
+  currentUser?: any
 }) {
   const contactName: string = conversation?.contact?.name || conversation?.contact?.[0]?.name || 'Contact'
   const contactInitial = contactName.charAt(0).toUpperCase()
@@ -70,7 +73,13 @@ export default function ChatThread({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
-
+  
+  // Audio Recording States
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<BlobPart[]>([])
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
     getQuickReplies(orgId).then(data => {
       if (data) setQuickReplies(data)
@@ -165,14 +174,71 @@ export default function ChatThread({
       setIsSending(false)
     }
   }
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorderRef.current = new MediaRecorder(stream)
+      audioChunksRef.current = []
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !conversationId) return;
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorderRef.current.start()
+      setIsRecording(true)
+      setRecordingDuration(0)
+
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1)
+      }, 1000)
+    } catch (err) {
+      console.error("Error accessing microphone:", err)
+      alert("Microphone access is required to record audio.")
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      if (timerRef.current) clearInterval(timerRef.current)
+      setIsRecording(false)
+      setRecordingDuration(0)
+    }
+  }
+
+  const cancelRecording = () => {
+    stopRecording()
+    audioChunksRef.current = []
+  }
+
+  const sendRecording = () => {
+    if (!mediaRecorderRef.current) return
+    
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+      const file = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' })
+      await uploadFile(file)
+      audioChunksRef.current = []
+    }
+    
+    stopRecording()
+  }
+  
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const uploadFile = async (file: File) => {
+    if (!conversationId) return;
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'png';
       const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
       
       const { error } = await supabase.storage
@@ -185,9 +251,16 @@ export default function ChatThread({
         .from('media')
         .getPublicUrl(fileName);
         
-      const contentType = file.type.startsWith('image/') ? 'image' : 'file';
+      let contentType = 'file';
+      if (file.type.startsWith('image/')) contentType = 'image';
+      else if (file.type.startsWith('audio/')) contentType = 'audio';
+      else if (file.type.startsWith('video/')) contentType = 'video';
       
-      await replyToConversation(orgId, conversationId, '[Attachment]', false, contentType, {
+      const contentText = contentType === 'image' ? '[Image]' : 
+                          contentType === 'audio' ? '[Audio Voice Message]' : 
+                          contentType === 'video' ? '[Video]' : '[Attachment]';
+      
+      await replyToConversation(orgId, conversationId, contentText, false, contentType, {
         media_url: urlData.publicUrl,
         mimetype: file.type,
         filename: file.name
@@ -198,9 +271,16 @@ export default function ChatThread({
       alert("Failed to upload file");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
 
   if (!conversationId) {
     return (
@@ -245,7 +325,8 @@ export default function ChatThread({
           </div>
         )}
 
-        {allMessages.map((msg, idx) => {
+
+        {[...allMessages, ...optimisticMessages].map((msg, idx) => {
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
           
           if (isAgent) {
@@ -282,7 +363,9 @@ export default function ChatThread({
                   )}
                   {!msg.is_internal && (
                     <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
-                      {msg.status === 'read' ? (
+                      {msg.status === 'sending' ? (
+                        <Clock size={12} className="text-white/60 animate-pulse" />
+                      ) : msg.status === 'read' ? (
                         <CheckCheck size={14} className="text-blue-200" />
                       ) : msg.status === 'delivered' ? (
                         <CheckCheck size={14} className="text-white/80" />
@@ -393,32 +476,65 @@ export default function ChatThread({
         )}
 
         <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
-          <textarea 
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={(e) => {
-              if (showMacroMenu && filteredMacros.length > 0) {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
-                } else if (e.key === 'Enter') {
-                  e.preventDefault()
-                  applyMacro(filteredMacros[selectedIndex].message)
-                } else if (e.key === 'Escape') {
-                  setShowMacroMenu(false)
+          {isRecording ? (
+            <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-600 dark:text-red-400 font-medium font-mono">
+                  {formatDuration(recordingDuration)}
+                </span>
+                <span className="text-sm text-red-600/70 dark:text-red-400/70">Recording audio...</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={cancelRecording}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+                <button 
+                  onClick={sendRecording}
+                  className="p-2 text-white bg-blue-500 hover:bg-blue-600 rounded-full shadow-sm transition-colors"
+                >
+                  <Check size={20} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <textarea 
+              value={input}
+              onChange={handleInputChange}
+              onPaste={(e) => {
+                if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+                  e.preventDefault();
+                  const file = e.clipboardData.files[0];
+                  uploadFile(file);
                 }
-              } else if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSend()
-              }
-            }}
-            placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-            className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'}`}
-            disabled={isSending}
-          ></textarea>
+              }}
+              onKeyDown={(e) => {
+                if (showMacroMenu && filteredMacros.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault()
+                    applyMacro(filteredMacros[selectedIndex].message)
+                  } else if (e.key === 'Escape') {
+                    setShowMacroMenu(false)
+                  }
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSend()
+                }
+              }}
+              placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+              className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'}`}
+              disabled={isSending}
+            ></textarea>
+          )}
           
           <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50'}`}>
             <div className="flex items-center gap-1">
@@ -434,10 +550,17 @@ export default function ChatThread({
                   />
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading || isSending}
+                    disabled={isUploading || isSending || isRecording}
                     className="p-1.5 rounded-md transition-all text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-50"
                   >
                     {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
+                  </button>
+                  <button 
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={isUploading || isSending}
+                    className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                  >
+                    {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
                   </button>
                 </>
               )}

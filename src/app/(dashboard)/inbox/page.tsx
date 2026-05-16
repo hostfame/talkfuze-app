@@ -6,11 +6,12 @@ import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
-
-// The demo organization we created
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e"
+import { useAuth } from "@/lib/auth-context"
 
 export default function InboxPage() {
+  const currentUser = useAuth()
+  const ORG_ID = currentUser.org_id
+
   const [conversations, setConversations] = useState<any[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [messages, setMessages] = useState<any[]>([])

@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { Sparkles, Key, CheckCircle2, Eye, EyeOff, Loader2, Save } from "lucide-react"
 import { supabase } from "@/lib/supabase"
-
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e" // MVP Hardcoded
+import { useAuth } from "@/lib/auth-context"
 
 type AIProvider = {
   id: string;
@@ -38,6 +37,8 @@ const PROVIDERS_META = [
 ]
 
 export default function AIProvidersSettingsPage() {
+  const currentUser = useAuth()
+  const ORG_ID = currentUser.org_id
   const [providers, setProviders] = useState<Record<string, { id: string, config: any }>>({})
   const [isLoading, setIsLoading] = useState(true)
 

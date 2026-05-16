@@ -2,17 +2,23 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
-// Hardcoded for MVP
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e"
+import { createClient } from "@/lib/supabase/server"
 
 export async function getContacts() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+  
+  const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
+  if (!profile) throw new Error("Profile not found")
+
   const { data, error } = await supabaseAdmin
     .from('contacts')
     .select(`
       *,
       conversations (id, last_message_at, channels (type))
     `)
-    .eq('org_id', ORG_ID)
+    .eq('org_id', profile.org_id)
     .order('created_at', { ascending: false })
 
   if (error) {
