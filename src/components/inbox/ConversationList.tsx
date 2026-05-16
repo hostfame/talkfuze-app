@@ -68,10 +68,10 @@ export default function ConversationList({
     setSearchResult('loading');
     try {
       const newConvId = await createConversation(orgId, newChatNumber);
-      onSelect(newConvId);
       setShowNewChatModal(false);
       setNewChatNumber("");
       setSearchResult('idle');
+      onSelect(newConvId);
     } catch (e) {
       console.error(e);
       setSearchResult('not_found');
