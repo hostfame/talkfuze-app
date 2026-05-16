@@ -298,9 +298,17 @@ export default function ChatThread({
             return (
               <div key={msg.id || idx} className="flex flex-col mb-4">
                 <div className="flex items-end gap-2.5">
-                  <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
-                    {contactInitial}
-                  </div>
+                  {conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url ? (
+                    <img 
+                      src={conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url} 
+                      alt={contactName}
+                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
+                    />
+                  ) : (
+                    <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
+                      {contactInitial}
+                    </div>
+                  )}
                   <div className="max-w-[70%] flex flex-col gap-1">
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
