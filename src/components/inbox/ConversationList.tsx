@@ -1,4 +1,5 @@
-import { Filter, ChevronDown } from "lucide-react"
+import { Filter, ChevronDown, Search } from "lucide-react"
+import { useState } from "react"
 
 export default function ConversationList({ 
   conversations, 
@@ -9,6 +10,7 @@ export default function ConversationList({
   selectedId: string | null,
   onSelect: (id: string) => void
 }) {
+  const [searchQuery, setSearchQuery] = useState("")
   // Array of vibrant colors for avatars
   const avatarColors = [
     'bg-blue-600', 'bg-emerald-500', 'bg-violet-600', 
@@ -34,13 +36,36 @@ export default function ConversationList({
         </div>
       </div>
 
+        {/* Search Bar */}
+        <div className="relative mt-3">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={14} className="text-slate-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-all"
+            placeholder="Search contact or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
       {/* List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
         {conversations.length === 0 && (
           <p className="text-[13px] text-slate-400 text-center mt-10">No active conversations</p>
         )}
 
-        {conversations.map((conv, i) => {
+        {conversations
+          .filter(conv => {
+            if (!searchQuery) return true
+            const name = conv.contact?.name?.toLowerCase() || ""
+            const phone = conv.contact?.platform_id?.toLowerCase() || ""
+            const query = searchQuery.toLowerCase()
+            return name.includes(query) || phone.includes(query)
+          })
+          .map((conv, i) => {
           const isSelected = conv.id === selectedId
           const contactName = conv.contact?.name || "Unknown"
           const time = new Date(conv.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
