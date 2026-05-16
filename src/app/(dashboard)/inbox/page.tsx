@@ -28,8 +28,12 @@ export default function InboxPage() {
     fetchConvos()
     
     const channel = supabase
-      .channel('public:conversations')
+      .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
+        fetchConvos()
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        // Refresh conversation list so last message preview updates
         fetchConvos()
       })
       .subscribe()
@@ -37,26 +41,53 @@ export default function InboxPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [selectedId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!selectedId) return
 
+    // Initial fetch
     const fetchData = async () => {
       const data = await getMessages(selectedId)
       setMessages(data || [])
     }
-
     fetchData()
     
+    // Use conversation-specific channel name to avoid conflicts across tab switches
+    const channelName = `messages:${selectedId}`
     const channel = supabase
-      .channel('public:messages_and_convs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-        fetchData()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        fetchData()
-      })
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedId}`
+        },
+        (payload) => {
+          // Append directly - no full refetch needed
+          setMessages(prev => {
+            // Deduplicate: skip if already in list (e.g. optimistic message)
+            if (prev.some(m => m.id === payload.new.id)) return prev
+            return [...prev, payload.new]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedId}`
+        },
+        (payload) => {
+          // Update status (read receipts) in place
+          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
+        }
+      )
       .subscribe()
 
     return () => {
