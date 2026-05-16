@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search } from "lucide-react"
+import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
@@ -51,6 +51,8 @@ export default function ChatThread({
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     getQuickReplies(orgId).then(data => {
@@ -142,7 +144,44 @@ export default function ChatThread({
     } catch (e) {
       console.error(e)
     } finally {
+      setIsUploading(false)
       setIsSending(false)
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !conversationId) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
+      
+      const { error } = await supabase.storage
+        .from('media')
+        .upload(fileName, file);
+        
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(fileName);
+        
+      const contentType = file.type.startsWith('image/') ? 'image' : 'file';
+      
+      await replyToConversation(orgId, conversationId, '[Attachment]', false, contentType, {
+        media_url: urlData.publicUrl,
+        mimetype: file.type,
+        filename: file.name
+      });
+      
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Failed to upload file");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
@@ -193,7 +232,19 @@ export default function ChatThread({
                   </div>
                 )}
                 <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] max-w-[70%] leading-relaxed whitespace-pre-wrap font-normal`}>
-                  <div>{msg.content}</div>
+                  {msg.content_type === 'image' && msg.metadata?.media_url ? (
+                    <div className="relative">
+                      <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
+                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
+                    </div>
+                  ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
+                    <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
+                      <Paperclip size={16} />
+                      <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
+                    </a>
+                  ) : (
+                    <div>{msg.content}</div>
+                  )}
                   {!msg.is_internal && (
                     <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
                       {msg.status === 'read' ? (
@@ -217,7 +268,19 @@ export default function ChatThread({
                   </div>
                   <div className="max-w-[70%] flex flex-col gap-1">
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
-                      {msg.content}
+                      {msg.content_type === 'image' && msg.metadata?.media_url ? (
+                        <div className="relative">
+                          <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
+                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
+                        </div>
+                      ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
+                        <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
+                          <Paperclip size={16} />
+                          <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
+                        </a>
+                      ) : (
+                        <div>{msg.content}</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -307,6 +370,24 @@ export default function ChatThread({
           <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50'}`}>
             <div className="flex items-center gap-1">
               <button className={`p-1.5 rounded-md transition-all ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}><Zap size={16} strokeWidth={2.5} /></button>
+              
+              {!isInternal && (
+                <>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    onChange={handleFileUpload}
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || isSending}
+                    className="p-1.5 rounded-md transition-all text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
+                  </button>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">

@@ -110,7 +110,14 @@ export async function getMessages(conversationId: string) {
   return data
 }
 
-export async function replyToConversation(orgId: string, conversationId: string, content: string, isInternal: boolean = false) {
+export async function replyToConversation(
+  orgId: string, 
+  conversationId: string, 
+  content: string, 
+  isInternal: boolean = false,
+  contentType: string = 'text',
+  metadata: any = {}
+) {
   // First get the conversation details to know the channel and contact
   const { data: conv, error: convError } = await supabaseAdmin
     .from("conversations")
@@ -133,6 +140,8 @@ export async function replyToConversation(orgId: string, conversationId: string,
       sender_type: "agent",
       sender_id: "agent-1", // Dummy agent ID for now
       content: content,
+      content_type: contentType,
+      metadata: metadata,
       is_internal: isInternal
     })
 
