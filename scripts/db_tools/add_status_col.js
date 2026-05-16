@@ -1,15 +1,6 @@
-const { Client } = require('pg');
-const client = new Client({
-  connectionString: 'postgresql://postgres:aUwIC0tlsD7zbea%40%23@aws-0-ap-south-1.pooler.supabase.com:5432/postgres'
-});
-async function run() {
-  await client.connect();
-  console.log("Connected to Supabase Postgres.");
-  
-  // Add status column to messages
-  await client.query("ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'sent';");
-  console.log("Added status column to messages.");
-  
-  await client.end();
-}
-run().catch(console.error);
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+
+// We use the REST API via a direct pg script or we can just make an RPC call if there's one.
+// Wait, we can't easily alter table from JS without a raw query.
+// Let's create a SQL script and run it using psql or supabase CLI if available.

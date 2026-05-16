@@ -3,7 +3,7 @@
 import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
 
@@ -65,6 +65,7 @@ export default function InboxPage() {
   }, [selectedId])
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
 
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)
@@ -76,6 +77,21 @@ export default function InboxPage() {
             ...prev,
             [conversation_id]: is_typing
           }));
+          
+          // Clear any existing timeout
+          if (typingTimeoutRefs.current[conversation_id]) {
+            clearTimeout(typingTimeoutRefs.current[conversation_id]);
+          }
+          
+          // Auto-clear typing indicator after 3 seconds of no new events
+          if (is_typing) {
+            typingTimeoutRefs.current[conversation_id] = setTimeout(() => {
+              setTypingState(prev => ({
+                ...prev,
+                [conversation_id]: false
+              }));
+            }, 3000);
+          }
         }
       })
       .subscribe();

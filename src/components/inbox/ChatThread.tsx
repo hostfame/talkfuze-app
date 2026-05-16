@@ -250,6 +250,16 @@ export default function ChatThread({
                       <Paperclip size={16} />
                       <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
                     </a>
+                  ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
+                    <div className="flex flex-col gap-1">
+                      <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
+                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{msg.content}</div>}
+                    </div>
+                  ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
+                    <div className="flex flex-col gap-1">
+                      <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
+                      {msg.content !== '[Video]' && <div className="mt-1">{msg.content}</div>}
+                    </div>
                   ) : (
                     <div>{msg.content}</div>
                   )}
@@ -282,10 +292,20 @@ export default function ChatThread({
                           {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
                         </div>
                       ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
-                        <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
+                        <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
                           <Paperclip size={16} />
                           <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
                         </a>
+                      ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
+                        <div className="flex flex-col gap-1">
+                          <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
+                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{msg.content}</div>}
+                        </div>
+                      ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
+                        <div className="flex flex-col gap-1">
+                          <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
+                          {msg.content !== '[Video]' && <div className="mt-1">{msg.content}</div>}
+                        </div>
                       ) : (
                         <div>{msg.content}</div>
                       )}
