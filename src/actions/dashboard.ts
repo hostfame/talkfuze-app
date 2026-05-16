@@ -274,13 +274,17 @@ export async function createConversation(orgId: string, phone: string) {
 
   // 2. Find or create contact
   // Strip non-numeric characters for search
-  const cleanPhone = phone.replace(/\\D/g, '');
+  let cleanPhone = phone.replace(/\D/g, '');
   
+  // Auto-format BD local numbers (11 digits starting with 0) to international (880...)
+  if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+    cleanPhone = '88' + cleanPhone;
+  }
   let { data: contact } = await supabaseAdmin
     .from("contacts")
     .select("*")
     .eq("org_id", orgId)
-    .eq("platform_id", phone)
+    .eq("platform_id", cleanPhone)
     .single();
 
   if (!contact) {
@@ -290,8 +294,8 @@ export async function createConversation(orgId: string, phone: string) {
       .insert({
         org_id: orgId,
         platform_type: "whatsapp",
-        platform_id: phone,
-        name: phone,
+        platform_id: cleanPhone,
+        name: cleanPhone,
         status: "active"
       })
       .select()
