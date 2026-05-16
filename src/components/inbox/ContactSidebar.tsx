@@ -1,7 +1,10 @@
 import { ChevronDown, ExternalLink, Hash, Plus, User } from "lucide-react"
 import AssignButton from "./AssignButton"
 
-export default function ContactSidebar({ conversation, orgId }: { conversation: any, orgId: string }) {
+  const contactName = conversation?.contact?.name || "Unknown"
+  const platformId = conversation?.contact?.platform_id || "No number"
+  const isWhatsApp = conversation?.channels?.type === 'whatsapp'
+
   return (
     <div className="flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Tabs */}
@@ -14,6 +17,26 @@ export default function ContactSidebar({ conversation, orgId }: { conversation: 
 
       <div className="flex-1 overflow-y-auto bg-white">
         
+        {/* Contact Header Block (AnyChat Style) */}
+        <div className="p-5 border-b border-slate-100 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white bg-blue-600">
+            {(() => {
+              const name = contactName;
+              if (name.startsWith('+')) return name.substring(0, 2);
+              const parts = name.trim().split(" ").filter(Boolean);
+              if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+              return name.substring(0, 1).toUpperCase();
+            })()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[15px] font-semibold text-slate-900 truncate mb-0.5">{contactName}</h2>
+            <p className="text-[13px] text-slate-500 truncate">{platformId.startsWith('+') ? platformId : `+${platformId}`}</p>
+          </div>
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-colors shrink-0">
+            Resolve
+          </button>
+        </div>
+
         {/* Core Attributes */}
         <div className="py-4 px-5 border-b border-slate-100 space-y-4">
           <AssignButton conversation={conversation} orgId={orgId} />

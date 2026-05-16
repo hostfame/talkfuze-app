@@ -8,7 +8,8 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     .select(`
       *,
       contact:contacts(*),
-      assignee:users!assigned_to(*)
+      assignee:users!assigned_to(*),
+      channels(type)
     `)
     .eq("org_id", orgId)
     .order("last_message_at", { ascending: false });
