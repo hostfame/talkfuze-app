@@ -127,8 +127,9 @@ export default function ContactSidebar({ conversation, orgId }: any) {
           </div>
         </div>
 
-      </div>
+      </>
       )}
+      </div>
 
       {/* Copilot Tab Content */}
       {activeTab === 'copilot' && (
