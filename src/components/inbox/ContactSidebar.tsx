@@ -1,4 +1,6 @@
-import { ChevronDown, ExternalLink, Hash, Plus, User } from "lucide-react"
+import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send } from "lucide-react"
+import { useState } from "react"
+import { summarizeThread, draftReply } from "@/actions/copilot"
 import AssignButton from "./AssignButton"
 
 export default function ContactSidebar({ conversation, orgId }: any) {
@@ -7,18 +9,52 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
   const isWhatsApp = conversation?.channels?.type === 'whatsapp'
 
+  const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
+  const [summary, setSummary] = useState<string | null>(null)
+  const [draft, setDraft] = useState<string | null>(null)
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [isDrafting, setIsDrafting] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState("")
+
+  const handleSummarize = async () => {
+    if (!conversation?.id) return
+    setIsSummarizing(true)
+    const result = await summarizeThread(conversation.id)
+    setSummary(result)
+    setIsSummarizing(false)
+  }
+
+  const handleDraft = async () => {
+    if (!conversation?.id) return
+    setIsDrafting(true)
+    const result = await draftReply(conversation.id, customPrompt)
+    setDraft(result)
+    setIsDrafting(false)
+  }
+
   return (
     <div className="flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30">
-        <button className="px-4 py-3 text-[14px] font-semibold border-b-2 border-blue-600 text-slate-900 dark:text-slate-100 transition-colors">Details</button>
-        <button className="px-4 py-3 text-[14px] font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-b-2 border-transparent transition-colors">Copilot</button>
+        <button 
+          onClick={() => setActiveTab('details')}
+          className={`px-4 py-3 text-[14px] transition-colors border-b-2 ${activeTab === 'details' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+        >
+          Details
+        </button>
+        <button 
+          onClick={() => setActiveTab('copilot')}
+          className={`px-4 py-3 text-[14px] transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+        >
+          <Sparkles size={14} className={activeTab === 'copilot' ? 'text-blue-500' : ''} /> Copilot
+        </button>
         <div className="flex-1"></div>
         <button className="p-2 mb-2 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all active:scale-95 shadow-sm"><ExternalLink size={14} strokeWidth={2.5}/></button>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white">
-        
+        {activeTab === 'details' && (
+          <>
         {/* Contact Header Block (AnyChat Style) */}
         <div className="p-5 border-b border-slate-100 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white bg-blue-600">
@@ -92,6 +128,83 @@ export default function ContactSidebar({ conversation, orgId }: any) {
         </div>
 
       </div>
+      )}
+
+      {/* Copilot Tab Content */}
+      {activeTab === 'copilot' && (
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-5 space-y-6">
+          
+          {/* Summary Section */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+            <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
+              <AlignLeft size={16} className="text-blue-500" /> AI Summary
+            </h3>
+            {summary ? (
+              <div className="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                {summary}
+              </div>
+            ) : (
+              <button 
+                onClick={handleSummarize}
+                disabled={isSummarizing || !conversation?.id}
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[13px] font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSummarizing ? <span className="animate-pulse">Analyzing thread...</span> : "Summarize Thread"}
+              </button>
+            )}
+          </div>
+
+          {/* Draft Reply Section */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+            <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
+              <MessageSquarePlus size={16} className="text-emerald-500" /> Draft Reply
+            </h3>
+            
+            <input 
+              type="text" 
+              placeholder="Any specific instructions? (optional)"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 mb-3 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+
+            {draft ? (
+              <div className="space-y-3">
+                <div className="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-800/30 whitespace-pre-wrap">
+                  {draft}
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleDraft}
+                    disabled={isDrafting}
+                    className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[12px] font-medium rounded-lg transition-colors"
+                  >
+                    Regenerate
+                  </button>
+                  <button 
+                    className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      navigator.clipboard.writeText(draft);
+                      alert("Copied to clipboard! You can paste it in the composer.");
+                    }}
+                  >
+                    <Send size={12} /> Use Draft
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button 
+                onClick={handleDraft}
+                disabled={isDrafting || !conversation?.id}
+                className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[13px] font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isDrafting ? <span className="animate-pulse">Drafting...</span> : "Draft Reply"}
+              </button>
+            )}
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }
