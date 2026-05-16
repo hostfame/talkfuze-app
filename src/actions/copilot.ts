@@ -3,12 +3,20 @@
 import OpenAI from 'openai'
 import { getMessages } from './dashboard'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+let openai: OpenAI | null = null;
+
+function getOpenAIClient() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || "dummy_key_to_prevent_crash"
+    })
+  }
+  return openai;
+}
 
 export async function summarizeThread(conversationId: string) {
   try {
+    const client = getOpenAIClient();
     const messages = await getMessages(conversationId)
     
     if (!messages || messages.length === 0) {
@@ -19,7 +27,7 @@ export async function summarizeThread(conversationId: string) {
       `${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`
     ).join("\n")
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -45,6 +53,7 @@ export async function summarizeThread(conversationId: string) {
 
 export async function draftReply(conversationId: string, customPrompt?: string) {
   try {
+    const client = getOpenAIClient();
     const messages = await getMessages(conversationId)
     
     if (!messages || messages.length === 0) {
@@ -61,7 +70,7 @@ export async function draftReply(conversationId: string, customPrompt?: string) 
       systemPrompt += `\n\nAdditional instructions from the agent: ${customPrompt}`
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {

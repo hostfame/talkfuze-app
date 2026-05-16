@@ -34,7 +34,10 @@ export default function ChatThread({
 
   // Clear optimistic messages when real messages arrive via WebSockets
   useEffect(() => {
-    setOptimisticMessages([])
+    const timer = setTimeout(() => {
+      setOptimisticMessages([])
+    }, 0)
+    return () => clearTimeout(timer)
   }, [messages])
 
   const allMessages = [...messages, ...optimisticMessages]
