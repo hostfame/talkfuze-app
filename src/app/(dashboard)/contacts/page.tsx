@@ -77,14 +77,14 @@ export default async function ContactsPage() {
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-sm shrink-0">
-                      {getInitials(contact.name || contact.platform_id)}
+                      {getInitials(contact.name || contact.platform_id.split('@')[0])}
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[14px] font-medium text-slate-900 dark:text-slate-100 truncate">
                         {contact.name || 'No name'}
                       </span>
                       <span className="text-[13px] text-slate-500 font-mono truncate">
-                        {contact.platform_id.startsWith('+') ? contact.platform_id : `+${contact.platform_id}`}
+                        {contact.platform_id.split('@')[0].startsWith('+') ? contact.platform_id.split('@')[0] : `+${contact.platform_id.split('@')[0]}`}
                       </span>
                     </div>
                   </div>

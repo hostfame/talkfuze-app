@@ -3,7 +3,8 @@ import AssignButton from "./AssignButton"
 
 export default function ContactSidebar({ conversation, orgId }: any) {
   const contactName = conversation?.contact?.name || "Unknown"
-  const platformId = conversation?.contact?.platform_id || "No number"
+  const rawPlatformId = conversation?.contact?.platform_id || "No number"
+  const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
   const isWhatsApp = conversation?.channels?.type === 'whatsapp'
 
   return (
