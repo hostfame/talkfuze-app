@@ -6,7 +6,7 @@ const HEADERS = {
   "Content-Type": "application/json"
 };
 async function run() {
-  const res = await fetch(`${URL}/orgs`, { headers: HEADERS });
-  console.log("Orgs:", await res.json());
+  const res = await fetch(`${URL}/users`, { headers: HEADERS });
+  console.log("Users:", await res.json());
 }
 run();

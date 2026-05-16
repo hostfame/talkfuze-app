@@ -38,9 +38,6 @@ export default function ContactSidebar() {
             <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
           </div>
           <div className="px-3">
-            <a href="/api/auth/facebook" className="flex justify-between items-center px-2 py-1.5 hover:bg-slate-50 rounded-md transition-colors cursor-pointer group">
-              <span className="text-[13px] text-blue-600 hover:underline">Connect Facebook Page</span>
-            </a>
             <div className="flex justify-between items-center px-2 py-1.5 hover:bg-slate-50 rounded-md transition-colors cursor-pointer group">
               <span className="text-[13px] text-slate-700 hover:underline">Tracker ticket</span>
             </div>
