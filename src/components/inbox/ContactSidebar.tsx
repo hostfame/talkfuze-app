@@ -1,6 +1,7 @@
 import { ChevronDown, ExternalLink, Hash, Plus, User } from "lucide-react"
 import AssignButton from "./AssignButton"
 
+export default function ContactSidebar({ conversation, orgId }: any) {
   const contactName = conversation?.contact?.name || "Unknown"
   const platformId = conversation?.contact?.platform_id || "No number"
   const isWhatsApp = conversation?.channels?.type === 'whatsapp'
