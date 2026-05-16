@@ -63,7 +63,7 @@ export async function replyToConversation(orgId: string, conversationId: string,
     .select(`
       id,
       contact:contacts(platform_id),
-      channel:channels(type)
+      channel:channels(type, config)
     `)
     .eq("id", conversationId)
     .single();
@@ -93,11 +93,12 @@ export async function replyToConversation(orgId: string, conversationId: string,
   // Supabase might return relations as arrays or single objects depending on schema
   const channelData: any = conv.channel;
   const channelType = Array.isArray(channelData) ? channelData[0]?.type : channelData?.type;
+  const channelConfig = Array.isArray(channelData) ? channelData[0]?.config : channelData?.config;
 
   if (channelType === 'messenger') {
-    const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+    const pageAccessToken = channelConfig?.access_token;
     if (!pageAccessToken) {
-      console.warn("META_PAGE_ACCESS_TOKEN not set. Message saved in DB but not sent to Meta.");
+      console.warn("No access_token found in channel config. Message saved in DB but not sent to Meta.");
       return true;
     }
 
