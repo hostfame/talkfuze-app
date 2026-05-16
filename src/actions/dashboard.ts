@@ -57,6 +57,20 @@ export async function getMessages(conversationId: string) {
 }
 
 export async function replyToConversation(orgId: string, conversationId: string, content: string) {
+  // First get the conversation details to know the channel and contact
+  const { data: conv, error: convError } = await supabaseAdmin
+    .from("conversations")
+    .select(`
+      id,
+      contact:contacts(platform_id),
+      channel:channels(type)
+    `)
+    .eq("id", conversationId)
+    .single();
+
+  if (convError || !conv) throw new Error("Conversation not found");
+
+  // Insert into DB first so UI updates instantly
   const { error } = await supabaseAdmin
     .from("messages")
     .insert({
@@ -74,6 +88,41 @@ export async function replyToConversation(orgId: string, conversationId: string,
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  // Route the outbound message to the correct platform
+  // Supabase might return relations as arrays or single objects depending on schema
+  const channelData: any = conv.channel;
+  const channelType = Array.isArray(channelData) ? channelData[0]?.type : channelData?.type;
+
+  if (channelType === 'messenger') {
+    const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+    if (!pageAccessToken) {
+      console.warn("META_PAGE_ACCESS_TOKEN not set. Message saved in DB but not sent to Meta.");
+      return true;
+    }
+
+    try {
+      const contactData: any = conv.contact;
+      const recipientId = Array.isArray(contactData) ? contactData[0]?.platform_id : contactData?.platform_id;
+      const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: { id: recipientId },
+          message: { text: content },
+          messaging_type: "RESPONSE"
+        })
+      });
+
+      const responseData = await response.json();
+      if (!response.ok) {
+        console.error("Meta API Error:", responseData);
+      }
+    } catch (e) {
+      console.error("Failed to send Messenger reply:", e);
+    }
+  }
+  // If it's WhatsApp, the Baileys worker will automatically pick it up via Supabase Realtime
 
   return true
 }
