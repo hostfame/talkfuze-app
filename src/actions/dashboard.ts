@@ -56,7 +56,7 @@ export async function getMessages(conversationId: string) {
   return data
 }
 
-export async function replyToConversation(orgId: string, conversationId: string, content: string) {
+export async function replyToConversation(orgId: string, conversationId: string, content: string, isInternal: boolean = false) {
   // First get the conversation details to know the channel and contact
   const { data: conv, error: convError } = await supabaseAdmin
     .from("conversations")
@@ -78,7 +78,8 @@ export async function replyToConversation(orgId: string, conversationId: string,
       conversation_id: conversationId,
       sender_type: "agent",
       sender_id: "agent-1", // Dummy agent ID for now
-      content: content
+      content: content,
+      is_internal: isInternal
     })
 
   if (error) throw error
@@ -94,6 +95,11 @@ export async function replyToConversation(orgId: string, conversationId: string,
   const channelData: any = conv.channel;
   const channelType = Array.isArray(channelData) ? channelData[0]?.type : channelData?.type;
   const channelConfig = Array.isArray(channelData) ? channelData[0]?.config : channelData?.config;
+
+  // Do not send to external platforms if it's an internal note
+  if (isInternal) {
+    return true;
+  }
 
   if (channelType === 'messenger') {
     const pageAccessToken = channelConfig?.access_token;
