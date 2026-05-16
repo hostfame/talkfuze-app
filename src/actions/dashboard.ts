@@ -283,6 +283,7 @@ export async function createConversation(orgId: string, phone: string) {
       .from("contacts")
       .insert({
         org_id: orgId,
+        platform_type: "whatsapp",
         platform_id: phone,
         name: phone,
         status: "active"
