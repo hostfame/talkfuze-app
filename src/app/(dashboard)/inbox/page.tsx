@@ -64,6 +64,27 @@ export default function InboxPage() {
     }
   }, [selectedId])
 
+  const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    const channel = supabase.channel(`typing:${ORG_ID}`)
+      .on('broadcast', { event: 'typingStatus' }, (payload) => {
+        const { conversation_id, direction, is_typing } = payload.payload;
+        // Only track when the customer is typing to display in UI
+        if (direction === 'contact') {
+          setTypingState(prev => ({
+            ...prev,
+            [conversation_id]: is_typing
+          }));
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, []);
+
   const activeConversation = conversations.find(c => c.id === selectedId)
 
   return (
@@ -71,12 +92,15 @@ export default function InboxPage() {
       <ConversationList 
         conversations={conversations} 
         selectedId={selectedId} 
-        onSelect={setSelectedId} 
+        onSelect={setSelectedId}
+        typingState={typingState}
+        orgId={ORG_ID}
       />
       <ChatThread 
         conversationId={selectedId} 
         messages={messages} 
         orgId={ORG_ID}
+        isCustomerTyping={selectedId ? typingState[selectedId] : false}
       />
       <ContactSidebar 
         conversation={activeConversation}

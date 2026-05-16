@@ -1,17 +1,20 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, MessageSquare, Lock, Search } from "lucide-react"
+import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
+import { supabase } from "@/lib/supabase"
 
 export default function ChatThread({ 
   conversationId, 
   messages, 
-  orgId 
+  orgId,
+  isCustomerTyping = false
 }: { 
   conversationId: string | null, 
   messages: any[],
-  orgId: string
+  orgId: string,
+  isCustomerTyping?: boolean
 }) {
   const [input, setInput] = useState("")
   
@@ -69,6 +72,8 @@ export default function ChatThread({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [allMessages])
 
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   // Handle Input Change for Macro Menu
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
@@ -84,6 +89,25 @@ export default function ChatThread({
       setSelectedIndex(0)
     } else {
       setShowMacroMenu(false)
+    }
+
+    // Broadcast agent typing status
+    if (conversationId && !isInternal) {
+      supabase.channel(`typing:${orgId}`).send({
+        type: 'broadcast',
+        event: 'typingStatus',
+        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true }
+      });
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+        });
+      }, 2000);
     }
   }
 
@@ -169,7 +193,18 @@ export default function ChatThread({
                   </div>
                 )}
                 <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] max-w-[70%] leading-relaxed whitespace-pre-wrap font-normal`}>
-                  {msg.content}
+                  <div>{msg.content}</div>
+                  {!msg.is_internal && (
+                    <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
+                      {msg.status === 'read' ? (
+                        <CheckCheck size={14} className="text-blue-200" />
+                      ) : msg.status === 'delivered' ? (
+                        <CheckCheck size={14} className="text-white/80" />
+                      ) : (
+                        <Check size={14} className="text-white/80" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -190,6 +225,23 @@ export default function ChatThread({
             )
           }
         })}
+        
+        {isCustomerTyping && (
+          <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-end gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1">
+                C
+              </div>
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
+                <div className="flex gap-1.5 items-center h-4">
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div ref={messagesEndRef} />
       </div>

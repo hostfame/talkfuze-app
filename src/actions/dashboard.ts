@@ -187,3 +187,129 @@ export async function replyToConversation(orgId: string, conversationId: string,
 
   return true
 }
+
+export async function searchConversations(orgId: string, query: string) {
+  if (!query) return [];
+  const cleanQuery = query.toLowerCase();
+
+  // 1. Find matching contacts
+  const { data: contacts } = await supabaseAdmin
+    .from("contacts")
+    .select("id")
+    .eq("org_id", orgId)
+    .or(`name.ilike.%${cleanQuery}%,platform_id.ilike.%${cleanQuery}%`);
+  
+  const contactIds = contacts?.map(c => c.id) || [];
+
+  // 2. Find matching messages
+  const { data: messages } = await supabaseAdmin
+    .from("messages")
+    .select("conversation_id")
+    .eq("org_id", orgId)
+    .ilike("content", `%${cleanQuery}%`)
+    .limit(50);
+  
+  const msgConvIds = messages?.map(m => m.conversation_id) || [];
+
+  // Combine and deduplicate conversation IDs
+  // We don't have conversation IDs for the contacts yet, we just filter by contact_id
+  
+  let convQuery = supabaseAdmin
+    .from("conversations")
+    .select(`
+      *,
+      contact:contacts(*),
+      assignee:users!assigned_to(*),
+      channels(type)
+    `)
+    .eq("org_id", orgId);
+    
+  if (contactIds.length > 0 && msgConvIds.length > 0) {
+    convQuery = convQuery.or(`contact_id.in.(${contactIds.join(',')}),id.in.(${msgConvIds.join(',')})`);
+  } else if (contactIds.length > 0) {
+    convQuery = convQuery.in("contact_id", contactIds);
+  } else if (msgConvIds.length > 0) {
+    convQuery = convQuery.in("id", msgConvIds);
+  } else {
+    return []; // No matches found
+  }
+
+  const { data, error } = await convQuery.order("last_message_at", { ascending: false }).limit(20);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+export async function createConversation(orgId: string, phone: string) {
+  // 1. Get default WhatsApp channel
+  const { data: channels, error: channelError } = await supabaseAdmin
+    .from("channels")
+    .select("id, type")
+    .eq("org_id", orgId)
+    .eq("type", "whatsapp")
+    .limit(1);
+
+  if (channelError || !channels || channels.length === 0) {
+    throw new Error("No active WhatsApp channel found for this organization.");
+  }
+  const channelId = channels[0].id;
+
+  // 2. Find or create contact
+  // Strip non-numeric characters for search
+  const cleanPhone = phone.replace(/\\D/g, '');
+  
+  let { data: contact } = await supabaseAdmin
+    .from("contacts")
+    .select("*")
+    .eq("org_id", orgId)
+    .eq("platform_id", phone)
+    .single();
+
+  if (!contact) {
+    // If exact match not found, try stripping formatting (if DB stores formatted, this is harder, but we assume exact for now, or insert exact)
+    const { data: newContact, error: insertContactError } = await supabaseAdmin
+      .from("contacts")
+      .insert({
+        org_id: orgId,
+        platform_id: phone,
+        name: phone,
+        status: "active"
+      })
+      .select()
+      .single();
+
+    if (insertContactError) throw insertContactError;
+    contact = newContact;
+  }
+
+  // 3. Find or create conversation
+  let { data: conversation } = await supabaseAdmin
+    .from("conversations")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("contact_id", contact.id)
+    .eq("channel_id", channelId)
+    .single();
+
+  if (!conversation) {
+    const { data: newConversation, error: insertConvError } = await supabaseAdmin
+      .from("conversations")
+      .insert({
+        org_id: orgId,
+        contact_id: contact.id,
+        channel_id: channelId,
+        status: "open",
+        last_message_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertConvError) throw insertConvError;
+    conversation = newConversation;
+  }
+
+  return conversation.id;
+}
