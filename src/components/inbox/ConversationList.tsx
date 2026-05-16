@@ -1,5 +1,6 @@
 import { Filter, ChevronDown, Search, Plus, X, Phone, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { searchConversations, createConversation } from "@/actions/dashboard"
 
 export default function ConversationList({ 
@@ -206,8 +207,8 @@ export default function ConversationList({
         })}
       </div>
 
-      {showNewChatModal && (
-        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+      {showNewChatModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-900/40 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-[400px] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 flex flex-col items-center">
               <div className="w-full flex justify-between items-center mb-6">
@@ -265,7 +266,8 @@ export default function ConversationList({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
