@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell } from "lucide-react"
+import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook } from "lucide-react"
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +23,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           <NavLink href="/settings/tags" icon={<Tag size={18} />} label="Tags" />
           <NavLink href="/settings/live-chat" icon={<MessageSquare size={18} />} label="Live chat integrations" />
           <NavLink href="/settings/quick-replies" icon={<Zap size={18} />} label="Live chat quick replies" />
+          <NavLink href="/settings/webhooks" icon={<Webhook size={18} />} label="CRM Webhooks" />
           <NavLink href="/settings/conversations" icon={<MessageCircle size={18} />} label="Conversations settings" />
           <NavLink href="/settings/appearance" icon={<Monitor size={18} />} label="Appearance settings" />
           <NavLink href="/settings/knowledge-base" icon={<BookOpen size={18} />} label="Knowledge base" />

@@ -1,8 +1,8 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, MessageSquare, Lock } from "lucide-react"
+import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, MessageSquare, Lock, Search } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { replyToConversation } from "@/actions/dashboard"
+import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 
 export default function ChatThread({ 
   conversationId, 
@@ -17,7 +17,20 @@ export default function ChatThread({
   const [isSending, setIsSending] = useState(false)
   const [isInternal, setIsInternal] = useState(false)
   const [optimisticMessages, setOptimisticMessages] = useState<any[]>([])
+  
+  // Quick Replies State
+  const [quickReplies, setQuickReplies] = useState<any[]>([])
+  const [showMacroMenu, setShowMacroMenu] = useState(false)
+  const [macroFilter, setMacroFilter] = useState("")
+  const [selectedIndex, setSelectedIndex] = useState(0)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    getQuickReplies(orgId).then(data => {
+      if (data) setQuickReplies(data)
+    })
+  }, [orgId])
 
   // Clear optimistic messages when real messages arrive via WebSockets
   useEffect(() => {
@@ -29,6 +42,34 @@ export default function ChatThread({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [allMessages])
+
+  // Handle Input Change for Macro Menu
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setInput(val)
+
+    if (val === '/') {
+      setShowMacroMenu(true)
+      setMacroFilter("")
+      setSelectedIndex(0)
+    } else if (val.startsWith('/')) {
+      setShowMacroMenu(true)
+      setMacroFilter(val.substring(1).toLowerCase())
+      setSelectedIndex(0)
+    } else {
+      setShowMacroMenu(false)
+    }
+  }
+
+  const filteredMacros = quickReplies.filter(r => 
+    r.shortcut.toLowerCase().includes(macroFilter) || 
+    r.message.toLowerCase().includes(macroFilter)
+  )
+
+  const applyMacro = (message: string) => {
+    setInput(message)
+    setShowMacroMenu(false)
+  }
 
   const handleSend = async () => {
     if (!input.trim() || !conversationId || isSending) return
@@ -127,18 +168,59 @@ export default function ChatThread({
       </div>
 
       {/* Composer Area */}
-      <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19]">
+      <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
+        {/* Macro Menu */}
+        {showMacroMenu && quickReplies.length > 0 && (
+          <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
+            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+              <Zap size={14} className="text-blue-500" />
+              <span className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Quick Replies</span>
+            </div>
+            <div className="overflow-y-auto p-1">
+              {filteredMacros.length === 0 ? (
+                <div className="p-3 text-center text-[13px] text-slate-500">No matching replies found.</div>
+              ) : (
+                filteredMacros.map((macro, i) => (
+                  <div 
+                    key={macro.id} 
+                    onClick={() => applyMacro(macro.message)}
+                    className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 ${i === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/50 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/50">/{macro.shortcut}</span>
+                    </div>
+                    <span className="text-[13px] text-slate-600 dark:text-slate-300 line-clamp-1">{macro.message}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           <textarea 
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (showMacroMenu && filteredMacros.length > 0) {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
+                } else if (e.key === 'Enter') {
+                  e.preventDefault()
+                  applyMacro(filteredMacros[selectedIndex].message)
+                } else if (e.key === 'Escape') {
+                  setShowMacroMenu(false)
+                }
+              } else if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 handleSend()
               }
             }}
-            placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer..."}
+            placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
             className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'}`}
             disabled={isSending}
           ></textarea>

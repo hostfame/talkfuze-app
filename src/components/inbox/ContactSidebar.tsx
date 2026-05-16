@@ -1,6 +1,7 @@
-import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
+import { getCrmData } from "@/actions/dashboard"
 import AssignButton from "./AssignButton"
 
 export default function ContactSidebar({ conversation, orgId }: any) {
@@ -15,6 +16,22 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [isDrafting, setIsDrafting] = useState(false)
   const [customPrompt, setCustomPrompt] = useState("")
+
+  // CRM State
+  const [crmData, setCrmData] = useState<any>(null)
+  const [isCrmLoading, setIsCrmLoading] = useState(false)
+
+  useEffect(() => {
+    if (conversation?.id && platformId) {
+      setIsCrmLoading(true)
+      // Format number for webhook
+      const cleanPhone = platformId.startsWith('+') ? platformId : `+${platformId}`
+      getCrmData(orgId, cleanPhone).then(data => {
+        if (data) setCrmData(data)
+        setIsCrmLoading(false)
+      })
+    }
+  }, [conversation?.id, platformId, orgId])
 
   const handleSummarize = async () => {
     if (!conversation?.id) return
@@ -103,6 +120,31 @@ export default function ContactSidebar({ conversation, orgId }: any) {
             </div>
           </div>
         </div>
+
+        {/* CRM Data Section */}
+        {isCrmLoading ? (
+          <div className="py-6 flex flex-col items-center justify-center border-b border-slate-100">
+            <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
+            <span className="text-[12px] text-slate-500">Syncing with CRM...</span>
+          </div>
+        ) : crmData ? (
+          <div className="py-4 border-b border-slate-100">
+            <div className="flex justify-between items-center px-5 mb-2 cursor-pointer group">
+              <h3 className="text-[13px] font-medium text-slate-900 flex items-center gap-2">
+                <Database size={14} className="text-blue-500" /> CRM Data
+              </h3>
+              <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
+            </div>
+            <div className="px-5 space-y-3 mt-4">
+              {Object.entries(crmData).map(([key, value]) => (
+                <div key={key} className="flex justify-between items-start gap-4">
+                  <span className="text-[13px] text-slate-500 capitalize">{key.replace(/_/g, ' ')}</span>
+                  <span className="text-[13px] text-slate-900 font-medium text-right break-words">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* Conversation attributes */}
         <div className="py-4">

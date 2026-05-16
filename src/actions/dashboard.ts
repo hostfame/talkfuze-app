@@ -2,6 +2,62 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
+import { supabaseAdmin } from "@/lib/supabase-admin"
+
+export async function getQuickReplies(orgId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('channels')
+    .select('config')
+    .eq('org_id', orgId)
+    .eq('type', 'settings_quick_replies')
+    .single()
+    
+  if (error || !data || !data.config?.items) {
+    return []
+  }
+  return data.config.items
+}
+
+export async function getCrmData(orgId: string, phone: string) {
+  const { data, error } = await supabaseAdmin
+    .from('channels')
+    .select('config')
+    .eq('org_id', orgId)
+    .eq('type', 'settings_crm_webhook')
+    .single()
+    
+  if (error || !data || !data.config?.enabled || !data.config?.url) {
+    return null
+  }
+
+  const { url, secret } = data.config;
+
+  try {
+    const headers: any = {
+      'Content-Type': 'application/json'
+    };
+    if (secret) {
+      headers['Authorization'] = `Bearer ${secret}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ phone })
+    });
+
+    if (!response.ok) {
+      console.error("CRM Webhook returned error:", response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (e) {
+    console.error("Failed to fetch CRM data:", e);
+    return null;
+  }
+}
+
 export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' = 'all', agentId?: string) {
   let query = supabaseAdmin
     .from("conversations")
