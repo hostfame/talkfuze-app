@@ -34,8 +34,6 @@ export default function ConversationList({
             Newest <ChevronDown size={14} className="text-slate-500" strokeWidth={2} />
           </button>
         </div>
-      </div>
-
         {/* Search Bar */}
         <div className="relative mt-3">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
