@@ -117,6 +117,7 @@ export default function InboxPage() {
         messages={messages} 
         orgId={ORG_ID}
         isCustomerTyping={selectedId ? typingState[selectedId] : false}
+        conversation={activeConversation}
       />
       <ContactSidebar 
         conversation={activeConversation}

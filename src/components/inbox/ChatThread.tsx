@@ -5,17 +5,34 @@ import { useState, useRef, useEffect } from "react"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
 
+const AVATAR_COLORS = [
+  'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
+  'bg-pink-500', 'bg-teal-500', 'bg-red-500', 'bg-indigo-500'
+]
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 export default function ChatThread({ 
   conversationId, 
   messages, 
   orgId,
-  isCustomerTyping = false
+  isCustomerTyping = false,
+  conversation = null
 }: { 
   conversationId: string | null, 
   messages: any[],
   orgId: string,
-  isCustomerTyping?: boolean
+  isCustomerTyping?: boolean,
+  conversation?: any
 }) {
+  const contactName: string = conversation?.contact?.name || conversation?.contact?.[0]?.name || 'Contact'
+  const contactInitial = contactName.charAt(0).toUpperCase()
+  const avatarColor = getAvatarColor(contactName)
+
   const [input, setInput] = useState("")
   
   // Load draft when conversation changes
@@ -281,8 +298,8 @@ export default function ChatThread({
             return (
               <div key={msg.id || idx} className="flex flex-col mb-4">
                 <div className="flex items-end gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1">
-                    C
+                  <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
+                    {contactInitial}
                   </div>
                   <div className="max-w-[70%] flex flex-col gap-1">
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
