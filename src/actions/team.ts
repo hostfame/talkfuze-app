@@ -62,7 +62,7 @@ export async function addTeammate(name: string, email: string, role: string = "A
         org_id: profile.org_id,
         name: name,
         email: email,
-        role: role,
+        role: role.toLowerCase(),
         status: "offline"
       })
 
