@@ -1,8 +1,39 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-// The default org ID for MVP
-const ORG_ID = "ec2f8436-05dc-4621-8a7f-57202f865b8e";
+function getMessengerContent(message: {
+  text?: string
+  attachments?: Array<{ type?: string; payload?: Record<string, unknown> }>
+}) {
+  if (message.text) {
+    return {
+      content: message.text,
+      contentType: 'text',
+      metadata: {}
+    }
+  }
+
+  const attachment = message.attachments?.[0]
+  if (!attachment) return null
+
+  const attachmentType = attachment.type || 'file'
+  const contentType = ['image', 'audio', 'video'].includes(attachmentType) ? attachmentType : 'file'
+  const labels: Record<string, string> = {
+    image: '[Image]',
+    audio: '[Audio Voice Message]',
+    video: '[Video]',
+    file: '[Attachment]'
+  }
+
+  return {
+    content: labels[contentType] || '[Attachment]',
+    contentType,
+    metadata: {
+      messenger_attachment_type: attachmentType,
+      attachments: message.attachments
+    }
+  }
+}
 
 // GET handler for Meta Webhook Verification
 export async function GET(request: Request) {
@@ -55,44 +86,34 @@ export async function POST(request: Request) {
           
           if (webhook_event.message && !webhook_event.message.is_echo) {
             const senderId = webhook_event.sender.id;
-            const messageText = webhook_event.message.text;
+            const messageContent = getMessengerContent(webhook_event.message);
             const messageId = webhook_event.message.mid;
 
-            if (!messageText) continue; // Ignore attachments for now
+            if (!messageContent) continue;
 
             // 1. Get or Create Messenger Channel for this Org
             // Note: We use the pageId from the payload to match the correct channel!
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
-              .select("id")
-              .eq("org_id", ORG_ID)
+              .select("id, org_id")
               .eq("type", "messenger")
               .eq("config->>page_id", pageId)
               .limit(1);
 
             if (chFetchErr) throw chFetchErr;
 
-            let channel = channels && channels.length > 0 ? channels[0] : null;
-
+            const channel = channels && channels.length > 0 ? channels[0] : null;
             if (!channel) {
-              const { data: newChannel, error: channelErr } = await supabaseAdmin
-                .from("channels")
-                .insert({ 
-                  org_id: ORG_ID, 
-                  type: "messenger",
-                  config: { page_id: pageId }
-                })
-                .select("id")
-                .single();
-              if (channelErr) throw channelErr;
-              channel = newChannel;
+              console.warn(`Messenger webhook received event for unconnected page ${pageId}`);
+              continue;
             }
+            const orgId = channel.org_id;
 
             // 2. Get or Create Contact based on Facebook Sender ID
             const { data: contacts, error: contactFetchErr } = await supabaseAdmin
               .from("contacts")
               .select("id")
-              .eq("org_id", ORG_ID)
+              .eq("org_id", orgId)
               .eq("platform_type", "messenger")
               .eq("platform_id", senderId)
               .limit(1);
@@ -107,7 +128,7 @@ export async function POST(request: Request) {
               const { data: newContact, error: contactErr } = await supabaseAdmin
                 .from("contacts")
                 .insert({
-                  org_id: ORG_ID,
+                  org_id: orgId,
                   platform_type: "messenger",
                   platform_id: senderId,
                   name: `FB User ${senderId.slice(-4)}`
@@ -122,7 +143,7 @@ export async function POST(request: Request) {
             const { data: convs, error: convFetchErr } = await supabaseAdmin
               .from("conversations")
               .select("id")
-              .eq("org_id", ORG_ID)
+              .eq("org_id", orgId)
               .eq("contact_id", contact.id)
               .eq("status", "open")
               .order('created_at', { ascending: false })
@@ -136,7 +157,7 @@ export async function POST(request: Request) {
               const { data: newConv, error: convErr } = await supabaseAdmin
                 .from("conversations")
                 .insert({
-                  org_id: ORG_ID,
+                  org_id: orgId,
                   channel_id: channel.id,
                   contact_id: contact.id,
                   status: "open"
@@ -148,11 +169,15 @@ export async function POST(request: Request) {
             }
 
             // 4. Check if message already exists (prevent duplicates from retry)
-            const { data: existingMsg } = await supabaseAdmin
-              .from("messages")
-              .select("id")
-              .eq("platform_message_id", messageId)
-              .limit(1);
+            const { data: existingMsg } = messageId
+              ? await supabaseAdmin
+                  .from("messages")
+                  .select("id")
+                  .eq("org_id", orgId)
+                  .eq("conversation_id", conversation.id)
+                  .eq("platform_message_id", messageId)
+                  .limit(1)
+              : { data: null };
 
             if (existingMsg && existingMsg.length > 0) {
               console.log("Duplicate message dropped", messageId);
@@ -163,11 +188,13 @@ export async function POST(request: Request) {
             const { error: msgErr } = await supabaseAdmin
               .from("messages")
               .insert({
-                org_id: ORG_ID,
+                org_id: orgId,
                 conversation_id: conversation.id,
                 sender_type: "contact",
                 sender_id: contact.id,
-                content: messageText,
+                content: messageContent.content,
+                content_type: messageContent.contentType,
+                metadata: messageContent.metadata,
                 platform_message_id: messageId
               });
 
