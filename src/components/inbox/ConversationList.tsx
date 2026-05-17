@@ -83,8 +83,8 @@ export default function ConversationList({
   return (
     <div className="flex flex-col h-full w-[320px] shrink-0 bg-white border-r border-slate-200 z-10 relative">
       
-      {/* Header & Filters */}
-      <div className="px-5 pt-5 pb-3 flex flex-col gap-5 shrink-0 bg-white border-b border-slate-200">
+      {/* Header & Search */}
+      <div className="px-5 pt-5 pb-3 flex flex-col gap-4 shrink-0 bg-white border-b border-slate-200">
         <div className="flex justify-between items-center">
           <h2 className="font-medium text-[16px] text-slate-900">All</h2>
           <button 
@@ -95,16 +95,8 @@ export default function ConversationList({
           </button>
         </div>
         
-        <div className="flex gap-4">
-          <button className="flex items-center gap-1.5 text-[13px] font-medium text-slate-900 hover:text-slate-700 transition-colors">
-            0 Open <ChevronDown size={14} className="text-slate-500" strokeWidth={2} />
-          </button>
-          <button className="flex items-center gap-1.5 text-[13px] font-medium text-slate-900 hover:text-slate-700 transition-colors">
-            Newest <ChevronDown size={14} className="text-slate-500" strokeWidth={2} />
-          </button>
-        </div>
         {/* Search Bar */}
-        <div className="relative mt-3">
+        <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {isSearching ? <Loader2 size={14} className="text-blue-500 animate-spin" /> : <Search size={14} className="text-slate-400" />}
           </div>

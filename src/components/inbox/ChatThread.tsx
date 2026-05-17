@@ -324,21 +324,23 @@ export default function ChatThread({
       <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-20 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">Active Chat</h2>
+            <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">
+              {conversation?.contact?.name || "Active Chat"}
+            </h2>
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-            <UserPlus size={14} strokeWidth={2} /> Assign
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-            <Clock size={14} strokeWidth={2} /> Snooze
-          </button>
-          <div className="w-[1px] h-4 bg-slate-200 mx-1"></div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors">
-            <Check size={14} strokeWidth={2.5} /> Close
-          </button>
+        <div className="flex items-center gap-2">
+          {conversation?.channels?.type === 'whatsapp' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-[12px] font-medium border border-green-200 dark:border-green-800/50">
+              WhatsApp
+            </div>
+          )}
+          {conversation?.channels?.type === 'messenger' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded text-[12px] font-medium border border-blue-200 dark:border-blue-800/50">
+              Messenger
+            </div>
+          )}
         </div>
       </div>
 
