@@ -277,18 +277,17 @@ export default function ChatThread({
 
     setIsUploading(true);
     try {
-      const safeName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : 'pasted_image';
-      let fileExt = safeName.includes('.') ? safeName.split('.').pop() : '';
-      if (!fileExt) {
-        fileExt = file.type ? file.type.split('/')[1] : 'png';
+      let fileExt = 'png';
+      if (file.name && file.name.includes('.')) {
+        fileExt = file.name.split('.').pop() || 'png';
+      } else if (file.type && file.type.includes('/')) {
+        fileExt = file.type.split('/')[1];
       }
-      const fileName = `${conversationId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
       
       const { error } = await supabase.storage
         .from('media')
-        .upload(fileName, file, {
-          contentType: file.type || 'auto'
-        });
+        .upload(fileName, file);
         
       if (error) throw error;
       
