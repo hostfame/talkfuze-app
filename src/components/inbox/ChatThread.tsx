@@ -17,6 +17,29 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+function renderTextWithLinks(text: string, isAgent: boolean) {
+  if (!text) return text;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a 
+          key={i} 
+          href={part} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={isAgent ? "underline underline-offset-2 hover:opacity-80 transition-opacity" : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 transition-all"}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export default function ChatThread({ 
   conversationId, 
   messages, 
@@ -101,7 +124,7 @@ export default function ChatThread({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [allMessages])
+  }, [messages.length, optimisticMessages.length])
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -164,8 +187,10 @@ export default function ChatThread({
     setOptimisticMessages(prev => [...prev, {
       id: `temp-${Date.now()}`,
       sender_type: 'agent',
+      sender_id: currentUser?.id,
       content: msg,
-      is_internal: isInternal
+      is_internal: isInternal,
+      status: 'sending'
     }])
     
     try {
@@ -359,7 +384,7 @@ export default function ChatThread({
                         className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
                         onClick={() => setZoomedImage(msg.metadata.media_url)}
                       />
-                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
+                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
                   ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
                     <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
@@ -369,15 +394,15 @@ export default function ChatThread({
                   ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
                     <div className="flex flex-col gap-1">
                       <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
-                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{msg.content}</div>}
+                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
                   ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
                     <div className="flex flex-col gap-1">
                       <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
-                      {msg.content !== '[Video]' && <div className="mt-1">{msg.content}</div>}
+                      {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
                   ) : (
-                    <div>{msg.content}</div>
+                    <div>{renderTextWithLinks(msg.content, true)}</div>
                   )}
                   {!msg.is_internal && (
                     <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
@@ -447,7 +472,7 @@ export default function ChatThread({
                             className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
                             onClick={() => setZoomedImage(msg.metadata.media_url)}
                           />
-                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
+                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
                       ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
                         <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
@@ -457,15 +482,15 @@ export default function ChatThread({
                       ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
                         <div className="flex flex-col gap-1">
                           <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
-                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{msg.content}</div>}
+                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
                       ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
                         <div className="flex flex-col gap-1">
                           <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
-                          {msg.content !== '[Video]' && <div className="mt-1">{msg.content}</div>}
+                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
                       ) : (
-                        <div>{msg.content}</div>
+                        <div>{renderTextWithLinks(msg.content, false)}</div>
                       )}
                     </div>
                     <div className="flex items-center gap-1 mt-0.5 ml-1">

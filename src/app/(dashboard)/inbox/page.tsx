@@ -55,6 +55,9 @@ export default function InboxPage() {
   useEffect(() => {
     if (!selectedId) return
 
+    // Clear old messages instantly when switching chats
+    setMessages([])
+
     // Initial fetch
     const fetchData = async () => {
       const data = await getMessages(selectedId)
