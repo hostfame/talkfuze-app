@@ -122,9 +122,19 @@ export default function ChatThread({
 
   const allMessages = [...messages, ...optimisticMessages]
 
+  const prevMsgLength = useRef(messages.length)
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length, optimisticMessages.length])
+    // Use instant scroll for bulk loads (e.g. initial chat load) and smooth scroll for single new messages
+    const isBulkLoad = Math.abs(messages.length - prevMsgLength.current) > 1
+    const isConversationSwitch = prevMsgLength.current > 0 && messages.length === 0
+    
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: (isBulkLoad || isConversationSwitch) ? 'auto' : 'smooth' 
+    })
+    
+    prevMsgLength.current = messages.length
+  }, [messages.length, optimisticMessages.length, conversationId])
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
