@@ -63,7 +63,7 @@ export async function addTeammate(name: string, email: string, role: string = "A
         name: name,
         email: email,
         role: role,
-        is_active: true
+        status: "offline"
       })
 
     if (dbError) {
