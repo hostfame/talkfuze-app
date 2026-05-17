@@ -3,14 +3,14 @@
 import { useState, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { updateProfile, uploadAvatar } from "@/actions/team"
-import { supabase } from "@/lib/supabase"
+import { getErrorMessage } from "@/lib/utils"
 import { User, Camera, Mail, Loader2 } from "lucide-react"
 
 export default function ProfileSettingsPage() {
   const currentUser = useAuth()
   
   const [name, setName] = useState(currentUser?.name || "")
-  const [email, setEmail] = useState(currentUser?.email || "")
+  const [email] = useState(currentUser?.email || "")
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatar_url || "")
   
   const [isSaving, setIsSaving] = useState(false)
@@ -28,7 +28,7 @@ export default function ProfileSettingsPage() {
       } else {
         alert("Failed to update profile: " + res.error)
       }
-    } catch (e: any) {
+    } catch {
       alert("An error occurred")
     } finally {
       setIsSaving(false)
@@ -76,8 +76,8 @@ export default function ProfileSettingsPage() {
       } else {
         alert("Failed to save profile picture")
       }
-    } catch (error: any) {
-      alert("Error uploading image: " + error.message)
+    } catch (error: unknown) {
+      alert("Error uploading image: " + getErrorMessage(error))
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {

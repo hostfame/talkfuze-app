@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, Plus, MoreHorizontal, X, Loader2 } from "lucide-react"
+import { Plus, MoreHorizontal, X, Loader2 } from "lucide-react"
 import { getTeammates, addTeammate } from "@/actions/team"
+import type { UserProfile } from "@/lib/types"
 
 export default function TeamSettingsPage() {
-  const [teammates, setTeammates] = useState<any[]>([])
+  const [teammates, setTeammates] = useState<UserProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -24,7 +25,19 @@ export default function TeamSettingsPage() {
   }
 
   useEffect(() => {
-    fetchTeam()
+    let isActive = true
+
+    const loadTeam = async () => {
+      const data = await getTeammates()
+      if (!isActive) return
+      setTeammates(data)
+      setIsLoading(false)
+    }
+
+    void loadTeam()
+    return () => {
+      isActive = false
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,7 +108,7 @@ export default function TeamSettingsPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {member.avatar_url ? (
-                        <img src={member.avatar_url} className="w-8 h-8 rounded-full" />
+                        <img src={member.avatar_url} alt={member.name} className="w-8 h-8 rounded-full" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 flex items-center justify-center text-blue-700 dark:text-blue-300 font-medium">
                           {member.name.charAt(0)}
@@ -116,8 +129,8 @@ export default function TeamSettingsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <span className={`w-2 h-2 rounded-full ${member.is_active ? 'bg-green-500' : 'bg-amber-400'}`}></span>
-                      {member.is_active ? 'Active' : 'Inactive'}
+                      <span className={`w-2 h-2 rounded-full ${member.status === 'online' ? 'bg-green-500' : 'bg-amber-400'}`}></span>
+                      {member.status === 'online' ? 'Online' : member.status}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">

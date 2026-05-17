@@ -1,35 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Sparkles, Key, CheckCircle2, Eye, EyeOff, Loader2, Save } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import type { ChannelConfig, ChannelType } from "@/lib/types"
 
-type AIProvider = {
-  id: string;
-  type: string;
-  name: string;
-  description: string;
-  icon: string; // URL or component reference
-  color: string;
-  config: any;
-}
+type ProviderType = Extract<ChannelType, 'ai_openai' | 'ai_anthropic' | 'ai_gemini'>
+type ProviderState = Record<string, { id: string, config: ChannelConfig }>
 
 const PROVIDERS_META = [
   {
-    type: 'ai_openai',
+    type: 'ai_openai' as ProviderType,
     name: 'OpenAI',
     description: 'Power your AI Assistant with GPT-4o for intelligent, conversational responses.',
     color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20',
   },
   {
-    type: 'ai_anthropic',
+    type: 'ai_anthropic' as ProviderType,
     name: 'Anthropic Claude',
     description: 'Use Claude 3.5 Sonnet for nuanced, highly accurate customer support interactions.',
     color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20',
   },
   {
-    type: 'ai_gemini',
+    type: 'ai_gemini' as ProviderType,
     name: 'Google Gemini',
     description: 'Integrate Gemini 1.5 Pro for massive context windows and multimodal support.',
     color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20',
@@ -39,7 +33,7 @@ const PROVIDERS_META = [
 export default function AIProvidersSettingsPage() {
   const currentUser = useAuth()
   const ORG_ID = currentUser.org_id
-  const [providers, setProviders] = useState<Record<string, { id: string, config: any }>>({})
+  const [providers, setProviders] = useState<ProviderState>({})
   const [isLoading, setIsLoading] = useState(true)
 
   // Modal State
@@ -48,12 +42,8 @@ export default function AIProvidersSettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
-    fetchProviders()
-  }, [])
-
-  const fetchProviders = async () => {
-    setIsLoading(true)
+  const fetchProviders = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
     const { data } = await supabase
       .from('channels')
       .select('id, type, config')
@@ -61,14 +51,21 @@ export default function AIProvidersSettingsPage() {
       .like('type', 'ai_%')
     
     if (data) {
-      const pMap: Record<string, { id: string, config: any }> = {}
+      const pMap: ProviderState = {}
       data.forEach(d => {
-        pMap[d.type] = { id: d.id, config: d.config || {} }
+        pMap[d.type] = { id: d.id, config: (d.config || {}) as ChannelConfig }
       })
       setProviders(pMap)
     }
     setIsLoading(false)
-  }
+  }, [ORG_ID])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchProviders(false)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [fetchProviders])
 
   const handleOpenModal = (type: string) => {
     setActiveModal(type)

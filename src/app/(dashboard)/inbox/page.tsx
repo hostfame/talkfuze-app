@@ -8,15 +8,16 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
   const currentUser = useAuth()
   const ORG_ID = currentUser.org_id
 
-  const [conversations, setConversations] = useState<any[]>([])
+  const [conversations, setConversations] = useState<ConversationWithDetails[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<any[]>([])
-  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [messages, setMessages] = useState<AppMessage[]>([])
+  const [teamMembers, setTeamMembers] = useState<UserProfile[]>([])
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
@@ -25,11 +26,11 @@ export default function InboxPage() {
         getTeammates()
       ])
       
-      setConversations(convosData || [])
+      setConversations((convosData || []) as ConversationWithDetails[])
       setTeamMembers(teamData || [])
       
-      if (convosData && convosData.length > 0 && !selectedId) {
-        setSelectedId(convosData[0].id)
+      if (convosData && convosData.length > 0) {
+        setSelectedId((current) => current ?? convosData[0].id)
       }
     }
 
@@ -38,25 +39,21 @@ export default function InboxPage() {
     const channel = supabase
       .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        getConversations(ORG_ID).then(data => setConversations(data || []))
+        getConversations(ORG_ID).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
         // Refresh conversation list so last message preview updates
-        getConversations(ORG_ID).then(data => setConversations(data || []))
+        getConversations(ORG_ID).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [ORG_ID])
 
   useEffect(() => {
     if (!selectedId) return
-
-    // Clear old messages instantly when switching chats
-    setMessages([])
 
     let isActive = true
 
@@ -72,12 +69,12 @@ export default function InboxPage() {
       if (!isActive) return
 
       if (data && data.length > 0) {
-        setMessages(data)
+        setMessages(data as AppMessage[])
       } else {
         // Fallback to Server Action if client fails or returns empty
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
-        setMessages(fallbackData || [])
+        setMessages((fallbackData || []) as AppMessage[])
       }
     }
     fetchData()
@@ -99,7 +96,7 @@ export default function InboxPage() {
           setMessages(prev => {
             // Deduplicate: skip if already in list (e.g. optimistic message)
             if (prev.some(m => m.id === payload.new.id)) return prev
-            return [...prev, payload.new]
+            return [...prev, payload.new as AppMessage]
           })
         }
       )
@@ -113,7 +110,7 @@ export default function InboxPage() {
         },
         (payload) => {
           // Update status (read receipts) in place
-          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
+          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...(payload.new as Partial<AppMessage>) } : m))
         }
       )
       .subscribe()
@@ -159,7 +156,12 @@ export default function InboxPage() {
     return () => {
       supabase.removeChannel(channel);
     }
-  }, []);
+  }, [ORG_ID]);
+
+  const handleSelectConversation = (id: string) => {
+    setMessages([])
+    setSelectedId(id)
+  }
 
   const activeConversation = conversations.find(c => c.id === selectedId)
 
@@ -168,7 +170,7 @@ export default function InboxPage() {
       <ConversationList 
         conversations={conversations} 
         selectedId={selectedId} 
-        onSelect={setSelectedId}
+        onSelect={handleSelectConversation}
         typingState={typingState}
         orgId={ORG_ID}
       />

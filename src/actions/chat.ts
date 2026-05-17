@@ -8,12 +8,14 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   }
 
   // 1. Get or Create Widget Channel for this Org
-  let { data: channels, error: chFetchErr } = await supabaseAdmin
+  const { data: channels, error: chFetchErr } = await supabaseAdmin
     .from("channels")
     .select("id")
     .eq("org_id", orgId)
     .eq("type", "widget")
     .limit(1)
+
+  if (chFetchErr) throw chFetchErr
 
   let channel = channels && channels.length > 0 ? channels[0] : null;
 
@@ -28,13 +30,15 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   }
 
   // 2. Get or Create Contact based on deviceId
-  let { data: contacts, error: contactFetchErr } = await supabaseAdmin
+  const { data: contacts, error: contactFetchErr } = await supabaseAdmin
     .from("contacts")
     .select("id")
     .eq("org_id", orgId)
     .eq("platform_type", "widget")
     .eq("platform_id", deviceId)
     .limit(1)
+
+  if (contactFetchErr) throw contactFetchErr
 
   let contact = contacts && contacts.length > 0 ? contacts[0] : null;
 
@@ -54,7 +58,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   }
 
   // 3. Get or Create Open Conversation
-  let { data: convs, error: convFetchErr } = await supabaseAdmin
+  const { data: convs, error: convFetchErr } = await supabaseAdmin
     .from("conversations")
     .select("id")
     .eq("org_id", orgId)
@@ -62,6 +66,8 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     .eq("status", "open")
     .order('created_at', { ascending: false })
     .limit(1)
+
+  if (convFetchErr) throw convFetchErr
 
   let conversation = convs && convs.length > 0 ? convs[0] : null;
 

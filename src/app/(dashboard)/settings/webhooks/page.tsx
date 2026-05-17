@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Webhook, Save, Loader2, Link2, Shield } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import type { ChannelConfig } from "@/lib/types"
 
 export default function CRMWebhooksSettingsPage() {
   const currentUser = useAuth()
@@ -16,12 +17,8 @@ export default function CRMWebhooksSettingsPage() {
   const [webhookSecret, setWebhookSecret] = useState("")
   const [isEnabled, setIsEnabled] = useState(false)
 
-  useEffect(() => {
-    fetchWebhook()
-  }, [])
-
-  const fetchWebhook = async () => {
-    setIsLoading(true)
+  const fetchWebhook = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
     const { data } = await supabase
       .from('channels') // Reusing channels table for MVP settings storage
       .select('id, config')
@@ -29,16 +26,24 @@ export default function CRMWebhooksSettingsPage() {
       .eq('type', 'settings_crm_webhook')
       .single()
     
-    if (data && data.config) {
-      setWebhookUrl(data.config.url || "")
-      setWebhookSecret(data.config.secret || "")
-      setIsEnabled(data.config.enabled || false)
+    const config = data?.config as ChannelConfig | null | undefined
+    if (data && config) {
+      setWebhookUrl(config.url || "")
+      setWebhookSecret(config.secret || "")
+      setIsEnabled(config.enabled || false)
       setRecordId(data.id)
     } else if (data) {
       setRecordId(data.id)
     }
     setIsLoading(false)
-  }
+  }, [ORG_ID])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchWebhook(false)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [fetchWebhook])
 
   const handleSave = async () => {
     setIsSaving(true)

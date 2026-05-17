@@ -1,7 +1,12 @@
-import { Filter, ChevronDown, Search, Plus, X, Phone, Loader2 } from "lucide-react"
+import { Search, Plus, X, Phone, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { searchConversations, createConversation } from "@/actions/dashboard"
+import type { ConversationWithDetails, Relation } from "@/lib/types"
+
+function firstRelation<T>(relation: Relation<T> | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation
+}
 
 export default function ConversationList({ 
   conversations, 
@@ -10,7 +15,7 @@ export default function ConversationList({
   typingState = {},
   orgId
 }: { 
-  conversations: any[], 
+  conversations: ConversationWithDetails[], 
   selectedId: string | null,
   onSelect: (id: string) => void,
   typingState?: Record<string, boolean>,
@@ -18,7 +23,7 @@ export default function ConversationList({
 }) {
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<any[] | null>(null)
+  const [searchResults, setSearchResults] = useState<ConversationWithDetails[] | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   
   const [showNewChatModal, setShowNewChatModal] = useState(false)
@@ -36,8 +41,6 @@ export default function ConversationList({
   // Execute backend search
   useEffect(() => {
     if (!debouncedQuery) {
-      setSearchResults(null)
-      setIsSearching(false)
       return
     }
 
@@ -45,7 +48,7 @@ export default function ConversationList({
       setIsSearching(true)
       try {
         const results = await searchConversations(orgId, debouncedQuery)
-        setSearchResults(results)
+        setSearchResults(results as ConversationWithDetails[])
       } catch (e) {
         console.error(e)
         setSearchResults([])
@@ -54,7 +57,7 @@ export default function ConversationList({
       }
     }
 
-    doSearch()
+    void doSearch()
   }, [debouncedQuery, orgId])
 
   // Array of vibrant colors for avatars
@@ -78,7 +81,7 @@ export default function ConversationList({
     }
   };
 
-  const displayedConversations = searchResults !== null ? searchResults : conversations;
+  const displayedConversations = debouncedQuery && searchResults !== null ? searchResults : conversations;
 
   return (
     <div className="flex flex-col h-full w-[320px] shrink-0 bg-white border-r border-slate-200 z-10 relative">
@@ -95,7 +98,12 @@ export default function ConversationList({
             className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-[13px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 transition-all"
             placeholder="Search contact or keyword..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const nextQuery = e.target.value
+              setSearchQuery(nextQuery)
+              setSearchResults(null)
+              setIsSearching(Boolean(nextQuery.trim()))
+            }}
           />
         </div>
         <button 
@@ -118,13 +126,16 @@ export default function ConversationList({
         {displayedConversations
           .map((conv, i) => {
           const isSelected = conv.id === selectedId
-          const contactName = conv.contact?.name || "Unknown"
+          const contact = firstRelation(conv.contact)
+          const channel = firstRelation(conv.channels)
+          const assignee = firstRelation(conv.assignee)
+          const contactName = contact?.name || "Unknown"
           const time = new Date(conv.last_message_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
           
           const avatarColor = avatarColors[i % avatarColors.length]
-          const isWhatsApp = conv.channels?.type === 'whatsapp'
-          const isFacebook = conv.channels?.type === 'facebook'
-          const assigneeName = conv.assignee?.full_name || 'Hostnin' // Fallback to Hostnin for demo
+          const isWhatsApp = channel?.type === 'whatsapp'
+          const isFacebook = channel?.type === 'messenger'
+          const assigneeName = assignee?.name || 'Hostnin' // Fallback to Hostnin for demo
           const isTyping = typingState[conv.id]
           const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null
 
@@ -148,10 +159,10 @@ export default function ConversationList({
               {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600"></div>}
               
               {/* Avatar */}
-              {conv.contact?.avatar_url ? (
+              {contact?.avatar_url ? (
                 <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                   <img 
-                    src={conv.contact.avatar_url} 
+                    src={contact.avatar_url} 
                     alt={contactName} 
                     className="w-full h-full object-cover z-10 bg-slate-100" 
                     onError={(e) => {

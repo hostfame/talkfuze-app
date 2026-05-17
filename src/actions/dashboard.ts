@@ -2,6 +2,20 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { createClient } from "@/lib/supabase/server"
+import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
+
+type ConversationChannelRelation = Relation<{
+  type?: string | null
+  config?: ChannelConfig | null
+}>
+
+type ConversationContactRelation = Relation<{
+  platform_id?: string | null
+}>
+
+function firstRelation<T>(relation: Relation<T> | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation
+}
 
 export async function getQuickReplies(orgId: string) {
   const { data, error } = await supabaseAdmin
@@ -32,7 +46,7 @@ export async function getCrmData(orgId: string, phone: string) {
   const { url, secret } = data.config;
 
   try {
-    const headers: any = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     if (secret) {
@@ -120,7 +134,7 @@ export async function replyToConversation(
   content: string, 
   isInternal: boolean = false,
   contentType: string = 'text',
-  metadata: any = {}
+  metadata: MessageMetadata = {}
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -169,9 +183,9 @@ export async function replyToConversation(
 
   // Route the outbound message to the correct platform
   // Supabase might return relations as arrays or single objects depending on schema
-  const channelData: any = conv.channel;
-  const channelType = Array.isArray(channelData) ? channelData[0]?.type : channelData?.type;
-  const channelConfig = Array.isArray(channelData) ? channelData[0]?.config : channelData?.config;
+  const channelData = firstRelation(conv.channel as ConversationChannelRelation);
+  const channelType = channelData?.type;
+  const channelConfig = channelData?.config;
 
   // Do not send to external platforms if it's an internal note
   if (isInternal) {
@@ -186,8 +200,8 @@ export async function replyToConversation(
     }
 
     try {
-      const contactData: any = conv.contact;
-      const recipientId = Array.isArray(contactData) ? contactData[0]?.platform_id : contactData?.platform_id;
+      const contactData = firstRelation(conv.contact as ConversationContactRelation);
+      const recipientId = contactData?.platform_id;
       const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

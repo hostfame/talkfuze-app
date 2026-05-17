@@ -3,6 +3,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 import { createClient } from "@/lib/supabase/server"
+import { getErrorMessage } from "@/lib/utils"
 
 export async function getTeammates() {
   const supabase = await createClient()
@@ -74,9 +75,9 @@ export async function addTeammate(name: string, email: string, role: string = "A
     }
 
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Exception in addTeammate:", err)
-    return { success: false, error: err.message || "An unexpected error occurred" }
+    return { success: false, error: getErrorMessage(err) }
   }
 }
 

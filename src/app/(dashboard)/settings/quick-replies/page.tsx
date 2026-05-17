@@ -1,15 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Zap, Plus, Search, Trash2, Edit2, Loader2, Save, X } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-
-type QuickReply = {
-  id: string;
-  shortcut: string;
-  message: string;
-}
+import type { ChannelConfig, QuickReply } from "@/lib/types"
 
 export default function QuickRepliesSettingsPage() {
   const currentUser = useAuth()
@@ -28,12 +23,8 @@ export default function QuickRepliesSettingsPage() {
   const [messageInput, setMessageInput] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
-    fetchReplies()
-  }, [])
-
-  const fetchReplies = async () => {
-    setIsLoading(true)
+  const fetchReplies = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
     const { data } = await supabase
       .from('channels') // Reusing channels table for MVP settings storage
       .select('id, config')
@@ -41,15 +32,23 @@ export default function QuickRepliesSettingsPage() {
       .eq('type', 'settings_quick_replies')
       .single()
     
-    if (data && data.config?.items) {
-      setReplies(data.config.items)
+    const config = data?.config as ChannelConfig | null | undefined
+    if (data && config?.items) {
+      setReplies(config.items)
       setRecordId(data.id)
     } else if (data) {
       setRecordId(data.id)
       setReplies([])
     }
     setIsLoading(false)
-  }
+  }, [ORG_ID])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchReplies(false)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [fetchReplies])
 
   const handleOpenModal = (reply?: QuickReply) => {
     if (reply) {

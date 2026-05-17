@@ -2,6 +2,7 @@
 
 import OpenAI from 'openai'
 import { getMessages } from './dashboard'
+import type { AppMessage } from '@/lib/types'
 
 let openai: OpenAI | null = null;
 
@@ -23,7 +24,7 @@ export async function summarizeThread(conversationId: string) {
       return "No messages to summarize."
     }
 
-    const conversationText = messages.map((m: any) => 
+    const conversationText = (messages as AppMessage[]).map((m) => 
       `${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`
     ).join("\n")
 
@@ -60,7 +61,7 @@ export async function draftReply(conversationId: string, customPrompt?: string) 
       return "No context to draft a reply."
     }
 
-    const conversationText = messages.map((m: any) => 
+    const conversationText = (messages as AppMessage[]).map((m) => 
       `${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`
     ).join("\n")
 

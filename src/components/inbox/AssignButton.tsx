@@ -4,19 +4,20 @@ import { useState, useEffect } from "react"
 import { assignConversation } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { Check, ChevronDown, User } from "lucide-react"
+import type { ConversationWithDetails, UserProfile } from "@/lib/types"
 
-export default function AssignButton({ conversation, orgId }: { conversation: any, orgId: string }) {
+export default function AssignButton({ conversation, orgId }: { conversation: ConversationWithDetails | null | undefined, orgId: string }) {
   const [isAssigning, setIsAssigning] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [teammates, setTeammates] = useState<any[]>([])
+  const [teammates, setTeammates] = useState<UserProfile[]>([])
 
-  const assignee = conversation?.assignee
+  const assignee = Array.isArray(conversation?.assignee) ? conversation?.assignee[0] : conversation?.assignee
 
   useEffect(() => {
     if (isOpen && teammates.length === 0) {
       getTeammates().then(setTeammates)
     }
-  }, [isOpen])
+  }, [isOpen, teammates.length])
 
   if (!conversation) return null
 

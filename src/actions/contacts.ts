@@ -3,6 +3,17 @@
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 import { createClient } from "@/lib/supabase/server"
+import type { Contact } from "@/lib/types"
+
+type ContactConversation = {
+  id: string
+  last_message_at: string | null
+  channels?: { type?: string | null } | null
+}
+
+type ContactWithConversations = Contact & {
+  conversations?: ContactConversation[] | null
+}
 
 export async function getContacts() {
   const supabase = await createClient()
@@ -27,9 +38,9 @@ export async function getContacts() {
   }
   
   // Transform data to match UI needs
-  return data.map(contact => {
+  return (data as ContactWithConversations[]).map(contact => {
     // Sort conversations to find the latest one
-    const sortedConvs = contact.conversations?.sort((a: any, b: any) => {
+    const sortedConvs = [...(contact.conversations || [])].sort((a, b) => {
       const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
       const timeB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
       return timeB - timeA

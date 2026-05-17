@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Inbox, MessageSquare, Users, BarChart3, Settings, Bell, Search, Plus, User, HelpCircle, Bot, LogOut } from "lucide-react"
+import { Inbox, Users, BarChart3, Settings, Bell } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"

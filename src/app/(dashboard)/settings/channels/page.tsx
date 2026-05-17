@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, ExternalLink } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import type { ChannelConfig } from "@/lib/types"
+
+type ChannelPayload = {
+  config?: ChannelConfig | null
+  type?: string
+}
 
 export default function ChannelsSettingsPage() {
   const currentUser = useAuth()
@@ -68,7 +74,8 @@ export default function ChannelsSettingsPage() {
         filter: `org_id=eq.${ORG_ID}`
       }, (payload) => {
         fetchChannels() // Re-fetch on any channel change to keep it simple and accurate
-        if (payload.new && (payload.new as any).type === 'whatsapp' && (payload.new as any).config?.status === "connected") {
+        const updatedChannel = payload.new as ChannelPayload
+        if (updatedChannel.type === 'whatsapp' && updatedChannel.config?.status === "connected") {
           setIsWaQrModalOpen(false) // Auto close when connected
         }
       })
@@ -77,7 +84,7 @@ export default function ChannelsSettingsPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [ORG_ID])
 
   const handleDisconnect = async (channelId: string | null, platform: string) => {
     if (!channelId) return;
@@ -101,7 +108,7 @@ export default function ChannelsSettingsPage() {
   const handleConnectFacebook = () => {
     // Use the backend oauth route directly
     // Add org_id to state
-    const state = Buffer.from(JSON.stringify({ org_id: ORG_ID })).toString('base64');
+    const state = btoa(JSON.stringify({ org_id: ORG_ID }));
     window.location.href = `/api/auth/facebook?state=${state}`;
   }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Globe, FileText, FileUp, MoreVertical, Plus, Database, Sparkles } from "lucide-react"
+import { BookOpen, Globe, FileText, FileUp, Plus, Database, Sparkles } from "lucide-react"
 
 export default function KnowledgeBaseSettingsPage() {
   return (

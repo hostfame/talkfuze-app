@@ -62,13 +62,15 @@ export async function POST(request: Request) {
 
             // 1. Get or Create Messenger Channel for this Org
             // Note: We use the pageId from the payload to match the correct channel!
-            let { data: channels, error: chFetchErr } = await supabaseAdmin
+            const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
               .select("id")
               .eq("org_id", ORG_ID)
               .eq("type", "messenger")
               .eq("config->>page_id", pageId)
               .limit(1);
+
+            if (chFetchErr) throw chFetchErr;
 
             let channel = channels && channels.length > 0 ? channels[0] : null;
 
@@ -87,13 +89,15 @@ export async function POST(request: Request) {
             }
 
             // 2. Get or Create Contact based on Facebook Sender ID
-            let { data: contacts, error: contactFetchErr } = await supabaseAdmin
+            const { data: contacts, error: contactFetchErr } = await supabaseAdmin
               .from("contacts")
               .select("id")
               .eq("org_id", ORG_ID)
               .eq("platform_type", "messenger")
               .eq("platform_id", senderId)
               .limit(1);
+
+            if (contactFetchErr) throw contactFetchErr;
 
             let contact = contacts && contacts.length > 0 ? contacts[0] : null;
 
@@ -115,7 +119,7 @@ export async function POST(request: Request) {
             }
 
             // 3. Get or Create Open Conversation
-            let { data: convs, error: convFetchErr } = await supabaseAdmin
+            const { data: convs, error: convFetchErr } = await supabaseAdmin
               .from("conversations")
               .select("id")
               .eq("org_id", ORG_ID)
@@ -123,6 +127,8 @@ export async function POST(request: Request) {
               .eq("status", "open")
               .order('created_at', { ascending: false })
               .limit(1);
+
+            if (convFetchErr) throw convFetchErr;
 
             let conversation = convs && convs.length > 0 ? convs[0] : null;
 

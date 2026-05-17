@@ -1,11 +1,13 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
+import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore } from "@/lib/store"
+import type { AppMessage, ConversationWithDetails, QuickReply, Relation, UserProfile } from "@/lib/types"
 
 const AVATAR_COLORS = [
   'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
@@ -41,6 +43,28 @@ function renderTextWithLinks(text: string, isAgent: boolean) {
   });
 }
 
+function firstRelation<T>(relation: Relation<T> | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation
+}
+
+function getContentType(file: File | null) {
+  if (!file) return 'text'
+  if (file.type.startsWith('image/')) return 'image'
+  if (file.type.startsWith('audio/')) return 'audio'
+  if (file.type.startsWith('video/')) return 'video'
+  return 'file'
+}
+
+type ChatThreadProps = {
+  conversationId: string | null
+  messages: AppMessage[]
+  orgId: string
+  teamMembers?: UserProfile[]
+  isCustomerTyping?: boolean
+  conversation?: ConversationWithDetails | null
+  currentUser?: UserProfile | null
+}
+
 export default function ChatThread({ 
   conversationId, 
   messages, 
@@ -49,16 +73,9 @@ export default function ChatThread({
   isCustomerTyping = false,
   conversation = null,
   currentUser
-}: { 
-  conversationId: string | null, 
-  messages: any[],
-  orgId: string,
-  teamMembers?: any[],
-  isCustomerTyping?: boolean,
-  conversation?: any,
-  currentUser?: any
-}) {
-  const contactName: string = conversation?.contact?.name || conversation?.contact?.[0]?.name || 'Contact'
+}: ChatThreadProps) {
+  const contact = firstRelation(conversation?.contact)
+  const contactName = contact?.name || 'Contact'
   const contactInitial = contactName.charAt(0).toUpperCase()
   const avatarColor = getAvatarColor(contactName)
 
@@ -88,10 +105,17 @@ export default function ChatThread({
 
   const [isSending, setIsSending] = useState(false)
   const [isInternal, setIsInternal] = useState(false)
-  const [optimisticMessages, setOptimisticMessages] = useState<any[]>([])
+  const { 
+    optimisticMessages: optimisticByConv,
+    addOptimisticMessage,
+    removeOptimisticMessage,
+    markFailed,
+    confirmOptimisticMessage
+  } = useMessageStore()
+  const optimisticMessages = conversationId ? (optimisticByConv[conversationId] || []) : []
   
   // Quick Replies State
-  const [quickReplies, setQuickReplies] = useState<any[]>([])
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
   const [showMacroMenu, setShowMacroMenu] = useState(false)
   const [macroFilter, setMacroFilter] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -115,15 +139,19 @@ export default function ChatThread({
     })
   }, [orgId])
 
-  // Clear optimistic messages when real messages arrive via WebSockets
+  // Smart confirm: when real agent messages arrive, remove matching optimistic ones by content
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOptimisticMessages([])
-    }, 0)
-    return () => clearTimeout(timer)
-  }, [messages])
+    if (!conversationId) return;
+    messages.forEach(msg => {
+      if (msg.sender_type === 'agent') {
+        confirmOptimisticMessage(conversationId, msg.content ?? '');
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, conversationId])
 
-  const allMessages = [...messages, ...optimisticMessages]
+  // Merge: real messages + any still-pending/failed optimistic ones
+  const allMessages = [...messages, ...(optimisticMessages as unknown as AppMessage[])]
 
   const prevMsgLength = useRef(messages.length)
 
@@ -192,19 +220,28 @@ export default function ChatThread({
     if ((!input.trim() && !pendingAttachment) || !conversationId || isSending) return
 
     const msgText = input.trim()
+    const tempId = crypto.randomUUID()
     setInput("")
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
     
-    // Optimistic UI update
-    setOptimisticMessages(prev => [...prev, {
-      id: `temp-${Date.now()}`,
+    // Optimistic UI - add to Zustand (survives conversation switching)
+    const optimisticContent = msgText || (pendingAttachment ? 
+      (pendingAttachment.type.startsWith('image/') ? '[Image]' : 
+       pendingAttachment.type.startsWith('audio/') ? '[Audio Voice Message]' : 
+       pendingAttachment.type.startsWith('video/') ? '[Video]' : '[Attachment]') : '')
+    
+    addOptimisticMessage(conversationId, {
+      id: tempId,
       sender_type: 'agent',
-      sender_id: currentUser?.id,
-      content: msgText || (pendingAttachment ? '[Attachment]' : ''),
+      sender_id: currentUser?.id ?? null,
+      content: optimisticContent,
+      content_type: getContentType(pendingAttachment),
+      metadata: null,
       is_internal: isInternal,
-      status: 'sending'
-    }])
+      status: 'sending',
+      created_at: new Date().toISOString()
+    })
     
     try {
       if (pendingAttachment) {
@@ -231,9 +268,12 @@ export default function ChatThread({
       } else {
         await replyToConversation(orgId, conversationId, msgText, isInternal)
       }
-    } catch (e: any) {
+      // Success: remove optimistic immediately, real one arrives via Realtime
+      removeOptimisticMessage(conversationId, tempId)
+    } catch (e: unknown) {
       console.error(e)
-      alert(`Failed to send: ${e.message || 'Unknown error'}`)
+      // Don't alert - mark as failed so user sees it in chat
+      markFailed(conversationId, tempId)
     } finally {
       setIsUploading(false)
       setIsSending(false)
@@ -293,9 +333,9 @@ export default function ChatThread({
           mimetype: meta.type,
           filename: meta.name
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Upload failed:", err);
-        alert(`Failed to send voice message: ${err.message || 'Unknown error'}`);
+        alert(`Failed to send voice message: ${getErrorMessage(err)}`);
       } finally {
         setIsUploading(false);
       }
@@ -320,7 +360,7 @@ export default function ChatThread({
     } else if (file.type && file.type.includes('/')) {
       fileExt = file.type.split('/')[1];
     }
-    const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
+    const fileName = `${conversationId}/${crypto.randomUUID()}.${fileExt}`;
     
     const { error } = await supabase.storage.from('media').upload(fileName, file);
     if (error) throw error;
@@ -361,7 +401,7 @@ export default function ChatThread({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">
-              {conversation?.contact?.name || "Active Chat"}
+              {contact?.name || "Active Chat"}
             </h2>
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
           </div>
@@ -418,7 +458,7 @@ export default function ChatThread({
                         src={msg.metadata.media_url} 
                         alt="Attachment" 
                         className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
-                        onClick={() => setZoomedImage(msg.metadata.media_url)}
+                        onClick={() => setZoomedImage(msg.metadata?.media_url ?? null)}
                       />
                       {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
@@ -448,6 +488,16 @@ export default function ChatThread({
                       <span className="text-[10.5px] text-slate-400 mr-1">{msgTime}</span>
                       {msg.status === 'sending' ? (
                         <Clock size={12} className="text-white/60 animate-pulse" />
+                      ) : msg.status === 'failed' ? (
+                        <span 
+                          className="text-[10px] text-red-300 cursor-pointer hover:text-red-200 underline ml-1"
+                          onClick={() => {
+                            if (conversationId) removeOptimisticMessage(conversationId, msg.id)
+                          }}
+                          title="Failed - click to dismiss"
+                        >
+                          Failed
+                        </span>
                       ) : msg.status === 'read' ? (
                         <CheckCheck size={14} className="text-blue-200" />
                       ) : msg.status === 'delivered' ? (
@@ -486,9 +536,9 @@ export default function ChatThread({
                       alt={msg.metadata.participant_name || contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
                     />
-                  ) : ((conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url) && !(conversation?.contact?.platform_id?.endsWith('@g.us') || conversation?.contact?.[0]?.platform_id?.endsWith('@g.us'))) ? (
+                  ) : ((contact?.avatar_url) && !(contact?.platform_id?.endsWith('@g.us'))) ? (
                     <img 
-                      src={conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url} 
+                      src={contact.avatar_url} 
                       alt={contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -510,7 +560,7 @@ export default function ChatThread({
                             src={msg.metadata.media_url} 
                             alt="Attachment" 
                             className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
-                            onClick={() => setZoomedImage(msg.metadata.media_url)}
+                            onClick={() => setZoomedImage(msg.metadata?.media_url ?? null)}
                           />
                           {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>

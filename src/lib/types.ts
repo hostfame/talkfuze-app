@@ -71,24 +71,24 @@ export interface Database {
         Row: {
           id: string
           org_id: string
-          type: string
-          config: Json | null
+          type: ChannelType
+          config: ChannelConfig | null
           is_active: boolean
           created_at: string
         }
         Insert: {
           id?: string
           org_id: string
-          type: string
-          config?: Json | null
+          type: ChannelType
+          config?: ChannelConfig | null
           is_active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           org_id?: string
-          type?: string
-          config?: Json | null
+          type?: ChannelType
+          config?: ChannelConfig | null
           is_active?: boolean
           created_at?: string
         }
@@ -104,6 +104,7 @@ export interface Database {
           phone: string | null
           avatar_url: string | null
           metadata: Json | null
+          status: string | null
           created_at: string
         }
         Insert: {
@@ -116,6 +117,7 @@ export interface Database {
           phone?: string | null
           avatar_url?: string | null
           metadata?: Json | null
+          status?: string | null
           created_at?: string
         }
         Update: {
@@ -128,6 +130,7 @@ export interface Database {
           phone?: string | null
           avatar_url?: string | null
           metadata?: Json | null
+          status?: string | null
           created_at?: string
         }
       }
@@ -181,8 +184,10 @@ export interface Database {
           sender_id: string | null
           content: string
           content_type: string
-          metadata: Json | null
+          metadata: MessageMetadata | null
           platform_message_id: string | null
+          is_internal: boolean
+          status: string | null
           created_at: string
         }
         Insert: {
@@ -193,8 +198,10 @@ export interface Database {
           sender_id?: string | null
           content: string
           content_type?: string
-          metadata?: Json | null
+          metadata?: MessageMetadata | null
           platform_message_id?: string | null
+          is_internal?: boolean
+          status?: string | null
           created_at?: string
         }
         Update: {
@@ -205,8 +212,10 @@ export interface Database {
           sender_id?: string | null
           content?: string
           content_type?: string
-          metadata?: Json | null
+          metadata?: MessageMetadata | null
           platform_message_id?: string | null
+          is_internal?: boolean
+          status?: string | null
           created_at?: string
         }
       }
@@ -253,4 +262,65 @@ export interface Database {
       }
     }
   }
+}
+
+export type ChannelType =
+  | 'messenger'
+  | 'widget'
+  | 'instagram'
+  | 'tiktok'
+  | 'whatsapp'
+  | 'settings_quick_replies'
+  | 'settings_crm_webhook'
+  | 'ai_openai'
+  | 'ai_anthropic'
+  | 'ai_gemini'
+
+export type QuickReply = {
+  id: string
+  shortcut: string
+  message: string
+}
+
+export type ChannelConfig = {
+  access_token?: string
+  api_key?: string
+  enabled?: boolean
+  items?: QuickReply[]
+  page_id?: string
+  page_name?: string
+  qr_code?: string | null
+  secret?: string
+  status?: string
+  url?: string
+  [key: string]: Json | QuickReply[] | undefined
+}
+
+export type MessageMetadata = {
+  filename?: string
+  media_url?: string
+  mimetype?: string
+  participant_avatar?: string
+  participant_name?: string
+  [key: string]: Json | undefined
+}
+
+export type Tables = Database['public']['Tables']
+export type Organization = Tables['organizations']['Row']
+export type UserProfile = Tables['users']['Row']
+export type Channel = Tables['channels']['Row']
+export type Contact = Tables['contacts']['Row']
+export type Conversation = Tables['conversations']['Row']
+export type AppMessage = Tables['messages']['Row']
+
+export type Relation<T> = T | T[] | null
+
+export type ConversationPreviewMessage = Pick<AppMessage, 'content' | 'sender_type'>
+
+export type ConversationWithDetails = Conversation & {
+  assignee?: Relation<UserProfile>
+  channel?: Relation<Pick<Channel, 'type' | 'config'>>
+  channels?: Relation<Pick<Channel, 'type' | 'config'>>
+  contact?: Relation<Contact>
+  messages?: ConversationPreviewMessage[] | null
 }

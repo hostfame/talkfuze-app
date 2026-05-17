@@ -5,11 +5,12 @@ export const dynamic = 'force-dynamic'
 
 export default async function ContactsPage() {
   const contacts = await getContacts()
+  const renderedAt = new Date().getTime()
 
   function formatDate(dateStr: string) {
     if (!dateStr) return 'Never'
     const d = new Date(dateStr)
-    const diff = (Date.now() - d.getTime()) / 1000
+    const diff = (renderedAt - d.getTime()) / 1000
     if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`
     if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
     return d.toLocaleDateString()

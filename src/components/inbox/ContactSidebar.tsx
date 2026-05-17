@@ -1,17 +1,23 @@
-import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
 import { updateContactName } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
+import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
 
-export default function ContactSidebar({ conversation, orgId }: any) {
-  const [contactName, setContactName] = useState(conversation?.contact?.name || "Unknown")
-  const rawPlatformId = conversation?.contact?.platform_id || "No number"
+function firstRelation<T>(relation: Relation<T> | undefined) {
+  return Array.isArray(relation) ? relation[0] : relation
+}
+
+export default function ContactSidebar({ conversation, orgId }: { conversation?: ConversationWithDetails | null, orgId: string }) {
+  const contact = firstRelation<Contact>(conversation?.contact)
+  const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
+  const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
+  const rawPlatformId = contact?.platform_id || "No number"
   const isLid = rawPlatformId.endsWith('@lid')
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
   const displayId = isLid ? `ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
-  const isWhatsApp = conversation?.channels?.type === 'whatsapp'
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
   const [summary, setSummary] = useState<string | null>(null)
@@ -21,21 +27,19 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   const [customPrompt, setCustomPrompt] = useState("")
   
   const [isEditingName, setIsEditingName] = useState(false)
-  const [editedName, setEditedName] = useState(contactName)
-
-  useEffect(() => {
-    setContactName(conversation?.contact?.name || "Unknown")
-    setEditedName(conversation?.contact?.name || "Unknown")
-  }, [conversation?.contact?.name])
+  const [editedName, setEditedName] = useState("")
 
   const handleSaveName = async () => {
-    if (!editedName.trim() || editedName === contactName || !conversation?.contact?.id) {
+    if (!editedName.trim() || editedName === contactName || !contact?.id) {
       setIsEditingName(false)
       return
     }
-    const result = await updateContactName(conversation.contact.id, editedName.trim())
+    const result = await updateContactName(contact.id, editedName.trim())
     if (result.success) {
-      setContactName(editedName.trim())
+      setContactNameOverrides((current) => ({
+        ...current,
+        [contact.id]: editedName.trim(),
+      }))
     } else {
       setEditedName(contactName) // revert on error
     }
@@ -43,7 +47,7 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   }
 
   // CRM State
-  const [crmData, setCrmData] = useState<any>(null)
+  const [crmData, setCrmData] = useState<Record<string, unknown> | null>(null)
   const [isCrmLoading, setIsCrmLoading] = useState(false)
 
   useEffect(() => {
@@ -138,7 +142,10 @@ export default function ContactSidebar({ conversation, orgId }: any) {
               <div className="flex items-center gap-1.5 mb-0.5 group">
                 <h2 className="text-[15px] font-semibold text-slate-900 truncate">{contactName}</h2>
                 <button 
-                  onClick={() => setIsEditingName(true)} 
+                  onClick={() => {
+                    setEditedName(contactName)
+                    setIsEditingName(true)
+                  }} 
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
                 >
                   <Pencil size={12} strokeWidth={2.5} />
@@ -309,13 +316,5 @@ export default function ContactSidebar({ conversation, orgId }: any) {
         </div>
       )}
     </div>
-  )
-}
-
-function MessageSquareIcon(props: any) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
   )
 }

@@ -1,29 +1,31 @@
 "use client"
 
-import { Send, Zap, X, ArrowLeft, Bot } from "lucide-react"
+import { Send, Zap, X, Bot } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
+import type { AppMessage } from "@/lib/types"
+
+function getStoredDeviceId() {
+  if (typeof window === 'undefined') return ""
+
+  let deviceId = localStorage.getItem("talkfuze_device_id")
+  if (!deviceId) {
+    deviceId = crypto.randomUUID()
+    localStorage.setItem("talkfuze_device_id", deviceId)
+  }
+  return deviceId
+}
 
 export default function WidgetPage() {
   const params = useParams()
   const org_id = params.org_id as string
-  const [deviceId, setDeviceId] = useState("")
-  const [messages, setMessages] = useState<any[]>([])
+  const [deviceId] = useState(getStoredDeviceId)
+  const [messages, setMessages] = useState<AppMessage[]>([])
   const [input, setInput] = useState("")
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    // Generate or retrieve a persistent device ID for this visitor
-    let did = localStorage.getItem("talkfuze_device_id")
-    if (!did) {
-      did = crypto.randomUUID()
-      localStorage.setItem("talkfuze_device_id", did)
-    }
-    setDeviceId(did)
-  }, [])
 
   useEffect(() => {
     if (!org_id || !deviceId) return
@@ -33,7 +35,7 @@ export default function WidgetPage() {
         const data = await getWidgetMessages(org_id, deviceId)
         console.log("Widget fetched messages:", data)
         if (data && data.length > 0) {
-          setMessages(data)
+          setMessages(data as AppMessage[])
         }
       } catch (e) {
         console.error("Fetch messages error", e)
@@ -64,7 +66,20 @@ export default function WidgetPage() {
     const messageText = input.trim()
     setInput("")
     // Optimistic UI update
-    setMessages(prev => [...prev, { sender_type: 'contact', content: messageText }])
+    setMessages(prev => [...prev, {
+      id: `temp-${Date.now()}`,
+      conversation_id: "",
+      org_id,
+      sender_type: 'contact',
+      sender_id: null,
+      content: messageText,
+      content_type: 'text',
+      metadata: null,
+      platform_message_id: null,
+      is_internal: false,
+      status: 'sending',
+      created_at: new Date().toISOString()
+    }])
     setIsSending(true)
 
     try {

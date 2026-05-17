@@ -79,7 +79,7 @@ export default function TicketsSettingsPage() {
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Close inactive tickets automatically</span>
                 </label>
                 <p className="text-[11px] text-slate-500 mt-1 ml-7">
-                  Tickets in "Waiting for Customer" state will be automatically closed after 72 hours of inactivity.
+                  Tickets in &quot;Waiting for Customer&quot; state will be automatically closed after 72 hours of inactivity.
                 </p>
               </div>
             </div>
