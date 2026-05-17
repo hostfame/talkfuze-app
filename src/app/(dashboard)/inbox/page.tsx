@@ -58,10 +58,27 @@ export default function InboxPage() {
     // Clear old messages instantly when switching chats
     setMessages([])
 
+    let isActive = true
+
     // Initial fetch
     const fetchData = async () => {
-      const data = await getMessages(selectedId)
-      setMessages(data || [])
+      // Direct client-side fetch for instant loading (~50ms)
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', selectedId)
+        .order('created_at', { ascending: true })
+
+      if (!isActive) return
+
+      if (data && data.length > 0) {
+        setMessages(data)
+      } else {
+        // Fallback to Server Action if client fails or returns empty
+        const fallbackData = await getMessages(selectedId)
+        if (!isActive) return
+        setMessages(fallbackData || [])
+      }
     }
     fetchData()
     
@@ -102,6 +119,7 @@ export default function InboxPage() {
       .subscribe()
 
     return () => {
+      isActive = false
       supabase.removeChannel(channel)
     }
   }, [selectedId])
