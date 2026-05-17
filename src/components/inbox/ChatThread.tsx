@@ -360,9 +360,15 @@ export default function ChatThread({
           
           if (isAgent) {
             // Find agent details from teamMembers
-            const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
-            const agentName = agent?.name || (msg.sender_id ? "Agent" : "WhatsApp App");
-            const agentInitial = agentName === "WhatsApp App" ? "W" : agentName.charAt(0).toUpperCase();
+            let agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
+            
+            // Fallback for messages sent from phone/webhook (null sender_id)
+            if (!agent) {
+              agent = currentUser ? teamMembers.find(t => t.id === currentUser.id) : teamMembers[0];
+            }
+            
+            const agentName = agent?.name || "Hostnin Support";
+            const agentInitial = agentName.charAt(0).toUpperCase();
 
             return (
               <div key={msg.id || idx} className={`flex items-end justify-end gap-2 mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
