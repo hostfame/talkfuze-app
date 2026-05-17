@@ -99,3 +99,32 @@ export async function updateProfile(updates: { name?: string; avatar_url?: strin
 
   return { success: true }
 }
+
+export async function uploadAvatar(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error("Unauthorized")
+
+  const file = formData.get('file') as File
+  if (!file) throw new Error("No file provided")
+
+  const fileExt = file.name.split('.').pop()
+  const filePath = `${user.id}-${Math.random()}.${fileExt}`
+
+  // Use supabaseAdmin (Service Role Key) to bypass RLS
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from('avatars')
+    .upload(filePath, file)
+
+  if (uploadError) {
+    console.error("Upload error", uploadError)
+    return { success: false, error: uploadError.message }
+  }
+
+  const { data: { publicUrl } } = supabaseAdmin.storage
+    .from('avatars')
+    .getPublicUrl(filePath)
+
+  return { success: true, url: publicUrl }
+}

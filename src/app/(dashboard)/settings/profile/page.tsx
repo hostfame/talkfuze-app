@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { updateProfile } from "@/actions/team"
+import { updateProfile, uploadAvatar } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { User, Camera, Mail, Loader2 } from "lucide-react"
 
@@ -54,23 +54,18 @@ export default function ProfileSettingsPage() {
     }
 
     setIsUploading(true)
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${currentUser.id}-${Math.random()}.${fileExt}`
-    const filePath = `${fileName}`
-
+    
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const uploadResult = await uploadAvatar(formData)
 
-      if (uploadError) {
-        throw uploadError
+      if (!uploadResult.success || !uploadResult.url) {
+        throw new Error(uploadResult.error || "Failed to upload avatar")
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
+      const publicUrl = uploadResult.url
       setAvatarUrl(publicUrl)
       
       // Auto-save the profile after successful upload
