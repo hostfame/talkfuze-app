@@ -10,10 +10,20 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
 });
 
 async function run() {
+  const { data: contacts, error: contactError } = await supabaseAdmin
+    .from("contacts")
+    .select("id")
+    .ilike("name", "%WhatsApp Group%");
+
+  if (contactError || !contacts || contacts.length === 0) {
+    console.error("No contact found");
+    return;
+  }
+
   const { data, error } = await supabaseAdmin
     .from("messages")
     .select("*")
-    .eq("content", "haa")
+    .eq("sender_id", contacts[0].id)
     .order("created_at", { ascending: false })
     .limit(5);
 

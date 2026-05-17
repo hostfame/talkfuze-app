@@ -159,9 +159,15 @@ export default function ConversationList({
               {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600"></div>}
               
               {/* Avatar */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>
-                {getInitials(contactName)}
-              </div>
+              {conv.contact?.avatar_url ? (
+                <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center">
+                  <img src={conv.contact.avatar_url} alt={contactName} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>
+                  {getInitials(contactName)}
+                </div>
+              )}
 
               {/* Content */}
               <div className="flex-1 min-w-0 mt-0.5">
