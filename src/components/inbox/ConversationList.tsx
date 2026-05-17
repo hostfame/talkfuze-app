@@ -84,19 +84,9 @@ export default function ConversationList({
     <div className="flex flex-col h-full w-[320px] shrink-0 bg-white border-r border-slate-200 z-10 relative">
       
       {/* Header & Search */}
-      <div className="px-5 pt-5 pb-3 flex flex-col gap-4 shrink-0 bg-white border-b border-slate-200">
-        <div className="flex justify-between items-center">
-          <h2 className="font-medium text-[16px] text-slate-900">All</h2>
-          <button 
-             onClick={() => setShowNewChatModal(true)}
-             className="text-slate-400 hover:text-slate-600 p-1 rounded-md transition-colors"
-          >
-             <Plus size={18} strokeWidth={2} />
-          </button>
-        </div>
-        
+      <div className="px-5 pt-5 pb-3 flex items-center gap-3 shrink-0 bg-white border-b border-slate-200">
         {/* Search Bar */}
-        <div className="relative">
+        <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {isSearching ? <Loader2 size={14} className="text-blue-500 animate-spin" /> : <Search size={14} className="text-slate-400" />}
           </div>
@@ -108,6 +98,13 @@ export default function ConversationList({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <button 
+           onClick={() => setShowNewChatModal(true)}
+           className="text-slate-500 hover:text-slate-700 p-2 border border-slate-200 hover:border-slate-300 rounded-lg transition-colors bg-slate-50 hover:bg-slate-100 shrink-0"
+           title="New Chat"
+        >
+           <Plus size={18} strokeWidth={2} />
+        </button>
       </div>
 
       {/* List */}

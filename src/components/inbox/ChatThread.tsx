@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2, Mic, Square, X } from "lucide-react"
+import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
@@ -331,16 +331,9 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {conversation?.channels?.type === 'whatsapp' && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-[12px] font-medium border border-green-200 dark:border-green-800/50">
-              WhatsApp
-            </div>
-          )}
-          {conversation?.channels?.type === 'messenger' && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded text-[12px] font-medium border border-blue-200 dark:border-blue-800/50">
-              Messenger
-            </div>
-          )}
+          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors border border-purple-200">
+            <Bot size={14} strokeWidth={2} /> Assign to AI
+          </button>
         </div>
       </div>
 
