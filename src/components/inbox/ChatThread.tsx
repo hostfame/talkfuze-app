@@ -358,8 +358,7 @@ export default function ChatThread({
           </div>
         )}
 
-
-        {[...allMessages, ...optimisticMessages].map((msg, idx) => {
+        {allMessages.map((msg, idx) => {
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
           const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           
