@@ -12,13 +12,15 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseKey, {
 async function run() {
   const { data, error } = await supabaseAdmin
     .from("messages")
-    .select(`*, agent:users!sender_id(name, avatar_url)`)
-    .limit(1);
+    .select("*")
+    .eq("content", "haa")
+    .order("created_at", { ascending: false })
+    .limit(5);
 
   if (error) {
     console.error("ERROR:", error.message);
   } else {
-    console.log("SUCCESS");
+    console.log(data);
   }
 
   console.log("Agent Messages with Sender ID:");

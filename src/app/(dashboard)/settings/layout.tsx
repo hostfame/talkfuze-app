@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook } from "lucide-react"
+import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook, User } from "lucide-react"
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,8 +7,16 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       {/* Secondary Sidebar (Settings Navigation) */}
       <aside className="w-[260px] flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto custom-scrollbar">
         
-        {/* Workspace Settings Section */}
+        {/* Personal Settings Section */}
         <div className="pt-6 pb-2 px-4">
+          <span className="text-[12px] font-semibold text-slate-500 tracking-wider">PERSONAL</span>
+        </div>
+        <div className="px-2 pb-4 space-y-0.5 border-b border-slate-100 dark:border-slate-800">
+          <NavLink href="/settings/profile" icon={<User size={18} />} label="My Profile" />
+        </div>
+        
+        {/* Workspace Settings Section */}
+        <div className="pt-4 pb-2 px-4">
           <span className="text-[12px] font-semibold text-slate-500 tracking-wider">WORKSPACE SETTINGS</span>
         </div>
         

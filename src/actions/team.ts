@@ -79,3 +79,23 @@ export async function addTeammate(name: string, email: string, role: string = "A
     return { success: false, error: err.message || "An unexpected error occurred" }
   }
 }
+
+export async function updateProfile(updates: { name?: string; avatar_url?: string; email?: string }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error("Unauthorized")
+
+  // Using supabaseAdmin to update public.users
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update(updates)
+    .eq('id', user.id)
+
+  if (error) {
+    console.error("Failed to update profile", error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
