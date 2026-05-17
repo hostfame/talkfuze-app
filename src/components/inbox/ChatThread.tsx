@@ -348,7 +348,7 @@ export default function ChatThread({
                   {/* Agent Name Banner */}
                   <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                   
-                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap font-normal`}>
+                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
                       <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
@@ -425,7 +425,7 @@ export default function ChatThread({
                     {msg.metadata?.participant_name && (
                       <div className="text-[11px] text-slate-500 ml-1 mb-0.5">{msg.metadata.participant_name}</div>
                     )}
-                    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
+                    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
                         <div className="relative">
                           <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
