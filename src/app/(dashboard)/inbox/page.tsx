@@ -5,6 +5,7 @@ import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
 import { getConversations, getMessages } from "@/actions/dashboard"
+import { getTeamMembers } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
 
@@ -15,27 +16,33 @@ export default function InboxPage() {
   const [conversations, setConversations] = useState<any[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [messages, setMessages] = useState<any[]>([])
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
 
   useEffect(() => {
-    const fetchConvos = async () => {
-      const data = await getConversations(ORG_ID)
-      setConversations(data || [])
+    const fetchConvosAndTeam = async () => {
+      const [convosData, teamData] = await Promise.all([
+        getConversations(ORG_ID),
+        getTeamMembers()
+      ])
       
-      if (data && data.length > 0 && !selectedId) {
-        setSelectedId(data[0].id)
+      setConversations(convosData || [])
+      setTeamMembers(teamData || [])
+      
+      if (convosData && convosData.length > 0 && !selectedId) {
+        setSelectedId(convosData[0].id)
       }
     }
 
-    fetchConvos()
+    fetchConvosAndTeam()
     
     const channel = supabase
       .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        fetchConvos()
+        getConversations(ORG_ID).then(data => setConversations(data || []))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
         // Refresh conversation list so last message preview updates
-        fetchConvos()
+        getConversations(ORG_ID).then(data => setConversations(data || []))
       })
       .subscribe()
 
@@ -148,6 +155,7 @@ export default function InboxPage() {
         conversationId={selectedId} 
         messages={messages} 
         orgId={ORG_ID}
+        teamMembers={teamMembers}
         isCustomerTyping={selectedId ? typingState[selectedId] : false}
         conversation={activeConversation}
       />

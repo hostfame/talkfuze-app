@@ -21,6 +21,7 @@ export default function ChatThread({
   conversationId, 
   messages, 
   orgId,
+  teamMembers = [],
   isCustomerTyping = false,
   conversation = null,
   currentUser
@@ -28,6 +29,7 @@ export default function ChatThread({
   conversationId: string | null, 
   messages: any[],
   orgId: string,
+  teamMembers?: any[],
   isCustomerTyping?: boolean,
   conversation?: any,
   currentUser?: any
@@ -330,14 +332,23 @@ export default function ChatThread({
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
           
           if (isAgent) {
+            // Find agent details from teamMembers
+            const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
+            const agentName = agent?.name || (msg.sender_id ? "Agent" : "WhatsApp Bot");
+            const agentInitial = agentName.charAt(0).toUpperCase();
+
             return (
-              <div key={msg.id || idx} className={`flex flex-col items-end gap-1 mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
-                {msg.is_internal && (
-                  <div className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1 mb-0.5">
-                    <Lock size={10} strokeWidth={3} /> Internal Note
-                  </div>
-                )}
-                <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] max-w-[70%] leading-relaxed whitespace-pre-wrap font-normal`}>
+              <div key={msg.id || idx} className={`flex items-end justify-end gap-2 mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
+                <div className="flex flex-col items-end gap-1 max-w-[75%]">
+                  {msg.is_internal && (
+                    <div className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+                      <Lock size={10} strokeWidth={3} /> Internal Note
+                    </div>
+                  )}
+                  {/* Agent Name Banner */}
+                  <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
+                  
+                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap font-normal`}>
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
                       <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
@@ -373,6 +384,15 @@ export default function ChatThread({
                         <Check size={14} className="text-white/80" />
                       )}
                     </div>
+                  )}
+                </div>
+                
+                {/* Agent Avatar */}
+                <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
+                  {agent?.avatar_url ? (
+                    <img src={agent.avatar_url} alt={agentName} className="w-full h-full object-cover" />
+                  ) : (
+                    agentInitial
                   )}
                 </div>
               </div>
