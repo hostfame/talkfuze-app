@@ -24,5 +24,5 @@ ON CONFLICT (id) DO UPDATE SET
 -- Allow public read access to chat media
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'media');
 
--- Allow authenticated users (agents) to upload media
-CREATE POLICY "Agent Upload Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.role() = 'authenticated');
+-- Allow agents (NextAuth frontend) and workers to upload media
+CREATE POLICY "Agent Upload Access" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media');

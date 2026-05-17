@@ -100,6 +100,8 @@ export default function ChatThread({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   
+  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null)
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null)
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
@@ -187,9 +189,9 @@ export default function ChatThread({
   }
 
   const handleSend = async () => {
-    if (!input.trim() || !conversationId || isSending) return
+    if ((!input.trim() && !pendingAttachment) || !conversationId || isSending) return
 
-    const msg = input.trim()
+    const msgText = input.trim()
     setInput("")
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
@@ -199,15 +201,39 @@ export default function ChatThread({
       id: `temp-${Date.now()}`,
       sender_type: 'agent',
       sender_id: currentUser?.id,
-      content: msg,
+      content: msgText || (pendingAttachment ? '[Attachment]' : ''),
       is_internal: isInternal,
       status: 'sending'
     }])
     
     try {
-      await replyToConversation(orgId, conversationId, msg, isInternal)
-    } catch (e) {
+      if (pendingAttachment) {
+        setIsUploading(true);
+        const meta = await uploadToStorage(pendingAttachment);
+        let contentType = 'file';
+        if (meta.type.startsWith('image/')) contentType = 'image';
+        else if (meta.type.startsWith('audio/')) contentType = 'audio';
+        else if (meta.type.startsWith('video/')) contentType = 'video';
+        
+        const contentText = msgText || (contentType === 'image' ? '[Image]' : 
+                            contentType === 'audio' ? '[Audio Voice Message]' : 
+                            contentType === 'video' ? '[Video]' : '[Attachment]');
+        
+        await replyToConversation(orgId, conversationId, contentText, isInternal, contentType, {
+          media_url: meta.url,
+          mimetype: meta.type,
+          filename: meta.name
+        });
+        
+        setPendingAttachment(null);
+        if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+        setAttachmentPreview(null);
+      } else {
+        await replyToConversation(orgId, conversationId, msgText, isInternal)
+      }
+    } catch (e: any) {
       console.error(e)
+      alert(`Failed to send: ${e.message || 'Unknown error'}`)
     } finally {
       setIsUploading(false)
       setIsSending(false)
@@ -254,12 +280,25 @@ export default function ChatThread({
   }
 
   const sendRecording = () => {
-    if (!mediaRecorderRef.current) return
+    if (!mediaRecorderRef.current || !conversationId) return
     
     mediaRecorderRef.current.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
       const file = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' })
-      await uploadFile(file)
+      setIsUploading(true);
+      try {
+        const meta = await uploadToStorage(file);
+        await replyToConversation(orgId, conversationId, '[Audio Voice Message]', false, 'audio', {
+          media_url: meta.url,
+          mimetype: meta.type,
+          filename: meta.name
+        });
+      } catch (err: any) {
+        console.error("Upload failed:", err);
+        alert(`Failed to send voice message: ${err.message || 'Unknown error'}`);
+      } finally {
+        setIsUploading(false);
+      }
       audioChunksRef.current = []
     }
     
@@ -272,56 +311,37 @@ export default function ChatThread({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const uploadFile = async (file: File) => {
-    if (!conversationId) return;
+  const uploadToStorage = async (file: File) => {
+    if (!conversationId) throw new Error("No conversation ID");
+    
+    let fileExt = 'png';
+    if (file.name && file.name.includes('.')) {
+      fileExt = file.name.split('.').pop() || 'png';
+    } else if (file.type && file.type.includes('/')) {
+      fileExt = file.type.split('/')[1];
+    }
+    const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
+    
+    const { error } = await supabase.storage.from('media').upload(fileName, file);
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
+    return { url: urlData.publicUrl, type: file.type, name: file.name || fileName };
+  }
 
-    setIsUploading(true);
-    try {
-      let fileExt = 'png';
-      if (file.name && file.name.includes('.')) {
-        fileExt = file.name.split('.').pop() || 'png';
-      } else if (file.type && file.type.includes('/')) {
-        fileExt = file.type.split('/')[1];
-      }
-      const fileName = `${conversationId}/${Date.now()}.${fileExt}`;
-      
-      const { error } = await supabase.storage
-        .from('media')
-        .upload(fileName, file);
-        
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('media')
-        .getPublicUrl(fileName);
-        
-      let contentType = 'file';
-      if (file.type.startsWith('image/')) contentType = 'image';
-      else if (file.type.startsWith('audio/')) contentType = 'audio';
-      else if (file.type.startsWith('video/')) contentType = 'video';
-      
-      const contentText = contentType === 'image' ? '[Image]' : 
-                          contentType === 'audio' ? '[Audio Voice Message]' : 
-                          contentType === 'video' ? '[Video]' : '[Attachment]';
-      
-      await replyToConversation(orgId, conversationId, contentText, false, contentType, {
-        media_url: urlData.publicUrl,
-        mimetype: file.type,
-        filename: file.name
-      });
-      
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      alert(`Failed to upload file: ${err.message || 'Unknown error'}`);
-    } finally {
-      setIsUploading(false);
+  const stageAttachment = (file: File) => {
+    setPendingAttachment(file);
+    if (file.type.startsWith('image/')) {
+      setAttachmentPreview(URL.createObjectURL(file));
+    } else {
+      setAttachmentPreview(null);
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadFile(file);
+    stageAttachment(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -595,16 +615,40 @@ export default function ChatThread({
               </div>
             </div>
           ) : (
-            <textarea 
-              value={input}
-              onChange={handleInputChange}
-              onPaste={(e) => {
-                if (e.clipboardData.files && e.clipboardData.files.length > 0) {
-                  e.preventDefault();
-                  const file = e.clipboardData.files[0];
-                  uploadFile(file);
-                }
-              }}
+            <div className="flex flex-col w-full">
+              {pendingAttachment && (
+                <div className="px-4 pt-3 pb-1">
+                  <div className="relative inline-block border rounded-md overflow-hidden group bg-slate-50 dark:bg-slate-800">
+                    {attachmentPreview ? (
+                      <img src={attachmentPreview} alt="Preview" className="h-16 w-16 object-cover" />
+                    ) : (
+                      <div className="h-16 w-16 flex items-center justify-center">
+                        <Paperclip size={24} className="text-slate-400" />
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => {
+                        setPendingAttachment(null);
+                        if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
+                        setAttachmentPreview(null);
+                      }}
+                      className="absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <textarea 
+                value={input}
+                onChange={handleInputChange}
+                onPaste={(e) => {
+                  if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+                    e.preventDefault();
+                    const file = e.clipboardData.files[0];
+                    stageAttachment(file);
+                  }
+                }}
               onKeyDown={(e) => {
                 if (showMacroMenu && filteredMacros.length > 0) {
                   if (e.key === 'ArrowDown') {
@@ -624,10 +668,11 @@ export default function ChatThread({
                   handleSend()
                 }
               }}
-              placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-              className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'}`}
-              disabled={isSending}
-            ></textarea>
+                placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${pendingAttachment ? 'pt-2 min-h-[60px]' : ''}`}
+                disabled={isSending}
+              ></textarea>
+            </div>
           )}
           
           <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50'}`}>
