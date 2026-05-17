@@ -45,3 +45,21 @@ export async function getContacts() {
     }
   })
 }
+
+export async function updateContactName(contactId: string, newName: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const { error } = await supabaseAdmin
+    .from('contacts')
+    .update({ name: newName })
+    .eq('id', contactId)
+    
+  if (error) {
+    console.error('Error updating contact name:', error)
+    return { success: false, error: error.message }
+  }
+  
+  return { success: true }
+}

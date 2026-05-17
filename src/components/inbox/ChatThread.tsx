@@ -434,7 +434,10 @@ export default function ChatThread({
                     </div>
                   ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
                     <div className="flex flex-col gap-1">
-                      <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
+                      <video controls preload="metadata" className="max-w-[240px] max-h-[240px] rounded-lg bg-black/10 dark:bg-white/5">
+                        <source src={msg.metadata.media_url} type={msg.metadata?.mimetype || 'video/mp4'} />
+                        Your browser does not support the video tag.
+                      </video>
                       {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
                   ) : (
@@ -488,6 +491,7 @@ export default function ChatThread({
                       src={conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url} 
                       alt={contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
                     <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
@@ -522,7 +526,10 @@ export default function ChatThread({
                         </div>
                       ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
                         <div className="flex flex-col gap-1">
-                          <video controls src={msg.metadata.media_url} className="max-w-[240px] max-h-[240px] rounded-lg object-cover" />
+                          <video controls preload="metadata" className="max-w-[240px] max-h-[240px] rounded-lg bg-black/5 dark:bg-white/5">
+                            <source src={msg.metadata.media_url} type={msg.metadata?.mimetype || 'video/mp4'} />
+                            Your browser does not support the video tag.
+                          </video>
                           {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
                       ) : (

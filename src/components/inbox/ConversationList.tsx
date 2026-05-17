@@ -149,8 +149,18 @@ export default function ConversationList({
               
               {/* Avatar */}
               {conv.contact?.avatar_url ? (
-                <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center">
-                  <img src={conv.contact.avatar_url} alt={contactName} className="w-full h-full object-cover" />
+                <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                  <img 
+                    src={conv.contact.avatar_url} 
+                    alt={contactName} 
+                    className="w-full h-full object-cover z-10 bg-slate-100" 
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }} 
+                  />
+                  <div className={`absolute inset-0 flex items-center justify-center font-semibold text-[14px] tracking-wide text-white ${avatarColor}`}>
+                    {getInitials(contactName)}
+                  </div>
                 </div>
               ) : (
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>

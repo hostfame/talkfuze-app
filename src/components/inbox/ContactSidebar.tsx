@@ -1,13 +1,16 @@
-import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2 } from "lucide-react"
+import { ChevronDown, ExternalLink, Hash, Plus, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
+import { updateContactName } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 
 export default function ContactSidebar({ conversation, orgId }: any) {
-  const contactName = conversation?.contact?.name || "Unknown"
+  const [contactName, setContactName] = useState(conversation?.contact?.name || "Unknown")
   const rawPlatformId = conversation?.contact?.platform_id || "No number"
+  const isLid = rawPlatformId.endsWith('@lid')
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
+  const displayId = isLid ? `ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
   const isWhatsApp = conversation?.channels?.type === 'whatsapp'
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
@@ -16,6 +19,28 @@ export default function ContactSidebar({ conversation, orgId }: any) {
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [isDrafting, setIsDrafting] = useState(false)
   const [customPrompt, setCustomPrompt] = useState("")
+  
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(contactName)
+
+  useEffect(() => {
+    setContactName(conversation?.contact?.name || "Unknown")
+    setEditedName(conversation?.contact?.name || "Unknown")
+  }, [conversation?.contact?.name])
+
+  const handleSaveName = async () => {
+    if (!editedName.trim() || editedName === contactName || !conversation?.contact?.id) {
+      setIsEditingName(false)
+      return
+    }
+    const result = await updateContactName(conversation.contact.id, editedName.trim())
+    if (result.success) {
+      setContactName(editedName.trim())
+    } else {
+      setEditedName(contactName) // revert on error
+    }
+    setIsEditingName(false)
+  }
 
   // CRM State
   const [crmData, setCrmData] = useState<any>(null)
@@ -89,9 +114,38 @@ export default function ContactSidebar({ conversation, orgId }: any) {
               return name.substring(0, 1).toUpperCase();
             })()}
           </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-semibold text-slate-900 truncate mb-0.5">{contactName}</h2>
-            <p className="text-[13px] text-slate-500 truncate">{platformId.startsWith('+') ? platformId : `+${platformId}`}</p>
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            {isEditingName ? (
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <input 
+                  type="text" 
+                  value={editedName} 
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-[14px] font-semibold text-slate-900 border border-slate-300 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName()
+                    if (e.key === 'Escape') {
+                      setIsEditingName(false)
+                      setEditedName(contactName)
+                    }
+                  }}
+                />
+                <button onClick={handleSaveName} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check size={16} strokeWidth={2.5} /></button>
+                <button onClick={() => { setIsEditingName(false); setEditedName(contactName) }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={16} strokeWidth={2.5} /></button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mb-0.5 group">
+                <h2 className="text-[15px] font-semibold text-slate-900 truncate">{contactName}</h2>
+                <button 
+                  onClick={() => setIsEditingName(true)} 
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
+                >
+                  <Pencil size={12} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+            <p className="text-[13px] text-slate-500 truncate">{displayId}</p>
           </div>
           <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-colors shrink-0">
             Resolve
