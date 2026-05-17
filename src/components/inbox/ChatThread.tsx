@@ -79,6 +79,7 @@ export default function ChatThread({
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -330,6 +331,7 @@ export default function ChatThread({
 
         {[...allMessages, ...optimisticMessages].map((msg, idx) => {
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
+          const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           
           if (isAgent) {
             // Find agent details from teamMembers
@@ -351,7 +353,12 @@ export default function ChatThread({
                   <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
-                      <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
+                      <img 
+                        src={msg.metadata.media_url} 
+                        alt="Attachment" 
+                        className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
+                        onClick={() => setZoomedImage(msg.metadata.media_url)}
+                      />
                       {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
                     </div>
                   ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
@@ -374,6 +381,7 @@ export default function ChatThread({
                   )}
                   {!msg.is_internal && (
                     <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
+                      <span className="text-[10.5px] text-slate-400 mr-1">{msgTime}</span>
                       {msg.status === 'sending' ? (
                         <Clock size={12} className="text-white/60 animate-pulse" />
                       ) : msg.status === 'read' ? (
@@ -383,6 +391,11 @@ export default function ChatThread({
                       ) : (
                         <Check size={14} className="text-white/80" />
                       )}
+                    </div>
+                  )}
+                  {msg.is_internal && (
+                    <div className="flex justify-end mt-0.5 opacity-90 mr-1">
+                      <span className="text-[10.5px] text-slate-400">{msgTime}</span>
                     </div>
                   )}
                 </div>
@@ -428,7 +441,12 @@ export default function ChatThread({
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
                         <div className="relative">
-                          <img src={msg.metadata.media_url} alt="Attachment" className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1" />
+                          <img 
+                            src={msg.metadata.media_url} 
+                            alt="Attachment" 
+                            className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
+                            onClick={() => setZoomedImage(msg.metadata.media_url)}
+                          />
                           {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{msg.content}</div>}
                         </div>
                       ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
@@ -449,6 +467,9 @@ export default function ChatThread({
                       ) : (
                         <div>{msg.content}</div>
                       )}
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5 ml-1">
+                      <span className="text-[10.5px] text-slate-400">{msgTime}</span>
                     </div>
                   </div>
                 </div>
@@ -623,6 +644,26 @@ export default function ChatThread({
           </div>
         </div>
       </div>
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+          onClick={() => setZoomedImage(null)}
+        >
+          <img 
+            src={zoomedImage} 
+            alt="Zoomed attachment" 
+            className="max-w-full max-h-full object-contain rounded-md shadow-2xl" 
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button 
+            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors"
+            onClick={() => setZoomedImage(null)}
+          >
+            <X size={24} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
