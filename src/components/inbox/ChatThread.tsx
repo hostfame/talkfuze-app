@@ -396,6 +396,7 @@ export default function ChatThread({
                   )}
                 </div>
               </div>
+            </div>
             )
           } else {
             return (

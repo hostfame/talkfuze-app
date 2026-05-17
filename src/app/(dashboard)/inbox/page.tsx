@@ -5,7 +5,7 @@ import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
 import { getConversations, getMessages } from "@/actions/dashboard"
-import { getTeamMembers } from "@/actions/team"
+import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
 
@@ -22,7 +22,7 @@ export default function InboxPage() {
     const fetchConvosAndTeam = async () => {
       const [convosData, teamData] = await Promise.all([
         getConversations(ORG_ID),
-        getTeamMembers()
+        getTeammates()
       ])
       
       setConversations(convosData || [])
