@@ -409,7 +409,7 @@ export default function ChatThread({
                       alt={msg.metadata.participant_name || contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
                     />
-                  ) : conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url ? (
+                  ) : ((conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url) && !(conversation?.contact?.platform_id?.endsWith('@g.us') || conversation?.contact?.[0]?.platform_id?.endsWith('@g.us'))) ? (
                     <img 
                       src={conversation?.contact?.avatar_url || conversation?.contact?.[0]?.avatar_url} 
                       alt={contactName}
