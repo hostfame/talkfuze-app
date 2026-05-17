@@ -160,7 +160,7 @@ export async function replyToConversation(
   if (convError || !conv) throw new Error("Conversation not found");
 
   // Insert into DB first so UI updates instantly
-  const { error } = await supabaseAdmin
+  const { data: insertedMessage, error } = await supabaseAdmin
     .from("messages")
     .insert({
       org_id: realOrgId,
@@ -172,6 +172,8 @@ export async function replyToConversation(
       metadata: metadata,
       is_internal: isInternal
     })
+    .select("id")
+    .single()
 
   if (error) throw error
   
@@ -215,9 +217,39 @@ export async function replyToConversation(
       const responseData = await response.json();
       if (!response.ok) {
         console.error("Meta API Error:", responseData);
+        await supabaseAdmin
+          .from("messages")
+          .update({
+            status: "failed",
+            metadata: {
+              ...metadata,
+              delivery_error: responseData?.error?.message || "Meta API send failed",
+              delivery_failed_at: new Date().toISOString()
+            }
+          })
+          .eq("id", insertedMessage.id);
+      } else if (responseData?.message_id) {
+        await supabaseAdmin
+          .from("messages")
+          .update({
+            platform_message_id: responseData.message_id,
+            status: "delivered"
+          })
+          .eq("id", insertedMessage.id);
       }
     } catch (e) {
       console.error("Failed to send Messenger reply:", e);
+      await supabaseAdmin
+        .from("messages")
+        .update({
+          status: "failed",
+          metadata: {
+            ...metadata,
+            delivery_error: e instanceof Error ? e.message : "Messenger send failed",
+            delivery_failed_at: new Date().toISOString()
+          }
+        })
+        .eq("id", insertedMessage.id);
     }
   }
   // If it's WhatsApp, the Baileys worker will automatically pick it up via Supabase Realtime
