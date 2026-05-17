@@ -1,14 +1,41 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+function readRequiredEnv(name: string) {
+  const value = process.env[name]?.trim()
+  if (!value || value === '""' || value === "''") return null
+  return value
+}
+
+function isDashboardPath(pathname: string) {
+  return pathname.startsWith('/inbox') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/contacts') ||
+    pathname.startsWith('/analytics') ||
+    pathname === '/'
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
+  const isDashboardRoute = isDashboardPath(request.nextUrl.pathname)
+  const supabaseUrl = readRequiredEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const supabaseAnonKey = readRequiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (isDashboardRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -30,13 +57,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Define protected paths
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/inbox') || 
-                           request.nextUrl.pathname.startsWith('/settings') || 
-                           request.nextUrl.pathname.startsWith('/contacts') ||
-                           request.nextUrl.pathname.startsWith('/analytics') ||
-                           request.nextUrl.pathname === '/';
 
   // If the user is NOT logged in and trying to access a dashboard route, redirect to /login
   if (!user && isDashboardRoute) {
