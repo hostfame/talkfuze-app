@@ -2,6 +2,7 @@
 
 import { Clock, MoreHorizontal, Send, Star, Zap, UserPlus, Check, CheckCheck, MessageSquare, Lock, Search, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
 import { useMessageStore } from "@/lib/store"
@@ -680,24 +681,25 @@ export default function ChatThread({
         </div>
       </div>
       {/* Image Zoom Modal */}
-      {zoomedImage && (
+      {zoomedImage && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
           onClick={() => setZoomedImage(null)}
         >
           <img 
             src={zoomedImage} 
             alt="Zoomed attachment" 
-            className="max-w-full max-h-full object-contain rounded-md shadow-2xl" 
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-md shadow-2xl" 
             onClick={(e) => e.stopPropagation()}
           />
           <button 
-            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors"
+            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors z-[100000]"
             onClick={() => setZoomedImage(null)}
           >
             <X size={24} />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
