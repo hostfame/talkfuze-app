@@ -77,13 +77,13 @@ interface InboxState {
   teamMembers: UserProfile[]
   isLoaded: boolean
   selectedId: string | null
-  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions'
+  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram'
   currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
-  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions') => void
+  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram') => void
   setCurrentUser: (user: UserProfile | null) => void
   setMessages: (convoId: string, messages: AppMessage[]) => void
   addMessage: (convoId: string, message: AppMessage) => void

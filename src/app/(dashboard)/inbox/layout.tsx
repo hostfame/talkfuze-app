@@ -1,6 +1,7 @@
 "use client"
 
-import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users } from "lucide-react"
+import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone } from "lucide-react"
+import { useState } from "react"
 import { useInboxStore } from "@/lib/store"
 
 function firstRelation(relation: any) {
@@ -10,11 +11,9 @@ function firstRelation(relation: any) {
 export default function InboxLayout({ children }: { children: React.ReactNode }) {
   const { conversations, activeFilter, setActiveFilter, currentUser } = useInboxStore()
 
+  const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
+
   // Calculate badges
-  const myChats = conversations.filter(c => {
-    const assignee = firstRelation(c.assignee)
-    return assignee?.id === currentUser?.id
-  }).length
 
   const unassignedChats = conversations.filter(c => {
     const assignee = firstRelation(c.assignee)
@@ -22,6 +21,10 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   }).length
 
   const allChats = conversations.length
+
+  const messengerChats = conversations.filter(c => firstRelation(c.channels)?.type === 'messenger').length
+  const whatsappChats = conversations.filter(c => firstRelation(c.channels)?.type === 'whatsapp').length
+  const instagramChats = conversations.filter(c => firstRelation(c.channels)?.type === 'instagram').length
 
   return (
     <>
@@ -37,25 +40,15 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
         <div className="px-3 space-y-0.5 mt-2">
           <div 
-            onClick={() => setActiveFilter('mine')}
+            onClick={() => setActiveFilter('all')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'mine' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'all' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><User size={15} strokeWidth={2} /> Your inbox</div>
-            <span className="text-[12px] font-medium">{myChats}</span>
+            <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> All</div>
+            <span className="text-[12px] font-medium">{allChats}</span>
           </div>
           
-          <div 
-            onClick={() => setActiveFilter('mentions')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'mentions' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-            }`}
-          >
-            <div className="flex items-center gap-2"><span className="font-medium text-lg leading-none mt-[-2px]">@</span> Mentions</div>
-            <span className="text-[12px] font-medium opacity-50">0</span>
-          </div>
-
           <div 
             onClick={() => setActiveFilter('unassigned')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
@@ -67,15 +60,57 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div 
-            onClick={() => setActiveFilter('all')}
+            onClick={() => setActiveFilter('mentions')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'all' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'mentions' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> All</div>
-            <span className="text-[12px] font-medium">{allChats}</span>
+            <div className="flex items-center gap-2"><span className="font-medium text-lg leading-none mt-[-2px]">@</span> Mentions</div>
+            <span className="text-[12px] font-medium opacity-50">0</span>
           </div>
         </div>
+
+        <div 
+          className="mt-6 px-6 mb-2 flex justify-between items-center cursor-pointer group"
+          onClick={() => setIsConnectionsExpanded(!isConnectionsExpanded)}
+        >
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide group-hover:text-slate-600 transition-colors">Connections</span>
+          {isConnectionsExpanded ? <ChevronDown size={12} className="text-slate-400" /> : <ChevronRight size={12} className="text-slate-400" />}
+        </div>
+        
+        {isConnectionsExpanded && (
+          <div className="px-3 space-y-0.5">
+            <div 
+              onClick={() => setActiveFilter('messenger')}
+              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+                activeFilter === 'messenger' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> Messenger</div>
+              <span className="text-[12px] font-medium">{messengerChats}</span>
+            </div>
+            
+            <div 
+              onClick={() => setActiveFilter('whatsapp')}
+              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+                activeFilter === 'whatsapp' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2"><MessageCircle size={15} strokeWidth={2} /> WhatsApp</div>
+              <span className="text-[12px] font-medium">{whatsappChats}</span>
+            </div>
+
+            <div 
+              onClick={() => setActiveFilter('instagram')}
+              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+                activeFilter === 'instagram' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2"><Smartphone size={15} strokeWidth={2} /> Instagram</div>
+              <span className="text-[12px] font-medium">{instagramChats}</span>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 px-6 mb-2 flex justify-between items-center">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">TalkFuze AI</span>

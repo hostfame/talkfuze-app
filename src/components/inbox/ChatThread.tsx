@@ -682,41 +682,8 @@ export default function ChatThread({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Composer Area */}
       <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
-        {/* Join Thread overlay - shown when agent hasn't joined */}
-        {!isJoined && conversationId && (
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <MessageSquare size={18} className="text-slate-400" />
-              <span className="text-[14px] font-medium">Join to reply.</span>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => setShowWhisperComposer(!showWhisperComposer)}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors border ${showWhisperComposer ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
-              >
-                <Lock size={14} />
-                {showWhisperComposer ? 'Close Note' : 'Add Note'}
-              </button>
-              <button
-                onClick={handleJoinThread}
-                disabled={isJoining}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-[13px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
-              >
-                {isJoining ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Check size={16} />
-                )}
-                {isJoining ? 'Joining...' : 'Join'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Actual composer - shown always, but locked to whisper if not joined */}
-        {(isJoined || showWhisperComposer) && (
+        {/* Actual composer - always shown, locked to whisper if not joined */}
         <div className={!isJoined ? "mt-4" : ""}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
@@ -862,21 +829,38 @@ export default function ChatThread({
               )}
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                <button 
-                  onClick={() => setIsInternal(false)}
-                  disabled={!isJoined}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${!isJoined ? 'opacity-50 cursor-not-allowed' : ''}`}
+              {isJoined && (
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <button 
+                    onClick={() => setIsInternal(false)}
+                    className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    Reply
+                  </button>
+                  <button 
+                    onClick={() => setIsInternal(true)}
+                    className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    <Lock size={12} strokeWidth={2.5} /> Note
+                  </button>
+                </div>
+              )}
+              
+              {!isJoined && (
+                <button
+                  onClick={handleJoinThread}
+                  disabled={isJoining}
+                  className="flex items-center justify-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-medium px-4 py-1.5 rounded-lg text-[14px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
                 >
-                  Reply
+                  {isJoining ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  {isJoining ? 'Joining...' : 'Join'}
                 </button>
-                <button 
-                  onClick={() => setIsInternal(true)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  <Lock size={12} strokeWidth={2.5} /> Note
-                </button>
-              </div>
+              )}
+              
               <button 
                 onClick={handleSend}
                 disabled={!input.trim() || isSending}
@@ -888,7 +872,6 @@ export default function ChatThread({
           </div>
         </div>
         </div>
-        )}
       </div>
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(

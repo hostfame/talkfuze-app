@@ -100,6 +100,19 @@ export default function ConversationList({
       // Mentions filter not fully implemented in MVP, return empty or implement later
       return false;
     }
+    
+    // Social Channel Filters
+    const channel = firstRelation(conv.channels);
+    if (activeFilter === 'messenger') {
+      return channel?.type === 'messenger';
+    }
+    if (activeFilter === 'whatsapp') {
+      return channel?.type === 'whatsapp';
+    }
+    if (activeFilter === 'instagram') {
+      return channel?.type === 'instagram';
+    }
+    
     return true;
   });
 
