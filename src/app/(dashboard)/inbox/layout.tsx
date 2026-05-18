@@ -1,7 +1,8 @@
 "use client"
 
-import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin } from "lucide-react"
+import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin, Phone } from "lucide-react"
 import { useState } from "react"
+import Link from "next/link"
 import { useInboxStore } from "@/lib/store"
 
 function firstRelation(relation: any) {
@@ -65,6 +66,10 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2"><span className="font-medium text-lg leading-none mt-[-2px]">@</span> Mentions</div>
             <span className="text-[12px] font-medium opacity-50">0</span>
           </div>
+
+          <Link href="/inbox/calls" className="flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+            <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
+          </Link>
         </div>
 
         <div 

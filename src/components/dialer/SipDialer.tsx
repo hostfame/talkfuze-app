@@ -146,24 +146,24 @@ export default function SipDialer() {
           </div>
 
           {/* Display */}
-          <div className="px-6 py-6 text-center">
+          <div className="px-4 py-4 text-center">
             <input
               type="text"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
-              className="w-full text-center text-3xl font-semibold bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-wider"
+              className="w-full text-center text-2xl font-semibold bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-wider"
               placeholder="0961..."
             />
           </div>
 
           {/* Keypad */}
-          <div className="px-6 pb-6">
-            <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="px-6 pb-5">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
                 <button
                   key={key}
                   onClick={() => handleKeyPress(key)}
-                  className="w-full aspect-square rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xl font-medium text-slate-700 dark:text-slate-200 active:bg-slate-200 transition-colors"
+                  className="w-full h-10 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-lg font-medium text-slate-700 dark:text-slate-200 active:bg-slate-200 transition-colors"
                 >
                   {key}
                 </button>
@@ -175,17 +175,17 @@ export default function SipDialer() {
               {sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
                 <button
                   onClick={handleHangup}
-                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md shadow-red-500/20 active:scale-95 transition-all"
+                  className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md shadow-red-500/20 active:scale-95 transition-all"
                 >
-                  <PhoneOff size={28} />
+                  <PhoneOff size={20} />
                 </button>
               ) : (
                 <button
                   onClick={handleDial}
                   disabled={!number || !isRegistered}
-                  className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                  className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                 >
-                  <Phone size={28} />
+                  <Phone size={20} />
                 </button>
               )}
             </div>

@@ -588,12 +588,7 @@ export default function ChatThread({
             <MoreVertical size={18} strokeWidth={2} />
           </button>
 
-          <button 
-            className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
-            title="Call"
-          >
-            <Phone size={18} strokeWidth={2} />
-          </button>
+
           
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
