@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 
 export default function SipDialer() {
@@ -169,7 +169,7 @@ export default function SipDialer() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center items-center gap-4">
+            <div className="flex justify-center items-center gap-4 relative">
               {sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
                 <button
                   onClick={handleHangup}
@@ -184,6 +184,14 @@ export default function SipDialer() {
                   className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                 >
                   <Phone size={20} />
+                </button>
+              )}
+              {number.length > 0 && (
+                <button 
+                  onClick={() => setNumber(prev => prev.slice(0, -1))}
+                  className="absolute right-6 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
+                >
+                  <Delete size={22} />
                 </button>
               )}
             </div>
