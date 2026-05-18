@@ -7,6 +7,36 @@ import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
 
+interface WhmcsClient {
+  id: number;
+  firstname: string;
+  lastname: string;
+  email: string;
+  status?: string;
+}
+
+interface WhmcsProduct {
+  id: number;
+  name: string;
+  domain?: string;
+  status: string;
+}
+
+interface WhmcsDomain {
+  id: number;
+  domainname: string;
+  expirydate: string;
+  status: string;
+}
+
+interface WhmcsTicket {
+  id: number;
+  subject: string;
+  status: string;
+  deptname: string;
+  lastreply: string;
+}
+
 function firstRelation<T>(relation: Relation<T> | undefined) {
   return Array.isArray(relation) ? relation[0] : relation
 }
@@ -79,13 +109,15 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [isCrmLoading, setIsCrmLoading] = useState(false)
   
   // WHMCS State
-  const [whmcsClient, setWhmcsClient] = useState<any>(null)
-  const [whmcsServices, setWhmcsServices] = useState<any>(null)
-  const [whmcsTickets, setWhmcsTickets] = useState<any>([])
+  const [whmcsClient, setWhmcsClient] = useState<WhmcsClient | null>(null)
+  const [whmcsServices, setWhmcsServices] = useState<{ products: WhmcsProduct[], domains: WhmcsDomain[] } | null>(null)
+  const [whmcsTickets, setWhmcsTickets] = useState<WhmcsTicket[]>([])
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
+  const [lastSearchedQuery, setLastSearchedQuery] = useState("")
 
   const handleManualSearch = async (query: string) => {
     if (!query) return;
+    setLastSearchedQuery(query.trim());
     setIsCrmLoading(true);
     const client = await fetchWhmcsClient(query.trim());
     if (client) {
@@ -125,6 +157,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         if (activeTab === 'copilot') {
           // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
           if (contactPhone || (!isLid && !isMessenger)) {
+            setLastSearchedQuery(cleanPhone)
             const client = await fetchWhmcsClient(cleanPhone)
             if (mounted && client) {
               setWhmcsClient(client)
@@ -383,8 +416,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           ) : (
             <div className="text-center py-6 px-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50">
               <p className="text-[13px] text-slate-500 dark:text-slate-400">
-                {contactPhone || (!isLid && !isMessenger) || crmSearchQuery
-                  ? `No matching account found for ${crmSearchQuery || effectivePhoneId}.`
+                {lastSearchedQuery
+                  ? `No matching account found for ${lastSearchedQuery}.`
                   : `No phone number is associated with this account (ID: ${platformId}).`}
               </p>
             </div>
@@ -396,7 +429,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
                   <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
                   <div className="space-y-3">
-                    {whmcsServices.products?.map((product: any) => (
+                    {whmcsServices.products?.map((product: WhmcsProduct) => (
                       <div key={product.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
                         <div>
                           <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
@@ -407,7 +440,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         </div>
                       </div>
                     ))}
-                    {whmcsServices.domains?.map((domain: any) => (
+                    {whmcsServices.domains?.map((domain: WhmcsDomain) => (
                       <div key={domain.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
                         <div>
                           <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{domain.domainname}</p>
@@ -429,7 +462,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 </div>
                 {whmcsTickets?.length > 0 ? (
                   <div className="space-y-3">
-                    {whmcsTickets.map((ticket: any) => (
+                    {whmcsTickets.map((ticket: WhmcsTicket) => (
                       <div key={ticket.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors">
                         <div className="flex justify-between items-start gap-2 mb-1">
                           <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600">{ticket.subject}</p>

@@ -82,12 +82,23 @@ function CustomAudioPlayer({ src }: { src: string }) {
   )
 }
 
+interface CallLog {
+  id: string;
+  direction: string;
+  from_number: string;
+  to_number: string;
+  created_at: string;
+  duration_seconds: number;
+  status: string;
+  recording_url?: string | null;
+}
+
 export default function CallsPage() {
   const { currentUser } = useInboxStore()
   const orgId = currentUser?.org_id || ""
   const isAdmin = currentUser?.role === 'admin'
   
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<CallLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   
   const [searchQuery, setSearchQuery] = useState('')

@@ -17,15 +17,13 @@ export async function fetchWhmcsClient(phoneOrEmail: string) {
     const cleanPhone = cleanSearch.startsWith('+') ? cleanSearch.substring(1) : cleanSearch
     const data = await getClients(cleanPhone)
     
-    const clientsList = data.clients?.client || []
-    
-    if (clientsList.length > 0) {
+    if (data.clients && data.clients.length > 0) {
       // Find exact match or use the first one
-      const exactMatch = clientsList.find(c => 
+      const exactMatch = data.clients.find(c => 
         (c.phonenumber && c.phonenumber.includes(cleanPhone)) || 
         (c.email && c.email.toLowerCase() === cleanSearch.toLowerCase())
       )
-      return exactMatch || clientsList[0]
+      return exactMatch || data.clients[0]
     }
     return null
   } catch (error) {
@@ -40,8 +38,8 @@ export async function fetchWhmcsServices(clientId: number) {
     const domainsRes = await getClientsDomains(clientId, 0, 100)
     
     return {
-      products: productsRes.products?.product || [],
-      domains: domainsRes.domains?.domain || []
+      products: productsRes.products || [],
+      domains: domainsRes.domains || []
     }
   } catch (error) {
     console.error("Failed to fetch WHMCS services:", error)
@@ -52,7 +50,7 @@ export async function fetchWhmcsServices(clientId: number) {
 export async function fetchWhmcsTickets(clientId: number) {
   try {
     const ticketsRes = await getTickets(clientId, 0, 5)
-    return ticketsRes.tickets?.ticket || []
+    return ticketsRes.tickets || []
   } catch (error) {
     console.error("Failed to fetch WHMCS tickets:", error)
     return []
