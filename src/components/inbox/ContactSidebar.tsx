@@ -2,7 +2,7 @@ import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
@@ -114,6 +114,30 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsTickets, setWhmcsTickets] = useState<WhmcsTicket[]>([])
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
+
+  const [showAllServices, setShowAllServices] = useState(false)
+  const [showAllTickets, setShowAllTickets] = useState(false)
+  const [showCreateTicket, setShowCreateTicket] = useState(false)
+  const [newTicketSubject, setNewTicketSubject] = useState("")
+  const [newTicketMessage, setNewTicketMessage] = useState("")
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+
+  const handleCreateTicket = async () => {
+    if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
+    setIsCreatingTicket(true)
+    const result = await createWhmcsTicket(whmcsClient.id, 1, newTicketSubject, newTicketMessage) // 1 = Support Dept
+    if (result.success) {
+      setNewTicketSubject("")
+      setNewTicketMessage("")
+      setShowCreateTicket(false)
+      // refresh tickets
+      const tickets = await fetchWhmcsTickets(whmcsClient.id)
+      setWhmcsTickets(tickets)
+    } else {
+      alert("Failed to create ticket: " + result.error)
+    }
+    setIsCreatingTicket(false)
+  }
 
   const handleManualSearch = async (query: string) => {
     if (!query) return;
@@ -372,26 +396,18 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           
           {/* Minimal Search Box - Fixed at top */}
           <div className="p-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
-            <div className="relative flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input 
-                  type="text" 
-                  value={crmSearchQuery}
-                  onChange={(e) => setCrmSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleManualSearch(crmSearchQuery || effectivePhoneId)
-                  }}
-                  placeholder="Search CRM by email or phone..." 
-                  className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
-                />
-              </div>
-              <button 
-                onClick={() => handleManualSearch(crmSearchQuery || effectivePhoneId)}
-                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors shadow-sm text-[13px] font-medium shrink-0"
-              >
-                Search
-              </button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input 
+                type="text" 
+                value={crmSearchQuery}
+                onChange={(e) => setCrmSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleManualSearch(crmSearchQuery || effectivePhoneId)
+                }}
+                placeholder="Search CRM by email or phone..." 
+                className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
+              />
             </div>
           </div>
 
@@ -406,7 +422,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             <div className="space-y-4">
               <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">{whmcsClient.status}</span>
                   <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
                 </div>
                 <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
@@ -425,44 +440,58 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
           {whmcsClient && (
             <div className="space-y-6">
-              {whmcsServices && (whmcsServices.products?.length > 0 || whmcsServices.domains?.length > 0) && (
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
-                  <div className="space-y-3">
-                    {whmcsServices.products?.map((product: WhmcsProduct) => (
-                      <div key={product.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
-                        <div>
+              {whmcsServices && (whmcsServices.products?.length > 0 || whmcsServices.domains?.length > 0) && (() => {
+                const activeProducts = whmcsServices.products.filter(p => p.status === 'Active')
+                const activeDomains = whmcsServices.domains.filter(d => d.status === 'Active')
+                const displayProducts = showAllServices ? whmcsServices.products : activeProducts
+                const displayDomains = showAllServices ? whmcsServices.domains : activeDomains
+                const hasHidden = (whmcsServices.products.length > activeProducts.length) || (whmcsServices.domains.length > activeDomains.length)
+
+                return (
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+                    <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
+                    <div className="space-y-3">
+                      {displayProducts?.map((product: WhmcsProduct) => (
+                        <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
                           <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
                           {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
                         </div>
-                        <div className="text-right">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${product.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{product.status}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {whmcsServices.domains?.map((domain: WhmcsDomain) => (
-                      <div key={domain.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
-                        <div>
+                      ))}
+                      {displayDomains?.map((domain: WhmcsDomain) => (
+                        <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
                           <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{domain.domainname}</p>
                           <p className="text-[11px] text-slate-500">Exp: {domain.expirydate}</p>
                         </div>
-                        <div className="text-right">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${domain.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{domain.status}</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                      {!displayProducts.length && !displayDomains.length && (
+                         <p className="text-[12px] text-slate-500">No active services.</p>
+                      )}
+                    </div>
+                    {hasHidden && (
+                      <button 
+                        onClick={() => setShowAllServices(!showAllServices)}
+                        className="mt-3 text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors w-full text-center py-1.5 bg-slate-50 dark:bg-slate-900/50 rounded"
+                      >
+                        {showAllServices ? "Show less" : "Show all services"}
+                      </button>
+                    )}
                   </div>
-                </div>
-              )}
+                )
+              })()}
 
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Recent Tickets</h3>
-                  <button className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded">Create New</button>
+                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Tickets</h3>
+                  <button 
+                    onClick={() => setShowCreateTicket(true)}
+                    className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
+                  >
+                    Create New
+                  </button>
                 </div>
                 {whmcsTickets?.length > 0 ? (
                   <div className="space-y-3">
-                    {whmcsTickets.map((ticket: WhmcsTicket) => (
+                    {whmcsTickets.slice(0, showAllTickets ? undefined : 3).map((ticket: WhmcsTicket) => (
                       <div key={ticket.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors">
                         <div className="flex justify-between items-start gap-2 mb-1">
                           <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600">{ticket.subject}</p>
@@ -471,10 +500,69 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
                       </div>
                     ))}
+                    {whmcsTickets.length > 3 && (
+                      <button 
+                        onClick={() => setShowAllTickets(!showAllTickets)}
+                        className="mt-2 text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors w-full text-center py-1.5 bg-slate-50 dark:bg-slate-900/50 rounded"
+                      >
+                        {showAllTickets ? "Show less" : `View all ${whmcsTickets.length} tickets`}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <p className="text-[12px] text-slate-500 text-center py-4">No recent tickets found.</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Create Ticket Popup */}
+          {showCreateTicket && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-900 w-[90%] max-w-md rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+                <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                  <h3 className="text-[14px] font-semibold text-slate-900 dark:text-white">Create Ticket</h3>
+                  <button onClick={() => setShowCreateTicket(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Subject</label>
+                    <input 
+                      type="text" 
+                      value={newTicketSubject}
+                      onChange={(e) => setNewTicketSubject(e.target.value)}
+                      className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500 shadow-sm"
+                      placeholder="Issue summary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Message</label>
+                    <textarea 
+                      value={newTicketMessage}
+                      onChange={(e) => setNewTicketMessage(e.target.value)}
+                      className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500 shadow-sm min-h-[100px] resize-none"
+                      placeholder="Describe the issue in detail..."
+                    />
+                  </div>
+                </div>
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-2">
+                  <button 
+                    onClick={() => setShowCreateTicket(false)}
+                    className="px-4 py-2 rounded-lg text-[13px] font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleCreateTicket}
+                    disabled={isCreatingTicket || !newTicketSubject.trim() || !newTicketMessage.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-[13px] font-medium transition-colors flex items-center gap-2 shadow-sm"
+                  >
+                    {isCreatingTicket && <Loader2 className="animate-spin" size={14} />}
+                    Create Ticket
+                  </button>
+                </div>
               </div>
             </div>
           )}

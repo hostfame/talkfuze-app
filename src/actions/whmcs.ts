@@ -49,10 +49,22 @@ export async function fetchWhmcsServices(clientId: number) {
 
 export async function fetchWhmcsTickets(clientId: number) {
   try {
-    const ticketsRes = await getTickets(clientId, 0, 5)
+    const ticketsRes = await getTickets(clientId, 0, 50) // fetch more to allow expanding
     return ticketsRes.tickets || []
   } catch (error) {
     console.error("Failed to fetch WHMCS tickets:", error)
     return []
+  }
+}
+
+import { openTicket } from "@/lib/whmcs"
+
+export async function createWhmcsTicket(clientId: number, deptId: number, subject: string, message: string) {
+  try {
+    const result = await openTicket(clientId, deptId, subject, message)
+    return { success: true, ticket: result }
+  } catch (error: any) {
+    console.error("Failed to create WHMCS ticket:", error)
+    return { success: false, error: error.message || "Failed to create ticket" }
   }
 }

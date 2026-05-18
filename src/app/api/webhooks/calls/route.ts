@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { org_id, direction, from, to, duration, status, recording } = body
+    const { org_id, direction, from, to, duration, status, recording, agent_name } = body
 
     if (!org_id || !direction || !from || !to) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       to_number: to,
       duration_seconds: parseInt(duration) || 0,
       status: status || 'UNKNOWN',
-      recording_url
+      recording_url,
+      agent_name: agent_name || null
     })
 
     if (error) {

@@ -91,6 +91,7 @@ interface CallLog {
   duration_seconds: number;
   status: string;
   recording_url?: string | null;
+  agent_name?: string | null;
 }
 
 export default function CallsPage() {
@@ -169,8 +170,10 @@ export default function CallsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 pb-24">
         {isLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col gap-2 p-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="w-full h-12 bg-slate-100 dark:bg-slate-800/50 rounded-lg animate-pulse"></div>
+            ))}
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[50vh] text-center">
@@ -187,6 +190,7 @@ export default function CallsPage() {
                 <th className="py-3 px-6 whitespace-nowrap">Direction</th>
                 <th className="py-3 px-6 whitespace-nowrap">From</th>
                 <th className="py-3 px-6 whitespace-nowrap">To</th>
+                <th className="py-3 px-6 whitespace-nowrap">By</th>
                 <th className="py-3 px-6 whitespace-nowrap">Date</th>
                 <th className="py-3 px-6 whitespace-nowrap">Duration</th>
                 <th className="py-3 px-6 whitespace-nowrap">Status</th>
@@ -208,6 +212,7 @@ export default function CallsPage() {
                   </td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">{log.from_number}</td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">{log.to_number}</td>
+                  <td className="py-3 px-6 text-slate-700 dark:text-slate-300 font-medium text-[13px] whitespace-nowrap">{log.agent_name || "TalkFuze Agent"}</td>
                   <td className="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
