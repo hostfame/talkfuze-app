@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, Keypad, Mic, MicOff, Volume2, PhoneCall } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 
 export default function SipDialer() {
