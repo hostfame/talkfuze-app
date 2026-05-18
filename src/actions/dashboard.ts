@@ -199,7 +199,7 @@ export async function replyToConversation(
     return true;
   }
 
-  if (channelType === 'messenger') {
+  if (channelType === 'messenger' || channelType === 'instagram') {
     const pageAccessToken = channelConfig?.access_token;
     if (!pageAccessToken) {
       console.warn("No access_token found in channel config. Message saved in DB but not sent to Meta.");

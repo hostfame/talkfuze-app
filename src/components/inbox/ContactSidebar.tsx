@@ -172,6 +172,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   useEffect(() => {
     let mounted = true
+    
+    // Reset CRM state immediately when conversation changes to prevent data leak
+    setWhmcsClient(null)
+    setWhmcsServices(null)
+    setWhmcsTickets([])
+    setCrmData(null)
+    setCrmSearchQuery("")
+    
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
         setIsCrmLoading(true)
@@ -436,6 +444,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
+                  <a href={`https://my.hostnin.com/admin/clientssummary.php?userid=${whmcsClient.id}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors" title="View in WHMCS">
+                    <ExternalLink size={14} />
+                  </a>
                 </div>
                 <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
                 <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{whmcsClient.email}</p>
@@ -465,14 +476,24 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
                     <div className="space-y-3">
                       {displayProducts?.map((product: WhmcsProduct) => (
-                        <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
-                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
+                        <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
+                            <a href={`https://my.hostnin.com/admin/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
+                              <ExternalLink size={13} />
+                            </a>
+                          </div>
                           {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
                         </div>
                       ))}
                       {displayDomains?.map((domain: WhmcsDomain) => (
-                        <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
-                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{domain.domainname}</p>
+                        <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
+                            <a href={`https://my.hostnin.com/admin/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
+                              <ExternalLink size={13} />
+                            </a>
+                          </div>
                           <p className="text-[11px] text-slate-500">Exp: {domain.expirydate}</p>
                         </div>
                       ))}
@@ -505,13 +526,22 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 {whmcsTickets?.length > 0 ? (
                   <div className="space-y-3">
                     {whmcsTickets.slice(0, showAllTickets ? undefined : 3).map((ticket: WhmcsTicket) => (
-                      <div key={ticket.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors">
+                      <a 
+                        key={ticket.id} 
+                        href={`https://my.hostnin.com/admin/supporttickets.php?action=view&id=${ticket.id}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="block p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors"
+                      >
                         <div className="flex justify-between items-start gap-2 mb-1">
-                          <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600">{ticket.subject}</p>
+                          <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600 flex items-center gap-1.5">
+                            {ticket.subject}
+                            <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
+                          </p>
                           <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{ticket.status}</span>
                         </div>
                         <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
-                      </div>
+                      </a>
                     ))}
                     {whmcsTickets.length > 3 && (
                       <button 

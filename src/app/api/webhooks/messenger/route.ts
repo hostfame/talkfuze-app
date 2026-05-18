@@ -94,16 +94,24 @@ export async function POST(request: Request) {
 
             // 1. Get or Create Messenger Channel for this Org
             // Note: We use the pageId from the payload to match the correct channel!
+            // For Instagram, the pageId is the Instagram Business Account ID, which might not match the stored Facebook page_id
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
               .select("id, org_id, config")
-              .eq("type", channelType)
-              .eq("config->>page_id", pageId)
-              .limit(1);
+              .eq("type", channelType);
 
             if (chFetchErr) throw chFetchErr;
 
-            const channel = channels && channels.length > 0 ? channels[0] : null;
+            let channel = channels?.find(c => 
+              c.config?.page_id === pageId || 
+              c.config?.instagram_id === pageId ||
+              c.config?.instagram_business_account === pageId
+            ) || null;
+
+            // Fallback: If no strict match but there's exactly one channel of this type (common for single-tenant), use it.
+            if (!channel && channels && channels.length === 1) {
+              channel = channels[0];
+            }
             if (!channel) {
               console.warn(`${channelType} webhook received event for unconnected page/account ${pageId}`);
               continue;
