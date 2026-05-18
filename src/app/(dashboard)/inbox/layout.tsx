@@ -18,7 +18,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
 
-  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls') => {
+  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived') => {
     setActiveFilter(filter)
     if (pathname !== '/inbox') {
       router.push('/inbox')

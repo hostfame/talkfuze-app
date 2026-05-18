@@ -150,6 +150,7 @@ export interface Database {
           is_pinned: boolean
           is_unread: boolean
           is_muted: boolean
+          is_archived: boolean
           created_at: string
         }
         Insert: {
@@ -167,6 +168,7 @@ export interface Database {
           is_pinned?: boolean
           is_unread?: boolean
           is_muted?: boolean
+          is_archived?: boolean
           created_at?: string
         }
         Update: {
@@ -184,6 +186,7 @@ export interface Database {
           is_pinned?: boolean
           is_unread?: boolean
           is_muted?: boolean
+          is_archived?: boolean
           created_at?: string
         }
       }

@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, X, PhoneCall, Delete } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
+import { useInboxStore } from '@/lib/store'
 
 export default function SipDialer() {
+  const { currentUser } = useInboxStore()
   const [isOpen, setIsOpen] = useState(false)
   const [number, setNumber] = useState('')
   const [status, setStatus] = useState('Disconnected')
