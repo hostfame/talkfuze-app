@@ -123,6 +123,7 @@ export default function ChatThread({
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
+  const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -513,11 +514,6 @@ export default function ChatThread({
             return (
               <div key={msg.id || idx} className={`flex items-end justify-end gap-2 mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
                 <div className="flex flex-col items-end gap-1 max-w-[75%]">
-                  {msg.is_internal && (
-                    <div className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1 mb-0.5">
-                      <Lock size={10} strokeWidth={3} /> Internal Note
-                    </div>
-                  )}
                   {/* Agent Name Banner */}
                   <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                   
@@ -690,28 +686,38 @@ export default function ChatThread({
       <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
         {/* Join Thread overlay - shown when agent hasn't joined */}
         {!isJoined && conversationId && (
-          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
             <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
-              <MessageSquare size={20} className="text-slate-400" />
+              <MessageSquare size={18} className="text-slate-400" />
               <span className="text-[14px] font-medium">Read-only mode. Join to reply.</span>
             </div>
-            <button
-              onClick={handleJoinThread}
-              disabled={isJoining}
-              className="flex items-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-[14px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
-            >
-              {isJoining ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Check size={16} />
-              )}
-              {isJoining ? 'Joining...' : 'Join Conversation'}
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => setShowWhisperComposer(!showWhisperComposer)}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors border ${showWhisperComposer ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+              >
+                <Lock size={14} />
+                {showWhisperComposer ? 'Close Note' : 'Add Note'}
+              </button>
+              <button
+                onClick={handleJoinThread}
+                disabled={isJoining}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-[13px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
+              >
+                {isJoining ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Check size={16} />
+                )}
+                {isJoining ? 'Joining...' : 'Join Conversation'}
+              </button>
+            </div>
           </div>
         )}
 
         {/* Actual composer - shown always, but locked to whisper if not joined */}
-        <>
+        {(isJoined || showWhisperComposer) && (
+        <div className={!isJoined ? "mt-4" : ""}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
@@ -881,7 +887,8 @@ export default function ChatThread({
             </div>
           </div>
         </div>
-        </>
+        </div>
+        )}
       </div>
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(
