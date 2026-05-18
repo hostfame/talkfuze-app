@@ -660,21 +660,22 @@ export default function ChatThread({
       <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
         {/* Join Thread overlay - shown when agent hasn't joined */}
         {!isJoined && conversationId && (
-          <div className="flex flex-col items-center justify-center py-5 gap-3">
-            <p className="text-[13px] text-slate-500 dark:text-slate-400">
-              Join this conversation to reply
-            </p>
+          <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+              <MessageSquare size={20} className="text-slate-400" />
+              <span className="text-[14px] font-medium">You are viewing this conversation in read-only mode.</span>
+            </div>
             <button
               onClick={handleJoinThread}
               disabled={isJoining}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold px-6 py-2.5 rounded-xl text-[14px] shadow-sm transition-all active:scale-95"
+              className="flex items-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-[14px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
             >
               {isJoining ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
-                <MessageSquare size={16} />
+                <Check size={16} />
               )}
-              {isJoining ? 'Joining...' : 'Join Thread'}
+              {isJoining ? 'Joining...' : 'Join Conversation'}
             </button>
           </div>
         )}

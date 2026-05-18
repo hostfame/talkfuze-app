@@ -181,6 +181,7 @@ export default function InboxPage() {
         teamMembers={teamMembers}
         isCustomerTyping={selectedId ? typingState[selectedId] : false}
         conversation={activeConversation}
+        currentUser={currentUser as UserProfile}
       />
       <ContactSidebar 
         conversation={activeConversation}
