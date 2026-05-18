@@ -209,7 +209,19 @@ export async function replyToConversation(
     try {
       const contactData = firstRelation(conv.contact as ConversationContactRelation);
       const recipientId = contactData?.platform_id;
-      const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+
+      // Use explicit page_id in the endpoint to avoid ambiguous routing.
+      // For Instagram, facebook_page_id is the FB Page ID; for Messenger, page_id is the FB Page ID.
+      // Using /me/messages with a FB Page token can cause double-delivery when the
+      // same page has both Messenger and Instagram products connected.
+      const fbPageId = channelType === 'instagram'
+        ? channelConfig?.facebook_page_id
+        : channelConfig?.page_id;
+      const endpoint = fbPageId
+        ? `https://graph.facebook.com/v20.0/${fbPageId}/messages?access_token=${pageAccessToken}`
+        : `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -243,14 +255,14 @@ export async function replyToConversation(
           .eq("id", insertedMessage.id);
       }
     } catch (e) {
-      console.error("Failed to send Messenger reply:", e);
+      console.error("Failed to send Meta reply:", e);
       await supabaseAdmin
         .from("messages")
         .update({
           status: "failed",
           metadata: {
             ...metadata,
-            delivery_error: e instanceof Error ? e.message : "Messenger send failed",
+            delivery_error: e instanceof Error ? e.message : "Meta send failed",
             delivery_failed_at: new Date().toISOString()
           }
         })

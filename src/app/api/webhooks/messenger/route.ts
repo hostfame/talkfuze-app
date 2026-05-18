@@ -133,50 +133,59 @@ export async function POST(request: Request) {
             let contact = contacts && contacts.length > 0 ? contacts[0] : null;
 
             if (!contact) {
-              // Try to get user profile from Graph API if we have access token
-              let contactName = `FB User ${senderId.slice(-4)}`;
+              // Use channel-appropriate default name
+              const defaultPrefix = channelType === 'instagram' ? 'Instagram User' : 'FB User';
+              let contactName = `${defaultPrefix} ${senderId.slice(-4)}`;
               let avatarUrl = null;
 
               if (channel.config?.access_token) {
                 try {
-                  // Try fetching everything first
-                  let fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name,profile_pic&access_token=${channel.config.access_token}`);
-                  let fbProfile = await fbProfileRes.json();
-                  
-                  // If profile_pic causes an OAuth error, fallback to just names
-                  if (fbProfile.error) {
-                    console.error("FB Profile fetch error with profile_pic:", fbProfile.error);
-                    fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name&access_token=${channel.config.access_token}`);
-                    fbProfile = await fbProfileRes.json();
-                  }
-                  
-                  if (fbProfile.first_name || fbProfile.last_name) {
-                    contactName = `${fbProfile.first_name || ''} ${fbProfile.last_name || ''}`.trim();
-                  }
-
-                  if (fbProfile.profile_pic) {
-                    const imgRes = await fetch(fbProfile.profile_pic);
-                    if (imgRes.ok) {
-                      const arrayBuffer = await imgRes.arrayBuffer();
-                      const buffer = Buffer.from(arrayBuffer);
-                      const fileName = `avatars/${senderId}_${Date.now()}.jpg`;
-                      
-                      const { error: uploadError } = await supabaseAdmin
-                        .storage
-                        .from('media')
-                        .upload(fileName, buffer, {
-                          contentType: 'image/jpeg',
-                          upsert: true
-                        });
-
-                      if (!uploadError) {
-                        const { data: urlData } = supabaseAdmin.storage.from('media').getPublicUrl(fileName);
-                        avatarUrl = urlData.publicUrl;
+                  if (channelType === 'instagram') {
+                    // For Instagram, fetch via the Instagram-scoped user ID
+                    const igRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=name,username,profile_pic&access_token=${channel.config.access_token}`);
+                    const igProfile = await igRes.json();
+                    if (!igProfile.error) {
+                      if (igProfile.username) contactName = `@${igProfile.username}`;
+                      else if (igProfile.name) contactName = igProfile.name;
+                      if (igProfile.profile_pic) {
+                        const imgRes = await fetch(igProfile.profile_pic);
+                        if (imgRes.ok) {
+                          const buffer = Buffer.from(await imgRes.arrayBuffer());
+                          const fileName = `avatars/${senderId}_${Date.now()}.jpg`;
+                          const { error: uploadError } = await supabaseAdmin.storage.from('media').upload(fileName, buffer, { contentType: 'image/jpeg', upsert: true });
+                          if (!uploadError) {
+                            const { data: urlData } = supabaseAdmin.storage.from('media').getPublicUrl(fileName);
+                            avatarUrl = urlData.publicUrl;
+                          }
+                        }
+                      }
+                    }
+                  } else {
+                    // Messenger: fetch FB profile
+                    let fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name,profile_pic&access_token=${channel.config.access_token}`);
+                    let fbProfile = await fbProfileRes.json();
+                    if (fbProfile.error) {
+                      fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name&access_token=${channel.config.access_token}`);
+                      fbProfile = await fbProfileRes.json();
+                    }
+                    if (fbProfile.first_name || fbProfile.last_name) {
+                      contactName = `${fbProfile.first_name || ''} ${fbProfile.last_name || ''}`.trim();
+                    }
+                    if (fbProfile.profile_pic) {
+                      const imgRes = await fetch(fbProfile.profile_pic);
+                      if (imgRes.ok) {
+                        const buffer = Buffer.from(await imgRes.arrayBuffer());
+                        const fileName = `avatars/${senderId}_${Date.now()}.jpg`;
+                        const { error: uploadError } = await supabaseAdmin.storage.from('media').upload(fileName, buffer, { contentType: 'image/jpeg', upsert: true });
+                        if (!uploadError) {
+                          const { data: urlData } = supabaseAdmin.storage.from('media').getPublicUrl(fileName);
+                          avatarUrl = urlData.publicUrl;
+                        }
                       }
                     }
                   }
                 } catch (e) {
-                  console.error("Failed to fetch FB profile completely:", e);
+                  console.error("Failed to fetch profile:", e);
                 }
               }
 
