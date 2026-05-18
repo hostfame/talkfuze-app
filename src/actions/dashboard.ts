@@ -210,16 +210,8 @@ export async function replyToConversation(
       const contactData = firstRelation(conv.contact as ConversationContactRelation);
       const recipientId = contactData?.platform_id;
 
-      // Use explicit page_id in the endpoint to avoid ambiguous routing.
-      // For Instagram, facebook_page_id is the FB Page ID; for Messenger, page_id is the FB Page ID.
-      // Using /me/messages with a FB Page token can cause double-delivery when the
-      // same page has both Messenger and Instagram products connected.
-      const fbPageId = channelType === 'instagram'
-        ? channelConfig?.facebook_page_id
-        : channelConfig?.page_id;
-      const endpoint = fbPageId
-        ? `https://graph.facebook.com/v20.0/${fbPageId}/messages?access_token=${pageAccessToken}`
-        : `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
+      // Standard endpoint for both Messenger and Instagram is /me/messages
+      const endpoint = `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
 
       const response = await fetch(endpoint, {
         method: "POST",
