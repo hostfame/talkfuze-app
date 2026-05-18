@@ -606,3 +606,16 @@ export async function deleteQuickReply(replyId: string) {
   if (error) throw new Error(error.message)
   return { success: true }
 }
+
+export async function updateQuickReply(replyId: string, orgId: string, shortcut: string, title: string, content: string) {
+  const { data, error } = await supabaseAdmin
+    .from('quick_replies')
+    .update({ shortcut: shortcut.toLowerCase().trim(), title, content })
+    .eq('id', replyId)
+    .eq('org_id', orgId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}

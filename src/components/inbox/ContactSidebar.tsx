@@ -1,7 +1,7 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
-import { getCrmData } from "@/actions/dashboard"
+import { getCrmData, getParticipants } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
@@ -131,6 +131,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsTickets, setWhmcsTickets] = useState<WhmcsTicket[]>([])
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
+
+  const [participants, setParticipants] = useState<any[]>([])
+  useEffect(() => {
+    if (conversation?.id) {
+      getParticipants(conversation.id).then(data => setParticipants(data))
+    }
+  }, [conversation?.id])
 
   const [showAllServices, setShowAllServices] = useState(false)
   const [showAllTickets, setShowAllTickets] = useState(false)
@@ -372,6 +379,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               </div>
             )}
           </div>
+          <button className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-2 self-center shrink-0" title="Ban this User">
+            <Ban size={18} />
+          </button>
         </div>
 
         {/* Core Attributes */}
@@ -385,46 +395,31 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           </div>
         </div>
 
-        {/* Links Section */}
+        {/* Agents Joined Section */}
         <div className="py-4 border-b border-slate-100">
-          <div className="flex justify-between items-center px-5 mb-2 cursor-pointer group">
+          <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
             <h3 className="text-[13px] font-medium text-slate-900 flex items-center gap-2">
-              Links
+              Agents Joined
             </h3>
             <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
           </div>
-          <div className="px-3">
-            <div className="flex justify-between items-center px-2 py-1.5 hover:bg-slate-50 rounded-md transition-colors cursor-pointer group">
-              <span className="text-[13px] text-slate-700 hover:underline">Tracker ticket</span>
-            </div>
-            <div className="flex justify-between items-center px-2 py-1.5 hover:bg-slate-50 rounded-md transition-colors cursor-pointer group">
-              <span className="text-[13px] text-slate-700 hover:underline">Side conversations</span>
-            </div>
-          </div>
-        </div>
-
-
-
-        {/* Conversation attributes */}
-        <div className="py-4">
-          <div className="flex justify-between items-center px-5 mb-2 cursor-pointer group">
-            <h3 className="text-[13px] font-medium text-slate-900 flex items-center gap-2">
-              Conversation attributes
-            </h3>
-            <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
-          </div>
-          <div className="px-5 space-y-3 mt-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[13px] text-slate-500">ID</span>
-              <span className="text-[13px] text-slate-900 font-mono">215471062845035</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[13px] text-slate-500">Brand</span>
-              <span className="text-[13px] text-slate-900 font-medium">TalkFuze</span>
-            </div>
-          </div>
-          <div className="px-5 mt-4">
-            <button className="text-[13px] font-medium text-slate-500 hover:text-slate-700 hover:underline transition-all">See all attributes</button>
+          <div className="px-5 space-y-2.5">
+            {participants.length > 0 ? (
+              participants.map((p, idx) => (
+                <div key={idx} className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                    {p.user?.avatar_url ? (
+                      <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      p.user?.name?.charAt(0).toUpperCase() || 'A'
+                    )}
+                  </div>
+                  <span className="text-[13px] text-slate-700 truncate">{p.user?.name || 'Agent'}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-[12px] text-slate-500 italic">No agents joined.</p>
+            )}
           </div>
         </div>
 
@@ -452,7 +447,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleManualSearch(crmSearchQuery || effectivePhoneId)
                 }}
-                placeholder="Search CRM by email or phone..." 
+                placeholder="Search Client by email or phone..." 
                 className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
               />
             </div>
@@ -481,7 +476,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
                   <div className="flex items-center gap-2">
-                    <button onClick={handleUnlink} className="text-slate-400 hover:text-red-500 transition-colors" title="Unlink CRM Profile">
+                    <button onClick={handleUnlink} className="text-slate-400 hover:text-red-500 transition-colors" title="Unlink Client Profile">
                       <X size={14} />
                     </button>
                     <a href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClient.id}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors" title="View in WHMCS">
@@ -611,6 +606,31 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               )}
             </div>
           )}
+
+          {/* Agents Joined Section */}
+          <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+            <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Agents Joined</h3>
+            {participants.length > 0 ? (
+              <div className="space-y-2">
+                {participants.map((p, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                      {p.user?.avatar_url ? (
+                        <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        p.user?.name?.charAt(0).toUpperCase() || 'A'
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                       <span className="text-[13px] font-medium text-slate-800 dark:text-slate-200 truncate">{p.user?.name || 'Agent'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px] text-slate-500">No agents have joined yet.</p>
+            )}
+          </div>
 
           {/* Create Ticket Popup */}
           {showCreateTicket && (

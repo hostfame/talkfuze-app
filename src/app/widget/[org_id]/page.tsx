@@ -3,7 +3,7 @@
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
 
@@ -25,11 +25,27 @@ export default function WidgetPage() {
   const [messages, setMessages] = useState<AppMessage[]>([])
   const [input, setInput] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [settings, setSettings] = useState<any>(null)
   
   type Tab = 'home' | 'messages' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!org_id) return
+    
+    // Fetch Settings
+    getWidgetSettings(org_id).then(data => {
+        if (data && data.widget) {
+            setSettings(data.widget)
+            // Post message to parent to set launcher color
+            if (data.widget.color) {
+                window.parent.postMessage({ type: 'TALKFUZE_SET_COLOR', color: data.widget.color }, '*')
+            }
+        }
+    })
+  }, [org_id])
 
   useEffect(() => {
     if (!org_id || !deviceId) return
@@ -96,6 +112,8 @@ export default function WidgetPage() {
     }
   }
 
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+
   const [isMuted, setIsMuted] = useState(false)
 
   useEffect(() => {
@@ -113,11 +131,22 @@ export default function WidgetPage() {
 
   // ... (rest of the code)
   
+  // Dynamic values with fallbacks
+  const themeColor = settings?.color || 'linear-gradient(to bottom right, #2563eb, #1d4ed8)' // tailwind blue-600 to blue-700
+  const isCustomColor = !!settings?.color
+  const greetingTitle = settings?.greetingTitle || 'Hey there 👋'
+  const greetingSubtitle = settings?.greetingSubtitle || 'How can we help?'
+  
+  const headerStyle = isCustomColor ? { backgroundColor: settings.color } : {}
+
   return (
     <div className="h-full w-full flex flex-col bg-[#f9fafb] rounded-2xl shadow-xl overflow-hidden font-sans">
       
       {/* Dynamic Header */}
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 flex flex-col shrink-0 text-white relative shadow-sm">
+      <div 
+        className={\`p-6 flex flex-col shrink-0 text-white relative shadow-sm \${!isCustomColor ? 'bg-gradient-to-br from-blue-600 to-blue-700' : ''}\`}
+        style={headerStyle}
+      >
         <div className="flex justify-between items-center mb-6">
           <div className="flex -space-x-2">
              <div className="w-8 h-8 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center z-20 shadow-sm overflow-hidden">
@@ -146,7 +175,8 @@ export default function WidgetPage() {
         
         {activeTab === 'home' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h1 className="text-[28px] font-bold tracking-tight mb-2 leading-tight">Hey there 👋<br/>How can we help?</h1>
+            <h1 className="text-[28px] font-bold tracking-tight mb-2 leading-tight whitespace-pre-wrap">{greetingTitle}</h1>
+            <p className="text-white/80 text-sm font-medium">{greetingSubtitle}</p>
           </div>
         )}
         {activeTab === 'messages' && (
@@ -243,12 +273,25 @@ export default function WidgetPage() {
                   </div>
                 ) : (
                   <div key={idx} className="flex items-end justify-end gap-2">
-                    <div className="bg-blue-600 rounded-[20px] rounded-br-sm p-3.5 text-[15px] text-white shadow-sm leading-relaxed max-w-[85%] whitespace-pre-wrap">
+                    <div className="bg-blue-600 rounded-[20px] rounded-br-sm p-3.5 text-[15px] text-white shadow-sm leading-relaxed max-w-[85%] whitespace-pre-wrap" style={isCustomColor ? { backgroundColor: settings.color } : {}}>
                       {msg.content}
                     </div>
                   </div>
                 )
               })}
+              
+              {/* Typing Indicator */}
+              <div className="flex items-end gap-2 opacity-0 transition-opacity duration-300 hidden" id="tf-typing-indicator">
+                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0 mb-1 shadow-sm">
+                    <Bot size={14} />
+                 </div>
+                 <div className="bg-[#f3f4f6] rounded-[20px] rounded-bl-sm py-4 px-4 text-[15px] text-slate-800 shadow-sm flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                 </div>
+              </div>
+              
               <div ref={messagesEndRef} />
             </div>
 
@@ -282,18 +325,29 @@ export default function WidgetPage() {
 
         {/* TICKETS TAB */}
         {activeTab === 'tickets' && (
-          <div className="p-5 animate-in fade-in duration-300 flex flex-col items-center justify-center h-full text-center">
-             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
-                <Ticket size={28} />
+          <div className="p-5 animate-in fade-in duration-300 flex flex-col items-center h-full text-center">
+             <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-3 text-blue-600 mt-4">
+                <Ticket size={24} />
              </div>
-             <h3 className="font-bold text-slate-800 text-lg mb-2">WHMCS Support Tickets</h3>
-             <p className="text-slate-500 text-sm mb-6 max-w-[250px]">Login with your account email to view and reply to your support tickets directly from here.</p>
-             <button className="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 px-6 rounded-xl w-full max-w-[250px] transition-colors shadow-sm">
-                Login via OTP
-             </button>
-             <button className="text-blue-600 hover:text-blue-700 font-medium py-2.5 px-6 rounded-xl mt-2 text-sm transition-colors">
-                Use Password Instead
-             </button>
+             <h3 className="font-bold text-slate-800 text-lg mb-1">WHMCS Support Tickets</h3>
+             <p className="text-slate-500 text-sm mb-6 px-4">Login with your account email to view and reply to your support tickets directly from here.</p>
+             
+             <div className="w-full max-w-[280px] bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-left">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Email Address</label>
+                <input 
+                  type="email" 
+                  placeholder="name@example.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all mb-3"
+                />
+                <button className="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 rounded-xl text-sm transition-colors shadow-sm flex justify-center items-center gap-2">
+                   Send OTP
+                </button>
+                <div className="mt-3 text-center">
+                   <button className="text-blue-600 hover:text-blue-700 font-medium text-[13px] transition-colors">
+                      Use Password Instead
+                   </button>
+                </div>
+             </div>
           </div>
         )}
 

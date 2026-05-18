@@ -1,0 +1,3183 @@
+{
+  "info": {
+    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+    "name": "Anychat Public API",
+    "description": "<html><head></head><body><p>Each request should contain <code>x-api-key</code> header with valid API key.</p>\n<p>To obtain an API key, you need to navigate to <a href=\"https://anychat.one/settings/api\">Settings / API settings</a> and click \"Add new API key\". Optionally you can set a name to your API key. Once it created you can copy the API key to the clipboard.</p>\n<p>Endpoints which returns list of objects have this JSON schema:</p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"data\": [\n        ...array of objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 10,\n    \"total\": 299\n}\n\n</code></pre>\n<p>You can use there query params to control pagination:</p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>page</td>\n<td>Int</td>\n<td>no</td>\n<td>Page number. Starts from 1</td>\n</tr>\n<tr>\n<td>limit</td>\n<td>Int</td>\n<td>no</td>\n<td>Limit items per request. Min: 1, Max: 100, Default: 20</td>\n</tr>\n</tbody>\n</table>\n</div></body></html>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "toc": [],
+    "owner": "23223880",
+    "collectionId": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+    "publishedId": "2sB2qi6x9D",
+    "public": true,
+    "customColor": {
+      "top-bar": "FFFFFF",
+      "right-sidebar": "303030",
+      "highlight": "FF6C37"
+    },
+    "publishDate": "2025-06-02T21:26:06.000Z"
+  },
+  "item": [
+    {
+      "name": "API Reference",
+      "item": [
+        {
+          "name": "User",
+          "item": [
+            {
+              "name": "Agency clients list",
+              "id": "369e42db-f7fc-4135-b971-971d0bbc22b2",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/user",
+                "description": "<p>Returns an array of <strong>User</strong> objects.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "f24d9ee8-dcd0-49c8-b7eb-4b1a2b50a429",
+                  "name": "Agency clients list",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/user"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:09:37 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "804"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"324-FjzN/1otFJO0k6dct6RXvRLf6nE\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of User objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 1,\n    \"total\": 3\n}"
+                }
+              ],
+              "_postman_id": "369e42db-f7fc-4135-b971-971d0bbc22b2"
+            },
+            {
+              "name": "Agency client info",
+              "id": "154bf4a3-2837-43a6-9749-fc221f6c4968",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/user/{{userID}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{{userID}}</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>GUID of the user</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>User</strong> JSON object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user",
+                    "{{userID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "905ab794-31db-448e-88bb-561bde56f149",
+                  "name": "Agency client info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/user/{{userID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:12:22 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "254"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"fe-eIFX9qS6G7R85sU3M3f1gf5YfeQ\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// User JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1740236299,\n    \"updated_at\": 1740236299,\n    \"company\": null,\n    \"plan\": \"pro\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\"\n}"
+                }
+              ],
+              "_postman_id": "154bf4a3-2837-43a6-9749-fc221f6c4968"
+            },
+            {
+              "name": "Search agency client",
+              "id": "5f598d0d-5430-4399-8c5f-ba36fd078a41",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/user/search?email={{email}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>email</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>Email of the user to search by</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns an array of <strong>User</strong> objects.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user",
+                    "search"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "{{email}}"
+                    }
+                  ],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "6f70848a-bd76-4749-a820-91bf08a55f02",
+                  "name": "Search agency client",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "https://api.anychat.one/public/v1/user/search?email={{email}}",
+                      "protocol": "https",
+                      "host": [
+                        "api",
+                        "anychat",
+                        "one"
+                      ],
+                      "path": [
+                        "public",
+                        "v1",
+                        "user",
+                        "search"
+                      ],
+                      "query": [
+                        {
+                          "key": "email",
+                          "value": "{{email}}"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:14:11 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "51"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"33-ux6vh4uGDScoz5l79z+A1Nc4Db8\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of User objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 0,\n    \"total\": 0\n}"
+                }
+              ],
+              "_postman_id": "5f598d0d-5430-4399-8c5f-ba36fd078a41"
+            },
+            {
+              "name": "Create agency client",
+              "id": "59ba9826-3f88-47be-b593-74dd48f1db71",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"{{email}}\",\r\n    \"firstname\": \"{{firstname}}\",\r\n    \"lastname\": \"{{lastname}}\",\r\n    \"password\": \"{{password}}\",\r\n    \"plan\": \"{{plan}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/user",
+                "description": "<p><strong>Request params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>email</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>Email</td>\n</tr>\n<tr>\n<td>firstname</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>User's firsname</td>\n</tr>\n<tr>\n<td>lastname</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>User's lastname</td>\n</tr>\n<tr>\n<td>password</td>\n<td>String</td>\n<td>no</td>\n<td>User's password. Should be strong password or empty to auto-generate.</td>\n</tr>\n<tr>\n<td>plan</td>\n<td>String</td>\n<td>no</td>\n<td>Should be one of:  <br />\"free\", \"basic\", \"pro\", \"multisite\". Also can be GUID of your custom plan.</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>User</strong> JSON object.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "e07eb5d0-5152-4353-8e67-87a6fed45de0",
+                  "name": "Create agency client",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"email\": \"{{email}}\",\r\n    \"firstname\": \"{{firstname}}\",\r\n    \"lastname\": \"{{lastname}}\",\r\n    \"password\": \"{{password}}\",\r\n    \"plan\": \"{{plan}}\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/user"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:15:06 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "379"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"17b-LWC1CRAQ5l9CAUk5ROb/lB6MGsA\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// User JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1740236299,\n    \"updated_at\": 1740236299,\n    \"company\": null,\n    \"plan\": \"pro\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\"\n}"
+                }
+              ],
+              "_postman_id": "59ba9826-3f88-47be-b593-74dd48f1db71"
+            },
+            {
+              "name": "Update agency client",
+              "id": "24282478-fbf2-4f28-b983-f1bc591e4089",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"{{email}}\",\r\n    \"firstname\": \"{{firstname}}\",\r\n    \"lastname\": \"{{lastname}}\",\r\n    \"password\": \"{{password}}\",\r\n    \"plan\": \"{{plan}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/user/{{userID}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{{userID}}</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>GUID of the user</td>\n</tr>\n</tbody>\n</table>\n</div><p><strong>Request params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>email</td>\n<td>String</td>\n<td>no</td>\n<td>Email</td>\n</tr>\n<tr>\n<td>firstname</td>\n<td>String</td>\n<td>no</td>\n<td>User's firsname</td>\n</tr>\n<tr>\n<td>lastname</td>\n<td>String</td>\n<td>no</td>\n<td>User's lastname</td>\n</tr>\n<tr>\n<td>password</td>\n<td>String</td>\n<td>no</td>\n<td>User's password. Should be strong password or empty to auto-generate.</td>\n</tr>\n<tr>\n<td>plan</td>\n<td>String</td>\n<td>no</td>\n<td>Should be one of:  <br />\"free\", \"basic\", \"pro\", \"multisite\". Also can be GUID of your custom plan.</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns an updated <strong>User</strong> JSON object.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user",
+                    "{{userID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "00237ef1-c4bb-45ef-855a-179646056640",
+                  "name": "Update agency client",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"email\": \"{{email}}\",\r\n    \"firstname\": \"{{firstname}}\",\r\n    \"lastname\": \"{{lastname}}\",\r\n    \"password\": \"{{password}}\",\r\n    \"plan\": \"{{plan}}\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/user/{{userID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:16:02 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "104"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"68-KoVrgUiakUqg5SRmFD8nhvTSKjk\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// User JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1740236299,\n    \"updated_at\": 1740236299,\n    \"company\": null,\n    \"plan\": \"pro\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\"\n}"
+                }
+              ],
+              "_postman_id": "24282478-fbf2-4f28-b983-f1bc591e4089"
+            },
+            {
+              "name": "Delete agency client",
+              "id": "83d83f56-cdd6-4c2d-a8c1-024c23bc6ceb",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/user/{{userID}}",
+                "description": "<p>Return status 200 OK width empty body.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "user",
+                    "{{userID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "d12d7be4-9507-413c-9ae8-0f0a76e0bcd0",
+                  "name": "Delete agency client",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/user/{{userID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:29:26 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "104"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"68-KoVrgUiakUqg5SRmFD8nhvTSKjk\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": ""
+                }
+              ],
+              "_postman_id": "83d83f56-cdd6-4c2d-a8c1-024c23bc6ceb"
+            }
+          ],
+          "id": "e6a5a9b1-6534-40c4-9c81-1bca87e6105d",
+          "_postman_id": "e6a5a9b1-6534-40c4-9c81-1bca87e6105d",
+          "description": "",
+          "auth": {
+            "type": "apikey",
+            "apikey": {
+              "basicConfig": [
+                {
+                  "key": "key",
+                  "value": "x-api-key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                }
+              ]
+            },
+            "isInherited": true,
+            "source": {
+              "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "name": "Anychat Public API",
+              "type": "collection"
+            }
+          }
+        },
+        {
+          "name": "Workspace",
+          "item": [
+            {
+              "name": "Get workspace info",
+              "id": "a1f370a9-92cd-46aa-a215-9d069b6e853a",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/workspace",
+                "description": "<p>Return <strong>Workspace</strong> JSON object.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "workspace"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "03ae4b77-ebde-4293-a0d1-88e0714fc04d",
+                  "name": "Get workspace info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/workspace"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:31:35 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Accept-Encoding"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"f91-LPMYadCCJY/Sw6p9391NJOus/I8\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    },
+                    {
+                      "key": "Content-Encoding",
+                      "value": "gzip"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Workspace JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_agency\": 1,\n    \"title\": \"Default\",\n    \"description\": null,\n    \"image\": null,\n    \"logo\": null,\n    \"created_at\": 1709406616,\n    \"updated_at\": 1749289952,\n    \"channels\": [\n        // array of Channel object\n    ]\n}"
+                }
+              ],
+              "_postman_id": "a1f370a9-92cd-46aa-a215-9d069b6e853a"
+            },
+            {
+              "name": "Get workspace owner info",
+              "id": "5cb3850b-1eff-4338-acdc-8c6d554cec23",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/workspace/me",
+                "description": "<p>Return Workspace owner <strong>User</strong> JSON object.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "workspace",
+                    "me"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "b49ca15b-eaf7-4ed7-962e-25c775c239ad",
+                  "name": "Get workspace owner info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/workspace/me"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:33:30 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "356"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"164-uFAkn1fI/Oe4FnmIdMiZImwZMSo\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// User JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1749234963,\n    \"updated_at\": 1749234963,\n    \"company\": null,\n    \"plan\": \"unlimitedAgency\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\"\n}"
+                }
+              ],
+              "_postman_id": "5cb3850b-1eff-4338-acdc-8c6d554cec23"
+            }
+          ],
+          "id": "be484c27-e255-4ebf-af22-4a36718109f1",
+          "_postman_id": "be484c27-e255-4ebf-af22-4a36718109f1",
+          "description": "",
+          "auth": {
+            "type": "apikey",
+            "apikey": {
+              "basicConfig": [
+                {
+                  "key": "key",
+                  "value": "x-api-key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                }
+              ]
+            },
+            "isInherited": true,
+            "source": {
+              "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "name": "Anychat Public API",
+              "type": "collection"
+            }
+          }
+        },
+        {
+          "name": "Contact",
+          "item": [
+            {
+              "name": "Get contacts list",
+              "id": "ab027e23-33d1-4213-844a-d2f1a5f5b713",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/contact",
+                "description": "<p>Returns an array of <strong>Contact</strong> objects.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "a25c3118-bfb4-459a-8148-154f40e3467b",
+                  "name": "Get contacts list",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/contact"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:35:27 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Accept-Encoding"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1f33-l0wwKMCV5QwdUQ+HKG+L7k7Vqjk\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    },
+                    {
+                      "key": "Content-Encoding",
+                      "value": "gzip"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of Contact objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 122,\n    \"total\": 2434\n}"
+                }
+              ],
+              "_postman_id": "ab027e23-33d1-4213-844a-d2f1a5f5b713"
+            },
+            {
+              "name": "Search contact",
+              "id": "d8724911-8dbd-456f-afff-0eef666c9524",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/contact/search?email={{contactEmail}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>email</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>Email address to search</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns an array of <strong>Contact</strong> objects.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact",
+                    "search"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "{{contactEmail}}"
+                    }
+                  ],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "e33b4ce1-d708-472a-8a8f-be2a3013ca0c",
+                  "name": "Search contact",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "https://api.anychat.one/public/v1/contact/search?email={{contactEmail}}",
+                      "protocol": "https",
+                      "host": [
+                        "api",
+                        "anychat",
+                        "one"
+                      ],
+                      "path": [
+                        "public",
+                        "v1",
+                        "contact",
+                        "search"
+                      ],
+                      "query": [
+                        {
+                          "key": "email",
+                          "value": "{{contactEmail}}"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:35:58 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "112"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"70-e6bGJ5R7LXxFysxsUKobP5a6xs0\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of Contact objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 122,\n    \"total\": 2434\n}"
+                }
+              ],
+              "_postman_id": "d8724911-8dbd-456f-afff-0eef666c9524"
+            },
+            {
+              "name": "Get contact info",
+              "id": "5beb0bd4-a76a-4985-80d0-fce2e39b7f8d",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/contact/{{contactID}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{{contactID}}</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>GUID of the contact</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>Contact</strong> JSON object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact",
+                    "{{contactID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "bd5c7619-5f14-45d2-a2e0-fb240e353072",
+                  "name": "Get contact info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/contact/{{contactID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:36:39 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "107"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"6b-e2ZWUgeEe5ShDiNArqmejVNEMmI\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Contact JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@doe.com\",\n    \"phone\": null,\n    \"clean_phone\": null,\n    \"zip_code\": null,\n    \"coutry\": \"Poland\",\n    \"city\": null,\n    \"state\": null,\n    \"address\": null,\n    \"company\": null,\n    \"lang\": \"pl\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"source\": \"livechat\",\n    \"source_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": null,\n    \"created_at\": 1691000636,\n    \"updated_at\": 1738683845,\n    \"image\": null\n}"
+                }
+              ],
+              "_postman_id": "5beb0bd4-a76a-4985-80d0-fce2e39b7f8d"
+            },
+            {
+              "name": "Create a contact",
+              "id": "8cf02704-8d44-40d6-bb1f-510c08c7b7a6",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"name\": \"{{contactName}}\",                  // optional\r\n    \"email\": \"{{contactEmail}}\",                // email address, should be unique in workspace, optional\r\n    \"phone\": \"{{contactPhone}}\",                // optional\r\n    \"ip\": \"{{contactIP}}\",                      // IPv4 address, optional\r\n    \"origin\": \"{{contactOrigin}}\",              // URL, optional\r\n    \"description\": \"{{contactDescription}}\",    // optional\r\n    \"country\": \"{{contactCountry}}\",            // optional\r\n    \"zip_code\": \"{{contactZIP}}\",               // optional\r\n    \"city\": \"{{contactCity}}\",                  // optional\r\n    \"state\": \"{{contactState}}\",                // optional\r\n    \"address\": \"{{contactAddress}}\",            // optional\r\n    \"company\": \"{{contactCompany}}\",            // optional\r\n    \"lang\": \"{{contactLang}}\"                   // optional\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/contact",
+                "description": "<p><strong>Request params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>name</td>\n<td>String</td>\n<td>no</td>\n<td>Contact name</td>\n</tr>\n<tr>\n<td>email</td>\n<td>String</td>\n<td>no</td>\n<td>Contact email address</td>\n</tr>\n<tr>\n<td>phone</td>\n<td>String</td>\n<td>no</td>\n<td>Contact phone number</td>\n</tr>\n<tr>\n<td>ip</td>\n<td>String</td>\n<td>no</td>\n<td>Contact IP address</td>\n</tr>\n<tr>\n<td>origin</td>\n<td>String (URL)</td>\n<td>no</td>\n<td>Origin URL</td>\n</tr>\n<tr>\n<td>description</td>\n<td>String</td>\n<td>no</td>\n<td>Description</td>\n</tr>\n<tr>\n<td>country</td>\n<td>String</td>\n<td>no</td>\n<td>Country</td>\n</tr>\n<tr>\n<td>zip_code</td>\n<td>String</td>\n<td>no</td>\n<td>ZIP code</td>\n</tr>\n<tr>\n<td>city</td>\n<td>String</td>\n<td>no</td>\n<td>City</td>\n</tr>\n<tr>\n<td>state</td>\n<td>String</td>\n<td>no</td>\n<td>State</td>\n</tr>\n<tr>\n<td>address</td>\n<td>String</td>\n<td>no</td>\n<td>Address</td>\n</tr>\n<tr>\n<td>company</td>\n<td>String</td>\n<td>no</td>\n<td>Company name</td>\n</tr>\n<tr>\n<td>lang</td>\n<td>String</td>\n<td>no</td>\n<td>Contact language</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>Contact</strong> JSON object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "1f834873-fc65-4595-b9d9-ae51020e349c",
+                  "name": "Create a contact",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"name\": \"{{contactName}}\",                  // optional\r\n    \"email\": \"{{contactEmail}}\",                // email address, should be unique in workspace, optional\r\n    \"phone\": \"{{contactPhone}}\",                // optional\r\n    \"ip\": \"{{contactIP}}\",                      // IPv4 address, optional\r\n    \"origin\": \"{{contactOrigin}}\",              // URL, optional\r\n    \"description\": \"{{contactDescription}}\",    // optional\r\n    \"country\": \"{{contactCountry}}\",            // optional\r\n    \"zip_code\": \"{{contactZIP}}\",               // optional\r\n    \"city\": \"{{contactCity}}\",                  // optional\r\n    \"state\": \"{{contactState}}\",                // optional\r\n    \"address\": \"{{contactAddress}}\",            // optional\r\n    \"company\": \"{{contactCompany}}\",            // optional\r\n    \"lang\": \"{{contactLang}}\"                   // optional\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/contact"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:38:01 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "404"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"194-0RqzBF70HYwGsqKreXmWXwQUrow\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Contact JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@doe.com\",\n    \"phone\": null,\n    \"clean_phone\": null,\n    \"zip_code\": null,\n    \"coutry\": \"Poland\",\n    \"city\": null,\n    \"state\": null,\n    \"address\": null,\n    \"company\": null,\n    \"lang\": \"pl\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"source\": \"livechat\",\n    \"source_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": null,\n    \"created_at\": 1691000636,\n    \"updated_at\": 1738683845,\n    \"image\": null\n}"
+                }
+              ],
+              "_postman_id": "8cf02704-8d44-40d6-bb1f-510c08c7b7a6"
+            },
+            {
+              "name": "Update a contact",
+              "id": "13130a5d-b54a-4037-93cb-de3eef3ac6d1",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"name\": \"{{contactName}}\",                  // optional\r\n    \"email\": \"{{contactEmail}}\",                // email address, should be unique in workspace, optional\r\n    \"phone\": \"{{contactPhone}}\",                // optional\r\n    \"ip\": \"{{contactIP}}\",                      // IPv4 address, optional\r\n    \"origin\": \"{{contactOrigin}}\",              // URL, optional\r\n    \"description\": \"{{contactDescription}}\",    // optional\r\n    \"country\": \"{{contactCountry}}\",            // optional\r\n    \"zip_code\": \"{{contactZIP}}\",               // optional\r\n    \"city\": \"{{contactCity}}\",                  // optional\r\n    \"state\": \"{{contactState}}\",                // optional\r\n    \"address\": \"{{contactAddress}}\",            // optional\r\n    \"company\": \"{{contactCompany}}\",            // optional\r\n    \"lang\": \"{{contactLang}}\"                   // optional\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/contact/{{contactID}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{{contactID}}</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>GUID of contact</td>\n</tr>\n</tbody>\n</table>\n</div><p><strong>Request params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>name</td>\n<td>String</td>\n<td>no</td>\n<td>Contact name</td>\n</tr>\n<tr>\n<td>email</td>\n<td>String</td>\n<td>no</td>\n<td>Contact email address</td>\n</tr>\n<tr>\n<td>phone</td>\n<td>String</td>\n<td>no</td>\n<td>Contact phone number</td>\n</tr>\n<tr>\n<td>ip</td>\n<td>String</td>\n<td>no</td>\n<td>Contact IP address</td>\n</tr>\n<tr>\n<td>origin</td>\n<td>String (URL)</td>\n<td>no</td>\n<td>Origin URL</td>\n</tr>\n<tr>\n<td>description</td>\n<td>String</td>\n<td>no</td>\n<td>Description</td>\n</tr>\n<tr>\n<td>country</td>\n<td>String</td>\n<td>no</td>\n<td>Country</td>\n</tr>\n<tr>\n<td>zip_code</td>\n<td>String</td>\n<td>no</td>\n<td>ZIP code</td>\n</tr>\n<tr>\n<td>city</td>\n<td>String</td>\n<td>no</td>\n<td>City</td>\n</tr>\n<tr>\n<td>state</td>\n<td>String</td>\n<td>no</td>\n<td>State</td>\n</tr>\n<tr>\n<td>address</td>\n<td>String</td>\n<td>no</td>\n<td>Address</td>\n</tr>\n<tr>\n<td>company</td>\n<td>String</td>\n<td>no</td>\n<td>Company name</td>\n</tr>\n<tr>\n<td>lang</td>\n<td>String</td>\n<td>no</td>\n<td>Contact language</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>Contact</strong> JSON object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact",
+                    "{{contactID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "80e4db25-94fa-43fc-811c-8f44f0ec86df",
+                  "name": "Update a contact",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"name\": \"{{contactName}}\",                  // optional\r\n    \"email\": \"{{contactEmail}}\",                // email address, should be unique in workspace, optional\r\n    \"phone\": \"{{contactPhone}}\",                // optional\r\n    \"ip\": \"{{contactIP}}\",                      // IPv4 address, optional\r\n    \"origin\": \"{{contactOrigin}}\",              // URL, optional\r\n    \"description\": \"{{contactDescription}}\",    // optional\r\n    \"country\": \"{{contactCountry}}\",            // optional\r\n    \"zip_code\": \"{{contactZIP}}\",               // optional\r\n    \"city\": \"{{contactCity}}\",                  // optional\r\n    \"state\": \"{{contactState}}\",                // optional\r\n    \"address\": \"{{contactAddress}}\",            // optional\r\n    \"company\": \"{{contactCompany}}\",            // optional\r\n    \"lang\": \"{{contactLang}}\"                   // optional\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/contact/{{contactID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:38:31 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "499"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1f3-vMgvqPPoYYGx9GkbCWGNWp3pXfk\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Contact JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@doe.com\",\n    \"phone\": null,\n    \"clean_phone\": null,\n    \"zip_code\": null,\n    \"coutry\": \"Poland\",\n    \"city\": null,\n    \"state\": null,\n    \"address\": null,\n    \"company\": null,\n    \"lang\": \"pl\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"source\": \"livechat\",\n    \"source_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": null,\n    \"created_at\": 1691000636,\n    \"updated_at\": 1738683845,\n    \"image\": null\n}"
+                }
+              ],
+              "_postman_id": "13130a5d-b54a-4037-93cb-de3eef3ac6d1"
+            },
+            {
+              "name": "Delete a contact",
+              "id": "15a4e2c0-869f-440c-9603-d1ab302c0d52",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/contact/{{contactID}}",
+                "description": "<p>Return status <strong>200</strong> OK width empty body.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "contact",
+                    "{{contactID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "d097986b-d99c-455f-9d72-ce0999b2f1b9",
+                  "name": "Delete a contact",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/contact/{{contactID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:38:50 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "107"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"6b-e2ZWUgeEe5ShDiNArqmejVNEMmI\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": ""
+                }
+              ],
+              "_postman_id": "15a4e2c0-869f-440c-9603-d1ab302c0d52"
+            }
+          ],
+          "id": "ca20081d-e3a4-4a5f-a0bf-2e4be70ec0bd",
+          "_postman_id": "ca20081d-e3a4-4a5f-a0bf-2e4be70ec0bd",
+          "description": "",
+          "auth": {
+            "type": "apikey",
+            "apikey": {
+              "basicConfig": [
+                {
+                  "key": "key",
+                  "value": "x-api-key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                }
+              ]
+            },
+            "isInherited": true,
+            "source": {
+              "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "name": "Anychat Public API",
+              "type": "collection"
+            }
+          }
+        },
+        {
+          "name": "Chat",
+          "item": [
+            {
+              "name": "Get chats list",
+              "id": "6b2b1644-2d99-40a2-8224-21cac159f029",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/chat",
+                "description": "<p>Returns array of <strong>Chat</strong> objects</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "860142c2-db0c-4424-8415-e1a30c33c8b3",
+                  "name": "Get chats list",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/chat"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:42:45 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Accept-Encoding"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1fb5-Y/47GN8UCZ8T2qm5EJSjeo+KVIg\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    },
+                    {
+                      "key": "Content-Encoding",
+                      "value": "gzip"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of chat objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 141,\n    \"total\": 2812\n}"
+                }
+              ],
+              "_postman_id": "6b2b1644-2d99-40a2-8224-21cac159f029"
+            },
+            {
+              "name": "Get chat info",
+              "id": "23cd7cb2-e1b5-41df-84db-fbec145a2760",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}",
+                "description": "<p>Return <strong>Chat</strong> object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "ebade75a-543e-4d82-958e-d76308be79ec",
+                  "name": "Get chat info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}"
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:43:37 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "104"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"68-am+IhWn2/zSYOKtvpP6Vt5n45nU\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Chat JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"channel\": \"00000000-0000-0000-0000-000000000000\",\n    \"started_by\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_closed\": 0,\n    \"is_archive\": 0,\n    \"status\": 1,\n    \"notes\": null,\n    \"created_at\": 1643289274,\n    \"updated_at\": 1748794808,\n    \"last_message_at\": 1643301841,\n    \"is_group\": 0,\n    \"title\": null,\n    \"image\": null,\n    \"mute\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"contact\": null\n}"
+                }
+              ],
+              "_postman_id": "23cd7cb2-e1b5-41df-84db-fbec145a2760"
+            },
+            {
+              "name": "Get chat messages list",
+              "id": "58485c33-95c9-4886-88ef-79bf837e4735",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message",
+                "description": "<p>Return array of <strong>Message</strong> objects of selected chat in DESC order.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}",
+                    "message"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "7711c306-fa00-4c01-9e11-d3935f1bedb4",
+                  "name": "Get chat messages list",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:44:53 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "659"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"293-0pidFn3kmXwaG7iX2FzKo8hS5T4\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of Message objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 1,\n    \"total\": 2\n}"
+                }
+              ],
+              "_postman_id": "58485c33-95c9-4886-88ef-79bf837e4735"
+            },
+            {
+              "name": "Get chat message",
+              "id": "0a5d2032-b3e7-4b4d-b79a-c546b9953dde",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message/{{messageID}}",
+                "description": "<p>Return selected <strong>Message</strong> object of selected chat</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}",
+                    "message",
+                    "{{messageID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "b7d66c23-5ea9-4da0-928d-4096def2fbdb",
+                  "name": "Get chat message",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message/{{messageID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:45:24 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "200"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"c8-NXZemrWz0nOfnSL3wt5bpHuo7B0\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Message JSON object\n{\n    \"id\": 1645,\n    \"thread_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"from_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_bot\": null,\n    \"is_service\": 1,\n    \"message\": \"Hello there!\",\n    \"created_at\": 1643301841,\n    \"updated_at\": 1643301841,\n    \"last_edit\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"attachments\": [\n        // array of MessageAttachment objects\n    ]\n}"
+                }
+              ],
+              "_postman_id": "0a5d2032-b3e7-4b4d-b79a-c546b9953dde"
+            },
+            {
+              "name": "Start new chat",
+              "id": "e1a77a51-4975-4b59-b0c9-ed4b530c486d",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"channel\": \"{{channelID}}\",     // channel ID, required\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"chatflow\": \"{{startChatFlow}}\",  // start chat flow, optional\r\n    \"agent\": \"{{teamMemberID}}\",    // agent ID, optional\r\n    \"bot\": \"{{botID}}\",             // bot ID, optional\r\n    \"contact\": \"{{contactID}}\"      // contact, optional\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/chat",
+                "description": "<p>Initiate a new conversation. In the LiveChatWeb channel, messages can be sent on behalf of the agent, bot, or contact. In all other channels, messages can only be sent on behalf of the agent or bot.</p>\n<p>List of body params:</p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>channel</td>\n<td>String (GUID)</td>\n<td>yes</td>\n<td>Channel GUID.</td>\n</tr>\n<tr>\n<td>message</td>\n<td>String</td>\n<td>yes</td>\n<td>Initial message to start new chat.</td>\n</tr>\n<tr>\n<td>chatflow</td>\n<td>Int</td>\n<td>no</td>\n<td>Start chatflow (if channel is connected to the chatflow). 0 - no, 1 - yes</td>\n</tr>\n<tr>\n<td>agent</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the agent.</td>\n</tr>\n<tr>\n<td>bot</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the bot.</td>\n</tr>\n<tr>\n<td>contact</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the contact.</td>\n</tr>\n</tbody>\n</table>\n</div><p>To send a message on behalf of someone, you need to provide at least one of the following parameters: agent, bot, or contact.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "8fcf26e3-1dff-490e-ae33-06e0ab281b05",
+                  "name": "Start new chat",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"channel\": \"{{channelID}}\",     // channel ID, required\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"chatflow\": \"{{startChatFlow}}\",  // start chat flow, optional\r\n    \"agent\": \"{{teamMemberID}}\",    // agent ID, optional\r\n    \"bot\": \"{{botID}}\",             // bot ID, optional\r\n    \"contact\": \"{{contactID}}\"      // contact, optional\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/chat"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:46:47 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "500"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1f4-qf0L0nDAB8+dYlFFFI1Vg0nLxDo\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Message JSON object\n{\n    \"id\": 1645,\n    \"thread_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"from_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_bot\": null,\n    \"is_service\": 1,\n    \"message\": \"Hello there!\",\n    \"created_at\": 1643301841,\n    \"updated_at\": 1643301841,\n    \"last_edit\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"attachments\": [\n        // array of MessageAttachment objects\n    ]\n}"
+                }
+              ],
+              "_postman_id": "e1a77a51-4975-4b59-b0c9-ed4b530c486d"
+            },
+            {
+              "name": "Start new WhatsApp chat",
+              "id": "84c0ea34-4938-4073-b92e-e63673d189b0",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"channel\": \"{{channelID}}\",     // channel ID (WhatsAppQR), required\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"phone\": \"{{phoneNumber}}\"      // destination phone number in international format (+1234567890)\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/chat",
+                "description": "<p>Initiate a new conversation. In the LiveChatWeb channel, messages can be sent on behalf of the agent, bot, or contact. In all other channels, messages can only be sent on behalf of the agent or bot.</p>\n<p>List of body params:</p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>channel</td>\n<td>String (GUID)</td>\n<td>yes</td>\n<td>Channel GUID.</td>\n</tr>\n<tr>\n<td>message</td>\n<td>String</td>\n<td>yes</td>\n<td>Initial message to start new chat.</td>\n</tr>\n<tr>\n<td>phone</td>\n<td>String</td>\n<td>no</td>\n<td>Target phone number in international format (+1234567890)</td>\n</tr>\n</tbody>\n</table>\n</div><p>To send a message on behalf of someone, you need to provide at least one of the following parameters: agent, bot, or contact.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "8a7497f1-2be2-451a-b046-d5e145d83f08",
+                  "name": "Start new WhatsApp chat",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"channel\": \"{{channelID}}\",     // channel ID (WhatsAppQR), required\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"phone\": \"{{phoneNumber}}\"      // destination phone number in international format (+1234567890)\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/chat"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:46:47 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "500"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1f4-qf0L0nDAB8+dYlFFFI1Vg0nLxDo\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Message JSON object\n{\n    \"id\": 1645,\n    \"thread_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"from_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_bot\": null,\n    \"is_service\": 1,\n    \"message\": \"Hello there!\",\n    \"created_at\": 1643301841,\n    \"updated_at\": 1643301841,\n    \"last_edit\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"attachments\": [\n        // array of MessageAttachment objects\n    ]\n}"
+                }
+              ],
+              "_postman_id": "84c0ea34-4938-4073-b92e-e63673d189b0"
+            },
+            {
+              "name": "Send a message to existing chat",
+              "id": "6ae7b49f-4665-46c7-819d-a33f54c40f61",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"agent\": \"{{teamMemberID}}\",    // agent ID, optional\r\n    \"bot\": \"{{botID}}\",             // bot ID, optional\r\n    \"contact\": \"{{contactID}}\"      // contact, optional\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message",
+                "description": "<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>message</td>\n<td>String</td>\n<td>yes</td>\n<td>Initial message to start new chat.</td>\n</tr>\n<tr>\n<td>agent</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the agent.</td>\n</tr>\n<tr>\n<td>bot</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the bot.</td>\n</tr>\n<tr>\n<td>contact</td>\n<td>String (GUID)</td>\n<td>no</td>\n<td>GUID of the contact.</td>\n</tr>\n</tbody>\n</table>\n</div>",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}",
+                    "message"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "05a7a344-5a2f-4f83-a389-dbf46c763dd1",
+                  "name": "Send a message to existing chat",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"message\": \"{{message}}\",       // message text, required\r\n    \"agent\": \"{{teamMemberID}}\",    // agent ID, optional\r\n    \"bot\": \"{{botID}}\",             // bot ID, optional\r\n    \"contact\": \"{{contactID}}\"      // contact, optional\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}/message"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:48:08 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "391"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"187-8mtwAp656XKik/8DdXElwa6Ut1M\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Message JSON object\n{\n    \"id\": 1645,\n    \"thread_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"from_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_bot\": null,\n    \"is_service\": 1,\n    \"message\": \"Hello there!\",\n    \"created_at\": 1643301841,\n    \"updated_at\": 1643301841,\n    \"last_edit\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"attachments\": [\n        // array of MessageAttachment objects\n    ]\n}"
+                }
+              ],
+              "_postman_id": "6ae7b49f-4665-46c7-819d-a33f54c40f61"
+            },
+            {
+              "name": "Update chat info",
+              "id": "c0a9c076-b777-49a1-ab3f-20eabf455bec",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\": \"{{chatTitle}}\" // new title of the chat or empty string to reset\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}",
+                "description": "<p>This endpoint enables you to modify certain details of an existing chat. Currently, you can only update the chat's title. By default, the chat title matches the contact's name, but this endpoint allows you to rename it. If you want to reset the chat title, you can pass a null value as the title parameter.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "8bfd172d-1c33-40c7-9160-5fd6badd9f14",
+                  "name": "Update chat info",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"title\": \"{{chatTitle}}\" // new title of the chat or empty string to reset\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:48:43 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "442"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1ba-ZV8NxeWgTSGThzWiiko2orOuPzk\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// Chat JSON object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"channel\": \"00000000-0000-0000-0000-000000000000\",\n    \"started_by\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_closed\": 0,\n    \"is_archive\": 0,\n    \"status\": 1,\n    \"notes\": null,\n    \"created_at\": 1643289274,\n    \"updated_at\": 1748794808,\n    \"last_message_at\": 1643301841,\n    \"is_group\": 0,\n    \"title\": null,\n    \"image\": null,\n    \"mute\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"contact\": null\n}"
+                }
+              ],
+              "_postman_id": "c0a9c076-b777-49a1-ab3f-20eabf455bec"
+            },
+            {
+              "name": "Delete chat",
+              "id": "90475725-332d-4b8a-ba5c-44d2c0bea159",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/chat/{{chatID}}",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "chat",
+                    "{{chatID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "9b5b5a3f-a32a-48d7-a378-1956fd1326cf",
+                  "name": "Delete chat",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/chat/{{chatID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:49:10 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "104"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"68-am+IhWn2/zSYOKtvpP6Vt5n45nU\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": ""
+                }
+              ],
+              "_postman_id": "90475725-332d-4b8a-ba5c-44d2c0bea159"
+            }
+          ],
+          "id": "d7218abb-d813-40dc-9c3a-39cf24fd3f70",
+          "_postman_id": "d7218abb-d813-40dc-9c3a-39cf24fd3f70",
+          "description": "",
+          "auth": {
+            "type": "apikey",
+            "apikey": {
+              "basicConfig": [
+                {
+                  "key": "key",
+                  "value": "x-api-key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                }
+              ]
+            },
+            "isInherited": true,
+            "source": {
+              "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "name": "Anychat Public API",
+              "type": "collection"
+            }
+          }
+        },
+        {
+          "name": "Team",
+          "item": [
+            {
+              "name": "Get team members list",
+              "id": "645024af-6ce6-4f2f-b308-41e1151a666c",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/team",
+                "description": "<p>Returns an array of TeamMember objects for current workspace.</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "team"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "50f8c8b9-09ee-457b-96d2-c5293ca1d3b5",
+                  "name": "Get team members list",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/team"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:49:44 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "1095"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"447-TE/Ux33V87DTGQSZPgV4lrfazpA\""
+                    },
+                    {
+                      "key": "Strict-Transport-Security",
+                      "value": "max-age=31536000; includeSubDomains"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "Referrer-Policy",
+                      "value": "strict-origin-when-cross-origin"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "{\n    \"data\": [\n        // array of TeamMember objects\n    ],\n    \"page\": 1,\n    \"limit\": 20,\n    \"pages\": 1,\n    \"total\": 4\n}"
+                }
+              ],
+              "_postman_id": "645024af-6ce6-4f2f-b308-41e1151a666c"
+            },
+            {
+              "name": "Get team member info",
+              "id": "0ba34b48-8a52-45bc-94d5-6aad074233e2",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "https://api.anychat.one/public/v1/team/{{memberID}}",
+                "description": "<p><strong>Query params:</strong></p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>Param</strong></th>\n<th><strong>Type</strong></th>\n<th><strong>Required</strong></th>\n<th><strong>Description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>{{memberID}}</td>\n<td>String</td>\n<td><strong>yes</strong></td>\n<td>GUID of the team member</td>\n</tr>\n</tbody>\n</table>\n</div><p>Returns a <strong>TeamMember</strong> JSON object</p>\n",
+                "auth": {
+                  "type": "apikey",
+                  "apikey": {
+                    "basicConfig": [
+                      {
+                        "key": "key",
+                        "value": "x-api-key"
+                      },
+                      {
+                        "key": "value",
+                        "value": "{{apiKey}}"
+                      }
+                    ]
+                  },
+                  "isInherited": true,
+                  "source": {
+                    "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+                    "name": "Anychat Public API",
+                    "type": "collection"
+                  }
+                },
+                "urlObject": {
+                  "protocol": "https",
+                  "path": [
+                    "public",
+                    "v1",
+                    "team",
+                    "{{memberID}}"
+                  ],
+                  "host": [
+                    "api",
+                    "anychat",
+                    "one"
+                  ],
+                  "query": [],
+                  "variable": []
+                }
+              },
+              "response": [
+                {
+                  "id": "d19c41c6-1b00-4eca-800a-e5764b25b27a",
+                  "name": "Get team member info",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": "https://api.anychat.one/public/v1/team/{{memberID}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Server",
+                      "value": "nginx"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 07 Jun 2025 17:50:07 GMT"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "106"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"6a-gdpKxkv9AqXq1spsKgAe8Vq0EtA\""
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    }
+                  ],
+                  "cookie": [],
+                  "responseTime": null,
+                  "body": "// TeamMember object\n{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": null,\n    \"updated_at\": 1749234963,\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\",\n    \"role\": \"owner\"\n}"
+                }
+              ],
+              "_postman_id": "0ba34b48-8a52-45bc-94d5-6aad074233e2"
+            }
+          ],
+          "id": "f1511a96-7dd5-4a49-8754-8709da24625e",
+          "_postman_id": "f1511a96-7dd5-4a49-8754-8709da24625e",
+          "description": "",
+          "auth": {
+            "type": "apikey",
+            "apikey": {
+              "basicConfig": [
+                {
+                  "key": "key",
+                  "value": "x-api-key"
+                },
+                {
+                  "key": "value",
+                  "value": "{{apiKey}}"
+                }
+              ]
+            },
+            "isInherited": true,
+            "source": {
+              "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+              "name": "Anychat Public API",
+              "type": "collection"
+            }
+          }
+        }
+      ],
+      "id": "c5cc546a-f63f-4161-9e74-3c02305e87ab",
+      "_postman_id": "c5cc546a-f63f-4161-9e74-3c02305e87ab",
+      "description": "",
+      "auth": {
+        "type": "apikey",
+        "apikey": {
+          "basicConfig": [
+            {
+              "key": "key",
+              "value": "x-api-key"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}"
+            }
+          ]
+        },
+        "isInherited": true,
+        "source": {
+          "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "name": "Anychat Public API",
+          "type": "collection"
+        }
+      }
+    },
+    {
+      "name": "Webhooks",
+      "item": [],
+      "id": "499c44c2-1d15-4fe6-82a3-8c39da2fd622",
+      "description": "<p>Webhooks enable you to transmit data from Anychat to external platforms when specific events occur.</p>\n<p>To subscribe to events, go to Settings, then API settings, and click on the \"Webhook\" tab. From there, add a new Webhook endpoint. In the dialog box that appears, set the Webhook endpoint URL and choose the events you wish to receive.</p>\n<p>Each webhook request has this JSON data schema:</p>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"event\": \"EVENT_NAME\",\n    \"id\": \"00000000-0000-0000-0000-000000000000\",\n    \"ts\": 1749402870,\n    \"data\": [\n        \"workspace\": \"00000000-0000-0000-0000-000000000000\",\n        \"guid\": \"00000000-0000-0000-0000-000000000000\",\n        [object]: [\n             // JSON object\n        ]\n    ]\n}\n\n</code></pre>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>param</strong></th>\n<th><strong>type</strong></th>\n<th><strong>description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>event</td>\n<td>String</td>\n<td>The name of the event (see table below).</td>\n</tr>\n<tr>\n<td>id</td>\n<td>String (GUID)</td>\n<td>ID of the event</td>\n</tr>\n<tr>\n<td>ts</td>\n<td>Int</td>\n<td>Timestamp</td>\n</tr>\n<tr>\n<td>data</td>\n<td>Object</td>\n<td>Event data details. Data object contain <strong>workspace</strong> and object <strong>guid</strong> and also details of the related object.</td>\n</tr>\n</tbody>\n</table>\n</div><p>Please note that the *.deleted events contains only GUID/ID of the deleted object, but not details of the object as the object is no longer exists.</p>\n<p>Here you can find description of supported events:</p>\n<div class=\"click-to-expand-wrapper is-table-wrapper\"><table>\n<thead>\n<tr>\n<th><strong>event</strong></th>\n<th><strong>data type</strong></th>\n<th><strong>description</strong></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><strong>User</strong></td>\n<td></td>\n<td></td>\n</tr>\n<tr>\n<td>user.created</td>\n<td>User</td>\n<td>User is created</td>\n</tr>\n<tr>\n<td>user.updated</td>\n<td>User</td>\n<td>User is updated</td>\n</tr>\n<tr>\n<td>user.deleted</td>\n<td>GUID of the User</td>\n<td>User is deleted</td>\n</tr>\n<tr>\n<td><strong>Chat</strong></td>\n<td></td>\n<td></td>\n</tr>\n<tr>\n<td>chat.created</td>\n<td>Chat</td>\n<td>Chat is created</td>\n</tr>\n<tr>\n<td>chat.message.created</td>\n<td>Message</td>\n<td>Message is created</td>\n</tr>\n<tr>\n<td>chat.message.updated</td>\n<td>Message</td>\n<td>Message is updated</td>\n</tr>\n<tr>\n<td>chat.message.deleted</td>\n<td>ID of the Message</td>\n<td>Message is deleted</td>\n</tr>\n<tr>\n<td>chat.muted</td>\n<td>Chat</td>\n<td>Chat is muted</td>\n</tr>\n<tr>\n<td>chat.unmuted</td>\n<td>Chat</td>\n<td>Chat is unmuted</td>\n</tr>\n<tr>\n<td>chat.archived</td>\n<td>Chat</td>\n<td>Chat is archived</td>\n</tr>\n<tr>\n<td>chat.unarchived</td>\n<td>Chat</td>\n<td>Chat is unarchived</td>\n</tr>\n<tr>\n<td>chat.resolved</td>\n<td>Chat</td>\n<td>Chat is resolved</td>\n</tr>\n<tr>\n<td>chat.reopened</td>\n<td>Chat</td>\n<td>Chat is re-opened</td>\n</tr>\n<tr>\n<td>chat.deleted</td>\n<td>GUID of the Chat</td>\n<td>Chat is deleted</td>\n</tr>\n<tr>\n<td><strong>Contact</strong></td>\n<td></td>\n<td></td>\n</tr>\n<tr>\n<td>contact.created</td>\n<td>Contact</td>\n<td>Contact is created</td>\n</tr>\n<tr>\n<td>contact.updated</td>\n<td>Contact</td>\n<td>Contact is updated</td>\n</tr>\n<tr>\n<td>contact.deleted</td>\n<td>GUID of the Contact</td>\n<td>Contact is deleted</td>\n</tr>\n</tbody>\n</table>\n</div>",
+      "_postman_id": "499c44c2-1d15-4fe6-82a3-8c39da2fd622",
+      "auth": {
+        "type": "apikey",
+        "apikey": {
+          "basicConfig": [
+            {
+              "key": "key",
+              "value": "x-api-key"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}"
+            }
+          ]
+        },
+        "isInherited": true,
+        "source": {
+          "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "name": "Anychat Public API",
+          "type": "collection"
+        }
+      }
+    },
+    {
+      "name": "Data types",
+      "item": [],
+      "id": "840f86b1-cbd7-413c-b9d4-f1fc2fef0662",
+      "description": "<h2 id=\"user\">User</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"user@example.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1740236299,\n    \"updated_at\": 1740236299,\n    \"company\": null,\n    \"plan\": \"pro\",\n    \"timezone\": \"Europe/Kiev\",\n    \"lang\": \"en\"\n}\n\n</code></pre>\n<h2 id=\"workspace\">Workspace</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_agency\": 1,\n    \"title\": \"Default\",\n    \"description\": null,\n    \"image\": null,\n    \"logo\": null,\n    \"created_at\": 1709406616,\n    \"updated_at\": 1749289952,\n    \"channels\": [\n        ...array of channels\n    ]\n}\n\n</code></pre>\n<h2 id=\"channel\">Channel</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n     \"guid\": \"00000000-0000-0000-0000-000000000000\",\n     \"name\": \"Custom title\",\n     \"class_name\": \"LiveChatWeb\",\n     \"origin\": null,\n     \"status\": 1,\n     \"created_at\": 1709406616,\n     \"image\": null\n}\n\n</code></pre>\n<h2 id=\"contact\">Contact</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@doe.com\",\n    \"phone\": null,\n    \"clean_phone\": null,\n    \"zip_code\": null,\n    \"coutry\": \"Poland\",\n    \"city\": null,\n    \"state\": null,\n    \"address\": null,\n    \"company\": null,\n    \"lang\": \"pl\",\n    \"timezone\": \"Europe/Warsaw\",\n    \"source\": \"livechat\",\n    \"source_id\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": null,\n    \"created_at\": 1691000636,\n    \"updated_at\": 1738683845,\n    \"image\": null\n}\n\n</code></pre>\n<h2 id=\"chat\">Chat</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"channel\": \"00000000-0000-0000-0000-000000000000\",\n    \"started_by\": \"00000000-0000-0000-0000-000000000000\",\n    \"assigned_to\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_closed\": 0,\n    \"is_archive\": 0,\n    \"notes\": null,\n    \"created_at\": 1643289274,\n    \"updated_at\": 1748794808,\n    \"last_message_at\": 1643301841,\n    \"is_group\": 0,\n    \"title\": null,\n    \"image\": null,\n    \"mute\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"contact\": null\n}\n\n</code></pre>\n<h2 id=\"message\">Message</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"id\": 1645,\n    \"thread_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"from_guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"is_bot\": null,\n    \"is_service\": 1,\n    \"message\": \"Hello there!\",\n    \"created_at\": 1643301841,\n    \"updated_at\": 1643301841,\n    \"last_edit\": 0,\n    \"source\": \"livechat\",\n    \"source_id\": null,\n    \"attachments\": [\n         ...array of message attachments\n    ]\n}\n\n</code></pre>\n<h2 id=\"messageattachment\">MessageAttachment</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"id\": 37826,\n    \"thread\": \"00000000-0000-0000-0000-000000000000\",\n    \"message_id\": 538782,\n    \"filename\": \"filename.png\",\n    \"url\": \"https://anc.hel1.your-objectstorage.com/storage/usr/rH-J-tOR1UqfQY/ws/a3uqg_Q2Op1lYeA/uploads/5WKySZYIq2wdse1213xFkDA9w.png\",\n    \"filesize\": 30913,\n    \"mime\": \"image/png\",\n    \"created_at\": 1749309528\n}\n\n</code></pre>\n<h2 id=\"teammember\">TeamMember</h2>\n<pre class=\"click-to-expand-wrapper is-snippet-wrapper\"><code class=\"language-json\">{\n    \"guid\": \"00000000-0000-0000-0000-000000000000\",\n    \"email\": \"john@doe.com\",\n    \"firstname\": \"John\",\n    \"lastname\": \"Doe\",\n    \"phone\": \"\",\n    \"image\": null,\n    \"created_at\": 1749234963,\n    \"updated_at\": 1749234963,\n    \"timezone\": \"Europe/Warsaw\",\n    \"lang\": \"en\",\n    \"role\": \"owner\"\n}\n\n</code></pre>\n",
+      "_postman_id": "840f86b1-cbd7-413c-b9d4-f1fc2fef0662",
+      "auth": {
+        "type": "apikey",
+        "apikey": {
+          "basicConfig": [
+            {
+              "key": "key",
+              "value": "x-api-key"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}"
+            }
+          ]
+        },
+        "isInherited": true,
+        "source": {
+          "_postman_id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "id": "b2379b58-bd49-40a2-9628-c18f32b7698d",
+          "name": "Anychat Public API",
+          "type": "collection"
+        }
+      }
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": {
+      "basicConfig": [
+        {
+          "key": "key",
+          "value": "x-api-key"
+        },
+        {
+          "key": "value",
+          "value": "{{apiKey}}"
+        }
+      ]
+    }
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "007b2752-cde5-48b4-b25c-5bf6a62f7b0b",
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "bd4f3b0c-5290-4f59-9bef-e54f8aa87a9c",
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

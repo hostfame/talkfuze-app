@@ -143,3 +143,29 @@ export async function getWidgetMessages(orgId: string, deviceId: string) {
     return [];
   }
 }
+
+export async function getWidgetSettings(orgId: string) {
+  if (!orgId) return null;
+  try {
+    const { data: org, error } = await supabaseAdmin
+      .from('organizations')
+      .select('settings')
+      .eq('id', orgId)
+      .single()
+
+    if (error) {
+      console.error("Error fetching org settings:", error)
+      return null
+    }
+
+    if (org && org.settings) {
+      // Assuming settings is a JSON object that contains widget configs
+      // e.g. { widget: { color: '#0070f3', greetingTitle: '...', greetingSubtitle: '...' } }
+      return org.settings as Record<string, any>;
+    }
+    return null;
+  } catch (e) {
+    console.error("getWidgetSettings exception:", e);
+    return null;
+  }
+}

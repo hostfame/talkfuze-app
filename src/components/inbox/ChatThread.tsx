@@ -8,7 +8,7 @@ import { updateContactName } from "@/actions/contacts"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
-import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReply, Relation, UserProfile } from "@/lib/types"
+import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 
 const AVATAR_COLORS = [
   'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
@@ -235,7 +235,7 @@ export default function ChatThread({
   const optimisticMessages = conversationId ? (optimisticByConv[conversationId] || []) : []
   
   // Quick Replies State
-  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
+  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>([])
   const [showMacroMenu, setShowMacroMenu] = useState(false)
   const [macroFilter, setMacroFilter] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -261,7 +261,7 @@ export default function ChatThread({
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
-    getQuickReplies(orgId).then(data => {
+    getQuickRepliesFromTable(orgId).then(data => {
       if (data) setQuickReplies(data)
     })
   }, [orgId])
@@ -368,7 +368,7 @@ export default function ChatThread({
 
   const filteredMacros = quickReplies.filter(r => 
     r.shortcut.toLowerCase().includes(macroFilter) || 
-    r.message.toLowerCase().includes(macroFilter)
+    r.content.toLowerCase().includes(macroFilter)
   )
 
   const applyMacro = (message: string) => {
@@ -757,7 +757,7 @@ export default function ChatThread({
                   {/* Agent Name Banner */}
                   <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                   
-                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap break-words font-normal`}>
+                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
                       <img 
@@ -859,7 +859,7 @@ export default function ChatThread({
                     {msg.metadata?.participant_name && (
                       <div className="text-[11px] text-slate-500 ml-1 mb-0.5">{msg.metadata.participant_name}</div>
                     )}
-                    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
+                    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
                         <div className="relative">
                           <img 
@@ -943,9 +943,9 @@ export default function ChatThread({
                     className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 ${i === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/50 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/50">/{macro.shortcut}</span>
+                      <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/50 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/50">{macro.shortcut}</span>
                     </div>
-                    <span className="text-[13px] text-slate-600 dark:text-slate-300 line-clamp-1">{macro.message}</span>
+                    <span className="text-[13px] text-slate-600 dark:text-slate-300 line-clamp-1">{macro.content}</span>
                   </div>
                 ))
               )}
@@ -1023,7 +1023,7 @@ export default function ChatThread({
                     setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
                   } else if (e.key === 'Enter') {
                     e.preventDefault()
-                    applyMacro(filteredMacros[selectedIndex].message)
+                    applyMacro(filteredMacros[selectedIndex].content)
                   } else if (e.key === 'Escape') {
                     setShowMacroMenu(false)
                   }
