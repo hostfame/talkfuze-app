@@ -48,8 +48,21 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const rawPlatformId = contact?.platform_id || "No number"
   const isLid = rawPlatformId.endsWith('@lid')
   const isMessenger = contact?.platform_type === 'messenger'
+  const isInstagram = contact?.platform_type === 'instagram'
+  const isWhatsApp = contact?.platform_type === 'whatsapp'
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
-  const displayId = isLid ? `ID: ${platformId}` : isMessenger ? `Messenger ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
+  // Display logic per platform:
+  // - WhatsApp: show formatted phone number (+880...)
+  // - Instagram: show "Instagram DM" (IGSID is not meaningful to agents)
+  // - Messenger: show "Messenger" (PSID is not meaningful)
+  // - LID: show internal ID
+  const displayId = isLid
+    ? `ID: ${platformId}`
+    : isInstagram
+    ? 'Instagram DM'
+    : isMessenger
+    ? 'Messenger'
+    : (platformId.startsWith('+') ? platformId : `+${platformId}`)
 
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
