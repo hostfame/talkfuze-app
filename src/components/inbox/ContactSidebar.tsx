@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
@@ -327,44 +327,43 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
       {/* CRM Tab Content */}
       {activeTab === 'copilot' && (
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4 space-y-4">
           
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-            <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
-              <Database size={16} className="text-blue-600" /> WHMCS Integration
-            </h3>
-            {isCrmLoading ? (
-              <div className="py-4 flex flex-col items-center justify-center">
-                <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
-                <span className="text-[12px] text-slate-500">Syncing with WHMCS...</span>
-              </div>
-            ) : whmcsClient ? (
-              <div className="space-y-4">
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[13px] font-semibold text-emerald-800 dark:text-emerald-400">Account Linked</span>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/50 text-emerald-700 uppercase tracking-wider">{whmcsClient.status}</span>
-                  </div>
-                  <p className="text-[12px] text-emerald-600/80 dark:text-emerald-500/80 font-medium">#{whmcsClient.id} - {whmcsClient.firstname} {whmcsClient.lastname}</p>
-                  <p className="text-[11px] text-emerald-600/60 dark:text-emerald-500/60 font-mono mt-0.5">{whmcsClient.email}</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  {contactPhone || (!isLid && !isMessenger)
-                    ? `No matching account found for ${effectivePhoneId}. Ensure their phone number matches in WHMCS.`
-                    : `No phone number is associated with this account (ID: ${platformId}). Click the pencil icon under their name above to add their phone number.`}
-                </p>
-                <div className="flex gap-2 opacity-50 pointer-events-none">
-                  <input type="email" placeholder="Search by email..." className="flex-1 text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500" />
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium px-4 rounded-lg transition-colors flex items-center justify-center">
-                    Link
-                  </button>
-                </div>
-              </>
-            )}
+          {/* Minimal Search Box */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input 
+              type="text" 
+              placeholder="Search CRM..." 
+              className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
+            />
           </div>
+
+          {isCrmLoading ? (
+            <div className="py-8 flex flex-col items-center justify-center">
+              <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
+              <span className="text-[12px] text-slate-500">Syncing with WHMCS...</span>
+            </div>
+          ) : whmcsClient ? (
+            <div className="space-y-4">
+              <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">{whmcsClient.status}</span>
+                  <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
+                </div>
+                <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{whmcsClient.email}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 px-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50">
+              <p className="text-[13px] text-slate-500 dark:text-slate-400">
+                {contactPhone || (!isLid && !isMessenger)
+                  ? `No matching account found for ${effectivePhoneId}.`
+                  : `No phone number is associated with this account (ID: ${platformId}).`}
+              </p>
+            </div>
+          )}
 
           {whmcsClient && (
             <div className="space-y-6">
