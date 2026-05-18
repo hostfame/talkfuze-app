@@ -522,6 +522,43 @@ export async function snoozeConversation(conversationId: string, until: Date) {
 }
 
 // ─────────────────────────────────────────────
+// Thread Management (Pin, Mute, Leave, Delete)
+// ─────────────────────────────────────────────
+
+export async function toggleConversationFlag(conversationId: string, flag: 'is_pinned' | 'is_unread' | 'is_muted', value: boolean) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ [flag]: value })
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+
+
+export async function deleteConversation(conversationId: string) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .delete()
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+export async function updateConversationStatus(conversationId: string, status: 'open' | 'pending' | 'resolved' | 'closed') {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ status })
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+
+// ─────────────────────────────────────────────
 // Phase 6: Quick Replies from dedicated table
 // ─────────────────────────────────────────────
 

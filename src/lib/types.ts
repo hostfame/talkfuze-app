@@ -147,6 +147,9 @@ export interface Database {
           subject: string | null
           last_message_at: string
           snoozed_until: string | null
+          is_pinned: boolean
+          is_unread: boolean
+          is_muted: boolean
           created_at: string
         }
         Insert: {
@@ -161,6 +164,9 @@ export interface Database {
           subject?: string | null
           last_message_at?: string
           snoozed_until?: string | null
+          is_pinned?: boolean
+          is_unread?: boolean
+          is_muted?: boolean
           created_at?: string
         }
         Update: {
@@ -175,6 +181,9 @@ export interface Database {
           subject?: string | null
           last_message_at?: string
           snoozed_until?: string | null
+          is_pinned?: boolean
+          is_unread?: boolean
+          is_muted?: boolean
           created_at?: string
         }
       }

@@ -93,8 +93,8 @@ export default function ConversationList({
     if (activeFilter === 'mine') {
       return assignee?.id === currentUser?.id;
     }
-    if (activeFilter === 'unassigned') {
-      return !assignee;
+    if (activeFilter === 'pinned') {
+      return conv.is_pinned;
     }
     if (activeFilter === 'mentions') {
       // Mentions filter not fully implemented in MVP, return empty or implement later

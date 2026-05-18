@@ -1,12 +1,12 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, Archive, Pin, BellOff, Mail, Trash2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable } from "@/actions/dashboard"
+import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
-import { useMessageStore } from "@/lib/store"
+import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReply, Relation, UserProfile } from "@/lib/types"
 
 const AVATAR_COLORS = [
@@ -80,6 +80,55 @@ export default function ChatThread({
   const avatarColor = getAvatarColor(contactName)
 
   const [input, setInput] = useState("")
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const { updateConversation, removeConversation } = useInboxStore()
+
+  // Close menu on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleThreadAction = async (action: string) => {
+    if (!conversationId || !conversation) return
+    setIsMenuOpen(false)
+    try {
+      if (action === 'leave' && currentUser) {
+        await leaveConversation(conversationId)
+        updateConversation(conversationId, { assigned_to: null, assigned_type: 'unassigned' })
+      } else if (action === 'archive') {
+        const isArchived = conversation.status === 'closed'
+        const newStatus = isArchived ? 'open' : 'closed'
+        await updateConversationStatus(conversationId, newStatus)
+        updateConversation(conversationId, { status: newStatus })
+      } else if (action === 'pin') {
+        const newVal = !conversation.is_pinned
+        await toggleConversationFlag(conversationId, 'is_pinned', newVal)
+        updateConversation(conversationId, { is_pinned: newVal })
+      } else if (action === 'unread') {
+        const newVal = !conversation.is_unread
+        await toggleConversationFlag(conversationId, 'is_unread', newVal)
+        updateConversation(conversationId, { is_unread: newVal })
+      } else if (action === 'mute') {
+        const newVal = !conversation.is_muted
+        await toggleConversationFlag(conversationId, 'is_muted', newVal)
+        updateConversation(conversationId, { is_muted: newVal })
+      } else if (action === 'delete') {
+        if (confirm('Are you sure you want to permanently delete this thread?')) {
+          await deleteConversation(conversationId)
+          removeConversation(conversationId)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to perform action:', e)
+    }
+  }
   
   // Load draft when conversation changes
   useEffect(() => {
@@ -449,10 +498,38 @@ export default function ChatThread({
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors border border-purple-200">
-            <Bot size={14} strokeWidth={2} /> Assign to AI
+        <div className="flex items-center gap-2 relative" ref={menuRef}>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+          >
+            <MoreVertical size={18} strokeWidth={2} />
           </button>
+          
+          {isMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
+              <button onClick={() => handleThreadAction('leave')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <LogOut size={14} className="opacity-50" /> Leave thread
+              </button>
+              <button onClick={() => handleThreadAction('archive')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <Archive size={14} className="opacity-50" /> {conversation?.status === 'closed' ? 'Unarchive thread' : 'Archive thread'}
+              </button>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+              <button onClick={() => handleThreadAction('pin')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <Pin size={14} className="opacity-50" /> {conversation?.is_pinned ? 'Unpin thread' : 'Pin thread'}
+              </button>
+              <button onClick={() => handleThreadAction('unread')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <Mail size={14} className="opacity-50" /> {conversation?.is_unread ? 'Mark as read' : 'Mark as unread'}
+              </button>
+              <button onClick={() => handleThreadAction('mute')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <BellOff size={14} className="opacity-50" /> {conversation?.is_muted ? 'Unmute' : 'Mute'}
+              </button>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+              <button onClick={() => handleThreadAction('delete')} className="w-full text-left px-4 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 font-medium">
+                <Trash2 size={14} className="opacity-70" /> Remove thread
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

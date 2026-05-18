@@ -77,17 +77,18 @@ interface InboxState {
   teamMembers: UserProfile[]
   isLoaded: boolean
   selectedId: string | null
-  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram'
+  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned'
   currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
-  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram') => void
+  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned') => void
   setCurrentUser: (user: UserProfile | null) => void
   setMessages: (convoId: string, messages: AppMessage[]) => void
   addMessage: (convoId: string, message: AppMessage) => void
   updateConversation: (id: string, payload: Partial<ConversationWithDetails>) => void
+  removeConversation: (id: string) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -117,5 +118,9 @@ export const useInboxStore = create<InboxState>((set) => ({
     conversations: state.conversations.map((c) => 
       c.id === id ? { ...c, ...payload } : c
     )
+  })),
+  removeConversation: (id) => set((state) => ({
+    conversations: state.conversations.filter((c) => c.id !== id),
+    selectedId: state.selectedId === id ? null : state.selectedId
   }))
 }))

@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone } from "lucide-react"
+import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin } from "lucide-react"
 import { useState } from "react"
 import { useInboxStore } from "@/lib/store"
 
@@ -15,10 +15,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   // Calculate badges
 
-  const unassignedChats = conversations.filter(c => {
-    const assignee = firstRelation(c.assignee)
-    return !assignee
-  }).length
+  const pinnedChats = conversations.filter(c => c.is_pinned).length
 
   const allChats = conversations.length
 
@@ -50,13 +47,13 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           </div>
           
           <div 
-            onClick={() => setActiveFilter('unassigned')}
+            onClick={() => setActiveFilter('pinned')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'unassigned' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'pinned' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Users size={15} strokeWidth={2} /> Unassigned</div>
-            <span className="text-[12px] font-medium">{unassignedChats}</span>
+            <div className="flex items-center gap-2"><Pin size={15} strokeWidth={2} /> Pinned</div>
+            <span className="text-[12px] font-medium">{pinnedChats}</span>
           </div>
 
           <div 
