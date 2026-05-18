@@ -130,8 +130,16 @@ export async function POST(request: Request) {
 
               if (channel.config?.access_token) {
                 try {
-                  const fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name,profile_pic&access_token=${channel.config.access_token}`);
-                  const fbProfile = await fbProfileRes.json();
+                  // Try fetching everything first
+                  let fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name,profile_pic&access_token=${channel.config.access_token}`);
+                  let fbProfile = await fbProfileRes.json();
+                  
+                  // If profile_pic causes an OAuth error, fallback to just names
+                  if (fbProfile.error) {
+                    console.error("FB Profile fetch error with profile_pic:", fbProfile.error);
+                    fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name&access_token=${channel.config.access_token}`);
+                    fbProfile = await fbProfileRes.json();
+                  }
                   
                   if (fbProfile.first_name || fbProfile.last_name) {
                     contactName = `${fbProfile.first_name || ''} ${fbProfile.last_name || ''}`.trim();
@@ -159,7 +167,7 @@ export async function POST(request: Request) {
                     }
                   }
                 } catch (e) {
-                  console.error("Failed to fetch FB profile:", e);
+                  console.error("Failed to fetch FB profile completely:", e);
                 }
               }
 
