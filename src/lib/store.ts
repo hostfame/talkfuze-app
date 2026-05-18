@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { AppMessage, ConversationWithDetails, UserProfile } from './types';
 
 export type OptimisticMessage = {
   id: string;
@@ -70,3 +71,43 @@ export const useMessageStore = create<MessageStore>((set) => ({
     };
   }),
 }));
+
+interface InboxState {
+  conversations: ConversationWithDetails[]
+  teamMembers: UserProfile[]
+  isLoaded: boolean
+  selectedId: string | null
+  messagesMap: Record<string, AppMessage[]>
+  setConversations: (conversations: ConversationWithDetails[]) => void
+  setTeamMembers: (members: UserProfile[]) => void
+  setSelectedId: (id: string | null) => void
+  setMessages: (convoId: string, messages: AppMessage[]) => void
+  addMessage: (convoId: string, message: AppMessage) => void
+  updateConversation: (id: string, payload: Partial<ConversationWithDetails>) => void
+}
+
+export const useInboxStore = create<InboxState>((set) => ({
+  conversations: [],
+  teamMembers: [],
+  isLoaded: false,
+  selectedId: null,
+  messagesMap: {},
+  setConversations: (conversations) => set({ conversations, isLoaded: true }),
+  setTeamMembers: (teamMembers) => set({ teamMembers }),
+  setSelectedId: (selectedId) => set({ selectedId }),
+  setMessages: (convoId, messages) => set((state) => ({
+    messagesMap: { ...state.messagesMap, [convoId]: messages }
+  })),
+  addMessage: (convoId, message) => set((state) => {
+    const existing = state.messagesMap[convoId] || []
+    if (existing.some(m => m.id === message.id)) return state
+    return {
+      messagesMap: { ...state.messagesMap, [convoId]: [...existing, message] }
+    }
+  }),
+  updateConversation: (id, payload) => set((state) => ({
+    conversations: state.conversations.map((c) => 
+      c.id === id ? { ...c, ...payload } : c
+    )
+  }))
+}))

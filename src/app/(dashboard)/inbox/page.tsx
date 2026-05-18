@@ -4,6 +4,7 @@ import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
+import { useInboxStore } from "@/lib/store"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
@@ -14,10 +15,15 @@ export default function InboxPage() {
   const currentUser = useAuth()
   const ORG_ID = currentUser.org_id
 
-  const [conversations, setConversations] = useState<ConversationWithDetails[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<AppMessage[]>([])
-  const [teamMembers, setTeamMembers] = useState<UserProfile[]>([])
+  const { 
+    conversations, setConversations, 
+    selectedId, setSelectedId,
+    messagesMap, setMessages, addMessage,
+    teamMembers, setTeamMembers,
+    isLoaded
+  } = useInboxStore()
+
+  const messages = selectedId ? (messagesMap[selectedId] || []) : []
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
@@ -29,12 +35,18 @@ export default function InboxPage() {
       setConversations((convosData || []) as ConversationWithDetails[])
       setTeamMembers(teamData || [])
       
-      if (convosData && convosData.length > 0) {
-        setSelectedId((current) => current ?? convosData[0].id)
+      if (convosData && convosData.length > 0 && !useInboxStore.getState().selectedId) {
+        setSelectedId(convosData[0].id)
       }
     }
 
-    fetchConvosAndTeam()
+    // Only fetch if not already loaded (to make remounts instant)
+    if (!isLoaded) {
+      fetchConvosAndTeam()
+    } else {
+      // Fetch in background anyway to keep fresh
+      fetchConvosAndTeam()
+    }
     
     const channel = supabase
       .channel('inbox:conversations:list')
@@ -69,15 +81,22 @@ export default function InboxPage() {
       if (!isActive) return
 
       if (data && data.length > 0) {
-        setMessages(data as AppMessage[])
+        setMessages(selectedId, data as AppMessage[])
       } else {
         // Fallback to Server Action if client fails or returns empty
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
-        setMessages((fallbackData || []) as AppMessage[])
+        setMessages(selectedId, (fallbackData || []) as AppMessage[])
       }
     }
-    fetchData()
+    
+    // If we don't have messages for this convo, fetch them immediately
+    if (!messagesMap[selectedId]) {
+      fetchData()
+    } else {
+      // Fetch in background to update
+      fetchData()
+    }
     
     // Use conversation-specific channel name to avoid conflicts across tab switches
     const channelName = `messages:${selectedId}`
@@ -92,12 +111,7 @@ export default function InboxPage() {
           filter: `conversation_id=eq.${selectedId}`
         },
         (payload) => {
-          // Append directly - no full refetch needed
-          setMessages(prev => {
-            // Deduplicate: skip if already in list (e.g. optimistic message)
-            if (prev.some(m => m.id === payload.new.id)) return prev
-            return [...prev, payload.new as AppMessage]
-          })
+          addMessage(selectedId, payload.new as AppMessage)
         }
       )
       .on(
@@ -110,7 +124,8 @@ export default function InboxPage() {
         },
         (payload) => {
           // Update status (read receipts) in place
-          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...(payload.new as Partial<AppMessage>) } : m))
+          const currentMsgs = useInboxStore.getState().messagesMap[selectedId] || []
+          setMessages(selectedId, currentMsgs.map(m => m.id === payload.new.id ? { ...m, ...(payload.new as Partial<AppMessage>) } : m))
         }
       )
       .subscribe()
@@ -159,7 +174,6 @@ export default function InboxPage() {
   }, [ORG_ID]);
 
   const handleSelectConversation = (id: string) => {
-    setMessages([])
     setSelectedId(id)
   }
 
