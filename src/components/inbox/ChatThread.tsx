@@ -811,30 +811,26 @@ export default function ChatThread({
             <div className="flex items-center gap-1">
               <button className={`p-1.5 rounded-md transition-all ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}><Zap size={16} strokeWidth={2.5} /></button>
               
-              {!isInternal && (
-                <>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    onChange={handleFileUpload}
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading || isSending || isRecording}
-                    className="p-1.5 rounded-md transition-all text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                  >
-                    {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
-                  </button>
-                  <button 
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isUploading || isSending}
-                    className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
-                  >
-                    {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
-                  </button>
-                </>
-              )}
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                className="hidden" 
+                onChange={handleFileUpload}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isSending || isRecording}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+              >
+                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
+              </button>
+              <button 
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isUploading || isSending}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+              >
+                {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
+              </button>
             </div>
             <div className="flex items-center gap-3">
               {isJoined && (
