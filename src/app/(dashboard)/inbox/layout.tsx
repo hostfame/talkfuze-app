@@ -5,14 +5,25 @@ import { useState } from "react"
 import Link from "next/link"
 import { useInboxStore } from "@/lib/store"
 
+import { usePathname, useRouter } from "next/navigation"
+
 function firstRelation(relation: any) {
   return Array.isArray(relation) ? relation[0] : relation
 }
 
 export default function InboxLayout({ children }: { children: React.ReactNode }) {
   const { conversations, activeFilter, setActiveFilter, currentUser } = useInboxStore()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
+
+  const handleFilterClick = (filter: string) => {
+    setActiveFilter(filter)
+    if (pathname !== '/inbox') {
+      router.push('/inbox')
+    }
+  }
 
   // Calculate badges
 
@@ -38,9 +49,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
         <div className="px-3 space-y-0.5 mt-2">
           <div 
-            onClick={() => setActiveFilter('all')}
+            onClick={() => handleFilterClick('all')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'all' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'all' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
             <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> All</div>
@@ -48,9 +59,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           </div>
           
           <div 
-            onClick={() => setActiveFilter('pinned')}
+            onClick={() => handleFilterClick('pinned')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'pinned' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'pinned' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
             <div className="flex items-center gap-2"><Pin size={15} strokeWidth={2} /> Pinned</div>
@@ -58,16 +69,16 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div 
-            onClick={() => setActiveFilter('mentions')}
+            onClick={() => handleFilterClick('mentions')}
             className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-              activeFilter === 'mentions' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              activeFilter === 'mentions' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
             <div className="flex items-center gap-2"><span className="font-medium text-lg leading-none mt-[-2px]">@</span> Mentions</div>
             <span className="text-[12px] font-medium opacity-50">0</span>
           </div>
 
-          <Link href="/inbox/calls" className="flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          <Link href="/inbox/calls" className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${pathname === '/inbox/calls' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}>
             <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
           </Link>
         </div>
@@ -83,9 +94,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
         {isConnectionsExpanded && (
           <div className="px-3 space-y-0.5">
             <div 
-              onClick={() => setActiveFilter('messenger')}
+              onClick={() => handleFilterClick('messenger')}
               className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-                activeFilter === 'messenger' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                activeFilter === 'messenger' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> Messenger</div>
@@ -93,9 +104,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             </div>
             
             <div 
-              onClick={() => setActiveFilter('whatsapp')}
+              onClick={() => handleFilterClick('whatsapp')}
               className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-                activeFilter === 'whatsapp' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                activeFilter === 'whatsapp' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-2"><MessageCircle size={15} strokeWidth={2} /> WhatsApp</div>
@@ -103,9 +114,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div 
-              onClick={() => setActiveFilter('instagram')}
+              onClick={() => handleFilterClick('instagram')}
               className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
-                activeFilter === 'instagram' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                activeFilter === 'instagram' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-2"><Smartphone size={15} strokeWidth={2} /> Instagram</div>
