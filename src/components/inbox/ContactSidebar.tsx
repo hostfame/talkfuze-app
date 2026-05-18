@@ -51,22 +51,26 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const isInstagram = contact?.platform_type === 'instagram'
   const isWhatsApp = contact?.platform_type === 'whatsapp'
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
+  const metadataPhone = (contact?.metadata as Record<string, any>)?.real_phone
+  const displayPlatformId = metadataPhone || platformId
   // Display logic per platform:
   // - WhatsApp: show formatted phone number (+880...)
   // - Instagram: show "Instagram DM" (IGSID is not meaningful to agents)
   // - Messenger: show "Messenger" (PSID is not meaningful)
   // - LID: show internal ID
-  const displayId = isLid
-    ? `ID: ${platformId}`
+  const displayId = metadataPhone 
+    ? (metadataPhone.startsWith('+') ? metadataPhone : `+${metadataPhone}`)
+    : isLid
+    ? `ID: ${displayPlatformId}`
     : isInstagram
     ? 'Instagram DM'
     : isMessenger
     ? 'Messenger'
-    : (platformId.startsWith('+') ? platformId : `+${platformId}`)
+    : (displayPlatformId.startsWith('+') ? displayPlatformId : `+${displayPlatformId}`)
 
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
-  const effectivePhoneId = contactPhone || platformId
+  const effectivePhoneId = contactPhone || displayPlatformId
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
   const [summary, setSummary] = useState<string | null>(null)
@@ -470,7 +474,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               <p className="text-[13px] text-slate-500 dark:text-slate-400">
                 {lastSearchedQuery
                   ? `No matching account found for ${lastSearchedQuery}.`
-                  : `No phone number is associated with this account (ID: ${platformId}).`}
+                  : `No CRM profile linked. Search by email or name to link.`}
               </p>
             </div>
           )}
