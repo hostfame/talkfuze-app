@@ -689,7 +689,7 @@ export default function ChatThread({
           <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
             <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
               <MessageSquare size={18} className="text-slate-400" />
-              <span className="text-[14px] font-medium">Read-only mode. Join to reply.</span>
+              <span className="text-[14px] font-medium">Join to reply.</span>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
@@ -709,7 +709,7 @@ export default function ChatThread({
                 ) : (
                   <Check size={16} />
                 )}
-                {isJoining ? 'Joining...' : 'Join Conversation'}
+                {isJoining ? 'Joining...' : 'Join'}
               </button>
             </div>
           </div>
