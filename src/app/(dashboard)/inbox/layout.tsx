@@ -12,7 +12,7 @@ function firstRelation(relation: any) {
 }
 
 export default function InboxLayout({ children }: { children: React.ReactNode }) {
-  const { conversations, activeFilter, setActiveFilter, currentUser } = useInboxStore()
+  const { conversations, activeFilter, setActiveFilter, setSelectedId, currentUser } = useInboxStore()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -20,6 +20,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived') => {
     setActiveFilter(filter)
+    setSelectedId(null)
     if (pathname !== '/inbox') {
       router.push('/inbox')
     }

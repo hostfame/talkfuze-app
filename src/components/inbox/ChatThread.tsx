@@ -497,6 +497,22 @@ export default function ChatThread({
     mediaRecorderRef.current.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
       const file = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' })
+      
+      const localUrl = URL.createObjectURL(audioBlob)
+      const tempId = crypto.randomUUID()
+      
+      addOptimisticMessage(conversationId, {
+        id: tempId,
+        sender_type: 'agent',
+        sender_id: currentUser?.id ?? null,
+        content: '[Audio Voice Message]',
+        content_type: 'audio',
+        metadata: { media_url: localUrl },
+        is_internal: false,
+        status: 'sending',
+        created_at: new Date().toISOString()
+      })
+      
       setIsUploading(true);
       try {
         const meta = await uploadToStorage(file);
@@ -505,8 +521,10 @@ export default function ChatThread({
           mimetype: meta.type,
           filename: meta.name
         });
+        removeOptimisticMessage(conversationId, tempId)
       } catch (err: unknown) {
         console.error("Upload failed:", err);
+        markFailed(conversationId, tempId)
         alert(`Failed to send voice message: ${getErrorMessage(err)}`);
       } finally {
         setIsUploading(false);
