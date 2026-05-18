@@ -9,11 +9,34 @@ export default function SipDialer() {
   const [number, setNumber] = useState('')
   const [status, setStatus] = useState('Disconnected')
   const [isRegistered, setIsRegistered] = useState(false)
+  const [callDuration, setCallDuration] = useState(0)
   
   const [userAgent, setUserAgent] = useState<Web.SimpleUser | null>(null)
   const [sessionState, setSessionState] = useState<SessionState>(SessionState.Initial)
   
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const startTimer = () => {
+    setCallDuration(0)
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setCallDuration(prev => prev + 1)
+    }, 1000)
+  }
+
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -40,10 +63,12 @@ export default function SipDialer() {
       onCallAnswered: () => {
         setStatus('Connected')
         setSessionState(SessionState.Established)
+        startTimer()
       },
       onCallHangup: () => {
         setStatus('Registered')
         setSessionState(SessionState.Terminated)
+        stopTimer()
       },
       onRegistered: () => {
         setStatus('Registered')
@@ -52,10 +77,12 @@ export default function SipDialer() {
       onUnregistered: () => {
         setStatus('Disconnected')
         setIsRegistered(false)
+        stopTimer()
       },
       onServerDisconnect: () => {
         setStatus('Disconnected')
         setIsRegistered(false)
+        stopTimer()
       }
     }
 
@@ -74,6 +101,7 @@ export default function SipDialer() {
     connectSIP()
 
     return () => {
+      stopTimer()
       simpleUser.disconnect()
     }
   }, [])
@@ -139,7 +167,7 @@ export default function SipDialer() {
             status === 'Calling...' ? 'bg-amber-100 text-amber-700' :
             'bg-slate-100 text-slate-500'
           }`}>
-            {status}
+            {status === 'Connected' ? `Connected ${formatTime(callDuration)}` : status}
           </div>
 
           {/* Display */}

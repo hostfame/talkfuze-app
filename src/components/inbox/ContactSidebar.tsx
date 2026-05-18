@@ -398,8 +398,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           ) : (
             <div className="text-center py-6 px-4 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50">
               <p className="text-[13px] text-slate-500 dark:text-slate-400">
-                {contactPhone || (!isLid && !isMessenger)
-                  ? `No matching account found for ${effectivePhoneId}.`
+                {contactPhone || (!isLid && !isMessenger) || crmSearchQuery
+                  ? `No matching account found for ${crmSearchQuery || effectivePhoneId}.`
                   : `No phone number is associated with this account (ID: ${platformId}).`}
               </p>
             </div>

@@ -344,26 +344,30 @@ export default function ChatThread({
   }
 
   const handleSend = async () => {
-    if ((!input.trim() && !pendingAttachment) || !conversationId || isSending) return
+    if ((!input.trim() && !pendingAttachment) || !conversationId) return
 
     const msgText = input.trim()
+    const currentAttachment = pendingAttachment
     const tempId = crypto.randomUUID()
+    
     setInput("")
+    setPendingAttachment(null)
+    setAttachmentPreview(null)
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
     
     // Optimistic UI - add to Zustand (survives conversation switching)
-    const optimisticContent = msgText || (pendingAttachment ? 
-      (pendingAttachment.type.startsWith('image/') ? '[Image]' : 
-       pendingAttachment.type.startsWith('audio/') ? '[Audio Voice Message]' : 
-       pendingAttachment.type.startsWith('video/') ? '[Video]' : '[Attachment]') : '')
+    const optimisticContent = msgText || (currentAttachment ? 
+      (currentAttachment.type.startsWith('image/') ? '[Image]' : 
+       currentAttachment.type.startsWith('audio/') ? '[Audio Voice Message]' : 
+       currentAttachment.type.startsWith('video/') ? '[Video]' : '[Attachment]') : '')
     
     addOptimisticMessage(conversationId, {
       id: tempId,
       sender_type: 'agent',
       sender_id: currentUser?.id ?? null,
       content: optimisticContent,
-      content_type: getContentType(pendingAttachment),
+      content_type: getContentType(currentAttachment),
       metadata: null,
       is_internal: isInternal,
       status: 'sending',
@@ -371,9 +375,9 @@ export default function ChatThread({
     })
     
     try {
-      if (pendingAttachment) {
+      if (currentAttachment) {
         setIsUploading(true);
-        const meta = await uploadToStorage(pendingAttachment);
+        const meta = await uploadToStorage(currentAttachment);
         let contentType = 'file';
         if (meta.type.startsWith('image/')) contentType = 'image';
         else if (meta.type.startsWith('audio/')) contentType = 'audio';
@@ -388,10 +392,6 @@ export default function ChatThread({
           mimetype: meta.type,
           filename: meta.name
         });
-        
-        setPendingAttachment(null);
-        if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
-        setAttachmentPreview(null);
       } else {
         await replyToConversation(orgId, conversationId, msgText, isInternal)
       }
@@ -1041,7 +1041,7 @@ export default function ChatThread({
               
               <button 
                 onClick={handleSend}
-                disabled={!input.trim() || isSending}
+                disabled={!input.trim()}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isInternal ? 'Add Note' : 'Send'}

@@ -1,15 +1,28 @@
 "use server"
 
-import { getClients, getClientsProducts, getClientsDomains, getTickets, getInvoice } from "@/lib/whmcs"
+import { getClients, getClientsProducts, getClientsDomains, getTickets, getInvoice, getClientDetailsByEmailFast } from "@/lib/whmcs"
 
 export async function fetchWhmcsClient(phoneOrEmail: string) {
   try {
-    const cleanSearch = phoneOrEmail.startsWith('+') ? phoneOrEmail.substring(1) : phoneOrEmail
-    const data = await getClients(cleanSearch)
+    const cleanSearch = phoneOrEmail.trim()
+    
+    // If it's an email, use direct email lookup first for accuracy
+    if (cleanSearch.includes('@')) {
+      const emailResult = await getClientDetailsByEmailFast(cleanSearch)
+      if (emailResult && emailResult.id) {
+        return emailResult
+      }
+    }
+
+    const cleanPhone = cleanSearch.startsWith('+') ? cleanSearch.substring(1) : cleanSearch
+    const data = await getClients(cleanPhone)
     
     if (data.clients && data.clients.length > 0) {
       // Find exact match or use the first one
-      const exactMatch = data.clients.find(c => c.phonenumber.includes(cleanSearch) || c.email === phoneOrEmail)
+      const exactMatch = data.clients.find(c => 
+        (c.phonenumber && c.phonenumber.includes(cleanPhone)) || 
+        (c.email && c.email.toLowerCase() === cleanSearch.toLowerCase())
+      )
       return exactMatch || data.clients[0]
     }
     return null
