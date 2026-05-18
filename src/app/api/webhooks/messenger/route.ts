@@ -65,8 +65,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("\n\n🔥 WEBHOOK HIT THE SERVER! Payload:", JSON.stringify(body, null, 2), "\n\n");
 
-    // Check if this is an event from a page subscription
-    if (body.object === 'page') {
+    // Check if this is an event from a page or instagram subscription
+    if (body.object === 'page' || body.object === 'instagram') {
+      const channelType = body.object === 'instagram' ? 'instagram' : 'messenger';
       
       // Iterate over each entry - there may be multiple if batched
       for (const entry of body.entry) {
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
               .select("id, org_id, config")
-              .eq("type", "messenger")
+              .eq("type", channelType)
               .eq("config->>page_id", pageId)
               .limit(1);
 
@@ -104,17 +105,17 @@ export async function POST(request: Request) {
 
             const channel = channels && channels.length > 0 ? channels[0] : null;
             if (!channel) {
-              console.warn(`Messenger webhook received event for unconnected page ${pageId}`);
+              console.warn(`${channelType} webhook received event for unconnected page/account ${pageId}`);
               continue;
             }
             const orgId = channel.org_id;
 
-            // 2. Get or Create Contact based on Facebook Sender ID
+            // 2. Get or Create Contact based on Facebook/Instagram Sender ID
             const { data: contacts, error: contactFetchErr } = await supabaseAdmin
               .from("contacts")
               .select("id")
               .eq("org_id", orgId)
-              .eq("platform_type", "messenger")
+              .eq("platform_type", channelType)
               .eq("platform_id", senderId)
               .limit(1);
 
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
                 .from("contacts")
                 .insert({
                   org_id: orgId,
-                  platform_type: "messenger",
+                  platform_type: channelType,
                   platform_id: senderId,
                   name: contactName,
                   avatar_url: avatarUrl
