@@ -238,6 +238,12 @@ export async function POST(request: Request) {
               });
 
             if (msgErr) throw msgErr;
+
+            // 6. Update conversation last_message_at so it bubbles to top of inbox
+            await supabaseAdmin
+              .from("conversations")
+              .update({ last_message_at: new Date().toISOString() })
+              .eq("id", conversation.id);
           }
         }
       }
