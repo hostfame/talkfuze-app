@@ -138,6 +138,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [newTicketSubject, setNewTicketSubject] = useState("")
   const [newTicketMessage, setNewTicketMessage] = useState("")
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+  const [portalTab, setPortalTab] = useState<'services' | 'domains' | 'tickets'>('services')
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
@@ -280,7 +281,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           onClick={() => setActiveTab('copilot')}
           className={`px-4 py-3 text-[14px] transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          <Database size={14} className={activeTab === 'copilot' ? 'text-blue-500' : ''} /> CRM
+          <Database size={14} className={activeTab === 'copilot' ? 'text-blue-500' : ''} /> Portal
         </button>
         <div className="flex-1"></div>
         <button className="p-2 mb-2 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all active:scale-95 shadow-sm"><ExternalLink size={14} strokeWidth={2.5}/></button>
@@ -357,7 +358,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             ) : (
               <div className="flex items-center gap-1.5 mt-0.5 group">
                 <p className="text-[13px] text-slate-500 truncate">
-                  {contactPhone ? `Phone: ${contactPhone}` : displayId}
+                  {contactPhone && contactPhone.includes('@') ? displayId : (contactPhone ? `Phone: ${contactPhone}` : displayId)}
                 </p>
                 <button 
                   onClick={() => {
@@ -503,99 +504,111 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           )}
 
           {whmcsClient && (
-            <div className="space-y-6">
-              {whmcsServices && (whmcsServices.products?.length > 0 || whmcsServices.domains?.length > 0) && (() => {
-                const activeProducts = whmcsServices.products.filter(p => p.status === 'Active')
-                const activeDomains = whmcsServices.domains.filter(d => d.status === 'Active')
-                const displayProducts = showAllServices ? whmcsServices.products : activeProducts
-                const displayDomains = showAllServices ? whmcsServices.domains : activeDomains
-                const hasHidden = (whmcsServices.products.length > activeProducts.length) || (whmcsServices.domains.length > activeDomains.length)
-
-                return (
-                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-                    <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
-                    <div className="space-y-3">
-                      {displayProducts?.map((product: WhmcsProduct) => (
-                        <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
-                            <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
-                              <ExternalLink size={13} />
-                            </a>
-                          </div>
-                          {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
-                        </div>
-                      ))}
-                      {displayDomains?.map((domain: WhmcsDomain) => (
-                        <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
-                            <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
-                              <ExternalLink size={13} />
-                            </a>
-                          </div>
-                          <p className="text-[11px] text-slate-500">Exp: {domain.expirydate}</p>
-                        </div>
-                      ))}
-                      {!displayProducts.length && !displayDomains.length && (
-                         <p className="text-[12px] text-slate-500">No active services.</p>
-                      )}
-                    </div>
-                    {hasHidden && (
-                      <button 
-                        onClick={() => setShowAllServices(!showAllServices)}
-                        className="mt-3 text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors w-full text-center py-1.5 bg-slate-50 dark:bg-slate-900/50 rounded"
-                      >
-                        {showAllServices ? "Show less" : "Show all services"}
-                      </button>
-                    )}
-                  </div>
-                )
-              })()}
-
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Tickets</h3>
-                  <button 
-                    onClick={() => setShowCreateTicket(true)}
-                    className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
-                  >
-                    Create New
-                  </button>
-                </div>
-                {whmcsTickets?.length > 0 ? (
-                  <div className="space-y-3">
-                    {whmcsTickets.slice(0, showAllTickets ? undefined : 3).map((ticket: WhmcsTicket) => (
-                      <a 
-                        key={ticket.id} 
-                        href={`https://my.hostnin.com/root/supporttickets.php?action=view&id=${ticket.id}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="block p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors"
-                      >
-                        <div className="flex justify-between items-start gap-2 mb-1">
-                          <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600 flex items-center gap-1.5">
-                            {ticket.subject}
-                            <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
-                          </p>
-                          <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{ticket.status}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
-                      </a>
-                    ))}
-                    {whmcsTickets.length > 3 && (
-                      <button 
-                        onClick={() => setShowAllTickets(!showAllTickets)}
-                        className="mt-2 text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors w-full text-center py-1.5 bg-slate-50 dark:bg-slate-900/50 rounded"
-                      >
-                        {showAllTickets ? "Show less" : `View all ${whmcsTickets.length} tickets`}
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-[12px] text-slate-500 text-center py-4">No recent tickets found.</p>
-                )}
+            <div className="mt-2">
+              <div className="flex border-b border-slate-200 dark:border-slate-700 mb-4 overflow-x-auto hide-scrollbar">
+                <button 
+                  onClick={() => setPortalTab('services')}
+                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'services' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  Services {whmcsServices?.products && `(${whmcsServices.products.filter((p: WhmcsProduct) => p.status === 'Active').length})`}
+                </button>
+                <button 
+                  onClick={() => setPortalTab('domains')}
+                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'domains' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  Domains {whmcsServices?.domains && `(${whmcsServices.domains.filter((d: WhmcsDomain) => d.status === 'Active').length})`}
+                </button>
+                <button 
+                  onClick={() => setPortalTab('tickets')}
+                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  Tickets {whmcsTickets && `(${whmcsTickets.length})`}
+                </button>
               </div>
+
+              {portalTab === 'services' && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="space-y-3">
+                    {whmcsServices?.products?.map((product: WhmcsProduct) => (
+                      <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
+                          <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
+                            <ExternalLink size={13} />
+                          </a>
+                        </div>
+                        {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
+                        <p className={`text-[11px] font-medium mt-1 ${product.status === 'Active' ? 'text-emerald-500' : 'text-slate-500'}`}>{product.status}</p>
+                      </div>
+                    ))}
+                    {!whmcsServices?.products?.length && (
+                       <p className="text-[12px] text-slate-500 text-center py-4">No services found.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {portalTab === 'domains' && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="space-y-3">
+                    {whmcsServices?.domains?.map((domain: WhmcsDomain) => (
+                      <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
+                          <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
+                            <ExternalLink size={13} />
+                          </a>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className={`text-[11px] font-medium ${domain.status === 'Active' ? 'text-emerald-500' : 'text-slate-500'}`}>{domain.status}</p>
+                          <p className="text-[11px] text-slate-400">Exp: {domain.expirydate}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {!whmcsServices?.domains?.length && (
+                       <p className="text-[12px] text-slate-500 text-center py-4">No domains found.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {portalTab === 'tickets' && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h3>
+                    <button 
+                      onClick={() => setShowCreateTicket(true)}
+                      className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
+                    >
+                      Create New
+                    </button>
+                  </div>
+                  {whmcsTickets?.length > 0 ? (
+                    <div className="space-y-3">
+                      {whmcsTickets.map((ticket: WhmcsTicket) => (
+                        <a 
+                          key={ticket.id} 
+                          href={`https://my.hostnin.com/root/supporttickets.php?action=view&id=${ticket.id}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="block p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors"
+                        >
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600 flex items-center gap-1.5">
+                              {ticket.subject}
+                              <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
+                            </p>
+                            <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{ticket.status}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-slate-500 text-center py-4">No recent tickets found.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
