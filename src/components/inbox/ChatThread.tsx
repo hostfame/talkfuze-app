@@ -3,11 +3,11 @@
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { replyToConversation, getQuickReplies } from "@/actions/dashboard"
+import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable } from "@/actions/dashboard"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore } from "@/lib/store"
-import type { AppMessage, ConversationWithDetails, QuickReply, Relation, UserProfile } from "@/lib/types"
+import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReply, Relation, UserProfile } from "@/lib/types"
 
 const AVATAR_COLORS = [
   'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
@@ -120,6 +120,11 @@ export default function ChatThread({
   const [macroFilter, setMacroFilter] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
 
+  // Join Thread State
+  const [participants, setParticipants] = useState<ConversationParticipant[]>([])
+  const [isJoining, setIsJoining] = useState(false)
+  const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -138,6 +143,28 @@ export default function ChatThread({
       if (data) setQuickReplies(data)
     })
   }, [orgId])
+
+  // Load participants when conversation changes
+  useEffect(() => {
+    if (!conversationId) return
+    setParticipants([])
+    getParticipants(conversationId).then(data => {
+      setParticipants(data as unknown as ConversationParticipant[])
+    })
+  }, [conversationId])
+
+  async function handleJoinThread() {
+    if (!conversationId || !currentUser) return
+    setIsJoining(true)
+    try {
+      const updated = await joinConversation(conversationId)
+      setParticipants(updated as unknown as ConversationParticipant[])
+    } catch (e) {
+      console.error('Failed to join:', e)
+    } finally {
+      setIsJoining(false)
+    }
+  }
 
   // Smart confirm: when real agent messages arrive, remove matching optimistic ones by content
   useEffect(() => {
@@ -425,6 +452,19 @@ export default function ChatThread({
         )}
 
         {allMessages.map((msg, idx) => {
+          // System messages: render as centered event label
+          if (msg.sender_type === 'system' || msg.content_type === 'system') {
+            return (
+              <div key={msg.id || idx} className="flex items-center gap-3 my-3">
+                <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0">
+                  {msg.content}
+                </span>
+                <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
+              </div>
+            )
+          }
+
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
           const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           
@@ -618,6 +658,30 @@ export default function ChatThread({
 
       {/* Composer Area */}
       <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
+        {/* Join Thread overlay - shown when agent hasn't joined */}
+        {!isJoined && conversationId && (
+          <div className="flex flex-col items-center justify-center py-5 gap-3">
+            <p className="text-[13px] text-slate-500 dark:text-slate-400">
+              Join this conversation to reply
+            </p>
+            <button
+              onClick={handleJoinThread}
+              disabled={isJoining}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold px-6 py-2.5 rounded-xl text-[14px] shadow-sm transition-all active:scale-95"
+            >
+              {isJoining ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <MessageSquare size={16} />
+              )}
+              {isJoining ? 'Joining...' : 'Join Thread'}
+            </button>
+          </div>
+        )}
+
+        {/* Actual composer - hidden until joined */}
+        {isJoined && (
+        <>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
@@ -786,6 +850,8 @@ export default function ChatThread({
             </div>
           </div>
         </div>
+        </>
+        )} {/* end isJoined */}
       </div>
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(

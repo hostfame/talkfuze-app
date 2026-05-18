@@ -393,3 +393,170 @@ export async function createConversation(orgId: string, phone: string) {
 
   return conversation.id;
 }
+
+// ─────────────────────────────────────────────
+// Phase 3: Multi-Agent Collaboration
+// ─────────────────────────────────────────────
+
+export async function getParticipants(conversationId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('conversation_participants')
+    .select('id, user_id, joined_at, user:users(id, name, avatar_url, role)')
+    .eq('conversation_id', conversationId)
+    .order('joined_at', { ascending: true })
+
+  if (error) return []
+  return data || []
+}
+
+export async function joinConversation(conversationId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  // Get agent profile
+  const { data: profile } = await supabaseAdmin
+    .from('users')
+    .select('id, name, org_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) throw new Error('Agent profile not found')
+
+  // Insert participant (idempotent - ignore conflict via upsert)
+  const { error: insertError } = await supabaseAdmin
+    .from('conversation_participants')
+    .upsert(
+      { conversation_id: conversationId, user_id: profile.id },
+      { onConflict: 'conversation_id,user_id', ignoreDuplicates: true }
+    )
+
+  if (insertError) {
+    throw new Error(insertError.message)
+  }
+
+  // Insert system message
+  await supabaseAdmin.from('messages').insert({
+    conversation_id: conversationId,
+    org_id: profile.org_id,
+    sender_type: 'system',
+    sender_id: profile.id,
+    content: `${profile.name} joined the conversation`,
+    content_type: 'system',
+    is_internal: false,
+    status: 'delivered',
+  })
+
+  return getParticipants(conversationId)
+}
+
+export async function leaveConversation(conversationId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: profile } = await supabaseAdmin
+    .from('users')
+    .select('id, name, org_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) throw new Error('Agent profile not found')
+
+  await supabaseAdmin
+    .from('conversation_participants')
+    .delete()
+    .eq('conversation_id', conversationId)
+    .eq('user_id', profile.id)
+
+  await supabaseAdmin.from('messages').insert({
+    conversation_id: conversationId,
+    org_id: profile.org_id,
+    sender_type: 'system',
+    sender_id: profile.id,
+    content: `${profile.name} left the conversation`,
+    content_type: 'system',
+    is_internal: false,
+    status: 'delivered',
+  })
+
+  return getParticipants(conversationId)
+}
+
+// ─────────────────────────────────────────────
+// Phase 4: Ticket Lifecycle
+// ─────────────────────────────────────────────
+
+export async function resolveConversation(conversationId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ status: 'resolved' })
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+export async function reopenConversation(conversationId: string) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ status: 'open' })
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+export async function snoozeConversation(conversationId: string, until: Date) {
+  const { error } = await supabaseAdmin
+    .from('conversations')
+    .update({ status: 'pending', snoozed_until: until.toISOString() })
+    .eq('id', conversationId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}
+
+// ─────────────────────────────────────────────
+// Phase 6: Quick Replies from dedicated table
+// ─────────────────────────────────────────────
+
+export async function getQuickRepliesFromTable(orgId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('quick_replies')
+    .select('id, shortcut, title, content')
+    .eq('org_id', orgId)
+    .order('shortcut', { ascending: true })
+
+  if (error) return []
+  return data || []
+}
+
+export async function createQuickReply(orgId: string, shortcut: string, title: string, content: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabaseAdmin
+    .from('quick_replies')
+    .insert({ org_id: orgId, shortcut: shortcut.toLowerCase().trim(), title, content, created_by: user.id })
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function deleteQuickReply(replyId: string) {
+  const { error } = await supabaseAdmin
+    .from('quick_replies')
+    .delete()
+    .eq('id', replyId)
+
+  if (error) throw new Error(error.message)
+  return { success: true }
+}

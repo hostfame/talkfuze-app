@@ -146,6 +146,7 @@ export interface Database {
           priority: string
           subject: string | null
           last_message_at: string
+          snoozed_until: string | null
           created_at: string
         }
         Insert: {
@@ -159,6 +160,7 @@ export interface Database {
           priority?: string
           subject?: string | null
           last_message_at?: string
+          snoozed_until?: string | null
           created_at?: string
         }
         Update: {
@@ -172,6 +174,7 @@ export interface Database {
           priority?: string
           subject?: string | null
           last_message_at?: string
+          snoozed_until?: string | null
           created_at?: string
         }
       }
@@ -260,6 +263,55 @@ export interface Database {
           created_at?: string
         }
       }
+      conversation_participants: {
+        Row: {
+          id: string
+          conversation_id: string
+          user_id: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          user_id: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          user_id?: string
+          joined_at?: string
+        }
+      }
+      quick_replies: {
+        Row: {
+          id: string
+          org_id: string
+          shortcut: string
+          title: string
+          content: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          shortcut: string
+          title: string
+          content: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          shortcut?: string
+          title?: string
+          content?: string
+          created_by?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -312,6 +364,10 @@ export type Channel = Tables['channels']['Row']
 export type Contact = Tables['contacts']['Row']
 export type Conversation = Tables['conversations']['Row']
 export type AppMessage = Tables['messages']['Row']
+export type ConversationParticipant = Tables['conversation_participants']['Row'] & {
+  user?: Pick<UserProfile, 'id' | 'name' | 'avatar_url' | 'role'>
+}
+export type QuickReplyItem = Tables['quick_replies']['Row']
 
 export type Relation<T> = T | T[] | null
 
@@ -323,4 +379,5 @@ export type ConversationWithDetails = Conversation & {
   channels?: Relation<Pick<Channel, 'type' | 'config'>>
   contact?: Relation<Contact>
   messages?: ConversationPreviewMessage[] | null
+  participants?: ConversationParticipant[]
 }
