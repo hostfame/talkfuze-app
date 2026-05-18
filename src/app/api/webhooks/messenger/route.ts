@@ -95,7 +95,7 @@ export async function POST(request: Request) {
             // Note: We use the pageId from the payload to match the correct channel!
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
-              .select("id, org_id")
+              .select("id, org_id, config")
               .eq("type", "messenger")
               .eq("config->>page_id", pageId)
               .limit(1);
@@ -124,14 +124,52 @@ export async function POST(request: Request) {
 
             if (!contact) {
               // Try to get user profile from Graph API if we have access token
-              // For MVP, just create basic contact
+              let contactName = `FB User ${senderId.slice(-4)}`;
+              let avatarUrl = null;
+
+              if (channel.config?.access_token) {
+                try {
+                  const fbProfileRes = await fetch(`https://graph.facebook.com/v20.0/${senderId}?fields=first_name,last_name,profile_pic&access_token=${channel.config.access_token}`);
+                  const fbProfile = await fbProfileRes.json();
+                  
+                  if (fbProfile.first_name || fbProfile.last_name) {
+                    contactName = `${fbProfile.first_name || ''} ${fbProfile.last_name || ''}`.trim();
+                  }
+
+                  if (fbProfile.profile_pic) {
+                    const imgRes = await fetch(fbProfile.profile_pic);
+                    if (imgRes.ok) {
+                      const arrayBuffer = await imgRes.arrayBuffer();
+                      const buffer = Buffer.from(arrayBuffer);
+                      const fileName = `avatars/${senderId}_${Date.now()}.jpg`;
+                      
+                      const { error: uploadError } = await supabaseAdmin
+                        .storage
+                        .from('media')
+                        .upload(fileName, buffer, {
+                          contentType: 'image/jpeg',
+                          upsert: true
+                        });
+
+                      if (!uploadError) {
+                        const { data: urlData } = supabaseAdmin.storage.from('media').getPublicUrl(fileName);
+                        avatarUrl = urlData.publicUrl;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.error("Failed to fetch FB profile:", e);
+                }
+              }
+
               const { data: newContact, error: contactErr } = await supabaseAdmin
                 .from("contacts")
                 .insert({
                   org_id: orgId,
                   platform_type: "messenger",
                   platform_id: senderId,
-                  name: `FB User ${senderId.slice(-4)}`
+                  name: contactName,
+                  avatar_url: avatarUrl
                 })
                 .select("id")
                 .single();

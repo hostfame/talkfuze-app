@@ -16,8 +16,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
   const rawPlatformId = contact?.platform_id || "No number"
   const isLid = rawPlatformId.endsWith('@lid')
+  const isMessenger = contact?.platform_type === 'messenger'
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
-  const displayId = isLid ? `ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
+  const displayId = isLid ? `ID: ${platformId}` : isMessenger ? `Messenger ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
   const [summary, setSummary] = useState<string | null>(null)
