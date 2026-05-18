@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
 import { logout } from "@/actions/auth"
 import { AuthProvider } from "@/lib/auth-context"
+import SipDialer from "@/components/dialer/SipDialer"
 
 export default async function DashboardLayout({
   children,
@@ -70,6 +71,9 @@ export default async function DashboardLayout({
         <main className="flex-1 flex overflow-hidden relative bg-white dark:bg-slate-900">
           {children}
         </main>
+        
+        {/* WebRTC PBX Dialer */}
+        <SipDialer />
       </div>
     </AuthProvider>
   )
