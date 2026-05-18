@@ -163,12 +163,20 @@ export default function ChatThread({
 
   async function handleJoinThread() {
     if (!conversationId || !currentUser) return
+    
+    // Optimistic UI update to make it feel instant
+    const prevParticipants = [...participants]
+    setParticipants([...participants, { user_id: currentUser.id, role: 'agent' } as unknown as ConversationParticipant])
+    setIsInternal(false) // Auto-switch to reply mode
     setIsJoining(true)
+    
     try {
       const updated = await joinConversation(conversationId)
       setParticipants(updated as unknown as ConversationParticipant[])
     } catch (e) {
       console.error('Failed to join:', e)
+      setParticipants(prevParticipants)
+      setIsInternal(true)
     } finally {
       setIsJoining(false)
     }
