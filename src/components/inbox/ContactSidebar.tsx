@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets } from "@/actions/whmcs"
-import { updateContactName } from "@/actions/contacts"
+import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
 
@@ -20,6 +20,10 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const isMessenger = contact?.platform_type === 'messenger'
   const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
   const displayId = isLid ? `ID: ${platformId}` : isMessenger ? `Messenger ID: ${platformId}` : (platformId.startsWith('+') ? platformId : `+${platformId}`)
+
+  const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
+  const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
+  const effectivePhoneId = contactPhone || platformId
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
   const [summary, setSummary] = useState<string | null>(null)
@@ -48,6 +52,28 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setIsEditingName(false)
   }
 
+  const [isEditingPhone, setIsEditingPhone] = useState(false)
+  const [editedPhone, setEditedPhone] = useState("")
+
+  const handleSavePhone = async () => {
+    if (!contact?.id) return
+    const newPhone = editedPhone.trim()
+    if (newPhone === contactPhone) {
+      setIsEditingPhone(false)
+      return
+    }
+    const result = await updateContactPhone(contact.id, newPhone)
+    if (result.success) {
+      setContactPhoneOverrides((current) => ({
+        ...current,
+        [contact.id]: newPhone,
+      }))
+    } else {
+      setEditedPhone(contactPhone || "") // revert on error
+    }
+    setIsEditingPhone(false)
+  }
+
   // CRM State
   const [crmData, setCrmData] = useState<Record<string, unknown> | null>(null)
   const [isCrmLoading, setIsCrmLoading] = useState(false)
@@ -62,20 +88,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
         setIsCrmLoading(true)
-        const cleanPhone = platformId.startsWith('+') ? platformId : `+${platformId}`
+        const cleanPhone = effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`
         
         // Fetch WHMCS data if viewing CRM tab
         if (activeTab === 'copilot') {
-          const client = await fetchWhmcsClient(cleanPhone)
-          if (mounted && client) {
-            setWhmcsClient(client)
-            const [services, tickets] = await Promise.all([
-              fetchWhmcsServices(client.id),
-              fetchWhmcsTickets(client.id)
-            ])
-            if (mounted) {
-              setWhmcsServices(services)
-              setWhmcsTickets(tickets)
+          // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
+          if (contactPhone || (!isLid && !isMessenger)) {
+            const client = await fetchWhmcsClient(cleanPhone)
+            if (mounted && client) {
+              setWhmcsClient(client)
+              const [services, tickets] = await Promise.all([
+                fetchWhmcsServices(client.id),
+                fetchWhmcsTickets(client.id)
+              ])
+              if (mounted) {
+                setWhmcsServices(services)
+                setWhmcsTickets(tickets)
+              }
             }
           }
         }
@@ -176,7 +205,42 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 </button>
               </div>
             )}
-            <p className="text-[13px] text-slate-500 truncate">{displayId}</p>
+            
+            {isEditingPhone ? (
+              <div className="flex items-center gap-1 mt-1">
+                <input 
+                  value={editedPhone} 
+                  onChange={(e) => setEditedPhone(e.target.value)}
+                  placeholder="+8801..."
+                  className="text-[13px] text-slate-700 border border-slate-300 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSavePhone()
+                    if (e.key === 'Escape') {
+                      setIsEditingPhone(false)
+                      setEditedPhone(contactPhone || "")
+                    }
+                  }}
+                />
+                <button onClick={handleSavePhone} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check size={14} strokeWidth={2.5} /></button>
+                <button onClick={() => { setIsEditingPhone(false); setEditedPhone(contactPhone || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-0.5 group">
+                <p className="text-[13px] text-slate-500 truncate">
+                  {contactPhone ? `Phone: ${contactPhone}` : displayId}
+                </p>
+                <button 
+                  onClick={() => {
+                    setEditedPhone(contactPhone || "")
+                    setIsEditingPhone(true)
+                  }} 
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
+                >
+                  <Pencil size={11} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -288,9 +352,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             ) : (
               <>
                 <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  No matching account found for {platformId}. Ensure their phone number matches in WHMCS.
+                  {contactPhone || (!isLid && !isMessenger)
+                    ? `No matching account found for ${effectivePhoneId}. Ensure their phone number matches in WHMCS.`
+                    : `No phone number is associated with this account (ID: ${platformId}). Click the pencil icon under their name above to add their phone number.`}
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 opacity-50 pointer-events-none">
                   <input type="email" placeholder="Search by email..." className="flex-1 text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500" />
                   <button className="bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium px-4 rounded-lg transition-colors flex items-center justify-center">
                     Link
