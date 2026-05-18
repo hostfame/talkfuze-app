@@ -461,6 +461,29 @@ export default function ChatThread({
         {allMessages.map((msg, idx) => {
           // System messages: render as centered event label
           if (msg.sender_type === 'system' || msg.content_type === 'system') {
+            const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
+            
+            if (agent && msg.content.includes('joined')) {
+              return (
+                <div key={msg.id || idx} className="flex justify-center my-5">
+                  <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                      {agent.avatar_url ? (
+                        <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-600">{agent.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
+                      {msg.content.replace('the conversation', 'the chat')}
+                    </span>
+                    <span className="text-[10.5px] text-slate-400 ml-1">{msgTime}</span>
+                  </div>
+                </div>
+              )
+            }
+
             return (
               <div key={msg.id || idx} className="flex items-center gap-3 my-3">
                 <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
