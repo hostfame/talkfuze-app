@@ -176,8 +176,16 @@ export default function SipDialer() {
               type="text"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (number && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...') {
+                    handleDial();
+                  }
+                }
+              }}
               className="w-full text-center text-2xl font-light bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-widest placeholder-slate-300"
               placeholder=""
+              autoFocus
             />
           </div>
 
@@ -188,6 +196,7 @@ export default function SipDialer() {
                 <button
                   key={key}
                   onClick={() => handleKeyPress(key)}
+                  onPointerDown={(e) => e.preventDefault()}
                   className="aspect-square rounded-full bg-slate-100/50 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex flex-col items-center justify-center active:bg-slate-300 dark:active:bg-slate-600 transition-colors"
                 >
                   <span className="text-2xl font-light text-slate-800 dark:text-slate-100">{key}</span>
@@ -218,6 +227,7 @@ export default function SipDialer() {
               {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && (
                 <button 
                   onClick={() => setNumber(prev => prev.slice(0, -1))}
+                  onPointerDown={(e) => e.preventDefault()}
                   className="absolute right-2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-95 transition-all"
                 >
                   <Delete size={22} strokeWidth={1.5} />
