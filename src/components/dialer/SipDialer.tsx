@@ -110,7 +110,8 @@ export default function SipDialer() {
     if (!userAgent || !number) return
     try {
       setStatus('Dialing...')
-      await userAgent.call(`sip:${number}@sip.talkfuze.com`)
+      const cleanNumber = number.replace(/[\s-]/g, '')
+      await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
     } catch (e) {
       console.error("Dial failed", e)
       setStatus('Call Failed')
