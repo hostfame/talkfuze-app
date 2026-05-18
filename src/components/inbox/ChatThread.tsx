@@ -144,6 +144,13 @@ export default function ChatThread({
     })
   }, [orgId])
 
+  // Force internal mode if not joined
+  useEffect(() => {
+    if (!isJoined) {
+      setIsInternal(true)
+    }
+  }, [isJoined])
+
   // Load participants when conversation changes
   useEffect(() => {
     if (!conversationId) return
@@ -680,8 +687,7 @@ export default function ChatThread({
           </div>
         )}
 
-        {/* Actual composer - hidden until joined */}
-        {isJoined && (
+        {/* Actual composer - shown always, but locked to whisper if not joined */}
         <>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
@@ -830,7 +836,8 @@ export default function ChatThread({
               <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                 <button 
                   onClick={() => setIsInternal(false)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  disabled={!isJoined}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${!isJoined ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   Reply
                 </button>
@@ -852,7 +859,6 @@ export default function ChatThread({
           </div>
         </div>
         </>
-        )} {/* end isJoined */}
       </div>
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(
