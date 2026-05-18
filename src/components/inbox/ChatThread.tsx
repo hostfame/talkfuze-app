@@ -81,6 +81,15 @@ export default function ChatThread({
   const avatarColor = getAvatarColor(contactName)
 
   const [input, setInput] = useState("")
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 300)}px`;
+    }
+  }, [input])
+
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation } = useInboxStore()
@@ -1004,6 +1013,7 @@ export default function ChatThread({
                 </div>
               )}
               <textarea 
+                ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
                 onPaste={(e) => {
