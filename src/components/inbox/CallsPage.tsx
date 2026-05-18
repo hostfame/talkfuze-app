@@ -1,9 +1,86 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X } from "lucide-react"
+import { useEffect, useState, useRef } from "react"
+import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause } from "lucide-react"
 import { getCallLogs } from "@/actions/calls"
 import { useInboxStore } from "@/lib/store"
+
+function CustomAudioPlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [speed, setSpeed] = useState(1)
+  
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.pause()
+      else audioRef.current.play()
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const current = audioRef.current.currentTime
+      const total = audioRef.current.duration
+      if (total > 0) setProgress((current / total) * 100)
+    }
+  }
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (audioRef.current) {
+      const newTime = (Number(e.target.value) / 100) * audioRef.current.duration
+      audioRef.current.currentTime = newTime
+      setProgress(Number(e.target.value))
+    }
+  }
+
+  const cycleSpeed = () => {
+    if (audioRef.current) {
+      const newSpeed = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1
+      audioRef.current.playbackRate = newSpeed
+      setSpeed(newSpeed)
+    }
+  }
+
+  const handleEnded = () => {
+    setIsPlaying(false)
+    setProgress(0)
+  }
+
+  return (
+    <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-full px-3 py-1.5 w-full max-w-[240px]">
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleEnded}
+      />
+      <button 
+        onClick={togglePlay}
+        className="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full shrink-0 transition-colors"
+      >
+        {isPlaying ? <Pause size={14} className="fill-current" /> : <Play size={14} className="fill-current ml-0.5" />}
+      </button>
+      
+      <input 
+        type="range" 
+        min="0" 
+        max="100" 
+        value={progress || 0}
+        onChange={handleSeek}
+        className="flex-1 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full"
+      />
+      
+      <button 
+        onClick={cycleSpeed}
+        className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 shrink-0 w-6 text-center transition-colors"
+      >
+        {speed}x
+      </button>
+    </div>
+  )
+}
 
 export default function CallsPage() {
   const { currentUser } = useInboxStore()
@@ -79,7 +156,7 @@ export default function CallsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 pb-48">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 pb-24">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -138,7 +215,7 @@ export default function CallsPage() {
                   {isAdmin && (
                     <td className="py-3 px-6 w-64 whitespace-nowrap">
                       {log.recording_url ? (
-                        <audio controls controlsList="nodownload" className="h-[32px] w-full max-w-[220px] opacity-70 group-hover:opacity-100 transition-opacity" src={log.recording_url} />
+                        <CustomAudioPlayer src={log.recording_url} />
                       ) : (
                         <span className="text-slate-400 text-[13px] italic">No recording</span>
                       )}
