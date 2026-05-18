@@ -62,6 +62,15 @@ export default function SipDialer() {
     })
 
     simpleUser.delegate = {
+      onCallReceived: () => {
+        setIsOpen(true)
+        setStatus('Incoming Call...')
+        setSessionState(SessionState.Initial)
+        if (simpleUser.session) {
+          const callerId = simpleUser.session.remoteIdentity.uri.user
+          setNumber(callerId || 'Unknown')
+        }
+      },
       onCallCreated: () => setStatus('Calling...'),
       onCallAnswered: () => {
         setStatus('Connected')
@@ -128,6 +137,26 @@ export default function SipDialer() {
       await userAgent.hangup()
     } catch (e) {
       console.error("Hangup failed", e)
+    }
+  }
+
+  const handleAnswer = async () => {
+    if (!userAgent) return
+    try {
+      setStatus('Connecting...')
+      await userAgent.answer()
+    } catch (e) {
+      console.error("Answer failed", e)
+    }
+  }
+
+  const handleDecline = async () => {
+    if (!userAgent) return
+    try {
+      await userAgent.decline()
+      setStatus('Registered')
+    } catch (e) {
+      console.error("Decline failed", e)
     }
   }
 
@@ -210,7 +239,22 @@ export default function SipDialer() {
 
             {/* Action Buttons */}
             <div className="flex justify-center items-center relative w-full h-[64px] mb-2">
-              {sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
+              {status === 'Incoming Call...' ? (
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleDecline}
+                    className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  >
+                    <PhoneOff size={24} strokeWidth={2} />
+                  </button>
+                  <button
+                    onClick={handleAnswer}
+                    className="w-[64px] h-[64px] rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  >
+                    <Phone size={24} strokeWidth={2} className="animate-pulse" />
+                  </button>
+                </div>
+              ) : sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
                 <button
                   onClick={handleHangup}
                   className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
@@ -228,7 +272,7 @@ export default function SipDialer() {
               )}
 
               {/* Delete Button */}
-              {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && (
+              {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && status !== 'Incoming Call...' && (
                 <button 
                   onClick={() => setNumber(prev => prev.slice(0, -1))}
                   onPointerDown={(e) => e.preventDefault()}

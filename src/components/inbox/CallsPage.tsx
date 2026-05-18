@@ -191,7 +191,6 @@ export default function CallsPage() {
                 <th className="py-3 px-6 whitespace-nowrap">Direction</th>
                 <th className="py-3 px-6 whitespace-nowrap">From</th>
                 <th className="py-3 px-6 whitespace-nowrap">To</th>
-                <th className="py-3 px-6 whitespace-nowrap">By</th>
                 <th className="py-3 px-6 whitespace-nowrap">Date</th>
                 <th className="py-3 px-6 whitespace-nowrap">Duration</th>
                 <th className="py-3 px-6 whitespace-nowrap">Status</th>
@@ -211,9 +210,10 @@ export default function CallsPage() {
                       <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{log.direction}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">{log.from_number}</td>
+                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">
+                    {log.direction === 'outbound' ? (log.agent_name || (log.from_number === 'talkfuze_agent' ? currentUser?.name || 'TalkFuze Agent' : log.from_number)) : log.from_number}
+                  </td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">{log.to_number}</td>
-                  <td className="py-3 px-6 text-slate-700 dark:text-slate-300 font-medium text-[13px] whitespace-nowrap">{log.agent_name || "TalkFuze Agent"}</td>
                   <td className="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
