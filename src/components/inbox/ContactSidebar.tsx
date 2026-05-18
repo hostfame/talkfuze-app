@@ -2,6 +2,7 @@ import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData } from "@/actions/dashboard"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets } from "@/actions/whmcs"
 import { updateContactName } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
@@ -50,14 +51,36 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   // CRM State
   const [crmData, setCrmData] = useState<Record<string, unknown> | null>(null)
   const [isCrmLoading, setIsCrmLoading] = useState(false)
+  
+  // WHMCS State
+  const [whmcsClient, setWhmcsClient] = useState<any>(null)
+  const [whmcsServices, setWhmcsServices] = useState<any>(null)
+  const [whmcsTickets, setWhmcsTickets] = useState<any>([])
 
   useEffect(() => {
     let mounted = true
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
         setIsCrmLoading(true)
-        // Format number for webhook
         const cleanPhone = platformId.startsWith('+') ? platformId : `+${platformId}`
+        
+        // Fetch WHMCS data if viewing CRM tab
+        if (activeTab === 'copilot') {
+          const client = await fetchWhmcsClient(cleanPhone)
+          if (mounted && client) {
+            setWhmcsClient(client)
+            const [services, tickets] = await Promise.all([
+              fetchWhmcsServices(client.id),
+              fetchWhmcsTickets(client.id)
+            ])
+            if (mounted) {
+              setWhmcsServices(services)
+              setWhmcsTickets(tickets)
+            }
+          }
+        }
+        
+        // Fetch legacy CRM data (if any)
         const data = await getCrmData(orgId, cleanPhone)
         if (mounted) {
           if (data) setCrmData(data)
@@ -67,7 +90,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       fetchCrm()
     }
     return () => { mounted = false }
-  }, [conversation?.id, platformId, orgId])
+  }, [conversation?.id, platformId, orgId, activeTab])
 
   const handleSummarize = async () => {
     if (!conversation?.id) return
@@ -155,9 +178,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             )}
             <p className="text-[13px] text-slate-500 truncate">{displayId}</p>
           </div>
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition-colors shrink-0">
-            Resolve
-          </button>
         </div>
 
         {/* Core Attributes */}
@@ -249,36 +269,92 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
               <Database size={16} className="text-blue-600" /> WHMCS Integration
             </h3>
-            <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Connect WHMCS to automatically map WhatsApp numbers to clients, view their active services, domains, and open tickets directly on their behalf.
-            </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <Database size={16} /> Configure WHMCS
-            </button>
+            {isCrmLoading ? (
+              <div className="py-4 flex flex-col items-center justify-center">
+                <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
+                <span className="text-[12px] text-slate-500">Syncing with WHMCS...</span>
+              </div>
+            ) : whmcsClient ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[13px] font-semibold text-emerald-800 dark:text-emerald-400">Account Linked</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/50 text-emerald-700 uppercase tracking-wider">{whmcsClient.status}</span>
+                  </div>
+                  <p className="text-[12px] text-emerald-600/80 dark:text-emerald-500/80 font-medium">#{whmcsClient.id} - {whmcsClient.firstname} {whmcsClient.lastname}</p>
+                  <p className="text-[11px] text-emerald-600/60 dark:text-emerald-500/60 font-mono mt-0.5">{whmcsClient.email}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                  No matching account found for {platformId}. Ensure their phone number matches in WHMCS.
+                </p>
+                <div className="flex gap-2">
+                  <input type="email" placeholder="Search by email..." className="flex-1 text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:border-blue-500" />
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium px-4 rounded-lg transition-colors flex items-center justify-center">
+                    Link
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="opacity-50 pointer-events-none">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Client Overview</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-              </div>
-            </div>
+          {whmcsClient && (
+            <div className="space-y-6">
+              {whmcsServices && (whmcsServices.products?.length > 0 || whmcsServices.domains?.length > 0) && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-3">Active Services & Domains</h3>
+                  <div className="space-y-3">
+                    {whmcsServices.products?.map((product: any) => (
+                      <div key={product.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
+                        <div>
+                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
+                          {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${product.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{product.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {whmcsServices.domains?.map((domain: any) => (
+                      <div key={domain.id} className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
+                        <div>
+                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{domain.domainname}</p>
+                          <p className="text-[11px] text-slate-500">Exp: {domain.expirydate}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${domain.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{domain.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Recent Tickets</h3>
-                <span className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">Create New</span>
-              </div>
-              <div className="space-y-2">
-                <div className="h-10 bg-slate-100 dark:bg-slate-700/50 rounded"></div>
-                <div className="h-10 bg-slate-100 dark:bg-slate-700/50 rounded"></div>
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Recent Tickets</h3>
+                  <button className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded">Create New</button>
+                </div>
+                {whmcsTickets?.length > 0 ? (
+                  <div className="space-y-3">
+                    {whmcsTickets.map((ticket: any) => (
+                      <div key={ticket.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-blue-600">{ticket.subject}</p>
+                          <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{ticket.status}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-slate-500 text-center py-4">No recent tickets found.</p>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
         </div>
       )}

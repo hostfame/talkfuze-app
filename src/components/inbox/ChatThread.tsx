@@ -1,9 +1,10 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation } from "@/actions/dashboard"
+import { updateContactName } from "@/actions/contacts"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
@@ -83,6 +84,30 @@ export default function ChatThread({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation } = useInboxStore()
+
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState("")
+
+  useEffect(() => {
+    if (contactName) setEditedName(contactName)
+  }, [contactName, conversationId])
+
+  const handleSaveName = async () => {
+    if (!editedName.trim() || editedName === contactName || !contact?.id) {
+      setIsEditingName(false)
+      return
+    }
+    const result = await updateContactName(contact.id, editedName.trim())
+    if (result.success) {
+      setIsEditingName(false)
+      if (conversationId) {
+        updateConversation(conversationId, { contact: { ...contact, name: editedName.trim() } })
+      }
+    } else {
+      setEditedName(contactName)
+      setIsEditingName(false)
+    }
+  }
 
   // Close menu on click outside
   useEffect(() => {
@@ -500,11 +525,40 @@ export default function ChatThread({
       {/* Header */}
       <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-20 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">
-              {contact?.name || "Active Chat"}
-            </h2>
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <div className="flex items-center gap-2 group">
+            {isEditingName ? (
+              <div className="flex items-center gap-1.5">
+                <input 
+                  type="text" 
+                  value={editedName} 
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-[16px] font-medium text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 w-[150px] md:w-[250px]"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName()
+                    if (e.key === 'Escape') {
+                      setIsEditingName(false)
+                      setEditedName(contactName)
+                    }
+                  }}
+                />
+                <button onClick={handleSaveName} className="text-emerald-600 hover:text-emerald-700 p-1"><Check size={16} strokeWidth={2.5} /></button>
+                <button onClick={() => { setIsEditingName(false); setEditedName(contactName) }} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} strokeWidth={2.5} /></button>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">
+                  {contactName}
+                </h2>
+                <button 
+                  onClick={() => setIsEditingName(true)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
+                  title="Edit Contact Name"
+                >
+                  <Pencil size={14} strokeWidth={2.5} />
+                </button>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
