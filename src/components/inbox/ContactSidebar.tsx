@@ -82,6 +82,37 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsClient, setWhmcsClient] = useState<any>(null)
   const [whmcsServices, setWhmcsServices] = useState<any>(null)
   const [whmcsTickets, setWhmcsTickets] = useState<any>([])
+  const [crmSearchQuery, setCrmSearchQuery] = useState("")
+
+  const handleManualSearch = async (query: string) => {
+    if (!query) return;
+    setIsCrmLoading(true);
+    const client = await fetchWhmcsClient(query.trim());
+    if (client) {
+      setWhmcsClient(client);
+      const [services, tickets] = await Promise.all([
+        fetchWhmcsServices(client.id),
+        fetchWhmcsTickets(client.id)
+      ]);
+      setWhmcsServices(services);
+      setWhmcsTickets(tickets);
+
+      // Bind to user so we don't need to search again next time
+      if (contact?.id) {
+        const bindValue = client.email || query.trim();
+        await updateContactPhone(contact.id, bindValue);
+        setContactPhoneOverrides((current) => ({
+          ...current,
+          [contact.id]: bindValue,
+        }));
+      }
+    } else {
+      setWhmcsClient(null);
+      setWhmcsServices(null);
+      setWhmcsTickets([]);
+    }
+    setIsCrmLoading(false);
+  }
 
   useEffect(() => {
     let mounted = true
@@ -327,17 +358,26 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
       {/* CRM Tab Content */}
       {activeTab === 'copilot' && (
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4 space-y-4">
+        <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-900/50">
           
-          {/* Minimal Search Box */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input 
-              type="text" 
-              placeholder="Search CRM..." 
-              className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
-            />
+          {/* Minimal Search Box - Fixed at top */}
+          <div className="p-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input 
+                type="text" 
+                value={crmSearchQuery}
+                onChange={(e) => setCrmSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleManualSearch(crmSearchQuery || effectivePhoneId)
+                }}
+                placeholder="Search CRM by email or phone..." 
+                className="w-full text-[13px] border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:border-blue-500 shadow-sm transition-all"
+              />
+            </div>
           </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
           {isCrmLoading ? (
             <div className="py-8 flex flex-col items-center justify-center">
@@ -421,6 +461,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             </div>
           )}
 
+          </div>
         </div>
       )}
     </div>

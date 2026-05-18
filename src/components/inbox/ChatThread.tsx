@@ -139,7 +139,8 @@ export default function ChatThread({
           status: 'sending',
           created_at: new Date().toISOString()
         })
-        await leaveConversation(conversationId)
+        const updated = await leaveConversation(conversationId)
+        setParticipants(updated as unknown as ConversationParticipant[])
         updateConversation(conversationId, { assigned_to: null, assigned_type: 'unassigned' })
       } else if (action === 'pin') {
         const newVal = !conversation.is_pinned
@@ -269,7 +270,7 @@ export default function ChatThread({
   useEffect(() => {
     if (!conversationId) return;
     messages.forEach(msg => {
-      if (msg.sender_type === 'agent') {
+      if (msg.sender_type === 'agent' || msg.sender_type === 'system') {
         confirmOptimisticMessage(conversationId, msg.content ?? '');
       }
     });
