@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, Archive, Pin, BellOff, Mail, Trash2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation } from "@/actions/dashboard"
@@ -508,19 +508,41 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
+          {isJoined ? (
+            <button 
+              onClick={() => handleThreadAction('leave')}
+              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              title="Leave thread"
+            >
+              <LogOut size={18} strokeWidth={2} />
+            </button>
+          ) : (
+            <button 
+              onClick={handleJoinThread}
+              disabled={isJoining}
+              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              title="Join thread"
+            >
+              <LogIn size={18} strokeWidth={2} />
+            </button>
+          )}
+
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
           >
             <MoreVertical size={18} strokeWidth={2} />
           </button>
+
+          <button 
+            className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+            title="Call"
+          >
+            <Phone size={18} strokeWidth={2} />
+          </button>
           
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
-              <button onClick={() => handleThreadAction('leave')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
-                <LogOut size={14} className="opacity-50" /> Leave thread
-              </button>
-              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
               <button onClick={() => handleThreadAction('pin')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <Pin size={14} className="opacity-50" /> {conversation?.is_pinned ? 'Unpin thread' : 'Pin thread'}
               </button>
@@ -571,6 +593,26 @@ export default function ChatThread({
                       {msg.content.replace('the conversation', 'the chat')}
                     </span>
                     <span className="text-[10.5px] text-slate-400 ml-1">{msgTime}</span>
+                  </div>
+                </div>
+              )
+            }
+
+            if (agent && msg.content.includes('left')) {
+              return (
+                <div key={msg.id || idx} className="flex justify-center my-5">
+                  <div className="flex items-center gap-2.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-800 shrink-0 overflow-hidden flex items-center justify-center">
+                      {agent.avatar_url ? (
+                        <img src={agent.avatar_url} alt="" className="w-full h-full object-cover opacity-80" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-red-600 dark:text-red-300">{agent.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="text-[12px] text-red-600 dark:text-red-400 font-medium">
+                      {msg.content.replace('the conversation', 'the chat')}
+                    </span>
+                    <span className="text-[10.5px] text-red-400 dark:text-red-500/70 ml-1">{msgTime}</span>
                   </div>
                 </div>
               )
@@ -885,7 +927,6 @@ export default function ChatThread({
               }}
                 placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
                 className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${pendingAttachment ? 'pt-2 min-h-[60px]' : ''}`}
-                disabled={isSending}
               ></textarea>
             </div>
           )}
