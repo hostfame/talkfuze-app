@@ -397,7 +397,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           {/* Minimal Search Box - Fixed at top */}
           <div className="p-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              {isCrmLoading && whmcsClient ? (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" size={14} />
+              ) : (
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              )}
               <input 
                 type="text" 
                 value={crmSearchQuery}
@@ -411,14 +415,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
+            {isCrmLoading && whmcsClient && (
+              <div className="absolute top-0 left-0 w-full h-[2px] overflow-hidden bg-transparent z-50">
+                <div className="h-full bg-blue-500 animate-pulse w-full"></div>
+              </div>
+            )}
 
-          {isCrmLoading ? (
-            <div className="py-8 flex flex-col items-center justify-center">
-              <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
-              <span className="text-[12px] text-slate-500">Syncing with WHMCS...</span>
-            </div>
-          ) : whmcsClient ? (
+            {isCrmLoading && !whmcsClient ? (
+              <div className="space-y-4 animate-pulse pt-2">
+                <div className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/50 h-[80px]"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700/50 rounded w-1/3 mb-4"></div>
+                  <div className="h-[90px] bg-slate-100 dark:bg-slate-800/30 rounded-xl"></div>
+                  <div className="h-[90px] bg-slate-100 dark:bg-slate-800/30 rounded-xl"></div>
+                </div>
+              </div>
+            ) : whmcsClient ? (
             <div className="space-y-4">
               <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                 <div className="flex justify-between items-center mb-1">
