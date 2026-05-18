@@ -100,13 +100,22 @@ export default function ChatThread({
     setIsMenuOpen(false)
     try {
       if (action === 'leave' && currentUser) {
+        // Optimistically insert the system message
+        addOptimisticMessage(conversationId, {
+          id: `temp-${Date.now()}`,
+          conversation_id: conversationId,
+          org_id: orgId,
+          sender_id: currentUser.id,
+          sender_type: 'system',
+          content: `${currentUser.name} left the conversation`,
+          content_type: 'system',
+          metadata: null,
+          is_internal: false,
+          status: 'sending',
+          created_at: new Date().toISOString()
+        })
         await leaveConversation(conversationId)
         updateConversation(conversationId, { assigned_to: null, assigned_type: 'unassigned' })
-      } else if (action === 'archive') {
-        const isArchived = conversation.status === 'closed'
-        const newStatus = isArchived ? 'open' : 'closed'
-        await updateConversationStatus(conversationId, newStatus)
-        updateConversation(conversationId, { status: newStatus })
       } else if (action === 'pin') {
         const newVal = !conversation.is_pinned
         await toggleConversationFlag(conversationId, 'is_pinned', newVal)
@@ -510,9 +519,6 @@ export default function ChatThread({
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
               <button onClick={() => handleThreadAction('leave')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <LogOut size={14} className="opacity-50" /> Leave thread
-              </button>
-              <button onClick={() => handleThreadAction('archive')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
-                <Archive size={14} className="opacity-50" /> {conversation?.status === 'closed' ? 'Unarchive thread' : 'Archive thread'}
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
               <button onClick={() => handleThreadAction('pin')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">

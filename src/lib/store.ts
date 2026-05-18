@@ -3,7 +3,7 @@ import type { AppMessage, ConversationWithDetails, UserProfile } from './types';
 
 export type OptimisticMessage = {
   id: string;
-  sender_type: 'agent';
+  sender_type: string;
   sender_id?: string | null;
   content: string | null;
   content_type?: string | null;
