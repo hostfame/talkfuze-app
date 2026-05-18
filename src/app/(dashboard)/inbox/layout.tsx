@@ -18,7 +18,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
 
-  const handleFilterClick = (filter: string) => {
+  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls') => {
     setActiveFilter(filter)
     if (pathname !== '/inbox') {
       router.push('/inbox')
@@ -78,9 +78,14 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             <span className="text-[12px] font-medium opacity-50">0</span>
           </div>
 
-          <Link href="/inbox/calls" className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${pathname === '/inbox/calls' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}>
+          <div 
+            onClick={() => handleFilterClick('calls')}
+            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              activeFilter === 'calls' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
             <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
-          </Link>
+          </div>
         </div>
 
         <div 
