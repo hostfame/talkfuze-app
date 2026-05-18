@@ -54,7 +54,8 @@ export default function SipDialer() {
       },
       userAgentOptions: {
         authorizationPassword: "talkfuze_secure_pass_123",
-        authorizationUsername: "talkfuze_agent"
+        authorizationUsername: "talkfuze_agent",
+        displayName: currentUser?.name || "TalkFuze Agent"
       }
     })
 

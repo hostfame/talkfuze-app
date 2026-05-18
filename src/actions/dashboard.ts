@@ -71,7 +71,7 @@ export async function getCrmData(orgId: string, phone: string) {
   }
 }
 
-export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' = 'all', agentId?: string) {
+export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' | 'archived' = 'all', agentId?: string) {
   let query = supabaseAdmin
     .from("conversations")
     .select(`
@@ -86,10 +86,15 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     .limit(1, { foreignTable: "messages" })
     .order("last_message_at", { ascending: false });
 
-  if (filter === 'unassigned') {
-    query = query.is("assigned_to", null);
-  } else if (filter === 'assigned' && agentId) {
-    query = query.eq("assigned_to", agentId);
+  if (filter === 'archived') {
+    query = query.eq("is_archived", true);
+  } else {
+    query = query.eq("is_archived", false);
+    if (filter === 'unassigned') {
+      query = query.is("assigned_to", null);
+    } else if (filter === 'assigned' && agentId) {
+      query = query.eq("assigned_to", agentId);
+    }
   }
 
   const { data, error } = await query;
@@ -525,7 +530,7 @@ export async function snoozeConversation(conversationId: string, until: Date) {
 // Thread Management (Pin, Mute, Leave, Delete)
 // ─────────────────────────────────────────────
 
-export async function toggleConversationFlag(conversationId: string, flag: 'is_pinned' | 'is_unread' | 'is_muted', value: boolean) {
+export async function toggleConversationFlag(conversationId: string, flag: 'is_pinned' | 'is_unread' | 'is_muted' | 'is_archived', value: boolean) {
   const { error } = await supabaseAdmin
     .from('conversations')
     .update({ [flag]: value })

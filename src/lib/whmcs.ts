@@ -1289,7 +1289,7 @@ export async function getClients(searchStr: string) {
         };
     }>('GetClients', {
         search: searchStr,
-        limitnum: 5,
+        limitnum: 25,
     });
 
     return {

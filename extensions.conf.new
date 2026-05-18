@@ -1,0 +1,54 @@
+[globals]
+RECORDING_DIR=/var/spool/asterisk/monitor/
+
+[from-internal]
+; Agent calling out via BDWebs
+exten => _0.,1,NoOp(Outbound call to ${EXTEN})
+ same => n,Set(START_TIME=${EPOCH})
+ same => n,Set(DIALED_NUMBER=${EXTEN})
+ same => n,Set(CALLFILENAME=${EXTEN}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID})
+ same => n,MixMonitor(${RECORDING_DIR}${CALLFILENAME}.wav,b)
+ same => n,Dial(PJSIP/${EXTEN}@bdwebs-trunk,60,rT)
+ same => n,StopMixMonitor()
+ same => n,Hangup()
+
+exten => _+.,1,NoOp(Outbound call international to ${EXTEN})
+ same => n,Set(START_TIME=${EPOCH})
+ same => n,Set(DIALED_NUMBER=${EXTEN})
+ same => n,Set(CALLFILENAME=${EXTEN}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID})
+ same => n,MixMonitor(${RECORDING_DIR}${CALLFILENAME}.wav,b)
+ same => n,Dial(PJSIP/${EXTEN}@bdwebs-trunk,60,rT)
+ same => n,StopMixMonitor()
+ same => n,Hangup()
+
+exten => h,1,NoOp(Call ended - executing log script)
+ same => n,Set(END_TIME=${EPOCH})
+ same => n,Set(DURATION=$[${END_TIME} - ${START_TIME}])
+ same => n,System(/root/log_call.sh "outbound" "${CALLERID(num)}" "${DIALED_NUMBER}" "${DURATION}" "${DIALSTATUS}" "${CALLFILENAME}.wav" "TalkFuze Agent" &)
+
+[from-bdwebs]
+; Inbound from BDWebs - ring the agent
+exten => 09617875955,1,NoOp(Inbound call from ${CALLERID(num)})
+ same => n,Set(START_TIME=${EPOCH})
+ same => n,Set(DIALED_NUMBER=09617875955)
+ same => n,Set(CALLFILENAME=IN-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID})
+ same => n,MixMonitor(${RECORDING_DIR}${CALLFILENAME}.wav,b)
+ same => n,Answer()
+ same => n,Dial(PJSIP/talkfuze_agent,30,rT)
+ same => n,StopMixMonitor()
+ same => n,Hangup()
+
+exten => s,1,NoOp(Inbound call s from ${CALLERID(num)})
+ same => n,Set(START_TIME=${EPOCH})
+ same => n,Set(DIALED_NUMBER=09617875955)
+ same => n,Set(CALLFILENAME=IN-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID})
+ same => n,MixMonitor(${RECORDING_DIR}${CALLFILENAME}.wav,b)
+ same => n,Answer()
+ same => n,Dial(PJSIP/talkfuze_agent,30,rT)
+ same => n,StopMixMonitor()
+ same => n,Hangup()
+
+exten => h,1,NoOp(Call ended - executing log script)
+ same => n,Set(END_TIME=${EPOCH})
+ same => n,Set(DURATION=$[${END_TIME} - ${START_TIME}])
+ same => n,System(/root/log_call.sh "inbound" "${CALLERID(num)}" "${DIALED_NUMBER}" "${DURATION}" "${DIALSTATUS}" "${CALLFILENAME}.wav" "Client" &)

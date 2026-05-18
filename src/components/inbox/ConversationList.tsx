@@ -87,6 +87,9 @@ export default function ConversationList({
   
   // Apply team management filters
   const displayedConversations = baseConversations.filter(conv => {
+    if (activeFilter === 'archived') return conv.is_archived;
+    if (conv.is_archived) return false;
+
     if (activeFilter === 'all') return true;
     
     const assignee = firstRelation(conv.assignee);

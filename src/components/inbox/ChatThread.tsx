@@ -154,6 +154,10 @@ export default function ChatThread({
         const newVal = !conversation.is_muted
         await toggleConversationFlag(conversationId, 'is_muted', newVal)
         updateConversation(conversationId, { is_muted: newVal })
+      } else if (action === 'archive') {
+        const newVal = !conversation.is_archived
+        await toggleConversationFlag(conversationId, 'is_archived', newVal)
+        updateConversation(conversationId, { is_archived: newVal })
       } else if (action === 'delete') {
         if (confirm('Are you sure you want to permanently delete this thread?')) {
           await deleteConversation(conversationId)
@@ -601,6 +605,9 @@ export default function ChatThread({
               </button>
               <button onClick={() => handleThreadAction('mute')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <BellOff size={14} className="opacity-50" /> {conversation?.is_muted ? 'Unmute' : 'Mute'}
+              </button>
+              <button onClick={() => handleThreadAction('archive')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <Archive size={14} className="opacity-50" /> {conversation?.is_archived ? 'Unarchive' : 'Archive'}
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
               <button onClick={() => handleThreadAction('delete')} className="w-full text-left px-4 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 font-medium">

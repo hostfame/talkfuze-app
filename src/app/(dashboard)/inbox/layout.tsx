@@ -86,6 +86,15 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           >
             <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
           </div>
+
+          <div 
+            onClick={() => handleFilterClick('archived')}
+            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              activeFilter === 'archived' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Archived</div>
+          </div>
         </div>
 
         <div 

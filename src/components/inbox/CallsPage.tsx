@@ -184,7 +184,8 @@ export default function CallsPage() {
             <p className="text-[14px] text-slate-500 max-w-sm">No calls match your current search filters.</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">
               <tr className="border-b border-slate-200 dark:border-slate-800 text-[12px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
                 <th className="py-3 px-6 whitespace-nowrap">Direction</th>
@@ -241,6 +242,7 @@ export default function CallsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
