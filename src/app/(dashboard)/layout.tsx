@@ -40,13 +40,13 @@ export default async function DashboardLayout({
           </div>
           
           <div className="flex-1 space-y-3 w-full px-2 flex flex-col items-center">
-            <Link href="/inbox" className="w-11 h-11 flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-800/50 transition-all duration-200 active:scale-95">
+            <Link href="/inbox" prefetch={true} className="w-11 h-11 flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-800/50 transition-all duration-200 active:scale-95">
               <Inbox size={22} strokeWidth={2.5} />
             </Link>
-            <Link href="/contacts" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
+            <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Users size={22} strokeWidth={2} />
             </Link>
-            <Link href="/analytics" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
+            <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <BarChart3 size={22} strokeWidth={2} />
             </Link>
           </div>
@@ -55,7 +55,7 @@ export default async function DashboardLayout({
             <button className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Bell size={22} strokeWidth={2} />
             </button>
-            <Link href="/settings" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
+            <Link href="/settings/brand" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Settings size={22} strokeWidth={2} />
             </Link>
             <form action={logout} className="w-full flex justify-center">

@@ -64,7 +64,7 @@ function NavLink({ href, icon, label }: { href: string, icon: React.ReactNode, l
   // Using active checking would require "use client" and usePathname, 
   // but for layout server component we can just use simple links.
   return (
-    <Link href={href} className="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors font-medium">
+    <Link href={href} prefetch={true} className="flex items-center gap-3 px-3 py-2 text-[14px] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors font-medium">
       <span className="text-slate-400 dark:text-slate-500">{icon}</span>
       {label}
     </Link>
