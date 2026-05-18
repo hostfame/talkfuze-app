@@ -28,6 +28,10 @@ export default function SipDialer() {
         remote: {
           audio: remoteAudioRef.current as HTMLAudioElement
         }
+      },
+      userAgentOptions: {
+        authorizationPassword: "talkfuze_secure_pass_123",
+        authorizationUsername: "talkfuze_agent"
       }
     })
 
@@ -59,13 +63,7 @@ export default function SipDialer() {
       try {
         setStatus('Connecting...')
         await simpleUser.connect()
-        await simpleUser.register({
-          requestOptions: {
-            extraHeaders: [
-              'Authorization: Digest username="talkfuze_agent", password="talkfuze_secure_pass_123"'
-            ]
-          }
-        })
+        await simpleUser.register()
       } catch (err) {
         console.error("SIP Connection Error:", err)
         setStatus('Connection Failed')
