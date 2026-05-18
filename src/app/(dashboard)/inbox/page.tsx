@@ -3,6 +3,7 @@
 import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
+import CallsPage from "@/components/inbox/CallsPage"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore } from "@/lib/store"
 import { getConversations, getMessages } from "@/actions/dashboard"
@@ -16,6 +17,7 @@ export default function InboxPage() {
   const ORG_ID = currentUser.org_id
 
   const { 
+    activeFilter,
     conversations, setConversations, 
     selectedId, setSelectedId,
     messagesMap, setMessages, addMessage,
@@ -182,6 +184,14 @@ export default function InboxPage() {
   }
 
   const activeConversation = conversations.find(c => c.id === selectedId)
+
+  if (activeFilter === 'calls') {
+    return (
+      <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">
+        <CallsPage />
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">

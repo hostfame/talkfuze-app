@@ -119,8 +119,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
         setIsCrmLoading(true)
-        const cleanPhone = effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`
-        
+        const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
+        const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
         // Fetch WHMCS data if viewing CRM tab
         if (activeTab === 'copilot') {
           // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
@@ -304,30 +304,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           </div>
         </div>
 
-        {/* CRM Data Section */}
-        {isCrmLoading ? (
-          <div className="py-6 flex flex-col items-center justify-center border-b border-slate-100">
-            <Loader2 className="animate-spin text-slate-300 mb-2" size={20} />
-            <span className="text-[12px] text-slate-500">Syncing with CRM...</span>
-          </div>
-        ) : crmData ? (
-          <div className="py-4 border-b border-slate-100">
-            <div className="flex justify-between items-center px-5 mb-2 cursor-pointer group">
-              <h3 className="text-[13px] font-medium text-slate-900 flex items-center gap-2">
-                <Database size={14} className="text-blue-500" /> CRM Data
-              </h3>
-              <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
-            </div>
-            <div className="px-5 space-y-3 mt-4">
-              {Object.entries(crmData).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-start gap-4">
-                  <span className="text-[13px] text-slate-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                  <span className="text-[13px] text-slate-900 font-medium text-right break-words">{String(value)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+
 
         {/* Conversation attributes */}
         <div className="py-4">
