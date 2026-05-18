@@ -2,6 +2,7 @@ import { Search, Plus, X, Phone, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { searchConversations, createConversation } from "@/actions/dashboard"
+import { useInboxStore } from "@/lib/store"
 import type { ConversationWithDetails, Relation } from "@/lib/types"
 
 function firstRelation<T>(relation: Relation<T> | undefined) {
@@ -25,10 +26,11 @@ export default function ConversationList({
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const [searchResults, setSearchResults] = useState<ConversationWithDetails[] | null>(null)
   const [isSearching, setIsSearching] = useState(false)
-  
   const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [newChatNumber, setNewChatNumber] = useState("")
   const [searchResult, setSearchResult] = useState<'idle' | 'not_found' | 'loading'>('idle')
+  
+  const { activeFilter, currentUser } = useInboxStore()
   
   // Debounce search query
   useEffect(() => {
@@ -81,7 +83,25 @@ export default function ConversationList({
     }
   };
 
-  const displayedConversations = debouncedQuery && searchResults !== null ? searchResults : conversations;
+  const baseConversations = debouncedQuery && searchResults !== null ? searchResults : conversations;
+  
+  // Apply team management filters
+  const displayedConversations = baseConversations.filter(conv => {
+    if (activeFilter === 'all') return true;
+    
+    const assignee = firstRelation(conv.assignee);
+    if (activeFilter === 'mine') {
+      return assignee?.id === currentUser?.id;
+    }
+    if (activeFilter === 'unassigned') {
+      return !assignee;
+    }
+    if (activeFilter === 'mentions') {
+      // Mentions filter not fully implemented in MVP, return empty or implement later
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full w-[320px] shrink-0 bg-white border-r border-slate-200 z-10 relative">
@@ -135,7 +155,7 @@ export default function ConversationList({
           const avatarColor = avatarColors[i % avatarColors.length]
           const isWhatsApp = channel?.type === 'whatsapp'
           const isFacebook = channel?.type === 'messenger'
-          const assigneeName = assignee?.name || 'Hostnin' // Fallback to Hostnin for demo
+          const assigneeName = assignee?.name
           const isTyping = typingState[conv.id]
           const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null
 
@@ -186,9 +206,11 @@ export default function ConversationList({
                     <span className={`text-[14.5px] truncate ${isSelected ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'}`}>
                       {contactName}
                     </span>
-                    <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                      {assigneeName}
-                    </span>
+                    {assigneeName && (
+                      <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
+                        {assigneeName}
+                      </span>
+                    )}
                   </div>
                   <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 font-medium' : 'text-slate-400'}`}>
                     {time}

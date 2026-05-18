@@ -77,10 +77,14 @@ interface InboxState {
   teamMembers: UserProfile[]
   isLoaded: boolean
   selectedId: string | null
+  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions'
+  currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
+  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions') => void
+  setCurrentUser: (user: UserProfile | null) => void
   setMessages: (convoId: string, messages: AppMessage[]) => void
   addMessage: (convoId: string, message: AppMessage) => void
   updateConversation: (id: string, payload: Partial<ConversationWithDetails>) => void
@@ -91,10 +95,14 @@ export const useInboxStore = create<InboxState>((set) => ({
   teamMembers: [],
   isLoaded: false,
   selectedId: null,
+  activeFilter: 'all',
+  currentUser: null,
   messagesMap: {},
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
+  setActiveFilter: (activeFilter) => set({ activeFilter }),
+  setCurrentUser: (currentUser) => set({ currentUser }),
   setMessages: (convoId, messages) => set((state) => ({
     messagesMap: { ...state.messagesMap, [convoId]: messages }
   })),

@@ -20,8 +20,12 @@ export default function InboxPage() {
     selectedId, setSelectedId,
     messagesMap, setMessages, addMessage,
     teamMembers, setTeamMembers,
-    isLoaded
+    isLoaded, setCurrentUser
   } = useInboxStore()
+
+  useEffect(() => {
+    if (currentUser) setCurrentUser(currentUser as UserProfile)
+  }, [currentUser, setCurrentUser])
 
   const messages = selectedId ? (messagesMap[selectedId] || []) : []
 
