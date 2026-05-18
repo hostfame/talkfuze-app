@@ -30,7 +30,7 @@ export default function ConversationList({
   const [newChatNumber, setNewChatNumber] = useState("")
   const [searchResult, setSearchResult] = useState<'idle' | 'not_found' | 'loading'>('idle')
   
-  const { activeFilter, currentUser } = useInboxStore()
+  const { activeFilter, currentUser, isLoaded } = useInboxStore()
   
   // Debounce search query
   useEffect(() => {
@@ -150,13 +150,28 @@ export default function ConversationList({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
-        {displayedConversations.length === 0 && !isSearching && (
+        {!isLoaded ? (
+          <div className="px-3 py-4 space-y-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex gap-3 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0"></div>
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                    <div className="h-2 bg-slate-100 rounded w-8"></div>
+                  </div>
+                  <div className="h-3 bg-slate-100 rounded w-3/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayedConversations.length === 0 && !isSearching ? (
           <p className="text-[13px] text-slate-400 text-center mt-10">
             {searchResults !== null ? "No matching conversations" : "No active conversations"}
           </p>
-        )}
+        ) : null}
 
-        {displayedConversations
+        {isLoaded && displayedConversations
           .map((conv, i) => {
           const isSelected = conv.id === selectedId
           const contact = firstRelation(conv.contact)
