@@ -233,10 +233,12 @@ export default function ChatThread({
     })
   }, [orgId])
 
-  // Force internal mode if not joined
+  // Force internal mode if not joined, reset to reply mode when joined
   useEffect(() => {
     if (!isJoined) {
       setIsInternal(true)
+    } else {
+      setIsInternal(false)
     }
   }, [isJoined])
 
