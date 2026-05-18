@@ -97,8 +97,8 @@ export async function POST(request: Request) {
             // For Instagram, the pageId is the Instagram Business Account ID, which might not match the stored Facebook page_id
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
-              .select("id, org_id, config")
-              .eq("type", channelType);
+              .select("id, org_id, config, type")
+              .in("type", ["messenger", "instagram"]);
 
             if (chFetchErr) throw chFetchErr;
 
@@ -108,9 +108,10 @@ export async function POST(request: Request) {
               c.config?.instagram_business_account === pageId
             ) || null;
 
-            // Fallback: If no strict match but there's exactly one channel of this type (common for single-tenant), use it.
-            if (!channel && channels && channels.length === 1) {
-              channel = channels[0];
+            // Fallback: If no strict match but there are channels (common for single-tenant), use one.
+            // Prefer 'instagram' type if it exists, otherwise fallback to 'messenger'
+            if (!channel && channels && channels.length > 0) {
+              channel = channels.find(c => c.type === 'instagram') || channels[0];
             }
             if (!channel) {
               console.warn(`${channelType} webhook received event for unconnected page/account ${pageId}`);

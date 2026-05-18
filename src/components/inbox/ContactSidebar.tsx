@@ -188,7 +188,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         // Fetch WHMCS data if viewing CRM tab
         if (activeTab === 'copilot') {
           // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
-          if (contactPhone || (!isLid && !isMessenger)) {
+          if (contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
             setLastSearchedQuery(cleanPhone)
             const client = await fetchWhmcsClient(cleanPhone)
             if (mounted && client) {

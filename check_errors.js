@@ -8,13 +8,9 @@ async function run() {
     'Authorization': `Bearer ${apikey}`
   };
 
-  const res = await fetch(`${url}/conversations?id=eq.c4ad213d-b9ab-4bac-a475-beeac320a7ed&select=*`, { headers });
-  const conv = await res.json();
-  console.log("CONVERSATION:", JSON.stringify(conv, null, 2));
-
-  const res2 = await fetch(`${url}/contacts?id=eq.26005181-53a2-478c-b920-c6ae5d1d0dcc&select=*`, { headers });
-  const contact = await res2.json();
-  console.log("CONTACT:", JSON.stringify(contact, null, 2));
+  const res = await fetch(`${url}/messages?status=eq.failed&select=id,content,metadata,created_at&order=created_at.desc&limit=5`, { headers });
+  const messages = await res.json();
+  console.log("FAILED MESSAGES:", JSON.stringify(messages, null, 2));
 }
 
 run();
