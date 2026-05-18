@@ -171,7 +171,7 @@ export default function SipDialer() {
           </div>
 
           {/* Display */}
-          <div className="px-4 py-4 flex items-center justify-between relative min-h-[64px]">
+          <div className="px-4 py-4 flex items-center justify-center relative min-h-[64px]">
             <input
               type="text"
               value={number}
@@ -179,14 +179,6 @@ export default function SipDialer() {
               className="w-full text-center text-2xl font-light bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-widest placeholder-slate-300"
               placeholder=""
             />
-            {number.length > 0 && (
-              <button 
-                onClick={() => setNumber(prev => prev.slice(0, -1))}
-                className="absolute right-4 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
-              >
-                <Delete size={20} strokeWidth={1.5} />
-              </button>
-            )}
           </div>
 
           {/* Keypad */}
@@ -204,7 +196,7 @@ export default function SipDialer() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center relative w-full h-[64px] mb-2">
               {sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
                 <button
                   onClick={handleHangup}
@@ -219,6 +211,16 @@ export default function SipDialer() {
                   className="w-[64px] h-[64px] rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
                 >
                   <Phone size={24} strokeWidth={2} />
+                </button>
+              )}
+
+              {/* Delete Button */}
+              {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && (
+                <button 
+                  onClick={() => setNumber(prev => prev.slice(0, -1))}
+                  className="absolute right-2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-95 transition-all"
+                >
+                  <Delete size={22} strokeWidth={1.5} />
                 </button>
               )}
             </div>
