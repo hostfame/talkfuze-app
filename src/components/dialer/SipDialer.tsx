@@ -149,9 +149,9 @@ export default function SipDialer() {
 
       {/* Dialer Popup */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[280px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col pb-4">
+        <div className="fixed bottom-6 right-6 w-[250px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col pb-4">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 bg-transparent">
+          <div className="flex items-center justify-between px-4 py-3 bg-transparent">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">TalkFuze</span>
             </div>
@@ -171,12 +171,12 @@ export default function SipDialer() {
           </div>
 
           {/* Display */}
-          <div className="px-6 py-6 flex items-center justify-between relative min-h-[80px]">
+          <div className="px-4 py-4 flex items-center justify-between relative min-h-[64px]">
             <input
               type="text"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
-              className="w-full text-center text-3xl font-light bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-widest placeholder-slate-300"
+              className="w-full text-center text-2xl font-light bg-transparent outline-none text-slate-800 dark:text-slate-100 tracking-widest placeholder-slate-300"
               placeholder=""
             />
             {number.length > 0 && (
@@ -184,21 +184,21 @@ export default function SipDialer() {
                 onClick={() => setNumber(prev => prev.slice(0, -1))}
                 className="absolute right-4 text-slate-400 hover:text-slate-600 active:scale-95 transition-all"
               >
-                <Delete size={24} strokeWidth={1.5} />
+                <Delete size={20} strokeWidth={1.5} />
               </button>
             )}
           </div>
 
           {/* Keypad */}
-          <div className="px-8 pb-2">
-            <div className="grid grid-cols-3 gap-x-6 gap-y-4 mb-6">
+          <div className="px-6 pb-2">
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3 mb-5">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
                 <button
                   key={key}
                   onClick={() => handleKeyPress(key)}
                   className="aspect-square rounded-full bg-slate-100/50 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex flex-col items-center justify-center active:bg-slate-300 dark:active:bg-slate-600 transition-colors"
                 >
-                  <span className="text-3xl font-light text-slate-800 dark:text-slate-100">{key}</span>
+                  <span className="text-2xl font-light text-slate-800 dark:text-slate-100">{key}</span>
                 </button>
               ))}
             </div>
@@ -208,7 +208,7 @@ export default function SipDialer() {
               {sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
                 <button
                   onClick={handleHangup}
-                  className="w-[72px] h-[72px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
                 >
                   <PhoneOff size={24} strokeWidth={2} />
                 </button>
@@ -216,7 +216,7 @@ export default function SipDialer() {
                 <button
                   onClick={handleDial}
                   disabled={!number || !isRegistered}
-                  className="w-[72px] h-[72px] rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  className="w-[64px] h-[64px] rounded-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
                 >
                   <Phone size={24} strokeWidth={2} />
                 </button>
