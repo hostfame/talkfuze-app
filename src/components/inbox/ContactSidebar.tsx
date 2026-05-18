@@ -153,7 +153,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     } else {
       alert("Failed to create ticket: " + result.error)
     }
+    setCrmSearchQuery("")
     setIsCreatingTicket(false)
+  }
+
+  const handleUnlink = async () => {
+    if (contact?.id) {
+      await updateContactPhone(contact.id, '');
+      setContactPhoneOverrides((current) => ({
+        ...current,
+        [contact.id]: '',
+      }));
+    }
+    setWhmcsClient(null);
+    setWhmcsServices(null);
+    setWhmcsTickets([]);
+    setLastSearchedQuery('');
+    setCrmSearchQuery('');
   }
 
   const handleManualSearch = async (query: string) => {
@@ -420,7 +436,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-900/50">
           
           {/* Minimal Search Box - Fixed at top */}
-          <div className="p-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
+          {!whmcsClient && (
+            <div className="p-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
             <div className="relative">
               {isCrmLoading && whmcsClient ? (
                 <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 animate-spin" size={14} />
@@ -439,6 +456,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               />
             </div>
           </div>
+          )}
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
             {isCrmLoading && whmcsClient && (
@@ -461,9 +479,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
-                  <a href={`https://my.hostnin.com/admin/clientssummary.php?userid=${whmcsClient.id}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors" title="View in WHMCS">
-                    <ExternalLink size={14} />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <button onClick={handleUnlink} className="text-slate-400 hover:text-red-500 transition-colors" title="Unlink CRM Profile">
+                      <X size={14} />
+                    </button>
+                    <a href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClient.id}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors" title="View in WHMCS">
+                      <ExternalLink size={14} />
+                    </a>
+                  </div>
                 </div>
                 <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
                 <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{whmcsClient.email}</p>
@@ -496,7 +519,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
-                            <a href={`https://my.hostnin.com/admin/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
+                            <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
                               <ExternalLink size={13} />
                             </a>
                           </div>
@@ -507,7 +530,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
-                            <a href={`https://my.hostnin.com/admin/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
+                            <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
                               <ExternalLink size={13} />
                             </a>
                           </div>
@@ -545,7 +568,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     {whmcsTickets.slice(0, showAllTickets ? undefined : 3).map((ticket: WhmcsTicket) => (
                       <a 
                         key={ticket.id} 
-                        href={`https://my.hostnin.com/admin/supporttickets.php?action=view&id=${ticket.id}`} 
+                        href={`https://my.hostnin.com/root/supporttickets.php?action=view&id=${ticket.id}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="block p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group cursor-pointer hover:border-blue-300 transition-colors"
