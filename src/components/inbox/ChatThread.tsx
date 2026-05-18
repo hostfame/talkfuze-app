@@ -243,6 +243,7 @@ export default function ChatThread({
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
 
@@ -270,9 +271,10 @@ export default function ChatThread({
   // Load participants when conversation changes
   useEffect(() => {
     if (!conversationId) return
-    setParticipants([])
+    setIsLoadingParticipants(true)
     getParticipants(conversationId).then(data => {
       setParticipants(data as unknown as ConversationParticipant[])
+      setIsLoadingParticipants(false)
     })
   }, [conversationId])
 
@@ -1044,44 +1046,27 @@ export default function ChatThread({
               </button>
             </div>
             <div className="flex items-center gap-3">
-              {isJoined && (
-                <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                  <button 
-                    onClick={() => setIsInternal(false)}
-                    className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Reply
-                  </button>
-                  <button 
-                    onClick={() => setIsInternal(true)}
-                    className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <Lock size={12} strokeWidth={2.5} /> Note
-                  </button>
-                </div>
-              )}
-              
-              {!isJoined && (
-                <button
-                  onClick={handleJoinThread}
-                  disabled={isJoining}
-                  className="flex items-center justify-center gap-2 bg-[#0070f3] hover:bg-blue-600 disabled:opacity-60 text-white font-medium px-4 py-1.5 rounded-lg text-[14px] shadow-sm transition-all active:scale-95 whitespace-nowrap"
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <button 
+                  onClick={() => setIsInternal(false)}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  {isJoining ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Check size={16} />
-                  )}
-                  {isJoining ? 'Joining...' : 'Join'}
+                  Reply
                 </button>
-              )}
+                <button 
+                  onClick={() => setIsInternal(true)}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Lock size={12} strokeWidth={2.5} /> Note
+                </button>
+              </div>
               
               <button 
                 onClick={handleSend}
                 disabled={!input.trim()}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
-                {isInternal ? 'Add Note' : !isJoined ? 'Send & Join' : 'Send'}
+                {isInternal ? 'Add Note' : 'Send'}
               </button>
             </div>
           </div>
