@@ -144,7 +144,7 @@ export default function WidgetPage() {
       
       {/* Dynamic Header */}
       <div 
-        className={\`p-6 flex flex-col shrink-0 text-white relative shadow-sm \${!isCustomColor ? 'bg-gradient-to-br from-blue-600 to-blue-700' : ''}\`}
+        className={`p-6 flex flex-col shrink-0 text-white relative shadow-sm ${!isCustomColor ? 'bg-gradient-to-br from-blue-600 to-blue-700' : ''}`}
         style={headerStyle}
       >
         <div className="flex justify-between items-center mb-6">

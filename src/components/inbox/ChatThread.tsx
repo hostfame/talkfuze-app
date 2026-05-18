@@ -262,7 +262,7 @@ export default function ChatThread({
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
     getQuickRepliesFromTable(orgId).then(data => {
-      if (data) setQuickReplies(data)
+      if (data) setQuickReplies(data as QuickReplyItem[])
     })
   }, [orgId])
 
