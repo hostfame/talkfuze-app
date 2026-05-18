@@ -188,8 +188,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         <button className="p-2 mb-2 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all active:scale-95 shadow-sm"><ExternalLink size={14} strokeWidth={2.5}/></button>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-white">
-        {activeTab === 'details' && (
+      {activeTab === 'details' && (
+        <div className="flex-1 overflow-y-auto bg-white">
           <>
         {/* Contact Header Block (AnyChat Style) */}
         <div className="p-5 border-b border-slate-100 flex items-start gap-3">
@@ -353,8 +353,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         </div>
 
       </>
+        </div>
       )}
-      </div>
 
       {/* CRM Tab Content */}
       {activeTab === 'copilot' && (
