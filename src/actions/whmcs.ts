@@ -1,6 +1,6 @@
 "use server"
 
-import { getClients, getClientsProducts, getClientsDomains, getTickets, getInvoice, getClientDetailsByEmailFast } from "@/lib/whmcs"
+import { getClients, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast } from "@/lib/whmcs"
 
 export async function fetchWhmcsClient(phoneOrEmail: string) {
   try {
@@ -17,13 +17,15 @@ export async function fetchWhmcsClient(phoneOrEmail: string) {
     const cleanPhone = cleanSearch.startsWith('+') ? cleanSearch.substring(1) : cleanSearch
     const data = await getClients(cleanPhone)
     
-    if (data.clients && data.clients.length > 0) {
+    const clientsList = data.clients?.client || []
+    
+    if (clientsList.length > 0) {
       // Find exact match or use the first one
-      const exactMatch = data.clients.find(c => 
+      const exactMatch = clientsList.find(c => 
         (c.phonenumber && c.phonenumber.includes(cleanPhone)) || 
         (c.email && c.email.toLowerCase() === cleanSearch.toLowerCase())
       )
-      return exactMatch || data.clients[0]
+      return exactMatch || clientsList[0]
     }
     return null
   } catch (error) {
@@ -38,8 +40,8 @@ export async function fetchWhmcsServices(clientId: number) {
     const domainsRes = await getClientsDomains(clientId, 0, 100)
     
     return {
-      products: productsRes.products,
-      domains: domainsRes.domains
+      products: productsRes.products?.product || [],
+      domains: domainsRes.domains?.domain || []
     }
   } catch (error) {
     console.error("Failed to fetch WHMCS services:", error)
@@ -50,7 +52,7 @@ export async function fetchWhmcsServices(clientId: number) {
 export async function fetchWhmcsTickets(clientId: number) {
   try {
     const ticketsRes = await getTickets(clientId, 0, 5)
-    return ticketsRes.tickets
+    return ticketsRes.tickets?.ticket || []
   } catch (error) {
     console.error("Failed to fetch WHMCS tickets:", error)
     return []
