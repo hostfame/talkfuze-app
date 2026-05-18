@@ -66,8 +66,9 @@ export default function SipDialer() {
         setIsOpen(true)
         setStatus('Incoming Call...')
         setSessionState(SessionState.Initial)
-        if (simpleUser.session) {
-          const callerId = simpleUser.session.remoteIdentity.uri.user
+        const session = (simpleUser as any).session
+        if (session && session.remoteIdentity) {
+          const callerId = session.remoteIdentity.uri.user
           setNumber(callerId || 'Unknown')
         }
       },
