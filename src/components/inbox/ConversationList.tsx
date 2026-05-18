@@ -201,7 +201,7 @@ export default function ConversationList({
             <div 
               key={conv.id}
               onClick={() => onSelect(conv.id)}
-              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 transition-none ${
+              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 transition-all duration-200 ease-in-out ${
                 isSelected 
                   ? 'bg-[#E5F1FF]/50 relative' 
                   : 'bg-white hover:bg-slate-50'

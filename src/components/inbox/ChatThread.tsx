@@ -139,29 +139,61 @@ export default function ChatThread({
           status: 'sending',
           created_at: new Date().toISOString()
         })
-        const updated = await leaveConversation(conversationId)
-        setParticipants(updated as unknown as ConversationParticipant[])
+        const prevParticipants = [...participants]
+        setParticipants(participants.filter(p => p.user_id !== currentUser?.id))
         updateConversation(conversationId, { assigned_to: null, assigned_type: 'unassigned' })
+        try {
+          await leaveConversation(conversationId)
+        } catch (e) {
+          setParticipants(prevParticipants)
+          throw e
+        }
       } else if (action === 'pin') {
         const newVal = !conversation.is_pinned
-        await toggleConversationFlag(conversationId, 'is_pinned', newVal)
         updateConversation(conversationId, { is_pinned: newVal })
+        try {
+          await toggleConversationFlag(conversationId, 'is_pinned', newVal)
+        } catch (e) {
+          updateConversation(conversationId, { is_pinned: !newVal })
+          throw e
+        }
       } else if (action === 'unread') {
         const newVal = !conversation.is_unread
-        await toggleConversationFlag(conversationId, 'is_unread', newVal)
         updateConversation(conversationId, { is_unread: newVal })
+        try {
+          await toggleConversationFlag(conversationId, 'is_unread', newVal)
+        } catch (e) {
+          updateConversation(conversationId, { is_unread: !newVal })
+          throw e
+        }
       } else if (action === 'mute') {
         const newVal = !conversation.is_muted
-        await toggleConversationFlag(conversationId, 'is_muted', newVal)
         updateConversation(conversationId, { is_muted: newVal })
+        try {
+          await toggleConversationFlag(conversationId, 'is_muted', newVal)
+        } catch (e) {
+          updateConversation(conversationId, { is_muted: !newVal })
+          throw e
+        }
       } else if (action === 'archive') {
         const newVal = !conversation.is_archived
-        await toggleConversationFlag(conversationId, 'is_archived', newVal)
         updateConversation(conversationId, { is_archived: newVal })
+        try {
+          await toggleConversationFlag(conversationId, 'is_archived', newVal)
+        } catch (e) {
+          updateConversation(conversationId, { is_archived: !newVal })
+          throw e
+        }
       } else if (action === 'delete') {
         if (confirm('Are you sure you want to permanently delete this thread?')) {
-          await deleteConversation(conversationId)
+          const tempConv = conversation
           removeConversation(conversationId)
+          try {
+            await deleteConversation(conversationId)
+          } catch (e) {
+            updateConversation(conversationId, tempConv) // crude revert
+            throw e
+          }
         }
       }
     } catch (e) {
@@ -233,14 +265,7 @@ export default function ChatThread({
     })
   }, [orgId])
 
-  // Force internal mode if not joined, reset to reply mode when joined
-  useEffect(() => {
-    if (!isJoined) {
-      setIsInternal(true)
-    } else {
-      setIsInternal(false)
-    }
-  }, [isJoined])
+  // Removed forced internal mode - users can reply immediately and it will auto-join
 
   // Load participants when conversation changes
   useEffect(() => {
@@ -399,6 +424,18 @@ export default function ChatThread({
           filename: meta.name
         });
       } else {
+        // Auto-join if not joined and sending a public reply
+        if (!isJoined && !isInternal) {
+          const prevParticipants = [...participants]
+          setParticipants([...participants, { user_id: currentUser?.id, role: 'agent' } as unknown as ConversationParticipant])
+          joinConversation(conversationId).then(updated => {
+            setParticipants(updated as unknown as ConversationParticipant[])
+          }).catch(e => {
+            console.error('Failed to auto-join:', e)
+            setParticipants(prevParticipants)
+          })
+        }
+        
         await replyToConversation(orgId, conversationId, msgText, isInternal)
       }
       // Success: remove optimistic immediately, real one arrives via Realtime
@@ -577,16 +614,7 @@ export default function ChatThread({
             >
               <LogOut size={18} strokeWidth={2} />
             </button>
-          ) : (
-            <button 
-              onClick={handleJoinThread}
-              disabled={isJoining}
-              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-              title="Join thread"
-            >
-              <LogIn size={18} strokeWidth={2} />
-            </button>
-          )}
+          ) : null}
 
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -1053,7 +1081,7 @@ export default function ChatThread({
                 disabled={!input.trim()}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
-                {isInternal ? 'Add Note' : 'Send'}
+                {isInternal ? 'Add Note' : !isJoined ? 'Send & Join' : 'Send'}
               </button>
             </div>
           </div>
