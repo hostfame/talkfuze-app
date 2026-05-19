@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Inbox, Users, BarChart3, Settings, Bell } from "lucide-react"
+import { Inbox, Users, BarChart3, Settings, Bell, LogOut } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
@@ -53,6 +53,9 @@ export default async function DashboardLayout({
           </div>
           
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">
+            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-xs font-bold shrink-0 mb-1 select-none" title={profile.name}>
+              {profile.name.charAt(0).toUpperCase()}
+            </div>
             <button className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Bell size={22} strokeWidth={2} />
             </button>
@@ -60,8 +63,12 @@ export default async function DashboardLayout({
               <Settings size={22} strokeWidth={2} />
             </Link>
             <form action={logout} className="w-full flex justify-center">
-              <button type="submit" className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 mt-2 shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer active:scale-95 transition-all flex items-center justify-center text-xs font-bold overflow-hidden" title={profile.name + " (Click to logout)"}>
-                {profile.name.charAt(0).toUpperCase()}
+              <button 
+                type="submit" 
+                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer" 
+                title="Log Out"
+              >
+                <LogOut size={22} strokeWidth={2} />
               </button>
             </form>
           </div>
