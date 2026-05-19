@@ -92,11 +92,13 @@ If you did not request this, you can safely ignore this email.
         const subjectMsg = messages.find((m: { sender_type: string; content: string }) => m.sender_type !== 'agent' && m.content)
         const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation'
         const transcript = messages.map((m: { sender_type: string; agent?: { name?: string }; content: string }) => {
-          const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Customer'
+          if (m.sender_type === 'system') return `* ${m.content} *`
+          if (m.sender_type === 'ai') return `AI Assistant:\n${m.content}`
+          const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
           return `${name}:\n${m.content}`
         }).join('\n\n')
 
-        const finalMessage = `Hi there! 👋\n\nThis ticket was created from your recent live chat. We're reviewing your request and will reply here shortly.\n\n--- Chat History ---\n\n${transcript}`
+        const finalMessage = `Hi Team! 👋\n\nThis ticket was created from my recent live chat. Please read the chat and help me further.\n\n--- Chat History ---\n\n${transcript}`
         const result = await openTicket(record.clientId, 1, subject, finalMessage)
         ticketId = result.tid || null
       }
