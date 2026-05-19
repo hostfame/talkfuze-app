@@ -704,9 +704,8 @@ export default function ChatThread({
         created_at: new Date().toISOString()
       })
       
-      setIsUploading(true);
       try {
-        const meta = await uploadToStorage(file);
+        const meta = await uploadToStorage(file, false);
         await replyToConversation(orgId, conversationId, '[Audio Voice Message]', false, 'audio', {
           media_url: meta.url,
           mimetype: meta.type,
@@ -717,8 +716,6 @@ export default function ChatThread({
         console.error("Upload failed:", err);
         markFailed(conversationId, tempId)
         alert(`Failed to send voice message: ${getErrorMessage(err)}`);
-      } finally {
-        setIsUploading(false);
       }
       audioChunksRef.current = []
     }
@@ -771,22 +768,29 @@ export default function ChatThread({
     })
   }
 
-  const uploadToStorage = async (file: File) => {
+  const uploadToStorage = async (file: File, showProgress = true) => {
     if (!conversationId) throw new Error("No conversation ID");
-    setUploadFileName(file.name || "voice-message.webm")
-    setUploadProgress(1) // Set starting percent to trigger progress UI instantly
+    
+    if (showProgress) {
+      setUploadFileName(file.name || "file")
+      setUploadProgress(1) // Set starting percent to trigger progress UI instantly
+    }
     
     try {
       const res = await uploadWithProgress(file, (percent) => {
-        setUploadProgress(percent)
+        if (showProgress) {
+          setUploadProgress(percent)
+        }
       })
       return res
     } finally {
-      // Add brief premium delay so the agent sees 100% completion state
-      setTimeout(() => {
-        setUploadProgress(0)
-        setUploadFileName("")
-      }, 600)
+      if (showProgress) {
+        // Add brief premium delay so the agent sees 100% completion state
+        setTimeout(() => {
+          setUploadProgress(0)
+          setUploadFileName("")
+        }, 600)
+      }
     }
   }
 
