@@ -683,17 +683,32 @@ export default function WidgetPage() {
                       <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Hostnin Support'} • Just now</span>
                     )}
                   </div>
-                ) : (
-                  <div key={idx} className="flex flex-col gap-1 items-end mb-1">
-                    <div className="bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight">
-                      {msg.content_type === 'audio' ? (
-                        <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={true} />
-                      ) : (
-                        msg.content
-                      )}
+                ) : (() => {
+                  const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                  const isSending = msg.status === 'sending';
+                  const isSeen = !isSending && messages.slice(idx + 1).some(m => m.sender_type === 'agent' || m.sender_type === 'ai');
+                  return (
+                    <div key={idx} className="flex flex-col gap-0.5 items-end mb-1">
+                      <div className="bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight">
+                        {msg.content_type === 'audio' ? (
+                          <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={true} />
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 mr-0.5">
+                        {msgTime && <span className="text-[11px] text-slate-400">{msgTime}</span>}
+                        {isSending ? (
+                          <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                        ) : isSeen ? (
+                          <svg className="w-[15px] h-[15px] text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 13l5 5L18 6"/><path d="M8 13l5 5L22 6"/></svg>
+                        ) : (
+                          <svg className="w-[13px] h-[13px] text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
+                  );
+                })()
               })}
               
               {/* Typing Indicator */}
