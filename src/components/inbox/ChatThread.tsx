@@ -433,6 +433,15 @@ export default function ChatThread({
     })
   }, [conversationId])
 
+  // Revoke object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      attachmentPreviews.forEach(preview => {
+        if (preview) URL.revokeObjectURL(preview)
+      })
+    }
+  }, [attachmentPreviews])
+
   async function handleJoinThread() {
     if (!conversationId || !currentUser) return
     

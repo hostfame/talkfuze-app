@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause, Phone } from "lucide-react"
 import { getCallLogs } from "@/actions/calls"
 import { useInboxStore } from "@/lib/store"
+import { supabase } from "@/lib/supabase"
 
 function CustomAudioPlayer({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -107,11 +108,51 @@ export default function CallsPage() {
   const [dateFilter, setDateFilter] = useState('')
 
   useEffect(() => {
-    if (orgId) {
-      getCallLogs(orgId).then(data => {
-        setLogs(data)
-        setIsLoading(false)
-      })
+    if (!orgId) return
+
+    getCallLogs(orgId).then(data => {
+      setLogs(data)
+      setIsLoading(false)
+    })
+
+    // Establish dynamic real-time postgres_changes subscription for newly logged calls
+    const channel = supabase
+      .channel('call-logs-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'call_logs', filter: `org_id=eq.${orgId}` },
+        async (payload) => {
+          const newLog = payload.new as CallLog
+          
+          // Pre-enrich customer name in-memory to prevent visual delays
+          const customerPhone = newLog.direction === 'inbound' ? newLog.from_number : newLog.to_number
+          const cleanCustomer = customerPhone ? customerPhone.replace(/\D/g, '') : ''
+          const last10 = cleanCustomer.slice(-10)
+
+          let matchedContactName = null
+          if (cleanCustomer) {
+            const { data: contact } = await supabase
+              .from('contacts')
+              .select('name')
+              .eq('org_id', orgId)
+              .or(`phone.eq.${cleanCustomer},phone.like.%${last10},platform_id.like.%${cleanCustomer}%`)
+              .maybeSingle()
+              
+            if (contact) {
+              matchedContactName = contact.name
+            }
+          }
+
+          setLogs(prev => [
+            { ...newLog, customer_name: matchedContactName },
+            ...prev
+          ].slice(0, 50))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   }, [orgId])
 
