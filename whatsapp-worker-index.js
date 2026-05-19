@@ -696,14 +696,17 @@ app.post('/webhook/evolution', async (req, res) => {
 // Used by the Supabase Realtime listener below
 // ─────────────────────────────────────────────
 
-async function sendTextMessage(jid, text) {
+async function sendTextMessage(jid, text, quoted) {
+  const payload = { number: jid, text };
+  if (quoted) payload.quoted = quoted;
+
   const res = await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
     method: 'POST',
     headers: {
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ number: jid, text })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const err = await res.text();
@@ -712,7 +715,7 @@ async function sendTextMessage(jid, text) {
   return res.json();
 }
 
-async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileName) {
+async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileName, quoted) {
   const mediaType = mimetype?.startsWith('image/') ? 'image'
     : mimetype?.startsWith('audio/') ? 'audio'
     : mimetype?.startsWith('video/') ? 'video'
@@ -732,17 +735,20 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
 
       console.log(`[AUDIO] Sending ${audioBuffer.length}B webm as base64 (${base64Audio.length} chars) to ${phoneNumber}`);
 
+      const payload = {
+        number: phoneNumber,
+        audio: base64Audio,
+        encoding: true
+      };
+      if (quoted) payload.quoted = quoted;
+
       const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
         headers: {
           'apikey': EVOLUTION_API_KEY,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          number: phoneNumber,
-          audio: base64Audio,
-          encoding: true
-        })
+        body: JSON.stringify(payload)
       });
 
       const resBody = await res.text();
@@ -761,20 +767,23 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
   }
 
   // Non-audio media (image, video, document)
+  const payload = {
+    number: jid,
+    mediatype: mediaType,
+    media: mediaUrl,
+    caption: caption || '',
+    mimetype,
+    fileName: originalFileName || (mediaType === 'video' ? 'video.mp4' : mediaType === 'image' ? 'image.jpg' : 'document.pdf')
+  };
+  if (quoted) payload.quoted = quoted;
+
   const res = await fetch(`${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`, {
     method: 'POST',
     headers: {
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      number: jid,
-      mediatype: mediaType,
-      media: mediaUrl,
-      caption: caption || '',
-      mimetype,
-      fileName: originalFileName || (mediaType === 'video' ? 'video.mp4' : mediaType === 'image' ? 'image.jpg' : 'document.pdf')
-    })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const err = await res.text();
@@ -834,6 +843,34 @@ async function processOutboundMessage(msg) {
       }
     }
 
+    let quoted = null;
+    try {
+      const parentMessageId = msg.metadata?.reply_to?.message_id;
+      if (parentMessageId) {
+        const { data: parentMsg } = await supabaseRealtime
+          .from('messages')
+          .select('platform_message_id, sender_type, content')
+          .eq('id', parentMessageId)
+          .single();
+
+        if (parentMsg && parentMsg.platform_message_id) {
+          quoted = {
+            key: {
+              id: parentMsg.platform_message_id,
+              fromMe: parentMsg.sender_type === 'agent' || parentMsg.sender_type === 'ai',
+              remoteJid: jid
+            },
+            message: {
+              conversation: parentMsg.content || ''
+            }
+          };
+          console.log(`[OUTBOUND] Replying to parent WhatsApp message: ${parentMsg.platform_message_id}`);
+        }
+      }
+    } catch (parentErr) {
+      console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
+    }
+
     let sentResult;
     if (msg.metadata?.media_url) {
       sentResult = await sendMediaMessage(
@@ -841,10 +878,11 @@ async function processOutboundMessage(msg) {
         msg.metadata.media_url,
         msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]' ? msg.content : '',
         msg.metadata.mimetype,
-        msg.metadata?.filename
+        msg.metadata?.filename,
+        quoted
       );
     } else {
-      sentResult = await sendTextMessage(jid, msg.content);
+      sentResult = await sendTextMessage(jid, msg.content, quoted);
     }
 
     // Save platform message id for dedup
