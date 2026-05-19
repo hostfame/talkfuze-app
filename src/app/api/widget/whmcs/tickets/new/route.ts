@@ -15,15 +15,18 @@ export async function POST(req: NextRequest) {
     if (!subject || !subject.trim()) {
       return NextResponse.json({ success: false, error: 'Subject is required.' }, { status: 400 })
     }
-    if (!ticketMessage || !ticketMessage.trim()) {
-      return NextResponse.json({ success: false, error: 'Message is required.' }, { status: 400 })
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+    const hasVideoLinks = Array.isArray(videoLinks) && videoLinks.length > 0;
+
+    if ((!ticketMessage || !ticketMessage.trim()) && !hasAttachments && !hasVideoLinks) {
+      return NextResponse.json({ success: false, error: 'Message or attachment is required.' }, { status: 400 })
     }
 
-    let finalMessage = ticketMessage;
-    if (videoLinks && Array.isArray(videoLinks) && videoLinks.length > 0) {
-      const validLinks = videoLinks.filter(l => l && l.trim().length > 0);
+    let finalMessage = ticketMessage || '';
+    if (hasVideoLinks) {
+      const validLinks = videoLinks.filter((l: string) => l && l.trim().length > 0);
       if (validLinks.length > 0) {
-        finalMessage += '\n\n---\n**Video Attachments:**\n' + validLinks.map(l => `- ${l}`).join('\n');
+        finalMessage += (finalMessage ? '\n\n' : '') + 'Video Attached:\n' + validLinks.join('\n');
       }
     }
 

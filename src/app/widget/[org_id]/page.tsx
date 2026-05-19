@@ -1041,6 +1041,10 @@ export default function WidgetPage() {
       } else {
         setOtpTicketId(data.ticketId || '');
         setOtpStep('success');
+        if (data.clientId && data.name) {
+          localStorage.setItem('whmcs_user', JSON.stringify({ clientId: data.clientId, name: data.name }));
+          setWhmcsUser({ clientId: data.clientId, name: data.name });
+        }
       }
     } catch {
       setOtpError('Network error. Please check your connection.');
@@ -1060,8 +1064,50 @@ export default function WidgetPage() {
     setIsHeaderMenuOpen(false);
   };
 
-  const handleConvertToTicket = () => {
+  const handleConvertToTicket = async () => {
     setIsHeaderMenuOpen(false);
+
+    if (whmcsUser) {
+      const subjectMsg = [...messages].reverse().find(m => m.sender_type !== 'agent' && m.content);
+      const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation';
+      const transcript = messages.map(m => {
+          if (m.sender_type === 'system') return `* ${m.content} *`
+          if (m.sender_type === 'ai') return `AI Assistant:\n${m.content}`
+          const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
+          return `${name}:\n${m.content}`
+      }).join('\n\n');
+      
+      const finalMessage = `Hi Team! 👋\n\nThis ticket was created from my recent live chat. Please read the chat and help me further.\n\n--- Chat History ---\n\n${transcript}`;
+      
+      setOtpStep('sending');
+      setShowTicketLogin(true); // Show modal for loading state
+
+      try {
+        const res = await fetch('/api/widget/whmcs/tickets/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+             clientId: whmcsUser.clientId, 
+             deptid: 1, // Default support dept
+             subject: subject, 
+             message: finalMessage 
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+           setOtpTicketId(data.result?.tid || '');
+           setOtpStep('success');
+        } else {
+           setOtpError('Failed to convert chat. Please try again.');
+           setOtpStep('email'); // Fallback to ask email
+        }
+      } catch {
+         setOtpError('Network error. Please try again.');
+         setOtpStep('email');
+      }
+      return;
+    }
+
     setOtpStep('email');
     setOtpError('');
     setShowTicketLogin(true);

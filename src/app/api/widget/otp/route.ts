@@ -3,9 +3,9 @@ import { whmcsRequest, getClientDetailsByEmailFast, openTicket } from '@/lib/whm
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // In-memory OTP store. For production scale, move to Supabase or Redis.
-// Key: email, Value: { code, expires, clientId, conversationId }
+// Key: email, Value: { code, expires, clientId, conversationId, name }
 const globalForOtp = globalThis as unknown as {
-  otpStore: Map<string, { code: string; expires: number; clientId: number; conversationId: string }> | undefined
+  otpStore: Map<string, { code: string; expires: number; clientId: number; conversationId: string; name: string }> | undefined
 }
 const otpStore = globalForOtp.otpStore ?? new Map()
 if (process.env.NODE_ENV !== 'production') globalForOtp.otpStore = otpStore
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       const expires = Date.now() + 10 * 60 * 1000 // 10 minutes
 
       // Store OTP
-      otpStore.set(email.toLowerCase(), { code, expires, clientId: client.id, conversationId })
+      otpStore.set(email.toLowerCase(), { code, expires, clientId: client.id, conversationId, name: client.firstname })
 
       // If action is prepare_otp, return early so frontend can optimistically show the OTP screen
       if (action === 'prepare_otp') {
@@ -122,6 +122,7 @@ If you did not request this, you can safely ignore this email.
         return NextResponse.json({ 
           success: true, 
           clientId: record.clientId,
+          name: record.name,
           message: 'Login successful' 
         })
       }
@@ -158,6 +159,8 @@ If you did not request this, you can safely ignore this email.
       return NextResponse.json({
         success: true,
         ticketId,
+        clientId: record.clientId,
+        name: record.name,
         message: ticketId
           ? `Ticket #${ticketId} created successfully! Our team will respond shortly.`
           : 'Verified! Our team has received your request.',
