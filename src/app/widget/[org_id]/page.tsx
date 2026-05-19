@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2 } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
@@ -269,6 +269,7 @@ export default function WidgetPage() {
   const [ticketError, setTicketError] = useState("")
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const ticketEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Check for existing WHMCS session in localStorage
@@ -280,6 +281,14 @@ export default function WidgetPage() {
       }
     } catch (e) {}
   }, [])
+
+  useEffect(() => {
+    if (selectedTicket) {
+      setTimeout(() => {
+        ticketEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+    }
+  }, [selectedTicket])
 
   useEffect(() => {
     if (!org_id) return
@@ -792,30 +801,63 @@ export default function WidgetPage() {
 
   const [ticketReplyInput, setTicketReplyInput] = useState("");
   const handleTicketReply = async () => {
-    if (!ticketReplyInput.trim() || !whmcsUser || !selectedTicket) return;
-    setTicketLoading(true);
+    if (!whmcsUser || !selectedTicket) return;
+    const hasAttachments = ticketImages.length > 0;
+    const hasVideoLinks = ticketVideoLinks.some(l => l.trim().length > 0);
+    if (!ticketReplyInput.trim() && !hasAttachments && !hasVideoLinks) return;
+    
+    // Create optimistic reply
+    let formattedMessage = ticketReplyInput || '';
+    if (hasVideoLinks) {
+      const validLinks = ticketVideoLinks.filter(l => l.trim().length > 0);
+      if (validLinks.length > 0) {
+        formattedMessage += (formattedMessage ? '\n\n' : '') + 'Video Attached:\n' + validLinks.join('\n');
+      }
+    }
+
+    const optimisticReply = {
+      admin: false,
+      name: whmcsUser.name || 'You',
+      date: 'Just now',
+      message: formattedMessage,
+      _optimisticAttachments: [...ticketImages]
+    };
+
+    setSelectedTicket((prev: any) => {
+       if (!prev) return prev;
+       return {
+          ...prev,
+          replies: {
+             reply: [...(prev.replies?.reply || []), optimisticReply]
+          }
+       };
+    });
+
+    const payloadInput = ticketReplyInput;
+    const payloadImages = [...ticketImages];
+    const payloadVideoLinks = [...ticketVideoLinks];
+
+    setTicketReplyInput("");
+    setTicketImages([]);
+    setTicketVideoLinks([]);
+    
+    setTimeout(() => {
+      ticketEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+
     try {
-      const res = await fetch(`/api/widget/whmcs/tickets/${selectedTicket.ticketid}/reply`, {
+      await fetch(`/api/widget/whmcs/tickets/${selectedTicket.ticketid}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           clientId: whmcsUser.clientId, 
-          message: ticketReplyInput,
-          attachments: ticketImages,
-          videoLinks: ticketVideoLinks
+          message: payloadInput,
+          attachments: payloadImages,
+          videoLinks: payloadVideoLinks
         })
       });
-      const data = await res.json();
-      if (data.success) {
-        setTicketReplyInput("");
-        setTicketImages([]);
-        setTicketVideoLinks([]);
-        await handleFetchTicketDetails(selectedTicket.ticketid); // Refresh
-      }
     } catch (err) {
       console.error(err);
-    } finally {
-      setTicketLoading(false);
     }
   };
 
@@ -872,7 +914,7 @@ export default function WidgetPage() {
   };
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTicketSubject || !newTicketMessage || !whmcsUser) return;
+    if (!newTicketSubject || !whmcsUser || (!newTicketMessage.trim() && ticketImages.length === 0 && ticketVideoLinks.length === 0)) return;
     setTicketLoading(true);
     try {
       const res = await fetch('/api/widget/whmcs/tickets/new', {
@@ -1032,11 +1074,13 @@ export default function WidgetPage() {
 
   const headerStyle = isCustomColor ? { backgroundColor: settings.color } : {}
 
+  const isFullScreenTicketView = activeTab === 'tickets' && (ticketView === 'detail' || ticketView === 'new');
+
   return (
     <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden font-sans relative">
       
       {/* Background Gradient for Home/Tickets/About */}
-      {activeTab !== 'messages' && activeTab !== 'chat' && (
+      {activeTab !== 'messages' && activeTab !== 'chat' && !isFullScreenTicketView && (
         <div 
           className={`absolute top-0 left-0 right-0 h-[45%] ${!isCustomColor ? 'bg-gradient-to-b from-slate-600 to-slate-400' : ''} z-0`}
           style={isCustomColor ? { background: `linear-gradient(to bottom, ${settings.color}, ${settings.color}ee)` } : {}}
@@ -1044,13 +1088,13 @@ export default function WidgetPage() {
       )}
 
       {/* Header controls (Close, Mute) - Absolute positioned */}
-      {activeTab !== 'messages' && activeTab !== 'chat' && (
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20">
+      {activeTab !== 'messages' && activeTab !== 'chat' && !isFullScreenTicketView && (
+        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 pointer-events-none">
           <div className="flex -space-x-2 opacity-0">
              {/* hidden placeholder for flex space-between balance */}
              <div className="w-8"></div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 pointer-events-auto">
             <button onClick={toggleMute} className="text-white/80 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10" title={isMuted ? "Unmute sounds" : "Mute sounds"}>
               {isMuted ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
@@ -1155,9 +1199,6 @@ export default function WidgetPage() {
         <div className={`absolute inset-0 overflow-y-auto pb-[120px] scrollbar-hide bg-[#f9fafb] flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-2">
-                 <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-2 rounded-md hover:bg-slate-50">
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10.85 3.99984C10.85 4.21984 10.77 4.43984 10.6 4.59984L7.20005 7.99984L10.6 11.3998C10.93 11.7298 10.93 12.2698 10.6 12.5998C10.27 12.9298 9.73005 12.9298 9.40005 12.5998L4.80005 7.99984L9.40005 3.39984C9.73005 3.06984 10.27 3.06984 10.6 3.39984C10.77 3.56984 10.85 3.77984 10.85 3.99984Z" /></svg>
-                 </button>
                  <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
                </div>
                <button className="p-1.5 hover:bg-slate-50 transition-colors rounded-full text-slate-400 -mr-1.5" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
@@ -1658,9 +1699,14 @@ export default function WidgetPage() {
                  {/* Header */}
                  <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
                     <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Support Tickets</h2>
-                    <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
-                      <Plus size={14} /> New Ticket
-                    </button>
+                    <div className="flex items-center gap-2">
+                       <button onClick={() => { localStorage.removeItem('whmcs_user'); setWhmcsUser(null); setTicketView('login'); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Log out">
+                          <LogOut size={16} />
+                       </button>
+                       <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
+                         <Plus size={14} /> New Ticket
+                       </button>
+                    </div>
                  </div>
                  {/* List */}
                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-[100px]">
@@ -1695,36 +1741,115 @@ export default function WidgetPage() {
                     </div>
                  </div>
                  {/* Chat Area */}
-                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-[80px]">
+                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
                     {/* Initial Message */}
                     <div className="flex flex-col gap-1 items-end w-full">
-                      <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap break-words">
-                        {selectedTicket.message}
-                      </div>
+                       <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm">
+                         <div className="whitespace-pre-wrap break-words">{selectedTicket.message}</div>
+                         {selectedTicket.attachments?.attachment && (() => {
+                           const list = Array.isArray(selectedTicket.attachments.attachment) ? selectedTicket.attachments.attachment : [selectedTicket.attachments.attachment];
+                           return list.length > 0 ? (
+                             <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-white/10">
+                               {list.map((filename: string, idx: number) => (
+                                 <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-white/20 border-white/10 text-white">
+                                   <Paperclip size={12} className="shrink-0 opacity-80"/> 
+                                   <span className="text-[11.5px] truncate max-w-[150px] font-medium tracking-tight">{filename}</span>
+                                 </div>
+                               ))}
+                             </div>
+                           ) : null;
+                         })()}
+                       </div>
                     </div>
                     {/* Replies */}
                     {selectedTicket.replies?.reply?.map((reply: any, idx: number) => (
                       <div key={idx} className={`flex flex-col gap-1 w-full ${reply.admin ? 'items-start' : 'items-end'}`}>
                         {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Support Team'}</span>}
-                        <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap break-words shadow-sm`}>
-                          {reply.message}
+                        <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm`}>
+                          <div className="whitespace-pre-wrap break-words">{reply.message}</div>
+                          {reply.attachments?.attachment && (() => {
+                            const list = Array.isArray(reply.attachments.attachment) ? reply.attachments.attachment : [reply.attachments.attachment];
+                            return list.length > 0 ? (
+                              <div className={`flex flex-col gap-1.5 mt-2 pt-2 border-t ${reply.admin ? 'border-slate-100' : 'border-white/10'}`}>
+                                {list.map((filename: string, attIdx: number) => (
+                                  <div key={attIdx} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${reply.admin ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-white/20 border-white/10 text-white'}`}>
+                                    <Paperclip size={12} className="shrink-0 opacity-80"/> 
+                                    <span className="text-[11.5px] truncate max-w-[150px] font-medium tracking-tight">{filename}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null;
+                          })()}
+                          {reply._optimisticAttachments && reply._optimisticAttachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-white/10">
+                              {reply._optimisticAttachments.map((img: any, imgIdx: number) => (
+                                <img key={imgIdx} src={`data:image/jpeg;base64,${img.data}`} className="w-16 h-16 object-cover rounded-lg border border-white/20 shadow-sm" />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
+                    <div ref={ticketEndRef} className="h-4 shrink-0" />
                  </div>
                  {/* Input Bar */}
-                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 z-20">
-                   <div className="flex items-end gap-2 bg-slate-50 rounded-[20px] p-1.5 border border-slate-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-100/50 transition-all">
-                     <textarea 
-                       value={ticketReplyInput}
-                       onChange={(e) => setTicketReplyInput(e.target.value)}
-                       placeholder="Reply to ticket..."
-                       className="flex-1 bg-transparent border-none outline-none resize-none max-h-[100px] min-h-[36px] py-2 px-3 text-[14px]"
-                     />
-                     <button disabled={ticketLoading || !ticketReplyInput.trim()} onClick={handleTicketReply} className="p-2.5 bg-[#0070f3] disabled:bg-slate-300 disabled:opacity-50 text-white rounded-full shrink-0 transition-all hover:bg-blue-600 active:scale-95">
-                       <Send size={16} className={ticketLoading ? 'animate-pulse' : ''} />
-                     </button>
-                   </div>
+                 <div className="p-4 pt-2 bg-gradient-to-t from-[#f8fafc] to-[#f8fafc] shrink-0 z-20">
+                    <div className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-slate-200 flex flex-col relative overflow-hidden transition-all">
+                       {/* Staged Attachments */}
+                       {(ticketImages.length > 0 || ticketVideoLinks.length > 0) && (
+                         <div className="px-4 pt-3 pb-1 flex flex-col gap-2">
+                           {/* Images */}
+                           {ticketImages.length > 0 && (
+                             <div className="flex flex-wrap gap-2">
+                               {ticketImages.map((img, idx) => (
+                                 <div key={idx} className="relative group w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0">
+                                   <img src={`data:image/jpeg;base64,${img.data}`} className="w-full h-full object-cover" />
+                                   <button onClick={() => removeTicketImage(idx)} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70 transition-colors"><X size={10} strokeWidth={3}/></button>
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+                           {/* Video Links */}
+                           {ticketVideoLinks.map((link, idx) => (
+                             <div key={idx} className="flex items-center gap-2 group bg-blue-50/50 rounded-lg p-1.5 border border-blue-100/50 transition-colors">
+                               <div className="w-7 h-7 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                  <Video size={14} />
+                               </div>
+                               <input type="url" value={link} onChange={(e) => updateTicketVideoLink(idx, e.target.value)} placeholder="Paste Drive/Loom link here" className="flex-1 bg-transparent border-none py-1 px-1 text-[13px] outline-none text-blue-900 placeholder:text-blue-300 font-medium" />
+                               <button onClick={() => removeTicketVideoLink(idx)} className="w-6 h-6 flex items-center justify-center text-blue-400 hover:text-red-500 rounded-full hover:bg-blue-100 transition-colors shrink-0"><X size={14}/></button>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+
+                       <textarea 
+                         value={ticketReplyInput}
+                         onChange={(e) => setTicketReplyInput(e.target.value)}
+                         placeholder="Reply to ticket..."
+                         className="w-full bg-transparent border-none outline-none resize-none min-h-[52px] max-h-[120px] py-3.5 px-4 text-[14px] text-slate-800 placeholder:text-slate-400"
+                         rows={1}
+                       />
+                       
+                       <div className="flex justify-between items-center px-2 pb-2 pt-1 border-t border-slate-50">
+                          <div className="flex items-center gap-0.5 text-slate-400">
+                             <input type="file" ref={ticketFileInputRef} className="hidden" accept="image/*" multiple onChange={handleTicketImageUpload} />
+                             <button onClick={() => ticketFileInputRef.current?.click()} className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50" title="Attach Image">
+                               <Paperclip size={18} />
+                             </button>
+                             <button onClick={addTicketVideoLink} className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50" title="Attach Video Link">
+                               <Video size={18} />
+                             </button>
+                          </div>
+                          <button 
+                             onClick={handleTicketReply}
+                             disabled={ticketLoading || (!ticketReplyInput.trim() && ticketImages.length === 0 && !ticketVideoLinks.some(l => l.trim().length > 0))}
+                             className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#0070f3] data-[active=true]:text-white mr-1 shrink-0"
+                             data-active={(!ticketLoading && (!!ticketReplyInput.trim() || ticketImages.length > 0 || ticketVideoLinks.some(l => l.trim().length > 0)))}
+                          >
+                             {ticketLoading ? <Loader2 size={16} className="animate-spin text-slate-400" /> : <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>}
+                          </button>
+                       </div>
+                    </div>
                  </div>
               </div>
             )}
@@ -1784,6 +1909,46 @@ export default function WidgetPage() {
                       />
                     </div>
 
+                    <div className="flex flex-col gap-3 p-3.5 bg-white border border-slate-200 rounded-[12px] shadow-sm">
+                      <div className="flex items-center justify-between">
+                         <span className="text-[13px] font-semibold text-slate-700">Attachments <span className="font-normal text-slate-400 text-[11px] ml-1">(Optional)</span></span>
+                         <div className="flex items-center gap-1 text-blue-600">
+                           <input type="file" ref={ticketFileInputRef} className="hidden" accept="image/*" multiple onChange={handleTicketImageUpload} />
+                           <button type="button" onClick={() => ticketFileInputRef.current?.click()} className="text-[12px] font-semibold hover:bg-blue-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1"><Paperclip size={14}/> Image</button>
+                           <button type="button" onClick={addTicketVideoLink} className="text-[12px] font-semibold hover:bg-blue-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1"><Video size={14}/> Video</button>
+                         </div>
+                      </div>
+                      
+                      {(ticketImages.length > 0 || ticketVideoLinks.length > 0) && (
+                         <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                           {ticketImages.length > 0 && (
+                             <div className="flex flex-wrap gap-2">
+                               {ticketImages.map((img, idx) => (
+                                 <div key={idx} className="relative group w-14 h-14 rounded-lg border border-slate-200 overflow-hidden shrink-0">
+                                   <img src={`data:image/jpeg;base64,${img.data}`} className="w-full h-full object-cover" />
+                                   <button type="button" onClick={() => removeTicketImage(idx)} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70 transition-colors"><X size={12} strokeWidth={3}/></button>
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+                           {ticketVideoLinks.length > 0 && (
+                             <div className="flex flex-col gap-2">
+                               <p className="text-[11px] text-slate-500 font-medium">Links added here will be attached to your ticket message.</p>
+                               {ticketVideoLinks.map((link, idx) => (
+                                 <div key={idx} className="flex items-center gap-2 group bg-blue-50/50 rounded-lg p-1.5 border border-blue-100/50 transition-colors">
+                                   <div className="w-7 h-7 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                                      <Video size={14} />
+                                   </div>
+                                   <input type="url" required value={link} onChange={(e) => updateTicketVideoLink(idx, e.target.value)} placeholder="Paste Drive/Loom link here" className="flex-1 bg-transparent border-none py-1 px-1 text-[13px] outline-none text-blue-900 placeholder:text-blue-300 font-medium" />
+                                   <button type="button" onClick={() => removeTicketVideoLink(idx)} className="w-6 h-6 flex items-center justify-center text-blue-400 hover:text-red-500 rounded-full hover:bg-blue-100 transition-colors shrink-0"><X size={14}/></button>
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+                         </div>
+                      )}
+                    </div>
+
                     <div className="mt-2">
                        <button disabled={ticketLoading} type="submit" className="w-full bg-[#0070f3] hover:bg-blue-600 disabled:bg-slate-300 disabled:opacity-70 disabled:active:scale-100 text-white font-semibold py-3.5 rounded-[12px] text-[15px] transition-all flex items-center justify-center shadow-sm hover:shadow-md active:scale-95">
                           {ticketLoading ? 'Opening Ticket...' : 'Submit Ticket'}
@@ -1798,7 +1963,7 @@ export default function WidgetPage() {
       </div>
 
       {/* Bottom Navigation */}
-      {activeTab !== 'messages' && activeTab !== 'chat' && (
+      {activeTab !== 'chat' && !isFullScreenTicketView && (
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[60px] px-6 py-[12px] z-20">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">

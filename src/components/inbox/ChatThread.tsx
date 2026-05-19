@@ -433,6 +433,7 @@ export default function ChatThread({
       if (att.previewUrl) URL.revokeObjectURL(att.previewUrl)
     })
     setStagedAttachments([])
+    setReplyToMessage(null)
     setShowMacroMenu(false)
     setIsInternal(false)
 
