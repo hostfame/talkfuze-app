@@ -47,49 +47,50 @@ export async function disconnectWhatsAppFull(channelId: string) {
 
 export async function getOrCreateWhatsAppInstance(orgId: string) {
   try {
-    // 1. Fetch instances to check if 'talkfuze' exists
-    const res = await fetch(`${EVOLUTION_URL}/instance/fetchInstances`, {
-      headers: { apikey: EVOLUTION_API_KEY },
+    // ALWAYS delete the instance first if it exists to guarantee a fresh Baileys session and instant QR code generation
+    try {
+      await fetch(`${EVOLUTION_URL}/instance/delete/${EVOLUTION_INSTANCE}`, {
+        method: 'DELETE',
+        headers: { apikey: EVOLUTION_API_KEY },
+        cache: 'no-store'
+      })
+    } catch (_) {
+      // Ignore - instance may not exist yet
+    }
+
+    // Create a brand new fresh instance
+    await fetch(`${EVOLUTION_URL}/instance/create`, {
+      method: 'POST',
+      headers: {
+        apikey: EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        instanceName: EVOLUTION_INSTANCE,
+        qrcode: true,
+        integration: 'WHATSAPP-BAILEYS'
+      }),
       cache: 'no-store'
     })
-    const instances = await res.json()
-    const exists = Array.isArray(instances) && instances.some((ins: any) => ins.name === EVOLUTION_INSTANCE || ins.instance?.name === EVOLUTION_INSTANCE)
 
-    if (!exists) {
-      // Create instance
-      await fetch(`${EVOLUTION_URL}/instance/create`, {
-        method: 'POST',
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          instanceName: EVOLUTION_INSTANCE,
-          qrcode: true,
-          integration: 'WHATSAPP-BAILEYS'
-        }),
-        cache: 'no-store'
-      })
-
-      // Set webhook
-      await fetch(`${EVOLUTION_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {
-        method: 'POST',
-        headers: {
-          apikey: EVOLUTION_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          webhook: {
-            enabled: true,
-            url: 'http://46.225.152.127:3001/webhook/evolution',
-            byEvents: false,
-            base64: true,
-            events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
-          }
-        }),
-        cache: 'no-store'
-      })
-    }
+    // Set webhook for the fresh instance
+    await fetch(`${EVOLUTION_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        apikey: EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        webhook: {
+          enabled: true,
+          url: 'http://46.225.152.127:3001/webhook/evolution',
+          byEvents: false,
+          base64: true,
+          events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+        }
+      }),
+      cache: 'no-store'
+    })
   } catch (err) {
     console.error('Error creating WhatsApp instance:', err)
   }
@@ -109,6 +110,11 @@ export async function getOrCreateWhatsAppInstance(orgId: string) {
       config: { status: 'pending' },
       is_active: true
     })
+  } else {
+    // If it already exists, reset its config status to pending to reset the loading state
+    await supabaseAdmin.from('channels')
+      .update({ config: { status: 'pending' } })
+      .eq('id', existing.id)
   }
 }
 

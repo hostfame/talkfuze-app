@@ -184,7 +184,7 @@ export default function ChannelsSettingsPage() {
             </div>
 
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-              {waChannel ? (
+              {waChannel && waStatus === 'connected' ? (
                 <div className="flex items-center justify-between px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
@@ -192,12 +192,12 @@ export default function ChannelsSettingsPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-800 dark:text-slate-200">WhatsApp Web</p>
-                      <p className="text-xs text-slate-500">{waStatus === 'connected' ? 'Device linked' : 'Not connected'}</p>
+                      <p className="text-xs text-slate-500">Device linked</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsWaManageModalOpen(true)}
-                    className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-slate-200 dark:hover:border-slate-700 rounded-lg px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     Manage
                   </button>
@@ -208,17 +208,21 @@ export default function ChannelsSettingsPage() {
                     <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                       <MessageCircle size={16} className="text-slate-400" />
                     </div>
-                    <p className="text-sm text-slate-500">No WhatsApp device connected</p>
+                    <div>
+                      <p className="text-sm text-slate-800 dark:text-slate-200 font-medium">WhatsApp Web</p>
+                      <p className="text-xs text-slate-500">No WhatsApp device connected</p>
+                    </div>
                   </div>
                   <button
                     onClick={handleOpenQrModal}
-                    className="flex items-center gap-1.5 text-xs bg-[#0070f3] hover:bg-blue-600 text-white rounded-lg px-3 py-1.5 transition-colors"
+                    className="flex items-center gap-1.5 text-xs bg-[#0070f3] hover:bg-blue-600 text-white rounded-lg px-3 py-1.5 transition-colors font-medium cursor-pointer"
                   >
                     <QrCode size={12} /> Scan QR
                   </button>
                 </div>
               )}
             </div>
+
           </section>
 
           {/* Facebook Messenger Section */}
