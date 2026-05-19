@@ -939,7 +939,7 @@ export default function ChatThread({
 
   if (!isLoaded) {
     return (
-      <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden">
+      <div className="flex-1 flex flex-col h-full relative bg-white border-r border-slate-200 z-10 overflow-hidden">
         {/* Skeleton Header */}
         <div className="h-[72px] border-b border-slate-100 px-6 flex items-center gap-4 bg-white shrink-0">
           <div className="w-10 h-10 rounded-full bg-slate-100/80 animate-pulse shrink-0" />
@@ -1015,7 +1015,7 @@ export default function ChatThread({
 
   if (!conversationId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white rounded-3xl border border-slate-200">
+      <div className="flex-1 flex items-center justify-center bg-white border-r border-slate-200 z-10">
         <p className="text-slate-500 font-medium">Select a conversation to start chatting</p>
       </div>
     )
