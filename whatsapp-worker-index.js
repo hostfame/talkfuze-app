@@ -758,6 +758,14 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       const oggUrl = urlData.publicUrl;
       console.log(`[AUDIO] Uploaded ogg to: ${oggUrl}`);
 
+      // Wait for CDN propagation and verify URL is accessible
+      await new Promise(r => setTimeout(r, 1500));
+      const verifyRes = await fetch(oggUrl, { method: 'HEAD' });
+      if (!verifyRes.ok) {
+        console.error(`[AUDIO] OGG URL not accessible after upload: ${verifyRes.status}`);
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
       // Send ogg URL to Evolution API
       const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
