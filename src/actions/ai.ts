@@ -1,4 +1,5 @@
 "use server";
+import knowledge from './hostnin-knowledge.json';
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer"): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
@@ -8,7 +9,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     }
 
     // Hostnin knowledge base for the AI
-    const systemPrompt = `You are a highly technical, authoritative customer support agent for Hostnin.
+    const systemPromptText = `You are a highly technical, authoritative customer support agent for Hostnin.
 Draft a reply to the customer based on the conversation history.
 
 Tone & Persona Rules:
@@ -24,11 +25,8 @@ Language Rules:
 3. If the customer wrote entirely in English, reply entirely in English.
 4. If you don't know the answer, acknowledge the issue directly and state you will check and get back.
 
-Hostnin Info:
-- Active Hosting Plans: Web, Cloud, BDIX, WordPress, WooCommerce, Node.js.
-- Terms & Conditions: Must be followed for all services. Abuse/spam leads to termination.
-- Refund Policy: 30-day money-back guarantee for new hosting plans. Domains/licenses are non-refundable.
-- Affiliate Policy: 20% recurring commission on referrals. Payout minimum applies.
+Hostnin Info Base (Pricing & Policies):
+${JSON.stringify(knowledge)}
 
 Your only output should be the exact draft message to send. Do not include quotes around the output or conversational filler.`;
 
@@ -37,12 +35,19 @@ Your only output should be the exact draft message to send. Do not include quote
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
         "content-type": "application/json",
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
-        system: systemPrompt,
+        max_tokens: 600,
+        system: [
+          {
+            type: "text",
+            text: systemPromptText,
+            cache_control: { type: "ephemeral" }
+          }
+        ],
         messages: [
           {
             role: "user",
