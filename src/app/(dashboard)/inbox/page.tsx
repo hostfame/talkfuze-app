@@ -57,11 +57,13 @@ export default function InboxPage() {
     const channel = supabase
       .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        getConversations(ORG_ID).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        const currentFilter = useInboxStore.getState().activeFilter as any
+        getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
         // Refresh conversation list so last message preview updates
-        getConversations(ORG_ID).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        const currentFilter = useInboxStore.getState().activeFilter as any
+        getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .subscribe()
 

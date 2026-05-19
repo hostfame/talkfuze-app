@@ -425,12 +425,12 @@ export default function WidgetPage() {
              <span className={`text-[12px] ${activeTab === 'home' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Home</span>
           </button>
           
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'messages' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${(activeTab as any) === 'messages' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
              <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'messages' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={(activeTab as any) === 'messages' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                 <div className="absolute -top-1 -right-1.5 w-[18px] h-[18px] bg-red-500 rounded-full border-[2px] border-white flex items-center justify-center text-white text-[10px] font-bold">1</div>
              </div>
-             <span className={`text-[12px] ${activeTab === 'messages' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Messages</span>
+             <span className={`text-[12px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Messages</span>
           </button>
           
           <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'tickets' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
