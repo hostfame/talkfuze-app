@@ -718,25 +718,56 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
     : mimetype?.startsWith('video/') ? 'video'
     : 'document';
 
-  // Audio uses a completely different endpoint and payload structure
+  // Audio: download -> convert to ogg/opus via ffmpeg -> send as base64
+  // Evolution's encoding:true doesn't work reliably with remote URLs,
+  // but raw base64 ogg/opus works perfectly for WhatsApp PTT
   if (mediaType === 'audio') {
-    const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
-      method: 'POST',
-      headers: {
-        'apikey': EVOLUTION_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        number: jid,
-        audio: mediaUrl,
-        encoding: true  // Converts to ogg/opus for WhatsApp native PTT
-      })
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Evolution sendWhatsAppAudio failed: ${err}`);
+    const { execSync } = require('child_process');
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+
+    const tmpDir = os.tmpdir();
+    const tmpInput = path.join(tmpDir, `talkfuze_audio_${Date.now()}.webm`);
+    const tmpOutput = path.join(tmpDir, `talkfuze_audio_${Date.now()}.ogg`);
+
+    try {
+      // Download audio from Supabase
+      const audioRes = await fetch(mediaUrl);
+      if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
+      const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+      fs.writeFileSync(tmpInput, audioBuffer);
+
+      // Convert to ogg/opus with ffmpeg
+      execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 48000 -ac 1 -ar 48000 "${tmpOutput}" 2>/dev/null`);
+      const oggBuffer = fs.readFileSync(tmpOutput);
+      const base64Audio = oggBuffer.toString('base64');
+
+      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus`);
+
+      // Send as raw base64
+      const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
+        method: 'POST',
+        headers: {
+          'apikey': EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          number: jid,
+          audio: base64Audio,
+          encoding: false  // Already converted to ogg/opus
+        })
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Evolution sendWhatsAppAudio failed: ${err}`);
+      }
+      return res.json();
+    } finally {
+      // Cleanup temp files
+      try { fs.unlinkSync(tmpInput); } catch {}
+      try { fs.unlinkSync(tmpOutput); } catch {}
     }
-    return res.json();
   }
 
   // Non-audio media (image, video, document)
