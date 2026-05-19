@@ -200,7 +200,7 @@ export default function WidgetPage() {
   }, [org_id, deviceId, activeConversationId])
 
   useEffect(() => {
-    if (activeTab === 'messages') {
+    if (activeTab === 'chat' || activeTab === 'messages') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, activeTab])
