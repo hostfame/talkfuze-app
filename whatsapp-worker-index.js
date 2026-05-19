@@ -223,19 +223,38 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
       return null;
     }
     const data = await res.json();
-    if (!data.base64 || !data.mediaType) return null;
+    if (!data.base64 || !data.mediaType) {
+      console.error('[MEDIA] Missing base64 or mediaType in response');
+      return null;
+    }
 
     const buffer = Buffer.from(data.base64, 'base64');
-    const ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
+    
+    // Parse and sanitize mimetype and extension
+    let mimeType = data.mediaType.split(';')[0].trim();
+    let ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
+    ext = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+    // Safe fallbacks for malformed or missing mimeTypes
+    const mimeRegex = /^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\.\+\*]+$/;
+    if (!mimeType || !mimeRegex.test(mimeType)) {
+      console.log(`[MEDIA-WARNING] Invalid mimeType "${mimeType}", using fallback for contentType "${contentType}"`);
+      if (contentType === 'image') mimeType = 'image/jpeg';
+      else if (contentType === 'audio') mimeType = 'audio/ogg';
+      else if (contentType === 'video') mimeType = 'video/mp4';
+      else mimeType = 'application/octet-stream';
+    }
+
     const fileName = `${conversationJid.replace('@', '_')}/${Date.now()}.${ext}`;
-    const mimeType = data.mediaType;
+
+    console.log(`[MEDIA] Uploading filename: ${fileName}, mimeType: ${mimeType}, size: ${buffer.length} bytes`);
 
     const { error } = await supabase.storage
       .from('media')
       .upload(fileName, buffer, { contentType: mimeType, upsert: false });
 
     if (error) {
-      console.error('Storage upload error:', error.message);
+      console.error('[MEDIA] Supabase upload failed:', error.message, error);
       return null;
     }
 
@@ -473,11 +492,106 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
 // Supabase Realtime: watch for agent messages
 // ─────────────────────────────────────────────
 
-const WebSocket = require('ws');
 const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
   realtime: { transport: WebSocket }
 });
+
+// Outbound message processor
+async function processOutboundMessage(msg) {
+  if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
+  if (msg.is_internal) return;
+  if (msg.platform_message_id) return; // already sent
+
+  try {
+    const { data: conv } = await supabaseRealtime
+      .from('conversations')
+      .select('contact_id, channels!inner(type)')
+      .eq('id', msg.conversation_id)
+      .single();
+
+    if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+    const { data: contact } = await supabaseRealtime
+      .from('contacts')
+      .select('platform_id')
+      .eq('id', conv.contact_id)
+      .single();
+
+    if (!contact) return;
+
+    let jid = contact.platform_id.includes('@')
+      ? contact.platform_id
+      : `${contact.platform_id}@s.whatsapp.net`;
+
+    if (jid.endsWith('@lid')) {
+      jid = jid.replace('@lid', '@s.whatsapp.net');
+    }
+
+    let sentResult;
+    if (msg.metadata?.media_url) {
+      sentResult = await sendMediaMessage(
+        jid,
+        msg.metadata.media_url,
+        msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
+        msg.metadata.mimetype
+      );
+    } else {
+      sentResult = await sendTextMessage(jid, msg.content);
+    }
+
+    // Save platform message id for dedup
+    const platformMessageId = extractSentMessageId(sentResult);
+    if (platformMessageId) {
+      await supabaseRealtime.from('messages')
+        .update({ platform_message_id: platformMessageId, status: 'delivered' })
+        .eq('id', msg.id);
+    }
+
+    console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
+  } catch (err) {
+    console.error('[OUTBOUND] Error:', err.message);
+    await supabaseRealtime.from('messages')
+      .update({
+        status: 'failed',
+        metadata: {
+          ...(msg.metadata || {}),
+          delivery_error: err.message,
+          delivery_failed_at: new Date().toISOString()
+        }
+      })
+      .eq('id', msg.id);
+  }
+}
+
+// Self-healing sweep for pending outbound messages sent while worker was restarting/offline
+async function sendPendingOutboundMessages() {
+  try {
+    const { data: pending, error } = await supabaseRealtime
+      .from('messages')
+      .select('*')
+      .eq('status', 'sent')
+      .in('sender_type', ['agent', 'ai'])
+      .is('platform_message_id', null)
+      .is('is_internal', false);
+
+    if (error) {
+      console.error('[SELF-HEAL] Failed to fetch pending messages:', error.message);
+      return;
+    }
+
+    if (pending && pending.length > 0) {
+      console.log(`[SELF-HEAL] Found ${pending.length} pending outbound messages. Processing...`);
+      for (const msg of pending) {
+        await processOutboundMessage(msg);
+      }
+    }
+  } catch (err) {
+    console.error('[SELF-HEAL] Sweep error:', err.message);
+  }
+}
+
+
 
 supabaseRealtime
   .channel('outbound_messages')
@@ -487,70 +601,7 @@ supabaseRealtime
     table: 'messages',
     filter: `org_id=eq.${ORG_ID}`
   }, async (payload) => {
-    const msg = payload.new;
-    if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
-    if (msg.is_internal) return;
-    if (msg.platform_message_id) return; // already sent
-
-    try {
-      const { data: conv } = await supabaseRealtime
-        .from('conversations')
-        .select('contact_id, channels!inner(type)')
-        .eq('id', msg.conversation_id)
-        .single();
-
-      if (!conv || conv.channels?.type !== 'whatsapp') return;
-
-      const { data: contact } = await supabaseRealtime
-        .from('contacts')
-        .select('platform_id')
-        .eq('id', conv.contact_id)
-        .single();
-
-      if (!contact) return;
-
-      let jid = contact.platform_id.includes('@')
-        ? contact.platform_id
-        : `${contact.platform_id}@s.whatsapp.net`;
-
-      if (jid.endsWith('@lid')) {
-        jid = jid.replace('@lid', '@s.whatsapp.net');
-      }
-
-      let sentResult;
-      if (msg.metadata?.media_url) {
-        sentResult = await sendMediaMessage(
-          jid,
-          msg.metadata.media_url,
-          msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
-          msg.metadata.mimetype
-        );
-      } else {
-        sentResult = await sendTextMessage(jid, msg.content);
-      }
-
-      // Save platform message id for dedup
-      const platformMessageId = extractSentMessageId(sentResult);
-      if (platformMessageId) {
-        await supabaseRealtime.from('messages')
-          .update({ platform_message_id: platformMessageId, status: 'delivered' })
-          .eq('id', msg.id);
-      }
-
-      console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
-    } catch (err) {
-      console.error('[OUTBOUND] Error:', err.message);
-      await supabaseRealtime.from('messages')
-        .update({
-          status: 'failed',
-          metadata: {
-            ...(msg.metadata || {}),
-            delivery_error: err.message,
-            delivery_failed_at: new Date().toISOString()
-          }
-        })
-        .eq('id', msg.id);
-    }
+    await processOutboundMessage(payload.new);
   })
   .subscribe((status) => {
     console.log('[REALTIME] Status:', status);
@@ -606,6 +657,9 @@ app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
   await registerWebhook();
   
   console.log('[READY] Listening for WhatsApp events...');
+
+  // Sweep for and send any outbound messages created while worker was offline
+  await sendPendingOutboundMessages();
   
   // Signal PM2 that the application is ready (for wait_ready zero-downtime reloads)
   if (process.send) {

@@ -111,7 +111,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   return { success: true, conversationId: conversation.id }
 }
 
-export async function getWidgetMessages(orgId: string, deviceId: string) {
+export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null) {
   noStore();
   if (!orgId || !deviceId) return [];
   
@@ -128,22 +128,27 @@ export async function getWidgetMessages(orgId: string, deviceId: string) {
     if (cErr) console.error("getWidgetMessages contact err:", cErr);
     if (!contacts || contacts.length === 0) return [];
     
-    // Find active conversation
-    const { data: convs, error: convErr } = await supabaseAdmin
-      .from("conversations")
-      .select("id")
-      .eq("contact_id", contacts[0].id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      
-    if (convErr) console.error("getWidgetMessages conv err:", convErr);
-    if (!convs || convs.length === 0) return [];
+    let targetConvId = conversationId;
+    
+    if (!targetConvId) {
+      // Find active conversation if not provided
+      const { data: convs, error: convErr } = await supabaseAdmin
+        .from("conversations")
+        .select("id")
+        .eq("contact_id", contacts[0].id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        
+      if (convErr) console.error("getWidgetMessages conv err:", convErr);
+      if (!convs || convs.length === 0) return [];
+      targetConvId = convs[0].id;
+    }
     
     // Get messages
     const { data: messages, error: msgErr } = await supabaseAdmin
       .from("messages")
       .select("*")
-      .eq("conversation_id", convs[0].id)
+      .eq("conversation_id", targetConvId)
       .order("created_at", { ascending: true })
       
     if (msgErr) console.error("getWidgetMessages msg err:", msgErr);
@@ -267,5 +272,97 @@ export async function startNewConversation(orgId: string, deviceId: string) {
   } catch (e) {
     console.error("startNewConversation err:", e);
     return { success: false };
+  }
+}
+
+export async function getWidgetConversations(orgId: string, deviceId: string) {
+  noStore();
+  if (!orgId || !deviceId) return [];
+  
+  try {
+    // 1. Find contact
+    const { data: contacts, error: cErr } = await supabaseAdmin
+      .from("contacts")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("platform_type", "widget")
+      .eq("platform_id", deviceId)
+      .limit(1);
+      
+    if (cErr) console.error("getWidgetConversations contact err:", cErr);
+    if (!contacts || contacts.length === 0) return [];
+    
+    const contactId = contacts[0].id;
+    
+    // 2. Find all conversations for this contact
+    const { data: convs, error: convErr } = await supabaseAdmin
+      .from("conversations")
+      .select("id, status, created_at, updated_at")
+      .eq("contact_id", contactId)
+      .order("created_at", { ascending: false });
+      
+    if (convErr) console.error("getWidgetConversations conv err:", convErr);
+    if (!convs || convs.length === 0) return [];
+    
+    // 3. For each conversation, fetch its latest message to show preview
+    const convIds = convs.map((c: any) => c.id);
+    
+    const { data: latestMsgs, error: msgErr } = await supabaseAdmin
+      .from("messages")
+      .select("conversation_id, content, sender_type, sender_id, created_at")
+      .in("conversation_id", convIds)
+      .order("created_at", { ascending: false });
+      
+    if (msgErr) console.error("getWidgetConversations msg err:", msgErr);
+    
+    // Group messages by conversation to find the latest
+    const latestMsgByConv: Record<string, any> = {};
+    if (latestMsgs) {
+      latestMsgs.forEach(msg => {
+        if (!latestMsgByConv[msg.conversation_id]) {
+          latestMsgByConv[msg.conversation_id] = msg;
+        }
+      });
+    }
+    
+    // 4. Fetch agent info if the latest message was from an agent
+    const agentIds = Array.from(new Set(
+      Object.values(latestMsgByConv)
+        .filter((m: any) => m.sender_type === 'agent' || m.sender_type === 'system')
+        .map((m: any) => m.sender_id)
+        .filter(id => id && id.length === 36 && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
+    )) as string[];
+    
+    let agentMap: Record<string, any> = {};
+    if (agentIds.length > 0) {
+      const { data: agents } = await supabaseAdmin
+        .from('users')
+        .select('id, name, avatar_url')
+        .in('id', agentIds);
+        
+      if (agents) {
+        agents.forEach(a => {
+          agentMap[a.id] = a;
+        });
+      }
+    }
+    
+    // Assemble the final result
+    return convs.map((c: any) => {
+      const latestMsg = latestMsgByConv[c.id];
+      let agent = null;
+      if (latestMsg && (latestMsg.sender_type === 'agent' || latestMsg.sender_type === 'system')) {
+        agent = agentMap[latestMsg.sender_id] || null;
+      }
+      return {
+        ...c,
+        latestMessage: latestMsg || null,
+        agent: agent
+      };
+    });
+    
+  } catch (err) {
+    console.error("getWidgetConversations err:", err);
+    return [];
   }
 }

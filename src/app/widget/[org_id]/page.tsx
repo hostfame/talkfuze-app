@@ -3,7 +3,7 @@
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, Mic, StopCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -133,6 +133,9 @@ export default function WidgetPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   
+  const [conversations, setConversations] = useState<any[]>([])
+  const [activeConversationId, setActiveConversationId] = useState<string | 'new' | null>(null)
+  
   type Tab = 'home' | 'messages' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   
@@ -153,25 +156,40 @@ export default function WidgetPage() {
     })
   }, [org_id])
 
-  useEffect(() => {
+  const fetchConversations = async () => {
     if (!org_id || !deviceId) return
-
-    const fetchMsgs = async () => {
-      try {
-        const data = await getWidgetMessages(org_id, deviceId)
-        if (data && data.length > 0) {
-          setMessages(data as WidgetMessage[])
-        }
-      } catch (e) {
-        console.error("Fetch messages error", e)
-      }
+    try {
+      const data = await getWidgetConversations(org_id, deviceId)
+      if (data) setConversations(data)
+    } catch (e) {
+      console.error("Fetch convs error", e)
     }
+  }
 
+  const fetchMsgs = async () => {
+    if (!org_id || !deviceId) return
+    if (activeConversationId === 'new') {
+      setMessages([])
+      return
+    }
+    try {
+      const data = await getWidgetMessages(org_id, deviceId, activeConversationId)
+      if (data) {
+        setMessages(data as WidgetMessage[])
+      }
+    } catch (e) {
+      console.error("Fetch messages error", e)
+    }
+  }
+
+  useEffect(() => {
+    fetchConversations()
     fetchMsgs()
     
     const channel = supabase
       .channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+        fetchConversations()
         fetchMsgs()
       })
       .subscribe()
@@ -179,7 +197,7 @@ export default function WidgetPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [org_id, deviceId])
+  }, [org_id, deviceId, activeConversationId])
 
   useEffect(() => {
     if (activeTab === 'messages') {
@@ -213,7 +231,13 @@ export default function WidgetPage() {
         try {
           const result = await uploadWidgetMedia(formData)
           if (result?.success && result.url) {
-            await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url })
+            if (activeConversationId === 'new') {
+              await startNewConversation(org_id, deviceId)
+            }
+            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url })
+            if (res?.success && res.conversationId && activeConversationId === 'new') {
+              setActiveConversationId(res.conversationId)
+            }
           }
         } catch (e) {
           console.error(e)
@@ -318,7 +342,13 @@ export default function WidgetPage() {
     setIsSending(true)
 
     try {
-      await sendWidgetMessage(org_id, deviceId, messageText)
+      if (activeConversationId === 'new') {
+        await startNewConversation(org_id, deviceId)
+      }
+      const res = await sendWidgetMessage(org_id, deviceId, messageText)
+      if (res?.success && res.conversationId && activeConversationId === 'new') {
+        setActiveConversationId(res.conversationId)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -535,7 +565,7 @@ export default function WidgetPage() {
             {/* Recent Message Card */}
             <div 
               className="bg-white p-4 rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col gap-3 cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all" 
-              onClick={() => setActiveTab('messages')}
+              onClick={() => { setActiveConversationId(conversations[0]?.id || 'new'); setActiveTab('messages'); }}
             >
                <div className="flex justify-between items-center">
                   <span className="text-[13px] font-bold text-slate-800 tracking-tight">Recent message</span>
@@ -569,7 +599,7 @@ export default function WidgetPage() {
             {/* Start Chat Button */}
             <div 
               className="bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
-              onClick={() => setActiveTab('messages')}
+              onClick={() => { setActiveConversationId('new'); setActiveTab('messages'); }}
             >
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
@@ -585,14 +615,71 @@ export default function WidgetPage() {
           </div>
         )}
 
+        {/* CONVERSATIONS LIST TAB */}
+        {activeTab === 'messages' && !activeConversationId && (
+          <div className="h-full flex flex-col relative z-30 bg-[#f9fafb]">
+            <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
+               <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
+               <button className="p-1.5 hover:bg-slate-50 transition-colors rounded-full text-slate-400 -mr-1.5" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
+                  <X size={20} strokeWidth={2.5} />
+               </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[120px] flex flex-col gap-0 relative z-30 bg-white">
+               {conversations.length === 0 ? (
+                 <div className="text-center text-slate-500 mt-10 text-[14px]">No messages yet.</div>
+               ) : (
+                 conversations.map(conv => (
+                   <div key={conv.id} onClick={() => setActiveConversationId(conv.id)} className="bg-white p-4 cursor-pointer hover:bg-slate-50 transition-colors flex gap-3 relative border-b border-slate-50 last:border-0">
+                      <div className="relative shrink-0 mt-0.5">
+                         {conv.agent?.avatar_url ? (
+                           <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                              <img src={conv.agent.avatar_url} className="w-full h-full object-cover" alt="Agent" />
+                           </div>
+                         ) : (
+                           <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                              <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Agent" />
+                           </div>
+                         )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                         <div className="flex justify-between items-start">
+                            <span className="font-semibold text-[14px] text-slate-800">{conv.agent?.name || "Hostnin"}</span>
+                            <span className="text-[12px] text-slate-400">
+                               {new Date(conv.updated_at || conv.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            </span>
+                         </div>
+                         <div className="flex items-center justify-between mt-0.5">
+                           <p className="text-[14px] text-slate-500 truncate tracking-tight pr-4">
+                              {conv.latestMessage ? (conv.latestMessage.sender_type === 'contact' ? 'You: ' + conv.latestMessage.content : conv.latestMessage.content) : 'No messages yet'}
+                           </p>
+                           {/* Unread indicator placeholder */}
+                           {/* <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div> */}
+                         </div>
+                      </div>
+                   </div>
+                 ))
+               )}
+            </div>
+
+            {/* Floating Chat with us button */}
+            <div className="absolute bottom-[90px] left-0 right-0 flex justify-center z-40 pointer-events-none">
+               <button onClick={() => setActiveConversationId('new')} className="pointer-events-auto bg-[#5a718c] hover:bg-[#4d6179] text-white px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-semibold text-[14px] transition-all">
+                  Chat with us
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+               </button>
+            </div>
+          </div>
+        )}
+
         {/* CHAT TAB (THREAD) */}
-        {activeTab === 'messages' && (
+        {activeTab === 'messages' && activeConversationId && (
           <div className="h-full flex flex-col relative z-30 bg-white">
             
             {/* Thread Header */}
             <div className="bg-white border-b border-slate-100 px-3 py-3 flex justify-between items-center shrink-0 shadow-sm relative z-30">
               <div className="flex items-center gap-2">
-                 <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-1">
+                 <button onClick={() => setActiveConversationId(null)} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                  </button>
                  <div className="flex items-center gap-2.5">
