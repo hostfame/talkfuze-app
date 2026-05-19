@@ -136,7 +136,7 @@ export default function WidgetPage() {
   const [conversations, setConversations] = useState<any[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | 'new' | null>(null)
   
-  type Tab = 'home' | 'messages' | 'tickets' | 'about'
+  type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -507,7 +507,7 @@ export default function WidgetPage() {
     <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden font-sans relative">
       
       {/* Background Gradient for Home/Tickets/About */}
-      {activeTab !== 'messages' && (
+      {activeTab !== 'messages' && activeTab !== 'chat' && (
         <div 
           className={`absolute top-0 left-0 right-0 h-[45%] ${!isCustomColor ? 'bg-gradient-to-b from-slate-600 to-slate-400' : ''} z-0`}
           style={isCustomColor ? { background: `linear-gradient(to bottom, ${settings.color}, ${settings.color}ee)` } : {}}
@@ -537,11 +537,11 @@ export default function WidgetPage() {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 overflow-y-auto relative z-10 ${activeTab === 'messages' ? 'bg-[#f9fafb]' : 'pb-[80px]'} scrollbar-hide`}>
+      <div className="flex-1 relative z-10 overflow-hidden bg-[#f9fafb]">
         
         {/* HOME TAB */}
-        {activeTab === 'home' && (
-          <div className="px-5 pt-12 pb-6 flex flex-col gap-5 animate-in fade-in duration-200 ease-out">
+        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-[#f9fafb] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-30' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
+          <div className="px-5 pt-12 pb-6 flex flex-col gap-5">
             
             {/* Header Graphics (Ahrefs Style) */}
             <div className="flex justify-between items-center mt-4 mb-6">
@@ -569,7 +569,7 @@ export default function WidgetPage() {
             {/* Recent Message Card */}
             <div 
               className="bg-white p-4 rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col gap-3 cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all" 
-              onClick={() => { setActiveConversationId(conversations[0]?.id || 'new'); setActiveTab('messages'); }}
+              onClick={() => { setActiveConversationId(conversations[0]?.id || 'new'); setActiveTab('chat'); }}
             >
                <div className="flex justify-between items-center">
                   <span className="text-[13px] font-bold text-slate-800 tracking-tight">Recent message</span>
@@ -603,7 +603,7 @@ export default function WidgetPage() {
             {/* Start Chat Button */}
             <div 
               className="bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
-              onClick={() => { setActiveConversationId('new'); setActiveTab('messages'); }}
+              onClick={() => { setActiveConversationId('new'); setActiveTab('chat'); }}
             >
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
@@ -617,11 +617,10 @@ export default function WidgetPage() {
             </div>
             
           </div>
-        )}
+        </div>
 
         {/* CONVERSATIONS LIST TAB */}
-        {activeTab === 'messages' && !activeConversationId && (
-          <div className="h-full flex flex-col relative z-30 bg-[#f9fafb] animate-in fade-in duration-200 ease-out">
+        <div className={`absolute inset-0 overflow-y-auto pb-[120px] scrollbar-hide bg-[#f9fafb] flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-2">
                  <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-2 rounded-md hover:bg-slate-50">
@@ -639,7 +638,7 @@ export default function WidgetPage() {
                  <div className="text-center text-slate-500 mt-10 text-[14px]">No messages yet.</div>
                ) : (
                  conversations.map(conv => (
-                   <div key={conv.id} onClick={() => setActiveConversationId(conv.id)} className="bg-white p-4 cursor-pointer hover:bg-slate-50 transition-colors flex gap-3 relative border-b border-slate-50 last:border-0">
+                   <div key={conv.id} onClick={() => { setActiveConversationId(conv.id); setActiveTab('chat'); }} className="bg-white p-4 cursor-pointer hover:bg-slate-50 transition-colors flex gap-3 relative border-b border-slate-50 last:border-0">
                       <div className="relative shrink-0 mt-0.5">
                          {conv.agent?.avatar_url ? (
                            <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
@@ -673,22 +672,23 @@ export default function WidgetPage() {
 
             {/* Floating Chat with us button */}
             <div className="absolute bottom-[90px] left-0 right-0 flex justify-center z-40 pointer-events-none">
-               <button onClick={() => setActiveConversationId('new')} className="pointer-events-auto bg-[#5a718c] hover:bg-[#4d6179] text-white px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-semibold text-[14px] transition-all">
+               <button onClick={() => { setActiveConversationId('new'); setActiveTab('chat'); }} className="pointer-events-auto bg-[#5a718c] hover:bg-[#4d6179] text-white px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-semibold text-[14px] transition-all">
                   Chat with us
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                </button>
             </div>
           </div>
-        )}
+        </div>
 
         {/* CHAT TAB (THREAD) */}
-        {activeTab === 'messages' && activeConversationId && (
-          <div className="h-full flex flex-col relative z-30 bg-white animate-in fade-in duration-200 ease-out">
+        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'chat' ? 'translate-x-0 opacity-100 z-30' : 'translate-x-full opacity-0 z-10 pointer-events-none'}`}>
+            {activeConversationId && (
+              <div className="h-full flex flex-col relative z-30">
             
             {/* Thread Header */}
             <div className="bg-white border-b border-slate-100 px-3 py-3 flex justify-between items-center shrink-0 shadow-sm relative z-30">
               <div className="flex items-center gap-2">
-                 <button onClick={() => setActiveConversationId(null)} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-1">
+                 <button onClick={() => setActiveTab('messages')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-1">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10.85 3.99984C10.85 4.21984 10.77 4.43984 10.6 4.59984L7.20005 7.99984L10.6 11.3998C10.93 11.7298 10.93 12.2698 10.6 12.5998C10.27 12.9298 9.73005 12.9298 9.40005 12.5998L4.80005 7.99984L9.40005 3.39984C9.73005 3.06984 10.27 3.06984 10.6 3.39984C10.77 3.56984 10.85 3.77984 10.85 3.99984Z" /></svg>
                  </button>
                  <div className="flex items-center gap-2.5">
@@ -1002,8 +1002,9 @@ export default function WidgetPage() {
                  </div>
                </>
              )}
-          </div>
-        )}
+              </div>
+            )}
+        </div>
 
         {/* TICKETS TAB */}
         {activeTab === 'tickets' && (
