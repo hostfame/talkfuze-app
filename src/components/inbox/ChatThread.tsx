@@ -3,7 +3,7 @@
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation } from "@/actions/dashboard"
+import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
 import { updateContactName } from "@/actions/contacts"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
@@ -394,6 +394,8 @@ export default function ChatThread({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadFileName, setUploadFileName] = useState("")
   
   const [pendingAttachments, setPendingAttachments] = useState<File[]>([])
   const [attachmentPreviews, setAttachmentPreviews] = useState<(string | null)[]>([])
@@ -707,22 +709,62 @@ export default function ChatThread({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const uploadWithProgress = (file: File, onProgress: (percent: number) => void): Promise<{ url: string; type: string; name: string }> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const formData = new FormData()
+      formData.append('file', file)
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          onProgress(percent)
+        }
+      })
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const res = JSON.parse(xhr.responseText)
+            if (res.success) {
+              resolve({ url: res.url, type: file.type, name: file.name })
+            } else {
+              reject(new Error(res.error || 'Upload failed'))
+            }
+          } catch (err) {
+            reject(new Error('Invalid response from server'))
+          }
+        } else {
+          reject(new Error(`Server returned status ${xhr.status}`))
+        }
+      })
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'))
+      })
+
+      xhr.open('POST', '/api/upload')
+      xhr.send(formData)
+    })
+  }
+
   const uploadToStorage = async (file: File) => {
     if (!conversationId) throw new Error("No conversation ID");
+    setUploadFileName(file.name || "voice-message.webm")
+    setUploadProgress(1) // Set starting percent to trigger progress UI instantly
     
-    let fileExt = 'png';
-    if (file.name && file.name.includes('.')) {
-      fileExt = file.name.split('.').pop() || 'png';
-    } else if (file.type && file.type.includes('/')) {
-      fileExt = file.type.split('/')[1];
+    try {
+      const res = await uploadWithProgress(file, (percent) => {
+        setUploadProgress(percent)
+      })
+      return res
+    } finally {
+      // Add brief premium delay so the agent sees 100% completion state
+      setTimeout(() => {
+        setUploadProgress(0)
+        setUploadFileName("")
+      }, 600)
     }
-    const fileName = `${conversationId}/${crypto.randomUUID()}.${fileExt}`;
-    
-    const { error } = await supabase.storage.from('media').upload(fileName, file);
-    if (error) throw error;
-    
-    const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
-    return { url: urlData.publicUrl, type: file.type, name: file.name || fileName };
   }
 
   const stageAttachments = (files: File[]) => {
@@ -1219,6 +1261,25 @@ export default function ChatThread({
             </div>
           ) : (
             <div className="flex flex-col w-full">
+              {uploadProgress > 0 && (
+                <div className="px-4 py-3 bg-blue-50/75 dark:bg-blue-950/25 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[12px] font-semibold text-[#0070f3] dark:text-blue-400 truncate flex items-center gap-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Uploading: {uploadFileName || "file"}
+                      </span>
+                      <span className="text-[12px] font-bold text-[#0070f3] dark:text-blue-400">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#0070f3] h-full rounded-full transition-all duration-150 ease-out" 
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               {pendingAttachments.length > 0 && (
                 <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
                   {pendingAttachments.map((file, idx) => (

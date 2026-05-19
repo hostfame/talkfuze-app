@@ -657,3 +657,29 @@ export async function toggleContactBanStatus(contactId: string, currentStatus: s
   if (error) throw new Error(error.message)
   return data
 }
+
+export async function uploadAgentMedia(formData: FormData) {
+  const file = formData.get('file') as File;
+  if (!file) {
+    return { success: false, error: "No file provided" };
+  }
+
+  const fileExt = file.name ? file.name.split('.').pop() : 'png';
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const filePath = `agent-uploads/${fileName}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from('media')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error("uploadAgentMedia error:", uploadError);
+    return { success: false, error: uploadError.message };
+  }
+
+  const { data: urlData } = supabaseAdmin.storage
+    .from('media')
+    .getPublicUrl(filePath);
+
+  return { success: true, url: urlData.publicUrl };
+}
