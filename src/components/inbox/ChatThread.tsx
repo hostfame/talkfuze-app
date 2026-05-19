@@ -442,14 +442,25 @@ export default function ChatThread({
     })
   }, [conversationId])
 
-  // Revoke object URLs on unmount to prevent memory leaks
+  // Keep ref of staged attachments to revoke on unmount only, avoiding premature destruction
+  const stagedAttachmentsRef = useRef<StagedAttachment[]>([]);
+  useEffect(() => {
+    stagedAttachmentsRef.current = stagedAttachments;
+  }, [stagedAttachments]);
+
   useEffect(() => {
     return () => {
-      stagedAttachments.forEach(att => {
-        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl)
-      })
-    }
-  }, [stagedAttachments])
+      stagedAttachmentsRef.current.forEach(att => {
+        if (att.previewUrl) {
+          try {
+            URL.revokeObjectURL(att.previewUrl);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
+    };
+  }, []);
 
   async function handleJoinThread() {
     if (!conversationId || !currentUser) return
@@ -1361,17 +1372,19 @@ export default function ChatThread({
                         </div>
                       )}
                       
-                      {/* Premium circular tank-filling wave upload overlay */}
+                      {/* Premium progressive clear-out reveal overlay loader */}
                       {item.status === 'uploading' && (
-                        <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center backdrop-blur-[1px] select-none z-10 transition-all">
-                          <div className="relative w-8 h-8 rounded-full border border-white/30 flex items-center justify-center overflow-hidden">
-                            <div 
-                              className="absolute bottom-0 left-0 right-0 bg-[#0070f3] transition-all duration-300 ease-out" 
-                              style={{ height: `${item.progress}%` }}
-                            />
-                            <span className="relative text-[9px] font-bold text-white z-10">{item.progress}%</span>
+                        <>
+                          <div 
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-[0.5px] transition-all duration-300 ease-out z-10 pointer-events-none"
+                            style={{ clipPath: `inset(0px 0px ${item.progress}% 0px)` }}
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                            <div className="p-1 rounded-full bg-slate-950/40 backdrop-blur-sm border border-white/10">
+                              <Loader2 size={12} className="animate-spin text-white" />
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
 
                       {/* Red cross failure overlay */}

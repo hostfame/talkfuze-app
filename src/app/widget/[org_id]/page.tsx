@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2 } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
@@ -261,6 +261,8 @@ export default function WidgetPage() {
   const [ticketEmail, setTicketEmail] = useState("")
   const [ticketOtp, setTicketOtp] = useState("")
   const [ticketOtpSent, setTicketOtpSent] = useState(false)
+  const [ticketOtpTimer, setTicketOtpTimer] = useState(0)
+  const [isTicketOtpFocused, setIsTicketOtpFocused] = useState(false)
   const [ticketLoading, setTicketLoading] = useState(false)
   const [ticketError, setTicketError] = useState("")
   
@@ -648,6 +650,39 @@ export default function WidgetPage() {
   const headerMenuRef = useRef<HTMLDivElement>(null);
 
   // WHMCS Ticket Handlers
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (ticketOtpTimer > 0) {
+      interval = setInterval(() => {
+        setTicketOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [ticketOtpTimer]);
+
+  const handleResendOTP = async () => {
+    if (ticketOtpTimer > 0 || ticketLoading || !ticketEmail) return;
+    setTicketLoading(true);
+    setTicketError("");
+    try {
+      const res = await fetch('/api/widget/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', email: ticketEmail })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTicketOtpTimer(60);
+      } else {
+        setTicketError(data.error || "Failed to resend OTP");
+      }
+    } catch (err) {
+      setTicketError("A network error occurred.");
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
   const handleTicketLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ticketEmail) return;
@@ -664,6 +699,7 @@ export default function WidgetPage() {
         const data = await res.json();
         if (data.success) {
           setTicketOtpSent(true);
+          setTicketOtpTimer(60);
         } else {
           setTicketError(data.error || "Failed to send OTP");
         }
@@ -1406,32 +1442,69 @@ export default function WidgetPage() {
                      />
                    </div>
                   ) : (
-                   <div className="relative border border-slate-300 rounded-[12px] pt-2 pb-1.5 px-4 focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 transition-all bg-white">
-                     <label className="block text-[12px] font-semibold text-slate-700 mb-0.5">6-Digit Code</label>
-                     <input 
-                       type="text" 
-                       value={ticketOtp}
-                       onChange={(e) => setTicketOtp(e.target.value)}
-                       placeholder="123456"
-                       maxLength={6}
-                       className="w-full text-[16px] text-slate-900 bg-transparent outline-none placeholder:text-slate-400 font-medium tracking-[4px]"
-                       required
-                     />
+                   <div className="flex flex-col gap-3">
+                     <label className="block text-[12px] font-semibold text-slate-700 ml-1">6-Digit Code</label>
+                     <div className="relative flex justify-between gap-2 w-full">
+                       {[0, 1, 2, 3, 4, 5].map((index) => (
+                         <div 
+                           key={index} 
+                           className={`flex-1 h-[52px] sm:h-[60px] flex items-center justify-center text-[22px] font-bold rounded-[10px] border-2 transition-all ${
+                             isTicketOtpFocused && ticketOtp.length === index 
+                               ? 'border-blue-500 ring-4 ring-blue-500/20 bg-white'
+                               : ticketOtp.length > index
+                                 ? 'border-slate-800 bg-white text-slate-900'
+                                 : 'border-slate-200 bg-slate-50'
+                           }`}
+                         >
+                           {ticketOtp[index] || ''}
+                         </div>
+                       ))}
+                       <input 
+                         type="text" 
+                         inputMode="numeric"
+                         pattern="[0-9]*"
+                         maxLength={6}
+                         value={ticketOtp}
+                         onChange={(e) => setTicketOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                         onFocus={() => setIsTicketOtpFocused(true)}
+                         onBlur={() => setIsTicketOtpFocused(false)}
+                         className="absolute inset-0 w-full h-full opacity-0 cursor-text z-10"
+                         autoComplete="one-time-code"
+                         required
+                       />
+                     </div>
+                     <div className="flex justify-center mt-2">
+                       <button 
+                         type="button" 
+                         disabled={ticketOtpTimer > 0 || ticketLoading}
+                         onClick={handleResendOTP}
+                         className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 disabled:opacity-60 transition-colors"
+                       >
+                         {ticketOtpTimer > 0 ? `Resend Code in ${ticketOtpTimer}s` : 'Resend Code'}
+                       </button>
+                     </div>
                    </div>
                   )}
                    
-                   {ticketError && <p className="text-red-500 text-[13px] font-medium">{ticketError}</p>}
+                   {ticketError && <p className="text-red-500 text-[13px] font-medium ml-1">{ticketError}</p>}
 
                    {!ticketOtpSent && (
-                     <button type="button" className="text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left self-start">
+                     <button type="button" className="text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left self-start ml-1 mt-1">
                        Login with Password instead?
                      </button>
                    )}
                 </div>
                 
                 <div className="mt-auto pt-8 pb-2">
-                   <button disabled={ticketLoading} type="submit" className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-4 rounded-[14px] text-[16px] transition-all shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.25)] active:scale-[0.98] flex items-center justify-center">
-                      {ticketLoading ? 'Please wait...' : 'Next'}
+                   <button disabled={ticketLoading} type="submit" className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-700 disabled:opacity-90 disabled:active:scale-100 text-white font-semibold py-4 rounded-[14px] text-[16px] transition-all shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.25)] active:scale-[0.98] flex items-center justify-center gap-2.5">
+                      {ticketLoading ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin text-white/80" />
+                          <span>{ticketOtpSent ? 'Verifying...' : 'Sending...'}</span>
+                        </>
+                      ) : (
+                        <span>Next</span>
+                      )}
                    </button>
                 </div>
               </form>
