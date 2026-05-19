@@ -515,7 +515,7 @@ export default function WidgetPage() {
       )}
 
       {/* Header controls (Close, Mute) - Absolute positioned */}
-      {activeTab !== 'messages' && (
+      {activeTab !== 'messages' && activeTab !== 'chat' && (
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20">
           <div className="flex -space-x-2 opacity-0">
              {/* hidden placeholder for flex space-between balance */}
@@ -537,10 +537,10 @@ export default function WidgetPage() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 relative z-10 overflow-hidden bg-[#f9fafb]">
+      <div className="flex-1 relative z-10 overflow-hidden bg-transparent">
         
         {/* HOME TAB */}
-        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-[#f9fafb] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-30' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-transparent transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-30' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
           <div className="px-5 pt-12 pb-6 flex flex-col gap-5">
             
             {/* Header Graphics (Ahrefs Style) */}
@@ -1048,7 +1048,7 @@ export default function WidgetPage() {
       </div>
 
       {/* Bottom Navigation */}
-      {activeTab !== 'messages' && (
+      {activeTab !== 'messages' && activeTab !== 'chat' && (
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[60px] px-6 py-[12px] z-20">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
