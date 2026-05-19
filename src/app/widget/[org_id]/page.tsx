@@ -358,6 +358,21 @@ export default function WidgetPage() {
   const handleStartVoiceCall = async () => {
     if (!activeConversationId || activeConversationId === 'new') return
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setToastError("Microphone API unavailable. Ensure you're on a secure context (HTTPS) and your browser supports WebRTC.")
+        return
+      }
+
+      try {
+        const permStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+        if (permStatus.state === 'denied') {
+          setToastError("Microphone access is blocked by your browser. Please click the lock icon in the URL bar to allow it.")
+          return
+        }
+      } catch (e) {
+        // Ignore if permissions API isn't supported for microphone
+      }
+
       setCallStatus('calling')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       voiceStreamRef.current = stream
@@ -2600,19 +2615,19 @@ export default function WidgetPage() {
       )}
       {/* Premium Branded Toast Error Notification */}
       {toastError && (
-        <div className="absolute top-[80px] left-4 right-4 z-[9999] bg-slate-900/95 dark:bg-slate-950/98 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-white shadow-2xl animate-in slide-in-from-top-6 duration-300">
+        <div className="absolute bottom-[80px] left-4 right-4 z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between text-slate-800 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-bottom-6 duration-300">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 flex items-center justify-center shrink-0">
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
             <div className="flex flex-col">
-              <span className="text-[13px] font-bold">Action Required</span>
-              <span className="text-[11px] text-slate-400 font-medium">{toastError}</span>
+              <span className="text-[13px] font-bold text-slate-900 dark:text-white">Action Required</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-snug pr-2">{toastError}</span>
             </div>
           </div>
           <button 
             onClick={() => setToastError(null)}
-            className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition-colors ml-2"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors shrink-0"
           >
             <X size={16} strokeWidth={2.5} />
           </button>
