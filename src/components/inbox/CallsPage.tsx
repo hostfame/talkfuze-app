@@ -211,9 +211,13 @@ export default function CallsPage() {
                     </div>
                   </td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">
-                    {log.direction === 'outbound' ? (log.agent_name || (log.from_number === 'talkfuze_agent' ? currentUser?.name || 'TalkFuze Agent' : log.from_number)) : log.from_number}
+                    {log.direction === 'inbound' 
+                      ? log.to_number 
+                      : (log.agent_name || (log.from_number === 'talkfuze_agent' ? currentUser?.name || 'TalkFuze Agent' : log.from_number))}
                   </td>
-                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">{log.to_number}</td>
+                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">
+                    {log.direction === 'inbound' ? log.from_number : log.to_number}
+                  </td>
                   <td className="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
