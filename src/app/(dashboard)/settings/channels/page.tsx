@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, RefreshCw } from "lucide-react"
+import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, RefreshCw, Check } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
 import { disconnectWhatsAppFull, getOrCreateWhatsAppInstance } from "@/actions/whatsapp"
@@ -83,6 +83,16 @@ export default function ChannelsSettingsPage() {
 
     return () => clearInterval(interval)
   }, [isWaQrModalOpen, fetchChannels])
+
+  // Auto-close QR Modal on successful connection
+  useEffect(() => {
+    if (waStatus === 'connected' && isWaQrModalOpen) {
+      const timer = setTimeout(() => {
+        setIsWaQrModalOpen(false)
+      }, 2500)
+      return () => clearTimeout(timer)
+    }
+  }, [waStatus, isWaQrModalOpen])
 
   const handleToggle = async (channel: Channel) => {
     setTogglingId(channel.id)
@@ -354,7 +364,17 @@ export default function ChannelsSettingsPage() {
                 Open WhatsApp on your phone, tap <strong>Menu</strong> or <strong>Settings</strong> and select <strong>Linked Devices</strong>. Tap <strong>Link a device</strong> and point your phone to this screen.
               </p>
               <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 min-h-[250px] flex items-center justify-center w-full">
-                {qrCodeUrl ? (
+                {waStatus === 'connected' ? (
+                  <div className="flex flex-col items-center text-emerald-600 p-4">
+                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                      <Check size={32} strokeWidth={2.5} />
+                    </div>
+                    <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-1">WhatsApp Connected!</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Your device has been linked successfully. Redirecting you...
+                    </p>
+                  </div>
+                ) : qrCodeUrl ? (
                   <img src={qrCodeUrl} alt="WhatsApp QR Code" className="w-48 h-48 rounded-lg" />
                 ) : (
                   <div className="flex flex-col items-center text-slate-400">
