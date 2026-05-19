@@ -324,9 +324,12 @@ export default function WidgetPage() {
 
     const messageText = input.trim()
     setInput("")
+    
+    const optimisticId = `temp-${Date.now()}`
+    
     // Optimistic UI update
     setMessages(prev => [...prev, {
-      id: `temp-${Date.now()}`,
+      id: optimisticId,
       conversation_id: "",
       org_id,
       sender_type: 'contact',
@@ -346,11 +349,12 @@ export default function WidgetPage() {
         await startNewConversation(org_id, deviceId)
       }
       const res = await sendWidgetMessage(org_id, deviceId, messageText)
-      if (res?.success && res.conversationId && activeConversationId === 'new') {
+      if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
         setActiveConversationId(res.conversationId)
       }
     } catch (e) {
       console.error(e)
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
     } finally {
       setIsSending(false)
     }
