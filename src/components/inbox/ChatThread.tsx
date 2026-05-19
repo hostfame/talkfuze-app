@@ -248,11 +248,14 @@ export default function ChatThread({
 
   const handleResolveAndReview = async () => {
     if (!conversationId || !conversation) return
+    const isConfirmed = window.confirm("Are you sure you want to resolve this conversation and send the Google review request message?")
+    if (!isConfirmed) return
+    
     setIsMenuOpen(false)
     try {
       const message = "Did we fix your issue? If yes, please leave a quick review here: https://g.page/r/hostnin/review\n\nIf no, click here to escalate: https://hostnin.com/contact"
       
-      const tempId = crypto.randomUUID()
+      const tempId = "temp-" + crypto.randomUUID()
       addOptimisticMessage(conversationId, {
         id: tempId,
         sender_type: 'agent',
@@ -641,7 +644,7 @@ export default function ChatThread({
     try {
       // Send text message first if exists
       if (msgText || currentAttachments.length === 0) {
-        const tempId = crypto.randomUUID()
+        const tempId = "temp-" + crypto.randomUUID()
         addOptimisticMessage(conversationId, {
           id: tempId,
           sender_type: 'agent',
@@ -666,7 +669,7 @@ export default function ChatThread({
       if (currentAttachments.length > 0) {
         // Fire attachment sending pipelines completely in the background!
         currentAttachments.forEach(async (attachment) => {
-          const tempId = crypto.randomUUID()
+          const tempId = "temp-" + crypto.randomUUID()
           const isImage = attachment.type?.startsWith('image/')
           const isAudio = attachment.type?.startsWith('audio/')
           const isVideo = attachment.type?.startsWith('video/')
@@ -784,7 +787,7 @@ export default function ChatThread({
       const file = new File([audioBlob], `voice-message.${extension}`, { type: actualMimeType })
       
       const localUrl = URL.createObjectURL(audioBlob)
-      const tempId = crypto.randomUUID()
+      const tempId = "temp-" + crypto.randomUUID()
       
       addOptimisticMessage(conversationId, {
         id: tempId,
@@ -1103,13 +1106,23 @@ export default function ChatThread({
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
           {isJoined ? (
-            <button 
-              onClick={() => handleThreadAction('leave')}
-              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              title="Leave thread"
-            >
-              <LogOut size={18} strokeWidth={2} />
-            </button>
+            <>
+              <button 
+                onClick={handleResolveAndReview}
+                className="px-2.5 py-1 text-[12.5px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 rounded-lg flex items-center gap-1 transition-all mr-1 shadow-sm border border-emerald-200/50"
+                title="Resolve & Ask Review"
+              >
+                <CheckCheck size={14} strokeWidth={2.5} />
+                Resolve
+              </button>
+              <button 
+                onClick={() => handleThreadAction('leave')}
+                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                title="Leave thread"
+              >
+                <LogOut size={18} strokeWidth={2} />
+              </button>
+            </>
           ) : null}
 
           <button 
@@ -1133,9 +1146,6 @@ export default function ChatThread({
                 <BellOff size={14} className="opacity-50" /> {conversation?.is_muted ? 'Unmute' : 'Mute'}
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
-              <button onClick={handleResolveAndReview} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
-                <CheckCheck size={14} className="opacity-50" /> Resolve & Ask Review
-              </button>
               <button 
                 onClick={() => handleThreadAction('convert')} 
                 disabled={isConverting}

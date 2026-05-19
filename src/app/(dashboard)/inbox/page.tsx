@@ -62,12 +62,31 @@ export default function InboxPage() {
         getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        // Refresh conversation list so last message preview updates
-        const currentFilter = useInboxStore.getState().activeFilter as any
-        getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        const newMsg = payload.new as any;
+        
+        // Update conversation list locally instead of re-fetching everything
+        if (newMsg && newMsg.conversation_id) {
+           const prev = useInboxStore.getState().conversations;
+           const next = [...(prev || [])];
+           const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
+           if (convIndex !== -1) {
+              const conv = { ...next[convIndex] } as any;
+              conv.last_message_at = newMsg.created_at;
+              // Add latestMessage array mock if it doesn't exist
+              conv.latestMessage = [newMsg];
+              // Move to top
+              next.splice(convIndex, 1);
+              next.unshift(conv);
+              setConversations(next);
+           } else {
+              // It's a brand new conversation, fetch it quietly
+              const currentFilter = useInboxStore.getState().activeFilter as any;
+              getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]));
+           }
+        }
         
         // Play sound if the message is from a contact
-        if (payload.new && payload.new.sender_type === 'contact') {
+        if (newMsg && newMsg.sender_type === 'contact') {
            playUISound('receive')
         }
       })
