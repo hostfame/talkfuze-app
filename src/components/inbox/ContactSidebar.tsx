@@ -243,36 +243,22 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setWhmcsServices(null)
     setWhmcsTickets([])
     setCrmData(null)
-    setCrmSearchQuery("")
     setLastSearchedQuery("")
     
     if (conversation?.id && platformId) {
-      const fetchCrm = async () => {
+      const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
+      const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
+      
+      // Prefill search query if we have a real phone number or email (avoid raw PSIDs/LIDs)
+      if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
+        setCrmSearchQuery(cleanPhone)
+      } else {
+        setCrmSearchQuery("")
+      }
+
+      const fetchLegacyCrm = async () => {
         setIsCrmLoading(true)
         try {
-          const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
-          const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
-          
-          // Fetch WHMCS data if viewing CRM tab
-          if (activeTab === 'copilot') {
-            // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
-            if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
-              setLastSearchedQuery(cleanPhone)
-              const client = await fetchWhmcsClient(cleanPhone)
-              if (mounted && client) {
-                setWhmcsClient(client)
-                const [services, tickets] = await Promise.all([
-                  fetchWhmcsServices(client.id),
-                  fetchWhmcsTickets(client.id)
-                ])
-                if (mounted) {
-                  setWhmcsServices(services)
-                  setWhmcsTickets(tickets)
-                }
-              }
-            }
-          }
-          
           // Fetch legacy CRM data (if any)
           const data = await getCrmData(orgId, cleanPhone)
           if (mounted) {
@@ -282,17 +268,20 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             }
           }
         } catch (error) {
-          console.error("Error fetching CRM data:", error)
+          console.error("Error fetching legacy CRM data:", error)
         } finally {
           if (mounted) {
             setIsCrmLoading(false)
           }
         }
       }
-      fetchCrm()
+      fetchLegacyCrm()
+    } else {
+      setCrmSearchQuery("")
     }
+    
     return () => { mounted = false }
-  }, [conversation?.id, platformId, orgId, activeTab])
+  }, [conversation?.id, platformId, orgId])
 
   const handleSummarize = async () => {
     if (!conversation?.id) return
