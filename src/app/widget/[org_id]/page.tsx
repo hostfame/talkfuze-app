@@ -724,17 +724,16 @@ export default function WidgetPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
-              <div className="text-center mb-4 mt-2">
-                 <p className="text-[13px] text-slate-500 tracking-tight">Send a message to start a message with us</p>
-              </div>
-
-              {messages.length === 0 && (
-                <div className="flex flex-col gap-1 items-start">
+              {/* Persistent Welcome Greeting */}
+              <div className="flex flex-col gap-1 items-start mb-1 mt-2">
+                <div className="flex gap-2 items-end">
+                  <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Hostnin Support" />
                   <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
                     Hello! How can I assist you today?
                   </div>
                 </div>
-              )}
+                <span className="text-[11px] text-slate-400 ml-[32px]">Hostnin Support</span>
+              </div>
 
               {messages.map((msg, idx) => {
                 const isSystem = msg.sender_type === 'system';
