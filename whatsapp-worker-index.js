@@ -728,14 +728,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       },
       body: JSON.stringify({
         number: jid,
-        options: {
-          delay: 0,
-          presence: 'recording',
-          encoding: true  // Converts to ogg/opus for WhatsApp native PTT
-        },
-        audioMessage: {
-          audio: mediaUrl
-        }
+        audio: mediaUrl,
+        encoding: true  // Converts to ogg/opus for WhatsApp native PTT
       })
     });
     if (!res.ok) {
