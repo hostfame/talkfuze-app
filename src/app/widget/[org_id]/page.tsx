@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
@@ -253,7 +253,29 @@ export default function WidgetPage() {
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   
+  // WHMCS Tickets State
+  const [ticketView, setTicketView] = useState<'login' | 'list' | 'detail' | 'new'>('login')
+  const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string } | null>(null)
+  const [whmcsTickets, setWhmcsTickets] = useState<any[]>([])
+  const [selectedTicket, setSelectedTicket] = useState<any>(null)
+  const [ticketEmail, setTicketEmail] = useState("")
+  const [ticketOtp, setTicketOtp] = useState("")
+  const [ticketOtpSent, setTicketOtpSent] = useState(false)
+  const [ticketLoading, setTicketLoading] = useState(false)
+  const [ticketError, setTicketError] = useState("")
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Check for existing WHMCS session in localStorage
+    try {
+      const stored = localStorage.getItem('whmcs_user')
+      if (stored) {
+        setWhmcsUser(JSON.parse(stored))
+        setTicketView('list')
+      }
+    } catch (e) {}
+  }, [])
 
   useEffect(() => {
     if (!org_id) return
@@ -624,6 +646,133 @@ export default function WidgetPage() {
 
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  // WHMCS Ticket Handlers
+  const handleTicketLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketEmail) return;
+    setTicketLoading(true);
+    setTicketError("");
+    try {
+      if (!ticketOtpSent) {
+        // Send OTP
+        const res = await fetch('/api/widget/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send', email: ticketEmail })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setTicketOtpSent(true);
+        } else {
+          setTicketError(data.error || "Failed to send OTP");
+        }
+      } else {
+        // Verify OTP for Login
+        const res = await fetch('/api/widget/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify', email: ticketEmail, otp: ticketOtp, intent: 'login' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const user = { clientId: data.clientId, name: data.name };
+          setWhmcsUser(user);
+          localStorage.setItem('whmcs_user', JSON.stringify(user));
+          setTicketView('list');
+          fetchWhmcsTickets(data.clientId);
+        } else {
+          setTicketError(data.error || "Invalid OTP");
+        }
+      }
+    } catch (err) {
+      setTicketError("A network error occurred.");
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
+  const fetchWhmcsTickets = async (clientId: number) => {
+    try {
+      const res = await fetch(`/api/widget/whmcs/tickets?clientId=${clientId}`);
+      const data = await res.json();
+      if (data.success) {
+        setWhmcsTickets(data.tickets);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFetchTicketDetails = async (ticketId: number) => {
+    setTicketLoading(true);
+    try {
+      const res = await fetch(`/api/widget/whmcs/tickets/${ticketId}`);
+      const data = await res.json();
+      if (data.success) {
+        setSelectedTicket(data.ticket);
+        setTicketView('detail');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
+  const [ticketReplyInput, setTicketReplyInput] = useState("");
+  const handleTicketReply = async () => {
+    if (!ticketReplyInput.trim() || !whmcsUser || !selectedTicket) return;
+    setTicketLoading(true);
+    try {
+      const res = await fetch(`/api/widget/whmcs/tickets/${selectedTicket.ticketid}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: whmcsUser.clientId, message: ticketReplyInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTicketReplyInput("");
+        await handleFetchTicketDetails(selectedTicket.ticketid); // Refresh
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
+  const [newTicketSubject, setNewTicketSubject] = useState("");
+  const [newTicketMessage, setNewTicketMessage] = useState("");
+  const [newTicketDept, setNewTicketDept] = useState(1);
+  const handleCreateTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTicketSubject || !newTicketMessage || !whmcsUser) return;
+    setTicketLoading(true);
+    try {
+      const res = await fetch('/api/widget/whmcs/tickets/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: whmcsUser.clientId, deptid: newTicketDept, subject: newTicketSubject, message: newTicketMessage })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewTicketSubject("");
+        setNewTicketMessage("");
+        setTicketView('list'); // Go back to list, useEffect will fetch tickets
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (whmcsUser && ticketView === 'list') {
+      fetchWhmcsTickets(whmcsUser.clientId);
+    }
+  }, [ticketView, whmcsUser]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1235,39 +1384,194 @@ export default function WidgetPage() {
         {/* TICKETS TAB */}
         {activeTab === 'tickets' && (
           <div className="pt-20 px-6 pb-[90px] animate-in fade-in duration-300 flex flex-col h-full bg-white relative z-10">
-             
-             {/* Main Content Area */}
-             <div className="flex-1 flex flex-col mx-auto w-full relative z-20">
-                
-                {/* Header */}
+            
+            {ticketView === 'login' && (
+              <form onSubmit={handleTicketLogin} className="flex-1 flex flex-col mx-auto w-full relative z-20">
                 <div className="mb-6">
-                   <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-tight">Log in with your email</h2>
+                   <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-tight">{ticketOtpSent ? 'Enter Login Code' : 'Log in with your email'}</h2>
+                   {ticketOtpSent && <p className="text-slate-500 text-[14px] mt-2">Code sent to {ticketEmail}</p>}
                 </div>
                 
-                {/* Input Area */}
                 <div className="flex flex-col gap-4">
+                  {!ticketOtpSent ? (
                    <div className="relative border border-slate-300 rounded-[12px] pt-2 pb-1.5 px-4 focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 transition-all bg-white">
                      <label className="block text-[12px] font-semibold text-slate-700 mb-0.5">Email</label>
                      <input 
                        type="email" 
+                       value={ticketEmail}
+                       onChange={(e) => setTicketEmail(e.target.value)}
                        placeholder="admin@yourdomain.com"
                        className="w-full text-[16px] text-slate-900 bg-transparent outline-none placeholder:text-slate-400 font-medium"
+                       required
                      />
                    </div>
+                  ) : (
+                   <div className="relative border border-slate-300 rounded-[12px] pt-2 pb-1.5 px-4 focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 transition-all bg-white">
+                     <label className="block text-[12px] font-semibold text-slate-700 mb-0.5">6-Digit Code</label>
+                     <input 
+                       type="text" 
+                       value={ticketOtp}
+                       onChange={(e) => setTicketOtp(e.target.value)}
+                       placeholder="123456"
+                       maxLength={6}
+                       className="w-full text-[16px] text-slate-900 bg-transparent outline-none placeholder:text-slate-400 font-medium tracking-[4px]"
+                       required
+                     />
+                   </div>
+                  )}
                    
-                   <button className="text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left self-start">
-                     Login with Password instead?
-                   </button>
+                   {ticketError && <p className="text-red-500 text-[13px] font-medium">{ticketError}</p>}
+
+                   {!ticketOtpSent && (
+                     <button type="button" className="text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left self-start">
+                       Login with Password instead?
+                     </button>
+                   )}
                 </div>
                 
-                {/* Bottom Button */}
                 <div className="mt-auto pt-8 pb-2">
-                   <button className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-4 rounded-[14px] text-[16px] transition-all shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.25)] active:scale-[0.98]">
-                      Next
+                   <button disabled={ticketLoading} type="submit" className="w-full bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-4 rounded-[14px] text-[16px] transition-all shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.25)] active:scale-[0.98] flex items-center justify-center">
+                      {ticketLoading ? 'Please wait...' : 'Next'}
                    </button>
                 </div>
+              </form>
+            )}
 
-             </div>
+            {ticketView === 'list' && (
+              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc]">
+                 {/* Header */}
+                 <div className="flex items-center justify-between px-6 pt-[80px] pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
+                    <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Support Tickets</h2>
+                    <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
+                      <Plus size={14} /> New Ticket
+                    </button>
+                 </div>
+                 {/* List */}
+                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-[100px]">
+                    {whmcsTickets.length === 0 ? (
+                      <div className="text-center mt-10 text-slate-500 text-[14px]">No tickets found.</div>
+                    ) : whmcsTickets.map(ticket => (
+                      <div key={ticket.id} onClick={() => handleFetchTicketDetails(ticket.id)} className="bg-white p-4 rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-slate-100 cursor-pointer hover:border-blue-200 hover:shadow-md transition-all group">
+                        <div className="flex justify-between items-start mb-2">
+                           <span className="text-[12px] font-semibold text-slate-400 group-hover:text-slate-500 transition-colors">#{ticket.tid}</span>
+                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${ticket.status === 'Open' ? 'bg-amber-100 text-amber-700' : ticket.status === 'Answered' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                             {ticket.status}
+                           </span>
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-[14px] leading-snug mb-1 group-hover:text-blue-600 transition-colors">{ticket.subject}</h4>
+                        <p className="text-[12px] text-slate-500">Updated: {ticket.lastreply}</p>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            )}
+
+            {ticketView === 'detail' && selectedTicket && (
+              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] z-50">
+                 {/* Header */}
+                 <div className="flex items-center gap-3 px-4 pt-[80px] pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0 z-10">
+                    <button onClick={() => setTicketView('list')} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-slate-900 text-[15px] truncate">{selectedTicket.subject}</h3>
+                      <p className="text-[12px] text-slate-500">Ticket #{selectedTicket.tid}</p>
+                    </div>
+                 </div>
+                 {/* Chat Area */}
+                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-[80px]">
+                    {/* Initial Message */}
+                    <div className="flex flex-col gap-1 items-end">
+                      <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap">
+                        {selectedTicket.message}
+                      </div>
+                    </div>
+                    {/* Replies */}
+                    {selectedTicket.replies?.reply?.map((reply: any, idx: number) => (
+                      <div key={idx} className={`flex flex-col gap-1 ${reply.admin ? 'items-start' : 'items-end'}`}>
+                        {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Support Team'}</span>}
+                        <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap shadow-sm`}>
+                          {reply.message}
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+                 {/* Input Bar */}
+                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 pb-[10px]">
+                   <div className="flex items-end gap-2 bg-slate-50 rounded-[20px] p-1.5 border border-slate-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-100/50 transition-all">
+                     <textarea 
+                       value={ticketReplyInput}
+                       onChange={(e) => setTicketReplyInput(e.target.value)}
+                       placeholder="Reply to ticket..."
+                       className="flex-1 bg-transparent border-none outline-none resize-none max-h-[100px] min-h-[36px] py-2 px-3 text-[14px]"
+                     />
+                     <button disabled={ticketLoading || !ticketReplyInput.trim()} onClick={handleTicketReply} className="p-2.5 bg-[#0070f3] disabled:bg-slate-300 disabled:opacity-50 text-white rounded-full shrink-0 transition-all hover:bg-blue-600 active:scale-95">
+                       <Send size={16} className={ticketLoading ? 'animate-pulse' : ''} />
+                     </button>
+                   </div>
+                 </div>
+              </div>
+            )}
+
+            {ticketView === 'new' && (
+              <div className="flex flex-col h-full absolute inset-0 bg-white z-50">
+                 {/* Header */}
+                 <div className="flex items-center gap-3 px-4 pt-[80px] pb-4 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
+                    <button onClick={() => setTicketView('list')} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <h2 className="font-bold text-slate-900 text-[17px]">Create New Ticket</h2>
+                 </div>
+                 {/* Form */}
+                 <form onSubmit={handleCreateTicket} className="flex-1 overflow-y-auto p-6 pt-5 flex flex-col gap-4 pb-[100px] bg-[#f8fafc]">
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[13px] font-semibold text-slate-700 ml-1">Department</label>
+                      <div className="relative group">
+                        <select 
+                          value={newTicketDept} 
+                          onChange={(e) => setNewTicketDept(parseInt(e.target.value))}
+                          className="w-full bg-white border border-slate-200 rounded-[12px] p-3.5 text-[14px] text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all appearance-none font-medium shadow-sm cursor-pointer group-hover:border-slate-300"
+                        >
+                          <option value={1}>General Support</option>
+                          <option value={2}>Billing & Sales</option>
+                          <option value={3}>Technical Support</option>
+                        </select>
+                        <ChevronDown size={16} className="absolute right-4 top-4 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[13px] font-semibold text-slate-700 ml-1">Subject</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={newTicketSubject}
+                        onChange={(e) => setNewTicketSubject(e.target.value)}
+                        placeholder="Brief summary of the issue..."
+                        className="w-full bg-white border border-slate-200 rounded-[12px] p-3.5 text-[14px] text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all font-medium placeholder:font-normal shadow-sm"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[13px] font-semibold text-slate-700 ml-1">Message</label>
+                      <textarea 
+                        required
+                        value={newTicketMessage}
+                        onChange={(e) => setNewTicketMessage(e.target.value)}
+                        placeholder="Describe your issue in detail..."
+                        className="w-full bg-white border border-slate-200 rounded-[12px] p-3.5 text-[14px] text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all min-h-[140px] resize-none font-medium placeholder:font-normal shadow-sm"
+                      />
+                    </div>
+
+                    <div className="mt-2">
+                       <button disabled={ticketLoading} type="submit" className="w-full bg-[#0070f3] hover:bg-blue-600 disabled:bg-slate-300 disabled:opacity-70 disabled:active:scale-100 text-white font-semibold py-3.5 rounded-[12px] text-[15px] transition-all flex items-center justify-center shadow-sm hover:shadow-md active:scale-95">
+                          {ticketLoading ? 'Opening Ticket...' : 'Submit Ticket'}
+                       </button>
+                    </div>
+                 </form>
+              </div>
+            )}
           </div>
         )}
 

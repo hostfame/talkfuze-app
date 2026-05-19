@@ -613,7 +613,11 @@ export default function ChatThread({
             sender_id: currentUser?.id ?? null,
             content: optimisticContent,
             content_type: getContentType(attachment.file),
-            metadata: null,
+            metadata: {
+              media_url: attachment.previewUrl || attachment.url || '',
+              filename: attachment.name,
+              mimetype: attachment.type
+            } as any,
             is_internal: isInternal,
             status: 'sending',
             created_at: new Date().toISOString()

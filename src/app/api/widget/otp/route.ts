@@ -15,7 +15,7 @@ function generateOTP(): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { action, email, otp, conversationId, orgId } = body
+    const { action, email, otp, conversationId, orgId, intent = 'convert_ticket' } = body
 
     if (action === 'send') {
       if (!email || !email.includes('@')) {
@@ -77,7 +77,18 @@ If you did not request this, you can safely ignore this email.
         return NextResponse.json({ success: false, error: 'Incorrect code. Please try again.' }, { status: 400 })
       }
 
-      // OTP valid - convert chat to ticket
+      // Handle simple login intent
+      if (intent === 'login') {
+        // Cleanup
+        otpStore.delete(email.toLowerCase())
+        return NextResponse.json({ 
+          success: true, 
+          clientId: record.clientId,
+          message: 'Login successful' 
+        })
+      }
+
+      // OTP valid - convert chat to ticket (default intent)
       const { data: messages } = await supabaseAdmin
         .from('messages')
         .select('*')
