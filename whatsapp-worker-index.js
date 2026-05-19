@@ -299,17 +299,29 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
     
     // Parse and sanitize mimetype and extension
     let mimeType = data.mediaType.split(';')[0].trim();
+    if (mimeType.startsWith('data:')) {
+      mimeType = mimeType.substring(5);
+    }
     let ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
     ext = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-    // Safe fallbacks for malformed or missing mimeTypes
+    // Safe fallbacks for malformed or missing mimeTypes (like Baileys internal types "imageMessage", "audioMessage")
     const mimeRegex = /^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\.\+\*]+$/;
-    if (!mimeType || !mimeRegex.test(mimeType)) {
+    if (!mimeType || !mimeRegex.test(mimeType) || mimeType.endsWith('Message')) {
       console.log(`[MEDIA-WARNING] Invalid mimeType "${mimeType}", using fallback for contentType "${contentType}"`);
-      if (contentType === 'image') mimeType = 'image/jpeg';
-      else if (contentType === 'audio') mimeType = 'audio/ogg';
-      else if (contentType === 'video') mimeType = 'video/mp4';
-      else mimeType = 'application/octet-stream';
+      if (contentType === 'image') {
+        mimeType = 'image/jpeg';
+        ext = 'jpg';
+      } else if (contentType === 'audio') {
+        mimeType = 'audio/ogg';
+        ext = 'ogg';
+      } else if (contentType === 'video') {
+        mimeType = 'video/mp4';
+        ext = 'mp4';
+      } else {
+        mimeType = 'application/octet-stream';
+        ext = 'bin';
+      }
     }
 
     const fileName = `${conversationJid.replace('@', '_')}/${Date.now()}.${ext}`;
@@ -361,6 +373,12 @@ async function processMessage(msg) {
   const contentType = getContentType(msg);
   const msgId = msg.key?.id;
   const fromMe = isFromMe(msg);
+
+  // Drop incoming text messages with empty or blank content (junk, reaction stub noise)
+  if (contentType === 'text' && !text.trim()) {
+    console.log(`[MSG] Skipping empty text message: ${msgId}`);
+    return;
+  }
 
   try {
     if (msgId) {
