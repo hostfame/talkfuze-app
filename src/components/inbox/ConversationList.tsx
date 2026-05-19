@@ -1,4 +1,4 @@
-import { Search, Plus, X, Phone, Loader2 } from "lucide-react"
+import { Search, Plus, X, Phone, Loader2, Mic, Image as ImageIcon, Video, Paperclip } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { searchConversations, createConversation } from "@/actions/dashboard"
@@ -266,11 +266,21 @@ export default function ConversationList({
                       typing...
                     </p>
                   ) : (
-                    <p className={`text-[13px] truncate leading-snug ${lastMessage?.sender_type === 'agent' ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
+                    <p className={`text-[13px] truncate leading-snug flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
                       {lastMessage ? (
                         <>
-                          {lastMessage.sender_type === 'agent' && <span className="text-slate-400">You: </span>}
-                          {lastMessage.content === '[Attachment]' ? '📎 Attachment' : lastMessage.content}
+                          {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
+                          {lastMessage.content === '[Audio Voice Message]' ? (
+                            <><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</>
+                          ) : lastMessage.content === '[Image]' ? (
+                            <><ImageIcon size={14} className="text-blue-500 shrink-0" /> Photo</>
+                          ) : lastMessage.content === '[Video]' ? (
+                            <><Video size={14} className="text-blue-500 shrink-0" /> Video</>
+                          ) : lastMessage.content === '[Attachment]' ? (
+                            <><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</>
+                          ) : (
+                            lastMessage.content
+                          )}
                         </>
                       ) : (
                         <span className="text-slate-400 italic">No messages yet</span>

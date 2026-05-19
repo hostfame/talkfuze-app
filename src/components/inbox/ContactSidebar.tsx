@@ -1,7 +1,7 @@
 import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
-import { getCrmData, getParticipants } from "@/actions/dashboard"
+import { getCrmData, getParticipants, toggleContactBanStatus } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
@@ -145,6 +145,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [newTicketSubject, setNewTicketSubject] = useState("")
   const [newTicketMessage, setNewTicketMessage] = useState("")
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+  const [isBanned, setIsBanned] = useState(false)
+  const [isBanning, setIsBanning] = useState(false)
   const [portalTab, setPortalTab] = useState<'services' | 'domains' | 'tickets'>('services')
 
   const handleCreateTicket = async () => {
@@ -163,6 +165,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     }
     setCrmSearchQuery("")
     setIsCreatingTicket(false)
+  }
+
+  const handleToggleBan = async () => {
+    if (!contact?.id) return
+    setIsBanning(true)
+    try {
+      const currentStatus = isBanned ? 'banned' : 'active'
+      const updatedContact = await toggleContactBanStatus(contact.id, currentStatus)
+      if (updatedContact) {
+        setIsBanned(updatedContact.status === 'banned')
+      }
+    } catch (e) {
+      console.error(e)
+      alert("Failed to update ban status.")
+    } finally {
+      setIsBanning(false)
+    }
   }
 
   const handleUnlink = async () => {
@@ -220,6 +239,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setWhmcsTickets([])
     setCrmData(null)
     setCrmSearchQuery("")
+    setLastSearchedQuery("")
     
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
@@ -229,7 +249,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         // Fetch WHMCS data if viewing CRM tab
         if (activeTab === 'copilot') {
           // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
-          if (contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
+          if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
             setLastSearchedQuery(cleanPhone)
             const client = await fetchWhmcsClient(cleanPhone)
             if (mounted && client) {
@@ -251,6 +271,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         if (mounted) {
           if (data) setCrmData(data)
           setIsCrmLoading(false)
+          if (contact?.status) {
+            setIsBanned(contact.status === 'banned')
+          }
         }
       }
       fetchCrm()
@@ -379,8 +402,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               </div>
             )}
           </div>
-          <button className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-2 self-center shrink-0" title="Ban this User">
-            <Ban size={18} />
+          <button 
+            onClick={handleToggleBan}
+            disabled={isBanning}
+            className={`p-2 rounded-lg transition-colors ml-2 self-center shrink-0 ${isBanned ? 'text-white bg-red-500 hover:bg-red-600' : 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'} ${isBanning ? 'opacity-50 cursor-not-allowed' : ''}`} 
+            title={isBanned ? "Unban this User" : "Ban this User"}
+          >
+            {isBanning ? <Loader2 size={18} className="animate-spin" /> : <Ban size={18} />}
           </button>
         </div>
 

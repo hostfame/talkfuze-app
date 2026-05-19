@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation } from "@/actions/dashboard"
@@ -23,6 +23,20 @@ function getAvatarColor(name: string): string {
 
 function renderTextWithLinks(text: string, isAgent: boolean) {
   if (!text) return text;
+  
+  if (text === '[Audio Voice Message]') {
+    return <span className="flex items-center gap-1"><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</span>;
+  }
+  if (text === '[Image]') {
+    return <span className="flex items-center gap-1"><ImageIcon size={14} className="text-blue-500 shrink-0" /> Photo</span>;
+  }
+  if (text === '[Video]') {
+    return <span className="flex items-center gap-1"><Video size={14} className="text-blue-500 shrink-0" /> Video</span>;
+  }
+  if (text === '[Attachment]') {
+    return <span className="flex items-center gap-1"><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</span>;
+  }
+
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
@@ -92,7 +106,7 @@ export default function ChatThread({
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { updateConversation, removeConversation } = useInboxStore()
+  const { updateConversation, removeConversation, isLoaded } = useInboxStore()
 
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState("")
@@ -260,8 +274,8 @@ export default function ChatThread({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   
-  const [pendingAttachment, setPendingAttachment] = useState<File | null>(null)
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null)
+  const [pendingAttachments, setPendingAttachments] = useState<File[]>([])
+  const [attachmentPreviews, setAttachmentPreviews] = useState<(string | null)[]>([])
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
@@ -386,75 +400,97 @@ export default function ChatThread({
   }
 
   const handleSend = async () => {
-    if ((!input.trim() && !pendingAttachment) || !conversationId) return
+    if ((!input.trim() && pendingAttachments.length === 0) || !conversationId) return
 
     const msgText = input.trim()
-    const currentAttachment = pendingAttachment
-    const tempId = crypto.randomUUID()
+    const currentAttachments = [...pendingAttachments]
     
     setInput("")
-    setPendingAttachment(null)
-    setAttachmentPreview(null)
+    setPendingAttachments([])
+    setAttachmentPreviews([])
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
-    
-    // Optimistic UI - add to Zustand (survives conversation switching)
-    const optimisticContent = msgText || (currentAttachment ? 
-      (currentAttachment.type.startsWith('image/') ? '[Image]' : 
-       currentAttachment.type.startsWith('audio/') ? '[Audio Voice Message]' : 
-       currentAttachment.type.startsWith('video/') ? '[Video]' : '[Attachment]') : '')
-    
-    addOptimisticMessage(conversationId, {
-      id: tempId,
-      sender_type: 'agent',
-      sender_id: currentUser?.id ?? null,
-      content: optimisticContent,
-      content_type: getContentType(currentAttachment),
-      metadata: null,
-      is_internal: isInternal,
-      status: 'sending',
-      created_at: new Date().toISOString()
-    })
+
+    // Auto-join if not joined and sending a public reply
+    if (!isJoined && !isInternal) {
+      const prevParticipants = [...participants]
+      setParticipants([...participants, { user_id: currentUser?.id, role: 'agent' } as unknown as ConversationParticipant])
+      joinConversation(conversationId).then(updated => {
+        setParticipants(updated as unknown as ConversationParticipant[])
+      }).catch(e => {
+        console.error('Failed to auto-join:', e)
+        setParticipants(prevParticipants)
+      })
+    }
     
     try {
-      if (currentAttachment) {
-        setIsUploading(true);
-        const meta = await uploadToStorage(currentAttachment);
-        let contentType = 'file';
-        if (meta.type.startsWith('image/')) contentType = 'image';
-        else if (meta.type.startsWith('audio/')) contentType = 'audio';
-        else if (meta.type.startsWith('video/')) contentType = 'video';
-        
-        const contentText = msgText || (contentType === 'image' ? '[Image]' : 
-                            contentType === 'audio' ? '[Audio Voice Message]' : 
-                            contentType === 'video' ? '[Video]' : '[Attachment]');
-        
-        await replyToConversation(orgId, conversationId, contentText, isInternal, contentType, {
-          media_url: meta.url,
-          mimetype: meta.type,
-          filename: meta.name
-        });
-      } else {
-        // Auto-join if not joined and sending a public reply
-        if (!isJoined && !isInternal) {
-          const prevParticipants = [...participants]
-          setParticipants([...participants, { user_id: currentUser?.id, role: 'agent' } as unknown as ConversationParticipant])
-          joinConversation(conversationId).then(updated => {
-            setParticipants(updated as unknown as ConversationParticipant[])
-          }).catch(e => {
-            console.error('Failed to auto-join:', e)
-            setParticipants(prevParticipants)
-          })
+      // Send text message first if exists
+      if (msgText || currentAttachments.length === 0) {
+        const tempId = crypto.randomUUID()
+        addOptimisticMessage(conversationId, {
+          id: tempId,
+          sender_type: 'agent',
+          sender_id: currentUser?.id ?? null,
+          content: msgText,
+          content_type: 'text',
+          metadata: null,
+          is_internal: isInternal,
+          status: 'sending',
+          created_at: new Date().toISOString()
+        })
+        try {
+          await replyToConversation(orgId, conversationId, msgText, isInternal)
+          removeOptimisticMessage(conversationId, tempId)
+        } catch (e: unknown) {
+          console.error(e)
+          markFailed(conversationId, tempId)
         }
-        
-        await replyToConversation(orgId, conversationId, msgText, isInternal)
       }
-      // Success: remove optimistic immediately, real one arrives via Realtime
-      removeOptimisticMessage(conversationId, tempId)
-    } catch (e: unknown) {
-      console.error(e)
-      // Don't alert - mark as failed so user sees it in chat
-      markFailed(conversationId, tempId)
+
+      // Process attachments
+      if (currentAttachments.length > 0) {
+        setIsUploading(true)
+        
+        const uploadPromises = currentAttachments.map(async (attachment) => {
+          const tempId = crypto.randomUUID()
+          const isImage = attachment.type.startsWith('image/')
+          const isAudio = attachment.type.startsWith('audio/')
+          const isVideo = attachment.type.startsWith('video/')
+          const optimisticContent = isImage ? '[Image]' : isAudio ? '[Audio Voice Message]' : isVideo ? '[Video]' : '[Attachment]'
+          
+          addOptimisticMessage(conversationId, {
+            id: tempId,
+            sender_type: 'agent',
+            sender_id: currentUser?.id ?? null,
+            content: optimisticContent,
+            content_type: getContentType(attachment),
+            metadata: null,
+            is_internal: isInternal,
+            status: 'sending',
+            created_at: new Date().toISOString()
+          })
+          
+          try {
+            const meta = await uploadToStorage(attachment)
+            let contentType = 'file'
+            if (meta.type.startsWith('image/')) contentType = 'image'
+            else if (meta.type.startsWith('audio/')) contentType = 'audio'
+            else if (meta.type.startsWith('video/')) contentType = 'video'
+            
+            await replyToConversation(orgId, conversationId, optimisticContent, isInternal, contentType, {
+              media_url: meta.url,
+              mimetype: meta.type,
+              filename: meta.name
+            })
+            removeOptimisticMessage(conversationId, tempId)
+          } catch (error) {
+            console.error(error)
+            markFailed(conversationId, tempId)
+          }
+        })
+        
+        await Promise.all(uploadPromises)
+      }
     } finally {
       setIsUploading(false)
       setIsSending(false)
@@ -568,22 +604,94 @@ export default function ChatThread({
     return { url: urlData.publicUrl, type: file.type, name: file.name || fileName };
   }
 
-  const stageAttachment = (file: File) => {
-    setPendingAttachment(file);
-    if (file.type.startsWith('image/')) {
-      setAttachmentPreview(URL.createObjectURL(file));
-    } else {
-      setAttachmentPreview(null);
-    }
+  const stageAttachments = (files: File[]) => {
+    setPendingAttachments(prev => {
+      const newFiles = [...prev, ...files].slice(0, 5); // Max 5 files
+      
+      const newPreviews = newFiles.map(file => {
+        if (file.type.startsWith('image/')) {
+          return URL.createObjectURL(file);
+        } else {
+          return null;
+        }
+      });
+      
+      // Revoke old previews to prevent memory leaks
+      attachmentPreviews.forEach(p => { if (p) URL.revokeObjectURL(p) });
+      setAttachmentPreviews(newPreviews);
+      
+      return newFiles;
+    });
+  }
+
+  const removeAttachment = (index: number) => {
+    setPendingAttachments(prev => {
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles;
+    });
+    setAttachmentPreviews(prev => {
+      const newPreviews = [...prev];
+      const removed = newPreviews.splice(index, 1)[0];
+      if (removed) URL.revokeObjectURL(removed);
+      return newPreviews;
+    });
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    stageAttachment(file);
+    if (!e.target.files?.length) return;
+    const files = Array.from(e.target.files);
+    stageAttachments(files);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+
+  if (!isLoaded) {
+    return (
+      <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden">
+        {/* Skeleton Header */}
+        <div className="h-[72px] border-b border-slate-100 px-6 flex items-center gap-4 bg-white shrink-0">
+          <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse shrink-0" />
+          <div className="space-y-2 flex-1">
+            <div className="h-4 bg-slate-100 rounded w-48 animate-pulse" />
+            <div className="h-3 bg-slate-50 rounded w-32 animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Skeleton Messages */}
+        <div className="flex-1 p-6 space-y-8 bg-[#f9fafb]">
+          {/* Incoming message */}
+          <div className="flex gap-3 max-w-2xl">
+            <div className="w-8 h-8 rounded-full bg-slate-100 animate-pulse shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-16 bg-slate-100 rounded-2xl rounded-tl-sm w-3/4 animate-pulse shadow-sm" />
+            </div>
+          </div>
+          
+          {/* Outgoing message */}
+          <div className="flex gap-3 max-w-2xl ml-auto justify-end">
+            <div className="space-y-2 flex-1 flex flex-col items-end">
+              <div className="h-12 bg-blue-100/50 rounded-2xl rounded-tr-sm w-2/3 animate-pulse shadow-sm" />
+            </div>
+          </div>
+
+          {/* Incoming message */}
+          <div className="flex gap-3 max-w-2xl mt-4">
+            <div className="w-8 h-8 rounded-full bg-slate-100 animate-pulse shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-10 bg-slate-100 rounded-2xl rounded-tl-sm w-1/2 animate-pulse shadow-sm" />
+              <div className="h-14 bg-slate-100 rounded-2xl rounded-tl-sm w-4/5 animate-pulse shadow-sm" />
+            </div>
+          </div>
+        </div>
+        
+        {/* Skeleton Input */}
+        <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+          <div className="h-12 bg-slate-50 rounded-xl w-full border border-slate-100 animate-pulse" />
+        </div>
+      </div>
+    )
+  }
 
   if (!conversationId) {
     return (
@@ -937,10 +1045,6 @@ export default function ChatThread({
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
-            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-              <Zap size={14} className="text-blue-500" />
-              <span className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Quick Replies</span>
-            </div>
             <div className="overflow-y-auto p-1">
               {filteredMacros.length === 0 ? (
                 <div className="p-3 text-center text-[13px] text-slate-500">No matching replies found.</div>
@@ -952,7 +1056,7 @@ export default function ChatThread({
                     className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 ${i === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/50 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/50">{macro.shortcut}</span>
+                      <span className="text-[13px] font-semibold text-blue-600 dark:text-blue-400">{macro.shortcut}</span>
                     </div>
                     <span className="text-[13px] text-slate-600 dark:text-slate-300 line-clamp-1">{macro.content}</span>
                   </div>
@@ -989,27 +1093,25 @@ export default function ChatThread({
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              {pendingAttachment && (
-                <div className="px-4 pt-3 pb-1">
-                  <div className="relative inline-block border rounded-md overflow-hidden group bg-slate-50 dark:bg-slate-800">
-                    {attachmentPreview ? (
-                      <img src={attachmentPreview} alt="Preview" className="h-16 w-16 object-cover" />
-                    ) : (
-                      <div className="h-16 w-16 flex items-center justify-center">
-                        <Paperclip size={24} className="text-slate-400" />
-                      </div>
-                    )}
-                    <button 
-                      onClick={() => {
-                        setPendingAttachment(null);
-                        if (attachmentPreview) URL.revokeObjectURL(attachmentPreview);
-                        setAttachmentPreview(null);
-                      }}
-                      className="absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
+              {pendingAttachments.length > 0 && (
+                <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
+                  {pendingAttachments.map((file, idx) => (
+                    <div key={idx} className="relative inline-block border rounded-md overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
+                      {attachmentPreviews[idx] ? (
+                        <img src={attachmentPreviews[idx] as string} alt="Preview" className="h-16 w-16 object-cover" />
+                      ) : (
+                        <div className="h-16 w-16 flex items-center justify-center">
+                          <Paperclip size={24} className="text-slate-400" />
+                        </div>
+                      )}
+                      <button 
+                        onClick={() => removeAttachment(idx)}
+                        className="absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
               <textarea 
@@ -1019,8 +1121,8 @@ export default function ChatThread({
                 onPaste={(e) => {
                   if (e.clipboardData.files && e.clipboardData.files.length > 0) {
                     e.preventDefault();
-                    const file = e.clipboardData.files[0];
-                    stageAttachment(file);
+                    const files = Array.from(e.clipboardData.files);
+                    stageAttachments(files);
                   }
                 }}
               onKeyDown={(e) => {
@@ -1043,17 +1145,17 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${pendingAttachment ? 'pt-2 min-h-[60px]' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${pendingAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
               ></textarea>
             </div>
           )}
           
           <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50'}`}>
             <div className="flex items-center gap-1">
-              <button className={`p-1.5 rounded-md transition-all ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}><Zap size={16} strokeWidth={2.5} /></button>
-              
               <input 
                 type="file" 
+                multiple
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                 ref={fileInputRef}
                 className="hidden" 
                 onChange={handleFileUpload}

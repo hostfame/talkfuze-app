@@ -432,29 +432,39 @@ export async function joinConversation(conversationId: string) {
 
   if (!profile) throw new Error('Agent profile not found')
 
-  // Insert participant (idempotent - ignore conflict via upsert)
-  const { error: insertError } = await supabaseAdmin
+  // Check if already joined
+  const { data: existingParticipant } = await supabaseAdmin
     .from('conversation_participants')
-    .upsert(
-      { conversation_id: conversationId, user_id: profile.id },
-      { onConflict: 'conversation_id,user_id', ignoreDuplicates: true }
-    )
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('user_id', profile.id)
+    .single()
 
-  if (insertError) {
-    throw new Error(insertError.message)
+  if (!existingParticipant) {
+    // Insert participant (idempotent - ignore conflict via upsert)
+    const { error: insertError } = await supabaseAdmin
+      .from('conversation_participants')
+      .upsert(
+        { conversation_id: conversationId, user_id: profile.id },
+        { onConflict: 'conversation_id,user_id', ignoreDuplicates: true }
+      )
+
+    if (insertError) {
+      throw new Error(insertError.message)
+    }
+
+    // Insert system message
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      org_id: profile.org_id,
+      sender_type: 'system',
+      sender_id: profile.id,
+      content: `${profile.name} joined the conversation`,
+      content_type: 'system',
+      is_internal: false,
+      status: 'delivered',
+    })
   }
-
-  // Insert system message
-  await supabaseAdmin.from('messages').insert({
-    conversation_id: conversationId,
-    org_id: profile.org_id,
-    sender_type: 'system',
-    sender_id: profile.id,
-    content: `${profile.name} joined the conversation`,
-    content_type: 'system',
-    is_internal: false,
-    status: 'delivered',
-  })
 
   return getParticipants(conversationId)
 }
@@ -613,6 +623,19 @@ export async function updateQuickReply(replyId: string, orgId: string, shortcut:
     .update({ shortcut: shortcut.toLowerCase().trim(), title, content })
     .eq('id', replyId)
     .eq('org_id', orgId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function toggleContactBanStatus(contactId: string, currentStatus: string) {
+  const newStatus = currentStatus === 'banned' ? 'active' : 'banned'
+  const { data, error } = await supabaseAdmin
+    .from('contacts')
+    .update({ status: newStatus })
+    .eq('id', contactId)
     .select()
     .single()
 
