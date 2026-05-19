@@ -530,7 +530,7 @@ export default function WidgetPage() {
               )}
             </button>
             <button className="text-white/80 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
-              <X size={20} />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.25 3.95L12.05 2.75L8 6.8L3.95 2.75L2.75 3.95L6.8 8L2.75 12.05L3.95 13.25L8 9.2L12.05 13.25L13.25 12.05L9.2 8L13.25 3.95Z" /></svg>
             </button>
           </div>
         </div>
@@ -610,8 +610,8 @@ export default function WidgetPage() {
                     <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">Chat with us</h3>
                     <p className="text-[13px] text-slate-500 tracking-tight">Active now</p>
                   </div>
-                  <div className="w-[32px] h-[32px] bg-[#64748b] text-white rounded-full flex items-center justify-center rotate-0 shrink-0 shadow-sm">
-                    <Send size={14} className="-rotate-45 ml-0.5 mt-0.5" />
+                  <div className="w-[32px] h-[32px] bg-[#0070f3] text-white rounded-full flex items-center justify-center rotate-0 shrink-0 shadow-sm">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>
                   </div>
                </div>
             </div>
@@ -625,7 +625,7 @@ export default function WidgetPage() {
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
                <button className="p-1.5 hover:bg-slate-50 transition-colors rounded-full text-slate-400 -mr-1.5" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
-                  <X size={20} strokeWidth={2.5} />
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.25 3.95L12.05 2.75L8 6.8L3.95 2.75L2.75 3.95L6.8 8L2.75 12.05L3.95 13.25L8 9.2L12.05 13.25L13.25 12.05L9.2 8L13.25 3.95Z" /></svg>
                </button>
             </div>
             
@@ -684,7 +684,7 @@ export default function WidgetPage() {
             <div className="bg-white border-b border-slate-100 px-3 py-3 flex justify-between items-center shrink-0 shadow-sm relative z-30">
               <div className="flex items-center gap-2">
                  <button onClick={() => setActiveConversationId(null)} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10.85 3.99984C10.85 4.21984 10.77 4.43984 10.6 4.59984L7.20005 7.99984L10.6 11.3998C10.93 11.7298 10.93 12.2698 10.6 12.5998C10.27 12.9298 9.73005 12.9298 9.40005 12.5998L4.80005 7.99984L9.40005 3.39984C9.73005 3.06984 10.27 3.06984 10.6 3.39984C10.77 3.56984 10.85 3.77984 10.85 3.99984Z" /></svg>
                  </button>
                  <div className="flex items-center gap-2.5">
                    <div className="relative">
@@ -722,7 +722,7 @@ export default function WidgetPage() {
                    )}
                  </div>
                  <button className="p-1.5 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
-                    <X size={20} strokeWidth={2.5} />
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.25 3.95L12.05 2.75L8 6.8L3.95 2.75L2.75 3.95L6.8 8L2.75 12.05L3.95 13.25L8 9.2L12.05 13.25L13.25 12.05L9.2 8L13.25 3.95Z" /></svg>
                  </button>
               </div>
             </div>
@@ -887,10 +887,10 @@ export default function WidgetPage() {
                        <button 
                           onClick={handleSend}
                           disabled={!input.trim() || isSending}
-                          className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#64748b] data-[active=true]:text-white mr-1 shrink-0"
+                          className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#0070f3] data-[active=true]:text-white mr-1 shrink-0"
                           data-active={!!input.trim() && !isSending}
                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>
                        </button>
                     </div>
                    )}
