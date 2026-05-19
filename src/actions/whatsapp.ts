@@ -45,3 +45,71 @@ export async function disconnectWhatsAppFull(channelId: string) {
   if (error) throw new Error(`Failed to delete channel: ${error.message}`)
 }
 
+export async function getOrCreateWhatsAppInstance(orgId: string) {
+  try {
+    // 1. Fetch instances to check if 'talkfuze' exists
+    const res = await fetch(`${EVOLUTION_URL}/instance/fetchInstances`, {
+      headers: { apikey: EVOLUTION_API_KEY },
+      cache: 'no-store'
+    })
+    const instances = await res.json()
+    const exists = Array.isArray(instances) && instances.some((ins: any) => ins.name === EVOLUTION_INSTANCE || ins.instance?.name === EVOLUTION_INSTANCE)
+
+    if (!exists) {
+      // Create instance
+      await fetch(`${EVOLUTION_URL}/instance/create`, {
+        method: 'POST',
+        headers: {
+          apikey: EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          instanceName: EVOLUTION_INSTANCE,
+          qrcode: true,
+          integration: 'WHATSAPP-BAILEYS'
+        }),
+        cache: 'no-store'
+      })
+
+      // Set webhook
+      await fetch(`${EVOLUTION_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {
+        method: 'POST',
+        headers: {
+          apikey: EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          webhook: {
+            enabled: true,
+            url: 'http://46.225.152.127:3001/webhook/evolution',
+            byEvents: false,
+            base64: true,
+            events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+          }
+        }),
+        cache: 'no-store'
+      })
+    }
+  } catch (err) {
+    console.error('Error creating WhatsApp instance:', err)
+  }
+
+  // 2. Ensure channel row exists in Supabase
+  const { data: existing } = await supabaseAdmin
+    .from('channels')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('type', 'whatsapp')
+    .maybeSingle()
+
+  if (!existing) {
+    await supabaseAdmin.from('channels').insert({
+      org_id: orgId,
+      type: 'whatsapp',
+      config: { status: 'pending' },
+      is_active: true
+    })
+  }
+}
+
+

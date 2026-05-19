@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, RefreshCw } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { disconnectWhatsAppFull } from "@/actions/whatsapp"
+import { disconnectWhatsAppFull, getOrCreateWhatsAppInstance } from "@/actions/whatsapp"
 
 type Channel = {
   id: string
@@ -86,6 +86,15 @@ export default function ChannelsSettingsPage() {
   const handleConnectFacebook = () => {
     const state = btoa(JSON.stringify({ org_id: ORG_ID }))
     window.location.href = `/api/auth/facebook?state=${state}`
+  }
+
+  const handleOpenQrModal = async () => {
+    setIsWaQrModalOpen(true)
+    try {
+      await getOrCreateWhatsAppInstance(ORG_ID)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleDisconnect = async (channelId: string) => {
@@ -191,7 +200,7 @@ export default function ChannelsSettingsPage() {
                     <p className="text-sm text-slate-500">No WhatsApp device connected</p>
                   </div>
                   <button
-                    onClick={() => setIsWaQrModalOpen(true)}
+                    onClick={handleOpenQrModal}
                     className="flex items-center gap-1.5 text-xs bg-[#0070f3] hover:bg-blue-600 text-white rounded-lg px-3 py-1.5 transition-colors"
                   >
                     <QrCode size={12} /> Scan QR
