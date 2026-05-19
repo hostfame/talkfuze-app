@@ -454,24 +454,24 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   return (
     <div className="flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
-      <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30">
+      <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30 overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('details')}
-          className={`px-4 py-3 text-[14px] transition-colors border-b-2 ${activeTab === 'details' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
           Details
         </button>
         <button 
           onClick={() => setActiveTab('copilot')}
-          className={`px-4 py-3 text-[14px] transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          <Database size={14} className={activeTab === 'copilot' ? 'text-blue-500' : ''} /> Portal
+          <Database size={14} className={activeTab === 'copilot' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'} /> Portal
         </button>
         <button 
           onClick={() => setActiveTab('cobrowse')}
-          className={`px-4 py-3 text-[14px] transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          <Monitor size={14} className={activeTab === 'cobrowse' ? 'text-blue-500' : ''} /> Co-Browse
+          <Monitor size={14} className={activeTab === 'cobrowse' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'} /> Co-Browse
         </button>
         <div className="flex-1"></div>
       </div>
@@ -924,7 +924,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       {activeTab === 'cobrowse' && (
         <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-900/50 p-4 space-y-4 overflow-y-auto">
           <div className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm flex flex-col items-center text-center">
-            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-3">
+            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full flex items-center justify-center mb-3">
               <Monitor size={20} />
             </div>
             <h4 className="text-[14px] font-semibold text-slate-900 dark:text-white">Live Co-Browsing Screen</h4>
@@ -984,12 +984,28 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
                   <span className="text-[11.5px] font-bold text-white uppercase tracking-wider">Live</span>
                 </div>
-                <button 
-                  onClick={handleEndCoBrowseSession}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm"
-                >
-                  End Session
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      if (videoRef.current) {
+                        if (videoRef.current.requestFullscreen) {
+                          videoRef.current.requestFullscreen();
+                        } else if ((videoRef.current as any).webkitRequestFullscreen) {
+                          (videoRef.current as any).webkitRequestFullscreen();
+                        }
+                      }
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm"
+                  >
+                    Fullscreen
+                  </button>
+                  <button 
+                    onClick={handleEndCoBrowseSession}
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm"
+                  >
+                    End Session
+                  </button>
+                </div>
               </div>
             </div>
           )}

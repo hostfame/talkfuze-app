@@ -7,8 +7,8 @@
   window.TalkFuzeInitialized = true;
 
   const scriptTag = document.currentScript || document.querySelector('script[src*="embed.js"]');
-  const orgId = scriptTag ? scriptTag.getAttribute('data-org-id') : null;
-  const baseUrl = scriptTag ? new URL(scriptTag.src).origin : 'https://talkfuze.com';
+  const orgId = (scriptTag ? scriptTag.getAttribute('data-org-id') : null) || 'ec2f8436-05dc-4621-8a7f-57202f865b8e'; // Fallback to Hostnin
+  const baseUrl = scriptTag ? new URL(scriptTag.src).origin : 'https://www.talkfuze.com';
 
   if (!orgId) {
     console.error('TalkFuze: Missing data-org-id attribute on the script tag.');
@@ -22,7 +22,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 999999;
+    z-index: 2147483647; /* Max z-index to overlay on top of AnyChat */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
