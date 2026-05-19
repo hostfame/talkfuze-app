@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { MessageCircle, MessageSquare, Camera, QrCode, X, Loader2, Unplug, RefreshCw } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { disconnectWhatsAppEvolution } from "@/actions/whatsapp"
+import { disconnectWhatsAppFull } from "@/actions/whatsapp"
 
 type Channel = {
   id: string
@@ -92,11 +92,8 @@ export default function ChannelsSettingsPage() {
     if (!confirm('Disconnect WhatsApp? You will need to scan a new QR code to reconnect.')) return
     setIsDisconnecting(true)
     try {
-      // 1. Call server action to logout + delete Evolution instance
-      await disconnectWhatsAppEvolution()
-
-      // 2. Remove channel row from Supabase
-      await supabase.from('channels').delete().eq('id', channelId)
+      // Server action handles Evolution logout + Supabase delete (bypasses RLS)
+      await disconnectWhatsAppFull(channelId)
       setIsWaManageModalOpen(false)
       setWaStatus('disconnected')
       await fetchChannels()
