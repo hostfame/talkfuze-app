@@ -646,7 +646,7 @@ export default function WidgetPage() {
                          <div className="flex justify-between items-start">
                             <span className="font-semibold text-[14px] text-slate-800">{conv.agent?.name || "Hostnin"}</span>
                             <span className="text-[12px] text-slate-400">
-                               {new Date(conv.updated_at || conv.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                               {new Date(conv.last_message_at || conv.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </span>
                          </div>
                          <div className="flex items-center justify-between mt-0.5">

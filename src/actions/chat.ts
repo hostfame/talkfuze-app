@@ -297,7 +297,7 @@ export async function getWidgetConversations(orgId: string, deviceId: string, _c
     // 2. Find all conversations for this contact
     const { data: convs, error: convErr } = await supabaseAdmin
       .from("conversations")
-      .select("id, status, created_at, updated_at")
+      .select("id, status, created_at, last_message_at")
       .eq("contact_id", contactId)
       .order("created_at", { ascending: false });
       

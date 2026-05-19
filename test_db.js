@@ -1,20 +1,15 @@
-const { createClient } = require('@supabase/supabase-js');
-
+require('dotenv').config({ path: '.env.local' });
 async function run() {
-  const url = 'https://fyuymnldgvfvdqcnbsxh.supabase.co/rest/v1';
-  const apikey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5dXltbmxkZ3ZmdmRxY25ic3hoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODgxNzUwNiwiZXhwIjoyMDk0MzkzNTA2fQ.fkZvxGkgW3yktVkLUxmOaEEdVRTymtrFK4uOj9Wa66A';
-  const headers = {
-    'apikey': apikey,
-    'Authorization': `Bearer ${apikey}`
-  };
+  const apiKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  const res = await fetch(`${url}/conversations?id=eq.c4ad213d-b9ab-4bac-a475-beeac320a7ed&select=*`, { headers });
-  const conv = await res.json();
-  console.log("CONVERSATION:", JSON.stringify(conv, null, 2));
-
-  const res2 = await fetch(`${url}/contacts?id=eq.26005181-53a2-478c-b920-c6ae5d1d0dcc&select=*`, { headers });
-  const contact = await res2.json();
-  console.log("CONTACT:", JSON.stringify(contact, null, 2));
+  const agentIds = ['f328082f-2047-421e-abae-dbc11fc8cc32']; // dummy
+  
+  const aRes = await fetch(`${url}/rest/v1/users?select=id,name,avatar_url&id=in.(${agentIds.join(',')})`, {
+    headers: { apikey: apiKey, Authorization: `Bearer ${apiKey}` }
+  });
+  console.log("Agents res status:", aRes.status);
+  const text = await aRes.text();
+  console.log("Agents res:", text);
 }
-
 run();
