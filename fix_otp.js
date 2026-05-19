@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+const fs = require('fs');
+
+const content = `import { NextRequest, NextResponse } from 'next/server'
 import { whmcsRequest, getClientDetailsByEmailFast, openTicket } from '@/lib/whmcs'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
@@ -53,18 +55,18 @@ export async function POST(req: NextRequest) {
       }
 
       // Otherwise, continue to dispatch (for backwards compatibility or simple calls)
-      const subject = `Your Support Chat Login OTP: ${code}`
-      const message = `
-Hello ${client.firstname},
+      const subject = \`Your Support Chat Login OTP: \${code}\`
+      const message = \`
+Hello \${client.firstname},
 
 Your one-time login code for Support Chat is:
-<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">${code}</h1>
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">\${code}</h1>
 This code expires in <strong>10 minutes</strong>.
 
 If you did not request this, you can safely ignore this email.
 
 - Hostnin Support Team
-`
+\`
       await whmcsRequest('SendEmail', {
         customtype: 'general',
         id: client.id,
@@ -86,24 +88,24 @@ If you did not request this, you can safely ignore this email.
         .eq('platform_id', email.toLowerCase())
         .limit(1)
 
-      const record = records && records.length > 0 ? (records[0].metadata as any) : null;
+      const record = records && records.length > 0 ? records[0].metadata : null;
       if (!record || !record.code) return NextResponse.json({ success: false, error: 'No OTP generated.' }, { status: 400 })
       
       const client = await getClientDetailsByEmailFast(email)
       if (!client || !client.id) return NextResponse.json({ success: false }, { status: 404 })
 
-      const subject = `Your Support Chat Login OTP: ${record.code}`
-      const message = `
-Hello ${client.firstname},
+      const subject = \`Your Support Chat Login OTP: \${record.code}\`
+      const message = \`
+Hello \${client.firstname},
 
 Your one-time login code for Support Chat is:
-<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">${record.code}</h1>
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">\${record.code}</h1>
 This code expires in <strong>10 minutes</strong>.
 
 If you did not request this, you can safely ignore this email.
 
 - Hostnin Support Team
-`
+\`
       await whmcsRequest('SendEmail', {
         customtype: 'general',
         id: client.id,
@@ -128,14 +130,14 @@ If you did not request this, you can safely ignore this email.
         .limit(1)
 
       const contactRec = records && records.length > 0 ? records[0] : null;
-      const record = contactRec ? (contactRec.metadata as any) : null;
+      const record = contactRec ? contactRec.metadata : null;
 
       if (!record || !record.code) {
         return NextResponse.json({ success: false, error: 'No OTP request found. Please send a new code.' }, { status: 400 })
       }
 
       const cleanup = async () => {
-        await supabaseAdmin.from('contacts').delete().eq('id', contactRec!.id)
+        await supabaseAdmin.from('contacts').delete().eq('id', contactRec.id)
       }
 
       if (Date.now() > record.expires) {
@@ -173,13 +175,13 @@ If you did not request this, you can safely ignore this email.
         const subjectMsg = messages.find((m: { sender_type: string; content: string }) => m.sender_type !== 'contact' && m.content) || messages[0]
         const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation'
         const transcript = messages.map((m: { sender_type: string; agent?: { name?: string }; content: string }) => {
-          if (m.sender_type === 'system') return `* ${m.content} *`
-          if (m.sender_type === 'ai') return `AI Assistant:\n${m.content}`
+          if (m.sender_type === 'system') return \`* \${m.content} *\`
+          if (m.sender_type === 'ai') return \`AI Assistant:\n\${m.content}\`
           const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
-          return `${name}:\n${m.content}`
+          return \`\${name}:\n\${m.content}\`
         }).join('\n\n')
 
-        const finalMessage = `Hi Team! 👋\n\nThis ticket was created from my recent live chat. Please read the chat and help me further.\n\n--- Chat History ---\n\n${transcript}`
+        const finalMessage = \`Hi Team! 👋\n\nThis ticket was created from my recent live chat. Please read the chat and help me further.\n\n--- Chat History ---\n\n\${transcript}\`
         const result = await openTicket(record.clientId, 1, subject, finalMessage)
         ticketId = result.tid || null
       }
@@ -192,7 +194,7 @@ If you did not request this, you can safely ignore this email.
         clientId: record.clientId,
         name: record.name,
         message: ticketId
-          ? `Ticket #${ticketId} created successfully! Our team will respond shortly.`
+          ? \`Ticket #\${ticketId} created successfully! Our team will respond shortly.\`
           : 'Verified! Our team has received your request.',
       })
     }
@@ -204,3 +206,6 @@ If you did not request this, you can safely ignore this email.
     return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }
+`
+
+fs.writeFileSync('src/app/api/widget/otp/route.ts', content);

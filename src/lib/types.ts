@@ -383,7 +383,7 @@ export type QuickReplyItem = Tables['quick_replies']['Row']
 
 export type Relation<T> = T | T[] | null
 
-export type ConversationPreviewMessage = Pick<AppMessage, 'content' | 'sender_type'>
+export type ConversationPreviewMessage = Pick<AppMessage, 'content' | 'sender_type' | 'content_type'>
 
 export type ConversationWithDetails = Conversation & {
   assignee?: Relation<UserProfile>

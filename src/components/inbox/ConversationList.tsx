@@ -270,13 +270,13 @@ export default function ConversationList({
                       {lastMessage ? (
                         <>
                           {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
-                          {lastMessage.content === '[Audio Voice Message]' ? (
-                            <><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</>
-                          ) : lastMessage.content === '[Image]' ? (
+                          {lastMessage.content_type === 'image' ? (
                             <><ImageIcon size={14} className="text-blue-500 shrink-0" /> Photo</>
-                          ) : lastMessage.content === '[Video]' ? (
+                          ) : lastMessage.content_type === 'video' ? (
                             <><Video size={14} className="text-blue-500 shrink-0" /> Video</>
-                          ) : lastMessage.content === '[Attachment]' ? (
+                          ) : lastMessage.content_type === 'audio' ? (
+                            <><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</>
+                          ) : lastMessage.content_type === 'file' || lastMessage.content === '[Attachment]' ? (
                             <><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</>
                           ) : (
                             lastMessage.content

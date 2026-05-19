@@ -378,6 +378,16 @@ export default function WidgetPage() {
             if (newMsg.sender_type !== 'contact') {
                 playUISound('receive');
             }
+            
+            if (newMsg.sender_type === 'contact') {
+              const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.content === newMsg.content);
+              if (tempIndex !== -1) {
+                const next = [...prev];
+                next[tempIndex] = newMsg as WidgetMessage;
+                return next;
+              }
+            }
+            
             return [...prev, newMsg as WidgetMessage];
           });
         } else if (activeConversationId === 'new') {
@@ -891,7 +901,7 @@ export default function WidgetPage() {
     }, 100);
 
     try {
-      await fetch(`/api/widget/whmcs/tickets/${selectedTicket.ticketid}/reply`, {
+      await fetch(`/api/widget/whmcs/tickets/${selectedTicket.id || selectedTicket.ticketid}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -1840,7 +1850,31 @@ export default function WidgetPage() {
                     {/* Initial Message */}
                     <div className="flex flex-col gap-1 items-end w-full">
                        <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm">
-                         <div className="whitespace-pre-wrap break-words">{selectedTicket.message}</div>
+                         {(() => {
+                         let text = selectedTicket.message || '';
+                         const videoRegex = /Video Attached:\n((?:https?:\/\/[^\s]+\n?)+)/;
+                         const match = text.match(videoRegex);
+                         let videoLinks = [];
+                         if (match) {
+                           text = text.replace(match[0], '').trim();
+                           videoLinks = match[1].split('\n').filter(Boolean);
+                         }
+                         return (
+                           <>
+                             {text && <div className="whitespace-pre-wrap break-words">{text}</div>}
+                             {videoLinks.length > 0 && (
+                               <div className={`flex flex-col gap-1.5 ${text ? 'mt-2 pt-2 border-t border-slate-100' : ''}`}>
+                                 {videoLinks.map((link: string, lIdx: number) => (
+                                   <a key={lIdx} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600 transition-colors w-max">
+                                     <Video size={12} className="shrink-0 opacity-80" />
+                                     <span className="text-[11.5px] truncate max-w-[150px] font-medium tracking-tight">View Video</span>
+                                   </a>
+                                 ))}
+                               </div>
+                             )}
+                           </>
+                         );
+                       })()}
                          {selectedTicket.attachments?.attachment && (() => {
                            const list = Array.isArray(selectedTicket.attachments.attachment) ? selectedTicket.attachments.attachment : [selectedTicket.attachments.attachment];
                            return list.length > 0 ? (
@@ -1861,7 +1895,31 @@ export default function WidgetPage() {
                       <div key={idx} className={`flex flex-col gap-1 w-full ${reply.admin ? 'items-start' : 'items-end'}`}>
                         {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Support Team'}</span>}
                         <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm`}>
-                          <div className="whitespace-pre-wrap break-words">{reply.message}</div>
+                          {(() => {
+                            let text = reply.message || '';
+                            const videoRegex = /Video Attached:\n((?:https?:\/\/[^\s]+\n?)+)/;
+                            const match = text.match(videoRegex);
+                            let videoLinks = [];
+                            if (match) {
+                              text = text.replace(match[0], '').trim();
+                              videoLinks = match[1].split('\n').filter(Boolean);
+                            }
+                            return (
+                              <>
+                                {text && <div className="whitespace-pre-wrap break-words">{text}</div>}
+                                {videoLinks.length > 0 && (
+                                  <div className={`flex flex-col gap-1.5 ${text ? 'mt-2 pt-2 border-t' : ''} ${reply.admin ? 'border-slate-100' : 'border-white/10'}`}>
+                                    {videoLinks.map((link: string, lIdx: number) => (
+                                      <a key={lIdx} href={link} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${reply.admin ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600' : 'bg-white/20 hover:bg-white/30 border-white/10 text-white'} transition-colors`}>
+                                        <Video size={12} className="shrink-0 opacity-80" />
+                                        <span className="text-[11.5px] truncate max-w-[150px] font-medium tracking-tight">View Video</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                           {reply.attachments?.attachment && (() => {
                             const list = Array.isArray(reply.attachments.attachment) ? reply.attachments.attachment : [reply.attachments.attachment];
                             return list.length > 0 ? (

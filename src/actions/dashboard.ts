@@ -79,7 +79,7 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
       contact:contacts(*),
       assignee:users!assigned_to(*),
       channels(type),
-      messages(content, sender_type)
+      messages(content, sender_type, content_type)
     `)
     .eq("org_id", orgId)
     .order("created_at", { foreignTable: "messages", ascending: false })

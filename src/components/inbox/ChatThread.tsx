@@ -1133,18 +1133,18 @@ export default function ChatThread({
                 <BellOff size={14} className="opacity-50" /> {conversation?.is_muted ? 'Unmute' : 'Mute'}
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
-              <button onClick={handleResolveAndReview} className="w-full text-left px-4 py-2 text-[13px] text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center gap-2 font-medium">
-                <CheckCheck size={14} className="opacity-70" /> Resolve & Ask Review
+              <button onClick={handleResolveAndReview} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                <CheckCheck size={14} className="opacity-50" /> Resolve & Ask Review
               </button>
               <button 
                 onClick={() => handleThreadAction('convert')} 
                 disabled={isConverting}
-                className="w-full text-left px-4 py-2 text-[13px] text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 flex items-center gap-2 font-medium disabled:opacity-50"
+                className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2 disabled:opacity-50"
               >
                 {isConverting ? (
                   <Loader2 size={14} className="animate-spin shrink-0" />
                 ) : (
-                  <Database size={14} className="opacity-70 shrink-0" />
+                  <Database size={14} className="opacity-50 shrink-0" />
                 )}
                 Convert to Ticket
               </button>
