@@ -203,31 +203,36 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     if (!query) return;
     setLastSearchedQuery(query.trim());
     setIsCrmLoading(true);
-    const client = await fetchWhmcsClient(query.trim());
-    if (client) {
-      setWhmcsClient(client);
-      const [services, tickets] = await Promise.all([
-        fetchWhmcsServices(client.id),
-        fetchWhmcsTickets(client.id)
-      ]);
-      setWhmcsServices(services);
-      setWhmcsTickets(tickets);
+    try {
+      const client = await fetchWhmcsClient(query.trim());
+      if (client) {
+        setWhmcsClient(client);
+        const [services, tickets] = await Promise.all([
+          fetchWhmcsServices(client.id),
+          fetchWhmcsTickets(client.id)
+        ]);
+        setWhmcsServices(services);
+        setWhmcsTickets(tickets);
 
-      // Bind to user so we don't need to search again next time
-      if (contact?.id) {
-        const bindValue = client.email || query.trim();
-        await updateContactPhone(contact.id, bindValue);
-        setContactPhoneOverrides((current) => ({
-          ...current,
-          [contact.id]: bindValue,
-        }));
+        // Bind to user so we don't need to search again next time
+        if (contact?.id) {
+          const bindValue = client.email || query.trim();
+          await updateContactPhone(contact.id, bindValue);
+          setContactPhoneOverrides((current) => ({
+            ...current,
+            [contact.id]: bindValue,
+          }));
+        }
+      } else {
+        setWhmcsClient(null);
+        setWhmcsServices(null);
+        setWhmcsTickets([]);
       }
-    } else {
-      setWhmcsClient(null);
-      setWhmcsServices(null);
-      setWhmcsTickets([]);
+    } catch (error) {
+      console.error("Error in manual search:", error);
+    } finally {
+      setIsCrmLoading(false);
     }
-    setIsCrmLoading(false);
   }
 
   useEffect(() => {
@@ -244,35 +249,43 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     if (conversation?.id && platformId) {
       const fetchCrm = async () => {
         setIsCrmLoading(true)
-        const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
-        const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
-        // Fetch WHMCS data if viewing CRM tab
-        if (activeTab === 'copilot') {
-          // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
-          if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
-            setLastSearchedQuery(cleanPhone)
-            const client = await fetchWhmcsClient(cleanPhone)
-            if (mounted && client) {
-              setWhmcsClient(client)
-              const [services, tickets] = await Promise.all([
-                fetchWhmcsServices(client.id),
-                fetchWhmcsTickets(client.id)
-              ])
-              if (mounted) {
-                setWhmcsServices(services)
-                setWhmcsTickets(tickets)
+        try {
+          const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
+          const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
+          
+          // Fetch WHMCS data if viewing CRM tab
+          if (activeTab === 'copilot') {
+            // Only fetch if we have a real phone number (avoid sending raw PSIDs/LIDs to WHMCS)
+            if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
+              setLastSearchedQuery(cleanPhone)
+              const client = await fetchWhmcsClient(cleanPhone)
+              if (mounted && client) {
+                setWhmcsClient(client)
+                const [services, tickets] = await Promise.all([
+                  fetchWhmcsServices(client.id),
+                  fetchWhmcsTickets(client.id)
+                ])
+                if (mounted) {
+                  setWhmcsServices(services)
+                  setWhmcsTickets(tickets)
+                }
               }
             }
           }
-        }
-        
-        // Fetch legacy CRM data (if any)
-        const data = await getCrmData(orgId, cleanPhone)
-        if (mounted) {
-          if (data) setCrmData(data)
-          setIsCrmLoading(false)
-          if (contact?.status) {
-            setIsBanned(contact.status === 'banned')
+          
+          // Fetch legacy CRM data (if any)
+          const data = await getCrmData(orgId, cleanPhone)
+          if (mounted) {
+            if (data) setCrmData(data)
+            if (contact?.status) {
+              setIsBanned(contact.status === 'banned')
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching CRM data:", error)
+        } finally {
+          if (mounted) {
+            setIsCrmLoading(false)
           }
         }
       }
