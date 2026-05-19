@@ -475,7 +475,7 @@ export default function WidgetPage() {
       {/* Background Gradient for Home/Tickets/About */}
       {activeTab !== 'messages' && (
         <div 
-          className={`absolute top-0 left-0 right-0 h-[40%] ${!isCustomColor ? 'bg-gradient-to-b from-blue-600 to-blue-500' : ''} z-0`}
+          className={`absolute top-0 left-0 right-0 h-[45%] ${!isCustomColor ? 'bg-gradient-to-b from-slate-600 to-slate-400' : ''} z-0`}
           style={isCustomColor ? { background: `linear-gradient(to bottom, ${settings.color}, ${settings.color}ee)` } : {}}
         />
       )}
@@ -519,9 +519,9 @@ export default function WidgetPage() {
               {/* Right Side: Team Avatars Stack */}
               <div className="flex items-center mr-6">
                 <div className="flex -space-x-3 relative">
-                  <img src="/team/1.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-30" alt="Team member" />
-                  <img src="/team/2.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-20" alt="Team member" />
-                  <img src="/team/3.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-10" alt="Team member" />
+                  <img src="/team/1.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-30" alt="Team member" />
+                  <img src="/team/2.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-20" alt="Team member" />
+                  <img src="/team/3.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-10" alt="Team member" />
                 </div>
               </div>
             </div>
