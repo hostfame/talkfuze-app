@@ -569,11 +569,7 @@ export default function WidgetPage() {
             {/* Start Chat Button */}
             <div 
               className="bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
-              onClick={async () => {
-                setMessages([]);
-                setActiveTab('messages');
-                await startNewConversation(org_id, deviceId);
-              }}
+              onClick={() => setActiveTab('messages')}
             >
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
