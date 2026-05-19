@@ -1113,7 +1113,7 @@ export default function ChatThread({
             <>
               <button 
                 onClick={handleResolveAndReview}
-                className="px-2.5 py-1 text-[12.5px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 rounded-lg flex items-center gap-1 transition-all mr-1 shadow-sm border border-emerald-200/50"
+                className="px-2.5 py-1 text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-lg flex items-center gap-1 transition-all mr-1 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
                 title="Resolve & Ask Review"
               >
                 <CheckCheck size={14} strokeWidth={2.5} />
@@ -1798,7 +1798,7 @@ export default function ChatThread({
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4">
           <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-4 border border-slate-200/60 dark:border-slate-700 shadow-sm">
                 <CheckCheck size={22} strokeWidth={2.5} />
               </div>
               <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">
@@ -1811,13 +1811,13 @@ export default function ChatThread({
             <div className="flex gap-2.5 mt-6">
               <button 
                 onClick={() => setShowResolveConfirm(false)}
-                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button 
                 onClick={executeResolveAndReview}
-                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-[0_4px_12px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.25)] active:scale-[0.98]"
+                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 rounded-xl transition-all duration-300 ease-in-out shadow-sm hover:shadow-md active:scale-[0.98]"
               >
                 Resolve
               </button>
