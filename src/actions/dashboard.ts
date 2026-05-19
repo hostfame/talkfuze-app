@@ -270,12 +270,27 @@ export async function searchConversations(orgId: string, query: string) {
   if (!query) return [];
   const cleanQuery = query.toLowerCase();
 
-  // 1. Find matching contacts
+  // 1. Find matching contacts using highly flexible query patterns (matching dots, dashes, local, or international formats)
+  let contactOrFilter = `name.ilike.%${cleanQuery}%,platform_id.ilike.%${cleanQuery}%`;
+
+  const digits = query.replace(/\D/g, '');
+  if (digits.length >= 3) {
+    contactOrFilter += `,platform_id.ilike.%${digits}%`;
+    
+    // Support local format (starting with 0, e.g. 01868...) by stripping the leading 0 to match international 8801868...
+    if (digits.startsWith('0')) {
+      const strippedLocal = digits.substring(1);
+      if (strippedLocal.length >= 3) {
+        contactOrFilter += `,platform_id.ilike.%${strippedLocal}%`;
+      }
+    }
+  }
+
   const { data: contacts } = await supabaseAdmin
     .from("contacts")
     .select("id")
     .eq("org_id", orgId)
-    .or(`name.ilike.%${cleanQuery}%,platform_id.ilike.%${cleanQuery}%`);
+    .or(contactOrFilter);
   
   const contactIds = contacts?.map(c => c.id) || [];
 
