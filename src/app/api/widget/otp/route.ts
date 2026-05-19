@@ -93,11 +93,12 @@ If you did not request this, you can safely ignore this email.
         messages.reverse()
         const subjectMsg = messages.find((m: { sender_type: string; content: string }) => m.sender_type !== 'agent' && m.content)
         const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation'
-        const transcript = messages.map((m: { created_at: string; sender_type: string; agent?: { name?: string }; content: string }) =>
-          `[${new Date(m.created_at).toLocaleString()}] ${m.sender_type === 'agent' ? m.agent?.name || 'Agent' : 'Customer'}: ${m.content}`
-        ).join('\n\n')
+        const transcript = messages.map((m: { sender_type: string; agent?: { name?: string }; content: string }) => {
+          const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Customer'
+          return `${name}:\n${m.content}`
+        }).join('\n\n')
 
-        const finalMessage = `This ticket was automatically generated from a TalkFuze chat.\n\n=== CHAT TRANSCRIPT ===\n\n${transcript}`
+        const finalMessage = `Hi there! 👋\n\nThis ticket was created from your recent live chat. We're reviewing your request and will reply here shortly.\n\n--- Chat History ---\n\n${transcript}`
         const result = await openTicket(record.clientId, 1, subject, finalMessage)
         ticketId = result.tid || null
       }
