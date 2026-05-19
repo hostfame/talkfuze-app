@@ -512,17 +512,16 @@ export default function WidgetPage() {
             {/* Header Graphics (Ahrefs Style) */}
             <div className="flex justify-between items-center mb-6">
               {/* Left Side: Company Logo */}
-              <div className="w-[42px] h-[42px] bg-white rounded-[12px] flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden">
-                <img src="/team/logo.avif" className="w-full h-full object-cover" alt="Logo" />
+              <div className="flex items-center h-[32px]">
+                <img src="/team/logo.png" className="h-[28px] w-auto object-contain" alt="Logo" />
               </div>
 
               {/* Right Side: Team Avatars Stack */}
-              <div className="flex items-center">
-                <div className="flex -space-x-3 mr-3 relative">
+              <div className="flex items-center mr-6">
+                <div className="flex -space-x-3 relative">
                   <img src="/team/1.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-30" alt="Team member" />
                   <img src="/team/2.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-20" alt="Team member" />
                   <img src="/team/3.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-10" alt="Team member" />
-                  <div className="absolute bottom-0.5 right-0 w-3.5 h-3.5 bg-green-400 border-[2.5px] border-[#0070f3] rounded-full z-40"></div>
                 </div>
               </div>
             </div>
