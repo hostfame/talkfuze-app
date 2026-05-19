@@ -206,7 +206,8 @@ async function upsertConversation(contactId, channelId) {
 // Download media via Evolution API
 // ─────────────────────────────────────────────
 
-async function downloadAndUploadMedia(msgId, contentType, conversationJid) {
+async function downloadAndUploadMedia(msg, contentType, conversationJid) {
+  const msgId = msg.key?.id;
   try {
     const res = await fetch(`${EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/${EVOLUTION_INSTANCE}`, {
       method: 'POST',
@@ -214,10 +215,13 @@ async function downloadAndUploadMedia(msgId, contentType, conversationJid) {
         'apikey': EVOLUTION_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ message: { key: { id: msgId } }, convertToMp4: false })
+      body: JSON.stringify({ message: msg, convertToMp4: false })
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Evolution base64 fetch failed: ${res.status} ${res.statusText}`);
+      return null;
+    }
     const data = await res.json();
     if (!data.base64 || !data.mediaType) return null;
 
@@ -297,7 +301,7 @@ async function processMessage(msg) {
 
     // Handle media
     if (contentType !== 'text') {
-      const media = await downloadAndUploadMedia(msgId, contentType, conversationJid);
+      const media = await downloadAndUploadMedia(msg, contentType, conversationJid);
       if (media) {
         metadata.media_url = media.url;
         metadata.mimetype = media.mimeType;
