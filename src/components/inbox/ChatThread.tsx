@@ -1288,39 +1288,36 @@ export default function ChatThread({
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              {uploadProgress > 0 && (
-                <div className="px-4 py-3 bg-blue-50/75 dark:bg-blue-950/25 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[12px] font-semibold text-[#0070f3] dark:text-blue-400 truncate flex items-center gap-1.5">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Uploading: {uploadFileName || "file"}
-                      </span>
-                      <span className="text-[12px] font-bold text-[#0070f3] dark:text-blue-400">{uploadProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800/80 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-[#0070f3] h-full rounded-full transition-all duration-150 ease-out" 
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
               {pendingAttachments.length > 0 && (
                 <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
                   {pendingAttachments.map((file, idx) => (
-                    <div key={idx} className="relative inline-block border rounded-md overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
+                    <div key={idx} className="relative inline-block border rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
                       {attachmentPreviews[idx] ? (
                         <img src={attachmentPreviews[idx] as string} alt="Preview" className="h-16 w-16 object-cover" />
                       ) : (
-                        <div className="h-16 w-16 flex items-center justify-center">
-                          <Paperclip size={24} className="text-slate-400" />
+                        <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1">
+                          <Paperclip size={18} className="text-slate-400" />
+                          <span className="text-[9px] text-slate-400 truncate w-full text-center leading-tight">{file.name.split('.').pop()?.toUpperCase()}</span>
                         </div>
+                      )}
+                      {/* Upload progress overlay */}
+                      {uploadProgress > 0 && uploadProgress < 100 && (
+                        <>
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px] transition-opacity">
+                            <span className="text-white text-[11px] font-bold drop-shadow-sm">{uploadProgress}%</span>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/20">
+                            <div 
+                              className="h-full bg-[#0070f3] transition-all duration-150 ease-out" 
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        </>
                       )}
                       <button 
                         onClick={() => removeAttachment(idx)}
-                        className="absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        className={`absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white transition-opacity ${uploadProgress > 0 && uploadProgress < 100 ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}
+                        disabled={uploadProgress > 0 && uploadProgress < 100}
                       >
                         <X size={12} />
                       </button>
