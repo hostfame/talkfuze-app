@@ -140,7 +140,7 @@ export default function WidgetPage() {
   const headerStyle = isCustomColor ? { backgroundColor: settings.color } : {}
 
   return (
-    <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden font-sans relative pb-16">
+    <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden font-sans relative">
       
       {/* Background Gradient for Home/Tickets/About */}
       {activeTab !== 'messages' && (
@@ -173,7 +173,7 @@ export default function WidgetPage() {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 overflow-y-auto relative z-10 ${activeTab === 'messages' ? 'bg-[#f9fafb]' : ''} scrollbar-hide`}>
+      <div className={`flex-1 overflow-y-auto relative z-10 ${activeTab === 'messages' ? 'bg-[#f9fafb]' : 'pb-[80px]'} scrollbar-hide`}>
         
         {/* HOME TAB */}
         {activeTab === 'home' && (
@@ -211,7 +211,7 @@ export default function WidgetPage() {
                  </div>
                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-[15px] font-bold text-slate-800 tracking-tight">Fin</span>
+                      <span className="text-[15px] font-bold text-slate-800 tracking-tight">Support Team</span>
                       <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                     </div>
                     <p className="text-[14px] text-slate-500 truncate mt-0.5 tracking-tight">
@@ -257,8 +257,8 @@ export default function WidgetPage() {
                      </div>
                    </div>
                    <div className="flex flex-col">
-                     <span className="font-bold text-[14px] text-slate-800 leading-tight">Fin</span>
-                     <span className="text-[12px] text-slate-500 leading-tight">The team can also help</span>
+                     <span className="font-bold text-[14px] text-slate-800 leading-tight">Support Team</span>
+                     <span className="text-[12px] text-slate-500 leading-tight">We typically reply in under 10 minutes</span>
                    </div>
                  </div>
               </div>
@@ -293,7 +293,7 @@ export default function WidgetPage() {
                       {msg.content}
                     </div>
                     {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-1">Fin • Just now</span>
+                      <span className="text-[11px] text-slate-400 ml-1">Support Team • Just now</span>
                     )}
                   </div>
                 ) : (
