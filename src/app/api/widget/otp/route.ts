@@ -35,14 +35,12 @@ export async function POST(req: NextRequest) {
       otpStore.set(email.toLowerCase(), { code, expires, clientId: client.id, conversationId })
 
       // Send email via WHMCS SendEmail API
-      const subject = `Your TalkFuze Login OTP: ${code}`
+      const subject = `Your Support Chat Login OTP: ${code}`
       const message = `
 Hello ${client.firstname},
 
-Your one-time login code for TalkFuze is:
-
-<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;">${code}</h1>
-
+Your one-time login code for Support Chat is:
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">${code}</h1>
 This code expires in <strong>10 minutes</strong>.
 
 If you did not request this, you can safely ignore this email.
