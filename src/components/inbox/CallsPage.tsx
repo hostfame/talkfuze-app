@@ -130,14 +130,14 @@ export default function CallsPage() {
 
   const getStatusBadge = (status: string) => {
     const s = (status || '').toUpperCase()
-    if (s === 'ANSWERED') {
+    if (s === 'ANSWERED' || s === 'ANSWER') {
       return (
         <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
           Answered
         </span>
       )
     }
-    if (s === 'CANCEL') {
+    if (s === 'CANCEL' || s === 'CANCELLED') {
       return (
         <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           Cancelled
@@ -285,7 +285,7 @@ export default function CallsPage() {
                   </td>
                   {isAdmin && (
                     <td className="py-3 px-6 w-64 whitespace-nowrap">
-                      {log.status === 'ANSWERED' && log.duration_seconds > 0 && log.recording_url ? (
+                      {(log.status === 'ANSWERED' || log.status === 'ANSWER') && log.duration_seconds > 0 && log.recording_url ? (
                         <CustomAudioPlayer src={log.recording_url} />
                       ) : (
                         <span className="text-slate-400/70 text-[13px] italic">—</span>
