@@ -20,6 +20,10 @@ export default function SipDialer() {
   
   const [isMuted, setIsMuted] = useState(false)
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
+  const activeCallSessionRef = useRef<any>(null)
+  
+  // Sync the ref on every render to bypass stale closures in event listeners
+  activeCallSessionRef.current = activeCallSession
   
   const [isTabConflict, setIsTabConflict] = useState(false)
   const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null)
@@ -122,6 +126,30 @@ export default function SipDialer() {
     } catch (e) {}
   }
 
+  // Explicitly release and terminate all WebRTC media streams to turn off browser green microphone indicators immediately
+  const cleanupMediaTracks = (session: any) => {
+    if (!session) return;
+    try {
+      const pc = session.peerConnection;
+      if (pc) {
+        pc.getSenders().forEach((sender: any) => {
+          if (sender.track) {
+            console.log("[WebRTC] Stopping local track:", sender.track.label);
+            try { sender.track.stop() } catch (e) {}
+          }
+        });
+        pc.getReceivers().forEach((receiver: any) => {
+          if (receiver.track) {
+            console.log("[WebRTC] Stopping remote track:", receiver.track.label);
+            try { receiver.track.stop() } catch (e) {}
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("[WebRTC] Media track cleanup warning:", e);
+    }
+  };
+
   // Bind underlying SIP session state transitions for 100% immediate real-time execution
   const bindSessionEvents = (session: any) => {
     if (!session) return
@@ -154,6 +182,7 @@ export default function SipDialer() {
         setActiveCallSession(null)
         setIsMuted(false)
         setIceState('new')
+        cleanupMediaTracks(session)
       } else if (newState === 'Established') {
         setStatus('Connected')
         setSessionState(SessionState.Established)
@@ -176,6 +205,16 @@ export default function SipDialer() {
         console.warn("[SIP] Microphone permission blocked:", err)
         setHasMicPermission(false)
       })
+
+    // Intercept accidental tab closures and browser reloads during active calls
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (activeCallSessionRef.current) {
+        e.preventDefault()
+        e.returnValue = 'You are in an active call. Closing this tab will hang up the call. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
 
     // Claim active dialer status via BroadcastChannel to prevent multi-tab conflicts
     const channel = new BroadcastChannel('talkfuze_dialer_lock')
@@ -202,7 +241,26 @@ export default function SipDialer() {
 
     const handleChannelMessage = (msg: MessageEvent) => {
       if (msg.data === 'dialer_claim_active') {
+        // Active Call Immunity: If this tab is in a live call, do NOT disconnect.
+        // Broadcast busy/running status back to the channel to make the other tab back off.
+        if (activeCallSessionRef.current) {
+          console.log('[SIP] Active call running. Rejecting registration claim from another tab.')
+          channel.postMessage('dialer_active_call_running')
+          return
+        }
+
         console.log('[SIP] Dialer claimed by another tab. Disconnecting local SIP.')
+        setIsTabConflict(true)
+        simpleUser.disconnect()
+        setStatus('Disconnected')
+        setIsRegistered(false)
+        stopSynthesizedRing()
+        stopTimer()
+        setActiveCallSession(null)
+        setIsMuted(false)
+      } else if (msg.data === 'dialer_active_call_running') {
+        // If we broadcasted a claim but another tab has a live active call, we MUST revoke our claim and back off.
+        console.log('[SIP] Another tab has an active call. Revoking registration claim to prevent interruption.')
         setIsTabConflict(true)
         simpleUser.disconnect()
         setStatus('Disconnected')
@@ -310,6 +368,10 @@ export default function SipDialer() {
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
         stopTimer()
+        const session = (simpleUser as any).session
+        if (session) {
+          cleanupMediaTracks(session)
+        }
         setActiveCallSession(null)
         setIsMuted(false)
         setIceState('new')
@@ -355,6 +417,7 @@ export default function SipDialer() {
       stopSynthesizedRing()
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
       window.removeEventListener('online', handleOnline)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
       channel.removeEventListener('message', handleChannelMessage)
       channel.close()
       simpleUser.disconnect()
