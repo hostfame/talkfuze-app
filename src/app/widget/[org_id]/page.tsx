@@ -387,8 +387,8 @@ export default function WidgetPage() {
   
   const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
   const activeAgent = lastAgentMessage?.agent || null;
-  const headerName = activeAgent?.name || 'Hostnin Support';
-  const headerSubtitle = activeAgent ? 'Active' : 'We typically reply in under 60 seconds';
+  const headerName = activeAgent?.name || 'Support Team';
+  const headerSubtitle = activeAgent ? 'Active' : 'Active now';
 
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement>(null);
@@ -608,7 +608,7 @@ export default function WidgetPage() {
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
                     <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">Chat with us</h3>
-                    <p className="text-[13px] text-slate-500 tracking-tight">We typically reply in under 60 seconds</p>
+                    <p className="text-[13px] text-slate-500 tracking-tight">Active now</p>
                   </div>
                   <div className="w-[32px] h-[32px] bg-[#64748b] text-white rounded-full flex items-center justify-center rotate-0 shrink-0 shadow-sm">
                     <Send size={14} className="-rotate-45 ml-0.5 mt-0.5" />
@@ -731,12 +731,12 @@ export default function WidgetPage() {
               {/* Persistent Welcome Greeting */}
               <div className="flex flex-col gap-1 items-start mb-1 mt-2">
                 <div className="flex gap-2 items-end">
-                  <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Hostnin Support" />
+                  <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
                   <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
                     Hello! How can I assist you today?
                   </div>
                 </div>
-                <span className="text-[11px] text-slate-400 ml-[32px]">Hostnin Support</span>
+                <span className="text-[11px] text-slate-400 ml-[32px]">Support Team</span>
               </div>
 
               {messages.map((msg, idx) => {
@@ -780,7 +780,7 @@ export default function WidgetPage() {
                       </div>
                     </div>
                     {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Hostnin Support'} • Just now</span>
+                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Support Team'} • Just now</span>
                     )}
                   </div>
                 ) : (() => {
