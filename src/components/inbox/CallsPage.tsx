@@ -225,9 +225,8 @@ export default function CallsPage() {
       {/* Sleek Inbox-Style Header */}
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 bg-white/95 dark:bg-slate-900/95 z-20 sticky top-0 backdrop-blur-sm">
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Phone size={20} className="text-blue-500" />
-            Calls
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+            Calls History
           </h1>
           <p className="text-[13px] text-slate-500">View telephony call histories and audio playback recordings.</p>
         </div>
@@ -258,9 +257,58 @@ export default function CallsPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-64 text-slate-500">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-            <span>Loading call logs...</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-[12px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase bg-slate-50/95 dark:bg-slate-800/95">
+                  <th className="py-3 px-6 whitespace-nowrap">Direction</th>
+                  <th className="py-3 px-6 whitespace-nowrap">Agent</th>
+                  <th className="py-3 px-6 whitespace-nowrap">Customer</th>
+                  <th className="py-3 px-6 whitespace-nowrap">Date</th>
+                  <th className="py-3 px-6 whitespace-nowrap">Duration</th>
+                  <th className="py-3 px-6 whitespace-nowrap">Status</th>
+                  {isAdmin && <th className="py-3 px-6 whitespace-nowrap">Recording</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded bg-slate-100 dark:bg-slate-800 shrink-0" />
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-16" />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-28" />
+                        <div className="h-3 bg-slate-50 dark:bg-slate-800/50 rounded w-20" />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-32" />
+                        <div className="h-3 bg-slate-50 dark:bg-slate-800/50 rounded w-24" />
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-28" />
+                    </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-14" />
+                    </td>
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded w-16" />
+                    </td>
+                    {isAdmin && (
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-full w-44" />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center py-12">
