@@ -1200,7 +1200,7 @@ export default function ChatThread({
                             {replyTo.sender_name}
                           </div>
                           <div className="text-[12.5px] text-white/80 truncate leading-relaxed">
-                            {replyTo.content_type === 'image' ? '📷 Image' : replyTo.content_type === 'video' ? '🎥 Video' : replyTo.content_type === 'audio' ? '🎤 Voice message' : replyTo.content}
+                            {replyTo.content_type === 'image' ? 'Image' : replyTo.content_type === 'video' ? 'Video' : replyTo.content_type === 'audio' ? 'Voice message' : replyTo.content}
                           </div>
                         </div>
                       );
@@ -1328,7 +1328,7 @@ export default function ChatThread({
                               {replyTo.sender_name}
                             </div>
                             <div className="text-[12.5px] text-slate-650 dark:text-slate-300 truncate leading-relaxed">
-                              {replyTo.content_type === 'image' ? '📷 Image' : replyTo.content_type === 'video' ? '🎥 Video' : replyTo.content_type === 'audio' ? '🎤 Voice message' : replyTo.content}
+                              {replyTo.content_type === 'image' ? 'Image' : replyTo.content_type === 'video' ? 'Video' : replyTo.content_type === 'audio' ? 'Voice message' : replyTo.content}
                             </div>
                           </div>
                         );
@@ -1539,7 +1539,7 @@ export default function ChatThread({
                       Replying to {replyToMessage.sender_type === 'agent' || replyToMessage.sender_type === 'ai' ? 'You' : contactName}
                     </span>
                     <span className="text-[13px] text-slate-600 dark:text-slate-350 truncate font-normal leading-relaxed">
-                      {replyToMessage.content_type === 'image' ? '📷 Image' : replyToMessage.content_type === 'video' ? '🎥 Video' : replyToMessage.content_type === 'audio' ? '🎤 Voice message' : replyToMessage.content}
+                      {replyToMessage.content_type === 'image' ? 'Image' : replyToMessage.content_type === 'video' ? 'Video' : replyToMessage.content_type === 'audio' ? 'Voice message' : replyToMessage.content}
                     </span>
                   </div>
                   <button 
