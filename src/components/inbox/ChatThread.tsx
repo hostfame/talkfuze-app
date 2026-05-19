@@ -645,6 +645,7 @@ export default function ChatThread({
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
+  const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
@@ -836,10 +837,12 @@ export default function ChatThread({
           textareaRef.current.focus()
         }
       } else {
-        alert("AI Draft Failed: " + (response.error || "Unknown error"))
+        setAiDraftFailed(true)
+        setTimeout(() => setAiDraftFailed(false), 3000)
       }
     } catch (e: any) {
-      alert("AI Draft Failed: " + (e?.message || "Unknown error"))
+      setAiDraftFailed(true)
+      setTimeout(() => setAiDraftFailed(false), 3000)
     } finally {
       setIsAiDrafting(false)
     }
@@ -2052,10 +2055,18 @@ export default function ChatThread({
                 onClick={handleAiDraft}
                 disabled={isSending || isAiDrafting || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 text-slate-400 hover:text-purple-600 hover:bg-purple-50`}
+                className={`p-1.5 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
-                {isAiDrafting ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} strokeWidth={2} />}
-                <span className="text-[12px] font-medium hidden sm:inline-block pr-1">AI Draft</span>
+                {isAiDrafting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : aiDraftFailed ? (
+                  <X size={16} strokeWidth={2} />
+                ) : (
+                  <Bot size={16} strokeWidth={2} />
+                )}
+                <span className="text-[12px] font-medium hidden sm:inline-block pr-1">
+                  {aiDraftFailed ? 'Failed' : 'AI Draft'}
+                </span>
               </button>
             </div>
             <div className="flex items-center gap-3">

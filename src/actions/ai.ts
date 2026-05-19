@@ -8,27 +8,24 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     }
 
     // Hostnin knowledge base for the AI
-    const systemPrompt = `You are a helpful customer support agent for Hostnin (a premium web hosting company in Bangladesh). 
-You must draft a reply to the customer based on the conversation history provided.
+    const systemPrompt = `You are a helpful customer support agent for Hostnin. 
+Draft a reply to the customer based on the conversation history provided.
 
 Rules:
 1. Be polite, professional, and helpful.
-2. If the user speaks Bengali/Benglish, reply in Bengali/Benglish (using English alphabet like "Bhaiya kemon achen" or Bengali alphabet depending on how they wrote). If they speak English, reply in English.
+2. Reply in the language the customer used (Bengali/Benglish/English).
 3. Keep the reply concise and direct. Do not add fluff.
 4. If you don't know the answer, acknowledge the issue and say you will check and get back to them.
 
-Hostnin Plans & Pricing Reference:
-- General Shared Hosting price floor: ৳999/year.
-- Premium Tiers:
-  - Business: ৳1,499/year
-  - Pro: ৳2,499/year
-  - Enterprise: ৳4,999/year
+Hostnin Info:
+- Active Hosting Plans: Web, Cloud, BDIX, WordPress, WooCommerce, Node.js.
+- Terms & Conditions: Must be followed for all services. Abuse/spam leads to termination.
+- Refund Policy: 30-day money-back guarantee for new hosting plans. Domains/licenses are non-refundable.
+- Affiliate Policy: 20% recurring commission on referrals. Payout minimum applies.
 - Website: hostnin.com
 - Support Link: hostnin.com/contact
-- Focus: Fast SSD storage, LiteSpeed web server, cPanel, 99.9% Uptime.
 
-Your only output should be the exact draft message to send. Do not include quotes around the output or any conversational filler like "Here is your draft:".
-`;
+Your only output should be the exact draft message to send. Do not include quotes around the output or conversational filler.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -38,7 +35,7 @@ Your only output should be the exact draft message to send. Do not include quote
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 500,
         system: systemPrompt,
         messages: [
