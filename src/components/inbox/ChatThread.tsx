@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
@@ -417,6 +417,7 @@ export default function ChatThread({
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
+  const [replyToMessage, setReplyToMessage] = useState<any | null>(null)
   useEffect(() => {
     getQuickRepliesFromTable(orgId).then(data => {
       if (data) setQuickReplies(data as QuickReplyItem[])
@@ -567,6 +568,19 @@ export default function ChatThread({
     const msgText = input.trim()
     const currentAttachments = [...stagedAttachments]
     
+    // Capture and clear reply message instantly
+    const repliedMessage = replyToMessage
+    setReplyToMessage(null)
+
+    const replyMeta = repliedMessage ? {
+      message_id: repliedMessage.id,
+      sender_name: repliedMessage.sender_type === 'agent' || repliedMessage.sender_type === 'ai'
+        ? (teamMembers.find(t => t.id === repliedMessage.sender_id)?.name || "Agent")
+        : (contactName || "Customer"),
+      content: repliedMessage.content,
+      content_type: repliedMessage.content_type || 'text'
+    } : null;
+
     setInput("")
     setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
@@ -594,13 +608,13 @@ export default function ChatThread({
           sender_id: currentUser?.id ?? null,
           content: msgText,
           content_type: 'text',
-          metadata: null,
+          metadata: replyMeta ? { reply_to: replyMeta } as any : null,
           is_internal: isInternal,
           status: 'sending',
           created_at: new Date().toISOString()
         })
         try {
-          await replyToConversation(orgId, conversationId, msgText, isInternal)
+          await replyToConversation(orgId, conversationId, msgText, isInternal, 'text', replyMeta ? { reply_to: replyMeta } : undefined)
           removeOptimisticMessage(conversationId, tempId)
         } catch (e: unknown) {
           console.error(e)
@@ -627,7 +641,8 @@ export default function ChatThread({
             metadata: {
               media_url: attachment.previewUrl || attachment.url || '',
               filename: attachment.name,
-              mimetype: attachment.type
+              mimetype: attachment.type,
+              ...(replyMeta ? { reply_to: replyMeta } : {})
             } as any,
             is_internal: isInternal,
             status: 'sending',
@@ -662,7 +677,8 @@ export default function ChatThread({
             await replyToConversation(orgId, conversationId, optimisticContent, isInternal, contentType, {
               media_url: meta.url,
               mimetype: meta.type,
-              filename: meta.name
+              filename: meta.name,
+              ...(replyMeta ? { reply_to: replyMeta } : {})
             })
             removeOptimisticMessage(conversationId, tempId)
           } catch (error) {
@@ -1147,12 +1163,48 @@ export default function ChatThread({
             const agentInitial = agentName.charAt(0).toUpperCase();
 
             return (
-              <div key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
+              <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
                 <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                 
-                <div className="flex items-end justify-end gap-2 max-w-[75%]">
+                <div className="flex items-end justify-end gap-2 max-w-[75%] relative group">
+                  {/* Reply Button on Hover */}
+                  <button 
+                    onClick={() => setReplyToMessage(msg)}
+                    className="opacity-0 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 mb-1"
+                    title="Reply"
+                  >
+                    <CornerUpLeft size={15} strokeWidth={2.5} />
+                  </button>
+
                   <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
+                    {/* Render Reply Preview if present */}
+                    {(() => {
+                      const replyTo = (msg.metadata as any)?.reply_to;
+                      if (!replyTo) return null;
+                      return (
+                        <div 
+                          onClick={() => {
+                            const element = document.getElementById(`msg-${replyTo.message_id}`);
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              element.classList.add('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50', 'transition-all', 'duration-500');
+                              setTimeout(() => {
+                                element.classList.remove('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50');
+                              }, 2000);
+                            }
+                          }}
+                          className="mb-2 p-2 bg-black/10 dark:bg-white/10 border-l-[3px] border-white rounded-r-md text-left cursor-pointer hover:bg-black/20 dark:hover:bg-white/20 transition-colors max-w-full select-none"
+                        >
+                          <div className="text-[11px] font-bold text-white/90 truncate">
+                            {replyTo.sender_name}
+                          </div>
+                          <div className="text-[12.5px] text-white/80 truncate leading-relaxed">
+                            {replyTo.content_type === 'image' ? '📷 Image' : replyTo.content_type === 'video' ? '🎥 Video' : replyTo.content_type === 'audio' ? '🎤 Voice message' : replyTo.content}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
                       <img 
@@ -1227,8 +1279,8 @@ export default function ChatThread({
             )
           } else {
             return (
-              <div key={msg.id || idx} className="flex flex-col mb-4">
-                <div className="flex items-end gap-2.5">
+              <div id={`msg-${msg.id}`} key={msg.id || idx} className="flex flex-col mb-4 transition-all duration-300 rounded-xl">
+                <div className="flex items-end gap-2.5 relative group">
                   {/* Customer / Participant Avatar */}
                   {msg.metadata?.participant_avatar ? (
                     <img 
@@ -1254,6 +1306,33 @@ export default function ChatThread({
                       <div className="text-[11px] text-slate-500 mb-0.5">{msg.metadata.participant_name}</div>
                     )}
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
+                      {/* Render Reply Preview if present */}
+                      {(() => {
+                        const replyTo = (msg.metadata as any)?.reply_to;
+                        if (!replyTo) return null;
+                        return (
+                          <div 
+                            onClick={() => {
+                              const element = document.getElementById(`msg-${replyTo.message_id}`);
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                element.classList.add('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50', 'transition-all', 'duration-500');
+                                setTimeout(() => {
+                                  element.classList.remove('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50');
+                                }, 2000);
+                              }
+                            }}
+                            className="mb-2 p-2 bg-black/5 dark:bg-white/5 border-l-[3px] border-[#0070f3] dark:border-blue-400 rounded-r-md text-left cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors max-w-full select-none"
+                          >
+                            <div className="text-[11px] font-bold text-[#0070f3] dark:text-blue-400 truncate">
+                              {replyTo.sender_name}
+                            </div>
+                            <div className="text-[12.5px] text-slate-650 dark:text-slate-300 truncate leading-relaxed">
+                              {replyTo.content_type === 'image' ? '📷 Image' : replyTo.content_type === 'video' ? '🎥 Video' : replyTo.content_type === 'audio' ? '🎤 Voice message' : replyTo.content}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
                         <div className="relative">
                           <img 
@@ -1287,6 +1366,15 @@ export default function ChatThread({
                       )}
                     </div>
                   </div>
+
+                  {/* Reply Button on Hover */}
+                  <button 
+                    onClick={() => setReplyToMessage(msg)}
+                    className="opacity-0 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0 mb-1 align-bottom self-end"
+                    title="Reply"
+                  >
+                    <CornerUpLeft size={15} strokeWidth={2.5} />
+                  </button>
                 </div>
                 
                 {/* Time (OUTSIDE the bubble and avatar stack) */}
@@ -1444,6 +1532,25 @@ export default function ChatThread({
                   ))}
                 </div>
               )}
+              {replyToMessage && (
+                <div className="mx-4 mt-3 mb-1 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border-l-4 border-[#0070f3] dark:border-blue-500 rounded-r-lg flex items-center justify-between text-left select-none relative animate-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex flex-col gap-0.5 max-w-[90%]">
+                    <span className="text-[12px] font-semibold text-blue-600 dark:text-blue-400">
+                      Replying to {replyToMessage.sender_type === 'agent' || replyToMessage.sender_type === 'ai' ? 'You' : contactName}
+                    </span>
+                    <span className="text-[13px] text-slate-600 dark:text-slate-350 truncate font-normal leading-relaxed">
+                      {replyToMessage.content_type === 'image' ? '📷 Image' : replyToMessage.content_type === 'video' ? '🎥 Video' : replyToMessage.content_type === 'audio' ? '🎤 Voice message' : replyToMessage.content}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setReplyToMessage(null)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700 rounded-full"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+
               <textarea 
                 ref={textareaRef}
                 value={input}
