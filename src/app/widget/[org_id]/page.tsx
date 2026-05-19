@@ -509,14 +509,26 @@ export default function WidgetPage() {
         {activeTab === 'home' && (
           <div className="px-5 pt-12 pb-6 flex flex-col gap-5 animate-in fade-in duration-300">
             
+            {/* Header Graphics (Ahrefs Style) */}
+            <div className="flex justify-between items-center mb-6">
+              {/* Left Side: Company Logo */}
+              <div className="w-[42px] h-[42px] bg-white rounded-[12px] flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden">
+                <img src="/team/logo.avif" className="w-full h-full object-cover" alt="Logo" />
+              </div>
+
+              {/* Right Side: Team Avatars Stack */}
+              <div className="flex items-center">
+                <div className="flex -space-x-3 mr-3 relative">
+                  <img src="/team/1.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-30" alt="Team member" />
+                  <img src="/team/2.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-20" alt="Team member" />
+                  <img src="/team/3.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-[#0070f3] object-cover shadow-sm relative z-10" alt="Team member" />
+                  <div className="absolute bottom-0.5 right-0 w-3.5 h-3.5 bg-green-400 border-[2.5px] border-[#0070f3] rounded-full z-40"></div>
+                </div>
+              </div>
+            </div>
+
             {/* Header Text */}
             <div className="mb-2">
-              <div className="relative w-[52px] h-[52px] mb-4">
-                 <div className="w-[52px] h-[52px] rounded-full border-[2px] border-white/30 bg-white flex items-center justify-center shadow-lg overflow-hidden">
-                    <img src="/hostnin-logo.png" className="w-8 h-8 object-contain" alt="Hostnin Logo" />
-                 </div>
-                 <div className="absolute bottom-1 right-0 w-3.5 h-3.5 bg-green-500 border-[2px] border-[#0070f3] rounded-full"></div>
-              </div>
               <h1 className="text-[32px] font-bold tracking-tight text-white leading-[1.15] mb-1">{greetingTitle}</h1>
               <p className="text-white/90 text-[17px] font-medium tracking-tight">{greetingSubtitle}</p>
             </div>

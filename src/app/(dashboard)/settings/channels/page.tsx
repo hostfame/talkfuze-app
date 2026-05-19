@@ -73,6 +73,17 @@ export default function ChannelsSettingsPage() {
     return () => { supabase.removeChannel(realtimeChannel) }
   }, [ORG_ID, fetchChannels])
 
+  // Fail-safe backup polling loop when QR Modal is open
+  useEffect(() => {
+    if (!isWaQrModalOpen) return
+
+    const interval = setInterval(() => {
+      fetchChannels()
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [isWaQrModalOpen, fetchChannels])
+
   const handleToggle = async (channel: Channel) => {
     setTogglingId(channel.id)
     await supabase
