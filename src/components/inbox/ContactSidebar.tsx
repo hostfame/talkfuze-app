@@ -255,7 +255,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     try {
       const result = await convertChatToTicket(conversation.id, whmcsClient.id);
       if (result.success) {
-        alert(`Chat converted to ticket #${result.ticket?.ticketid || 'successfully'}!`);
+        alert(`Chat converted to ticket #${result.ticket?.tid || 'successfully'}!`);
         const tickets = await fetchWhmcsTickets(whmcsClient.id);
         setWhmcsTickets(tickets);
       } else {
@@ -274,7 +274,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     try {
       const invoiceUrl = `https://my.hostnin.com/viewinvoice.php?id=${invoiceId}`;
       const message = `You have an unpaid invoice. Please pay securely here: ${invoiceUrl}`;
-      await replyToConversation(orgId, conversation.id, message, 'text');
+      await replyToConversation(orgId, conversation.id, message, false);
       alert("Invoice link sent successfully!");
     } catch (e) {
       alert("Failed to send invoice link.");
