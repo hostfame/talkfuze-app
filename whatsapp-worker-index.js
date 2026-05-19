@@ -712,7 +712,7 @@ async function sendTextMessage(jid, text) {
   return res.json();
 }
 
-async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
+async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileName) {
   const mediaType = mimetype?.startsWith('image/') ? 'image'
     : mimetype?.startsWith('audio/') ? 'audio'
     : mimetype?.startsWith('video/') ? 'video'
@@ -738,11 +738,11 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
       fs.writeFileSync(tmpInput, audioBuffer);
 
-      // Convert to ogg/opus with ffmpeg
-      execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 48000 -ac 1 -ar 48000 "${tmpOutput}" 2>/dev/null`);
+      // Convert to ogg/opus with ffmpeg (optimized for WhatsApp native PTT specs)
+      execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 16000 -ac 1 -ar 16000 "${tmpOutput}" 2>/dev/null`);
       const oggBuffer = fs.readFileSync(tmpOutput);
 
-      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus`);
+      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus (16k lightweight)`);
 
       // Upload converted ogg to Supabase storage
       const oggFileName = `agent-uploads/voice_${ts}.ogg`;
@@ -803,7 +803,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       mediatype: mediaType,
       media: mediaUrl,
       caption: caption || '',
-      mimetype
+      mimetype,
+      fileName: originalFileName || (mediaType === 'video' ? 'video.mp4' : mediaType === 'image' ? 'image.jpg' : 'document.pdf')
     })
   });
   if (!res.ok) {
@@ -870,7 +871,8 @@ async function processOutboundMessage(msg) {
         jid,
         msg.metadata.media_url,
         msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]' ? msg.content : '',
-        msg.metadata.mimetype
+        msg.metadata.mimetype,
+        msg.metadata?.filename
       );
     } else {
       sentResult = await sendTextMessage(jid, msg.content);
