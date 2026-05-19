@@ -238,3 +238,34 @@ export async function uploadWidgetMedia(formData: FormData) {
 
   return { success: true, url: urlData.publicUrl };
 }
+
+export async function startNewConversation(orgId: string, deviceId: string) {
+  noStore();
+  if (!orgId || !deviceId) return { success: false };
+  
+  try {
+    // Find contact
+    const { data: contacts } = await supabaseAdmin
+      .from("contacts")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("platform_type", "widget")
+      .eq("platform_id", deviceId)
+      .limit(1);
+      
+    if (!contacts || contacts.length === 0) return { success: true }; // no contact yet, so no open convos
+    
+    // Mark all open conversations for this contact as resolved
+    await supabaseAdmin
+      .from("conversations")
+      .update({ status: "resolved" })
+      .eq("org_id", orgId)
+      .eq("contact_id", contacts[0].id)
+      .eq("status", "open");
+      
+    return { success: true };
+  } catch (e) {
+    console.error("startNewConversation err:", e);
+    return { success: false };
+  }
+}

@@ -15,16 +15,62 @@ export async function fetchWhmcsClient(phoneOrEmail: string) {
       }
     }
 
-    const cleanPhone = cleanSearch.startsWith('+') ? cleanSearch.substring(1) : cleanSearch
-    const data = await getClients(cleanPhone)
-    
-    if (data.clients && data.clients.length > 0) {
-      // Find exact match or use the first one
-      const exactMatch = data.clients.find(c => 
-        (c.phonenumber && c.phonenumber.includes(cleanPhone)) || 
-        (c.email && c.email.toLowerCase() === cleanSearch.toLowerCase())
-      )
-      return exactMatch || data.clients[0]
+    // Extract digits only
+    const digits = cleanSearch.replace(/\D/g, '')
+    if (!digits) return null
+
+    // Try a few search variations to catch WHMCS database formatting differences (e.g. dots, country codes)
+    const searchQueries = new Set<string>()
+    searchQueries.add(digits) // 8801868123428
+
+    // If Bangladeshi number starting with 880, try dotted format (880.1868123428)
+    if (digits.startsWith('880') && digits.length >= 12) {
+      searchQueries.add('880.' + digits.substring(3))
+    }
+
+    // Try the last 9 and 10 digits as suffix searches (e.g. 1868123428 or 868123428)
+    if (digits.length > 9) {
+      searchQueries.add(digits.substring(digits.length - 10))
+      searchQueries.add(digits.substring(digits.length - 9))
+    }
+
+    // Fetch clients using these search variations in parallel
+    const searchResults = await Promise.all(
+      Array.from(searchQueries).map(q => getClients(q))
+    )
+
+    // Consolidate candidate clients
+    const candidates = new Map<number, any>()
+    for (const res of searchResults) {
+      if (res.clients && res.clients.length > 0) {
+        for (const client of res.clients) {
+          candidates.set(client.id, client)
+        }
+      }
+    }
+
+    if (candidates.size > 0) {
+      const clientList = Array.from(candidates.values())
+
+      // Find exact match by comparing digits-only representations
+      const exactMatch = clientList.find(c => {
+        if (!c.phonenumber) return false
+        const clientDigits = c.phonenumber.replace(/\D/g, '')
+        
+        // Exact match of all digits
+        if (clientDigits === digits) return true
+
+        // Match if client is subset of search or search is subset of client (e.g. 01868123428 vs 8801868123428)
+        if (clientDigits.length >= 9 && digits.length >= 9) {
+          const clientSuffix = clientDigits.substring(clientDigits.length - 9)
+          const searchSuffix = digits.substring(digits.length - 9)
+          if (clientSuffix === searchSuffix) return true
+        }
+
+        return false
+      })
+
+      return exactMatch || clientList[0]
     }
     return null
   } catch (error) {

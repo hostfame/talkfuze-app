@@ -144,26 +144,31 @@ async function getOrCreateChannel() {
 // ─────────────────────────────────────────────
 
 async function upsertContact(jid, name) {
+  let normalizedJid = jid;
+  if (normalizedJid && normalizedJid.endsWith('@lid')) {
+    normalizedJid = normalizedJid.replace('@lid', '@s.whatsapp.net');
+  }
+
   const { data: existing } = await supabase
     .from('contacts')
     .select('id, name')
     .eq('org_id', ORG_ID)
     .eq('platform_type', 'whatsapp')
-    .eq('platform_id', jid)
+    .eq('platform_id', normalizedJid)
     .maybeSingle();
 
   if (existing) {
     // Update name if we got a better one
-    if (name && name !== existing.name && !jid.endsWith('@g.us')) {
+    if (name && name !== existing.name && !normalizedJid.endsWith('@g.us')) {
       await supabase.from('contacts').update({ name }).eq('id', existing.id);
     }
     return existing.id;
   }
 
-  const displayName = name || jid.split('@')[0].replace(/\D/g, '').slice(-10);
+  const displayName = name || normalizedJid.split('@')[0].replace(/\D/g, '').slice(-10);
   const { data: created } = await supabase.from('contacts').insert({
     org_id: ORG_ID,
-    platform_id: jid,
+    platform_id: normalizedJid,
     platform_type: 'whatsapp',
     name: displayName,
   }).select('id').single();
@@ -246,11 +251,19 @@ async function processMessage(msg) {
   // Skip messages sent by us (handled by the send endpoint)
   if (isFromMe(msg)) return;
   // Skip status messages
-  const conversationJid = getConversationJid(msg);
+  let conversationJid = getConversationJid(msg);
   if (conversationJid === 'status@broadcast') return;
 
+  if (conversationJid && conversationJid.endsWith('@lid')) {
+    conversationJid = conversationJid.replace('@lid', '@s.whatsapp.net');
+  }
+
   const isGroup = conversationJid.endsWith('@g.us');
-  const senderJid = getSender(msg);
+  let senderJid = getSender(msg);
+  if (senderJid && senderJid.endsWith('@lid')) {
+    senderJid = senderJid.replace('@lid', '@s.whatsapp.net');
+  }
+
   const senderName = resolveName(msg);
   const text = extractText(msg);
   const contentType = getContentType(msg);
@@ -492,9 +505,13 @@ supabaseRealtime
 
       if (!contact) return;
 
-      const jid = contact.platform_id.includes('@')
+      let jid = contact.platform_id.includes('@')
         ? contact.platform_id
         : `${contact.platform_id}@s.whatsapp.net`;
+
+      if (jid.endsWith('@lid')) {
+        jid = jid.replace('@lid', '@s.whatsapp.net');
+      }
 
       let sentResult;
       if (msg.metadata?.media_url) {

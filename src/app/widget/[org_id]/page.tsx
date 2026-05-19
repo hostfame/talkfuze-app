@@ -3,7 +3,7 @@
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, Mic, StopCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -510,7 +510,7 @@ export default function WidgetPage() {
           <div className="px-5 pt-12 pb-6 flex flex-col gap-5 animate-in fade-in duration-300">
             
             {/* Header Graphics (Ahrefs Style) */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mt-4 mb-6">
               {/* Left Side: Company Logo */}
               <div className="flex items-center h-[32px]">
                 <img src="/team/logo.png" className="h-[28px] w-auto object-contain" alt="Logo" />
@@ -569,7 +569,11 @@ export default function WidgetPage() {
             {/* Start Chat Button */}
             <div 
               className="bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
-              onClick={() => setActiveTab('messages')}
+              onClick={async () => {
+                setMessages([]);
+                setActiveTab('messages');
+                await startNewConversation(org_id, deviceId);
+              }}
             >
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
