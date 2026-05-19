@@ -208,6 +208,7 @@ export default function ChatThread({
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
+  const [showResolveConfirm, setShowResolveConfirm] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation, isLoaded } = useInboxStore()
 
@@ -246,11 +247,14 @@ export default function ChatThread({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const handleResolveAndReview = async () => {
+  const handleResolveAndReview = () => {
     if (!conversationId || !conversation) return
-    const isConfirmed = window.confirm("Are you sure you want to resolve this conversation and send the Google review request message?")
-    if (!isConfirmed) return
-    
+    setShowResolveConfirm(true)
+  }
+
+  const executeResolveAndReview = async () => {
+    if (!conversationId || !conversation) return
+    setShowResolveConfirm(false)
     setIsMenuOpen(false)
     try {
       const message = "Did we fix your issue? If yes, please leave a quick review here: https://g.page/r/hostnin/review\n\nIf no, click here to escalate: https://hostnin.com/contact"
@@ -1786,6 +1790,39 @@ export default function ChatThread({
           >
             <X size={24} />
           </button>
+        </div>,
+        document.body
+      )}
+      {/* Custom Resolve Confirmation Modal */}
+      {showResolveConfirm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4">
+          <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4 border border-emerald-100 dark:border-emerald-900/30 shadow-sm">
+                <CheckCheck size={22} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">
+                Resolve & Ask Review
+              </h3>
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed">
+                Are you sure you want to resolve this conversation and send the Google review request message?
+              </p>
+            </div>
+            <div className="flex gap-2.5 mt-6">
+              <button 
+                onClick={() => setShowResolveConfirm(false)}
+                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all shadow-sm active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeResolveAndReview}
+                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-[0_4px_12px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_16px_rgba(16,185,129,0.25)] active:scale-[0.98]"
+              >
+                Resolve
+              </button>
+            </div>
+          </div>
         </div>,
         document.body
       )}
