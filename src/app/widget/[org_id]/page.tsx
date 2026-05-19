@@ -384,8 +384,6 @@ export default function WidgetPage() {
   useEffect(() => {
     fetchConversations()
     fetchMsgs()
-    
-    const typingChannel = supabase.channel(`typing:${org_id}`)
     const presenceChannel = supabase.channel(`presence:${org_id}`)
     presenceChannel.on('presence', { event: 'sync' }, () => {})
     presenceChannel.subscribe(async (status) => {

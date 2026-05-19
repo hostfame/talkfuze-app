@@ -179,6 +179,7 @@ type ChatThreadProps = {
   orgId: string
   teamMembers?: UserProfile[]
   isCustomerTyping?: boolean
+  isCustomerOnline?: boolean
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
 }
@@ -189,6 +190,7 @@ export default function ChatThread({
   orgId,
   teamMembers = [],
   isCustomerTyping = false,
+  isCustomerOnline = false,
   conversation = null,
   currentUser
 }: ChatThreadProps) {
@@ -1123,8 +1125,11 @@ export default function ChatThread({
               </div>
             ) : (
               <>
-                <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100">
+                <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   {contactName}
+                  {isCustomerOnline && (
+                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" title="Online now"></div>
+                  )}
                 </h2>
                 <button 
                   onClick={() => setIsEditingName(true)}

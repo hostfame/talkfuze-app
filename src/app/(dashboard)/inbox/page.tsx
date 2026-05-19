@@ -171,6 +171,7 @@ export default function InboxPage() {
   }, [selectedId])
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
 
   useEffect(() => {
@@ -202,8 +203,21 @@ export default function InboxPage() {
       })
       .subscribe();
       
+    const presenceChannel = supabase.channel(`presence:${ORG_ID}`)
+    presenceChannel.on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState()
+      const currentOnline = new Set<string>()
+      for (const id in state) {
+        state[id].forEach((presence: any) => {
+           if (presence.user) currentOnline.add(presence.user)
+        })
+      }
+      setOnlineUsers(currentOnline)
+    }).subscribe()
+      
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
     }
   }, [ORG_ID]);
 
@@ -228,6 +242,7 @@ export default function InboxPage() {
         selectedId={selectedId} 
         onSelect={handleSelectConversation}
         typingState={typingState}
+        onlineUsers={onlineUsers}
         orgId={ORG_ID}
       />
       <ChatThread 
@@ -236,6 +251,12 @@ export default function InboxPage() {
         orgId={ORG_ID}
         teamMembers={teamMembers}
         isCustomerTyping={selectedId ? typingState[selectedId] : false}
+        isCustomerOnline={(() => {
+          if (!activeConversation) return false;
+          // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object
+          const contact = Array.isArray(activeConversation.contact) ? activeConversation.contact[0] : activeConversation.contact;
+          return contact ? onlineUsers.has(contact.id) : false;
+        })()}
         conversation={activeConversation}
         currentUser={currentUser as UserProfile}
       />

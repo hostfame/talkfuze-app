@@ -14,12 +14,14 @@ export default function ConversationList({
   selectedId, 
   onSelect,
   typingState = {},
+  onlineUsers = new Set<string>(),
   orgId
 }: { 
   conversations: ConversationWithDetails[], 
   selectedId: string | null,
   onSelect: (id: string) => void,
   typingState?: Record<string, boolean>,
+  onlineUsers?: Set<string>,
   orgId: string
 }) {
   const [searchQuery, setSearchQuery] = useState("")
@@ -188,6 +190,7 @@ export default function ConversationList({
           const isFacebook = channel?.type === 'messenger'
           const assigneeName = assignee?.name
           const isTyping = typingState[conv.id]
+          const isOnline = contact ? onlineUsers.has(contact.id) : false
           const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null
 
           const getInitials = (name: string) => {
@@ -210,25 +213,30 @@ export default function ConversationList({
               {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600"></div>}
               
               {/* Avatar */}
-              {contact?.avatar_url ? (
-                <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
-                  <img 
-                    src={contact.avatar_url} 
-                    alt={contactName} 
-                    className="w-full h-full object-cover z-10 bg-slate-100" 
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }} 
-                  />
-                  <div className={`absolute inset-0 flex items-center justify-center font-semibold text-[14px] tracking-wide text-white ${avatarColor}`}>
+              <div className="relative">
+                {contact?.avatar_url ? (
+                  <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                    <img 
+                      src={contact.avatar_url} 
+                      alt={contactName} 
+                      className="w-full h-full object-cover z-10 bg-slate-100" 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }} 
+                    />
+                    <div className={`absolute inset-0 flex items-center justify-center font-semibold text-[14px] tracking-wide text-white ${avatarColor}`}>
+                      {getInitials(contactName)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>
                     {getInitials(contactName)}
                   </div>
-                </div>
-              ) : (
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>
-                  {getInitials(contactName)}
-                </div>
-              )}
+                )}
+                {isOnline && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full z-20"></div>
+                )}
+              </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0 mt-0.5">
