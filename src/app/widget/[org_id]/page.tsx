@@ -295,6 +295,16 @@ export default function WidgetPage() {
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const coBrowseStreamRef = useRef<MediaStream | null>(null)
 
+  // Premium toast notification state
+  const [toastError, setToastError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (toastError) {
+      const t = setTimeout(() => setToastError(null), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [toastError])
+
   // Live Voice Call State
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active' | 'declined' | 'ended'>('idle')
   const [isCallMuted, setIsCallMuted] = useState(false)
@@ -390,7 +400,7 @@ export default function WidgetPage() {
     } catch (err) {
       console.error("Mic access denied or WebRTC error", err)
       setCallStatus('idle')
-      alert("Microphone access is required to make audio calls.")
+      setToastError("Microphone access is required to place calls. Please click the lock icon in your address bar and toggle 'Allow'.")
     }
   }
 
@@ -771,7 +781,7 @@ export default function WidgetPage() {
       }, 1000)
     } catch (e: any) {
       console.error("Microphone access denied or error:", e)
-      alert("Microphone access denied or not available. Please check browser permissions.")
+      setToastError("Microphone blocked or not available. Please allow access via your browser address bar settings.")
     }
   }
 
@@ -2585,6 +2595,26 @@ export default function WidgetPage() {
           >
             <PhoneOff size={16} strokeWidth={2.5} />
             End Call
+          </button>
+        </div>
+      )}
+      {/* Premium Branded Toast Error Notification */}
+      {toastError && (
+        <div className="fixed top-4 left-4 right-4 z-[9999] bg-slate-900/95 dark:bg-slate-950/98 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between text-white shadow-2xl animate-in slide-in-from-top-6 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center shrink-0">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-bold">Action Required</span>
+              <span className="text-[11px] text-slate-400 font-medium">{toastError}</span>
+            </div>
+          </div>
+          <button 
+            onClick={() => setToastError(null)}
+            className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded-lg transition-colors ml-2"
+          >
+            <X size={16} strokeWidth={2.5} />
           </button>
         </div>
       )}
