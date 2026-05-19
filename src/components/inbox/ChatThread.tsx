@@ -942,36 +942,65 @@ export default function ChatThread({
       <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-3xl overflow-hidden">
         {/* Skeleton Header */}
         <div className="h-[72px] border-b border-slate-100 px-6 flex items-center gap-4 bg-white shrink-0">
-          <div className="w-10 h-10 rounded-full bg-slate-100 animate-pulse shrink-0" />
+          <div className="w-10 h-10 rounded-full bg-slate-100/80 animate-pulse shrink-0" />
           <div className="space-y-2 flex-1">
-            <div className="h-4 bg-slate-100 rounded w-48 animate-pulse" />
-            <div className="h-3 bg-slate-50 rounded w-32 animate-pulse" />
+            <div className="h-4 bg-slate-100 rounded-md w-40 animate-pulse" />
+            <div className="h-2.5 bg-slate-50 rounded-md w-24 animate-pulse" />
           </div>
         </div>
         
         {/* Skeleton Messages */}
-        <div className="flex-1 p-6 space-y-8 bg-[#f9fafb]">
-          {/* Incoming message */}
-          <div className="flex gap-3 max-w-2xl">
-            <div className="w-8 h-8 rounded-full bg-slate-100 animate-pulse shrink-0" />
-            <div className="space-y-2 flex-1">
-              <div className="h-16 bg-slate-100 rounded-2xl rounded-tl-sm w-3/4 animate-pulse shadow-sm" />
+        <div className="flex-1 p-6 space-y-6 bg-[#f8fafc] overflow-y-auto">
+          {/* Incoming message: Greeting */}
+          <div className="flex gap-3 max-w-[70%] animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-slate-100 shrink-0" />
+            <div className="space-y-1.5 flex-1">
+              <div className="h-10 bg-slate-100 rounded-2xl rounded-tl-sm w-[60%]" />
             </div>
           </div>
           
-          {/* Outgoing message */}
-          <div className="flex gap-3 max-w-2xl ml-auto justify-end">
-            <div className="space-y-2 flex-1 flex flex-col items-end">
-              <div className="h-12 bg-blue-100/50 rounded-2xl rounded-tr-sm w-2/3 animate-pulse shadow-sm" />
+          {/* Outgoing message: Response */}
+          <div className="flex gap-3 max-w-[70%] ml-auto justify-end animate-pulse">
+            <div className="space-y-1.5 flex-1 flex flex-col items-end">
+              <div className="h-12 bg-blue-100/40 rounded-2xl rounded-tr-sm w-[80%]" />
             </div>
           </div>
 
-          {/* Incoming message */}
-          <div className="flex gap-3 max-w-2xl mt-4">
-            <div className="w-8 h-8 rounded-full bg-slate-100 animate-pulse shrink-0" />
+          {/* Incoming message: Double consecutive text */}
+          <div className="flex gap-3 max-w-[70%] animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-slate-100 shrink-0" />
             <div className="space-y-2 flex-1">
-              <div className="h-10 bg-slate-100 rounded-2xl rounded-tl-sm w-1/2 animate-pulse shadow-sm" />
-              <div className="h-14 bg-slate-100 rounded-2xl rounded-tl-sm w-4/5 animate-pulse shadow-sm" />
+              <div className="h-8 bg-slate-100 rounded-2xl rounded-tl-sm w-[45%]" />
+              <div className="h-16 bg-slate-100 rounded-2xl w-[90%]" />
+            </div>
+          </div>
+
+          {/* Outgoing message: Media preview placeholder */}
+          <div className="flex gap-3 max-w-[70%] ml-auto justify-end animate-pulse">
+            <div className="space-y-2 flex-1 flex flex-col items-end">
+              {/* Box styling mimicking an image attachment */}
+              <div className="h-32 w-52 bg-blue-100/30 rounded-2xl rounded-tr-sm flex items-center justify-center border border-blue-100/50">
+                <svg className="w-8 h-8 text-blue-300/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Incoming message: Audio voice message mock */}
+          <div className="flex gap-3 max-w-[70%] animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-slate-100 shrink-0" />
+            <div className="space-y-1.5 flex-1">
+              <div className="h-11 bg-slate-100 rounded-2xl rounded-tl-sm w-[75%] flex items-center px-4 gap-3">
+                <div className="w-6 h-6 rounded-full bg-slate-200/80 shrink-0" />
+                <div className="flex-1 flex gap-1 items-center h-2">
+                  <div className="h-full bg-slate-200 w-full rounded" />
+                  <div className="h-full bg-slate-200 w-3/4 rounded" />
+                  <div className="h-full bg-slate-200 w-1/2 rounded" />
+                  <div className="h-full bg-slate-200 w-full rounded" />
+                  <div className="h-full bg-slate-200 w-2/3 rounded" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
