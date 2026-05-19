@@ -338,9 +338,6 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
 // ─────────────────────────────────────────────
 
 async function processMessage(msg) {
-  // Skip messages sent by us (handled by the send endpoint)
-  if (isFromMe(msg)) return;
-
   // Skip protocol, distribution, and reaction messages
   const unwrapped = unwrapMessage(msg);
   if (!unwrapped) return;
@@ -363,6 +360,7 @@ async function processMessage(msg) {
   const text = extractText(msg);
   const contentType = getContentType(msg);
   const msgId = msg.key?.id;
+  const fromMe = isFromMe(msg);
 
   try {
     if (msgId) {
@@ -405,8 +403,8 @@ async function processMessage(msg) {
       org_id: ORG_ID,
       conversation_id: conversationId,
       platform_message_id: msgId,
-      sender_type: 'contact',
-      sender_id: contactId,
+      sender_type: fromMe ? 'agent' : 'contact',
+      sender_id: fromMe ? null : contactId,
       content: text || (contentType !== 'text' ? mediaPlaceholder(contentType) : ''),
       content_type: contentType,
       metadata,
@@ -418,7 +416,7 @@ async function processMessage(msg) {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${senderName || senderJid}: "${text.slice(0, 60)}"`);
+    console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${fromMe ? 'Agent (Me)' : (senderName || senderJid)}: "${text.slice(0, 60)}"`);
   } catch (err) {
     console.error('[processMessage] Error:', err.message);
   }
