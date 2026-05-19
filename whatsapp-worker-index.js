@@ -718,18 +718,18 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
     : mimetype?.startsWith('video/') ? 'video'
     : 'document';
 
-  // Audio: download -> convert to ogg/opus via ffmpeg -> send as base64
-  // Evolution's encoding:true doesn't work reliably with remote URLs,
-  // but raw base64 ogg/opus works perfectly for WhatsApp PTT
+  // Audio: download webm -> convert to ogg/opus via ffmpeg -> upload ogg to Supabase -> send URL
+  // Base64 produces fileLength:0 (empty bubble). URL with proper ogg works perfectly.
   if (mediaType === 'audio') {
     const { execSync } = require('child_process');
     const fs = require('fs');
     const os = require('os');
     const path = require('path');
 
+    const ts = Date.now();
     const tmpDir = os.tmpdir();
-    const tmpInput = path.join(tmpDir, `talkfuze_audio_${Date.now()}.webm`);
-    const tmpOutput = path.join(tmpDir, `talkfuze_audio_${Date.now()}.ogg`);
+    const tmpInput = path.join(tmpDir, `talkfuze_audio_${ts}.webm`);
+    const tmpOutput = path.join(tmpDir, `talkfuze_audio_${ts}.ogg`);
 
     try {
       // Download audio from Supabase
@@ -741,11 +741,24 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       // Convert to ogg/opus with ffmpeg
       execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 48000 -ac 1 -ar 48000 "${tmpOutput}" 2>/dev/null`);
       const oggBuffer = fs.readFileSync(tmpOutput);
-      const base64Audio = oggBuffer.toString('base64');
 
       console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus`);
 
-      // Send as raw base64
+      // Upload converted ogg to Supabase storage
+      const oggFileName = `agent-uploads/voice_${ts}.ogg`;
+      const { error: uploadErr } = await supabase.storage
+        .from('media')
+        .upload(oggFileName, oggBuffer, { contentType: 'audio/ogg', upsert: false });
+
+      if (uploadErr) {
+        throw new Error(`Supabase ogg upload failed: ${uploadErr.message}`);
+      }
+
+      const { data: urlData } = supabase.storage.from('media').getPublicUrl(oggFileName);
+      const oggUrl = urlData.publicUrl;
+      console.log(`[AUDIO] Uploaded ogg to: ${oggUrl}`);
+
+      // Send ogg URL to Evolution API
       const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
         headers: {
@@ -754,7 +767,7 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
         },
         body: JSON.stringify({
           number: jid,
-          audio: base64Audio,
+          audio: oggUrl,
           encoding: false  // Already converted to ogg/opus
         })
       });
