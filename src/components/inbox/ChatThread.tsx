@@ -416,6 +416,7 @@ export default function ChatThread({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
   useEffect(() => {
     getQuickRepliesFromTable(orgId).then(data => {
       if (data) setQuickReplies(data as QuickReplyItem[])
@@ -609,9 +610,8 @@ export default function ChatThread({
 
       // Process attachments
       if (currentAttachments.length > 0) {
-        setIsUploading(true)
-        
-        const uploadPromises = currentAttachments.map(async (attachment) => {
+        // Fire attachment sending pipelines completely in the background!
+        currentAttachments.forEach(async (attachment) => {
           const tempId = crypto.randomUUID()
           const isImage = attachment.type?.startsWith('image/')
           const isAudio = attachment.type?.startsWith('audio/')
@@ -635,12 +635,25 @@ export default function ChatThread({
           })
           
           try {
-            // Already uploaded in background! Use the pre-saved url.
-            const meta = {
+            let meta = {
               url: attachment.url || '',
               type: attachment.type || '',
               name: attachment.name || ''
             }
+            
+            // If the background upload is still active, wait for it!
+            if (attachment.status === 'uploading') {
+              const activePromise = activeUploadsRef.current[attachment.id]
+              if (activePromise) {
+                const res = await activePromise
+                meta = {
+                  url: res.url,
+                  type: res.type,
+                  name: res.name
+                }
+              }
+            }
+            
             let contentType = 'file'
             if (meta.type.startsWith('image/')) contentType = 'image'
             else if (meta.type.startsWith('audio/')) contentType = 'audio'
@@ -657,11 +670,8 @@ export default function ChatThread({
             markFailed(conversationId, tempId)
           }
         })
-        
-        await Promise.all(uploadPromises)
       }
     } finally {
-      setIsUploading(false)
       setIsSending(false)
     }
   }
@@ -824,7 +834,7 @@ export default function ChatThread({
 
   const uploadFileStaged = async (item: StagedAttachment) => {
     try {
-      const res = await uploadWithProgress(item.file, (percent) => {
+      const uploadPromise = uploadWithProgress(item.file, (percent) => {
         setStagedAttachments(prev => prev.map(s => {
           if (s.id === item.id) {
             return { ...s, progress: percent };
@@ -832,6 +842,9 @@ export default function ChatThread({
           return s;
         }));
       });
+      
+      activeUploadsRef.current[item.id] = uploadPromise;
+      const res = await uploadPromise;
       
       setStagedAttachments(prev => prev.map(s => {
         if (s.id === item.id) {
@@ -1364,7 +1377,20 @@ export default function ChatThread({
                   {stagedAttachments.map((item, idx) => (
                     <div key={item.id} className="relative inline-block border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
                       {item.previewUrl ? (
-                        <img src={item.previewUrl} alt="Preview" className="h-16 w-16 object-cover" />
+                        item.type.startsWith('video/') ? (
+                          <div className="relative h-16 w-16 bg-slate-950 flex items-center justify-center select-none">
+                            <video src={item.previewUrl} className="h-16 w-16 object-cover opacity-80" muted playsInline />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                              <div className="p-1 rounded-full bg-white/25 backdrop-blur-sm border border-white/10">
+                                <svg className="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <img src={item.previewUrl} alt="Preview" className="h-16 w-16 object-cover" />
+                        )
                       ) : (
                         <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1 select-none">
                           <Paperclip size={18} className="text-slate-400" />
@@ -1456,14 +1482,14 @@ export default function ChatThread({
               />
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                disabled={stagedAttachments.some(s => s.status === 'uploading') || isSending || isRecording}
+                disabled={isSending || isRecording}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
-                {stagedAttachments.some(s => s.status === 'uploading') ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
+                <Paperclip size={16} strokeWidth={2} />
               </button>
               <button 
                 onClick={isRecording ? stopRecording : startRecording}
-                disabled={stagedAttachments.some(s => s.status === 'uploading') || isSending}
+                disabled={isSending}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
@@ -1487,18 +1513,13 @@ export default function ChatThread({
               
               <button 
                 onClick={handleSend}
-                disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAttachments.some(s => s.status === 'uploading')}
+                disabled={(!input.trim() && stagedAttachments.length === 0) || isSending}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isSending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
                     <span>Sending...</span>
-                  </>
-                ) : stagedAttachments.some(s => s.status === 'uploading') ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Uploading...</span>
                   </>
                 ) : (
                   isInternal ? 'Add Note' : 'Send'

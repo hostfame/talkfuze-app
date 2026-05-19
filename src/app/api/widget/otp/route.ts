@@ -4,7 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 // In-memory OTP store. For production scale, move to Supabase or Redis.
 // Key: email, Value: { code, expires, clientId, conversationId }
-const otpStore = new Map<string, { code: string; expires: number; clientId: number; conversationId: string }>()
+const globalForOtp = globalThis as unknown as {
+  otpStore: Map<string, { code: string; expires: number; clientId: number; conversationId: string }> | undefined
+}
+const otpStore = globalForOtp.otpStore ?? new Map()
+if (process.env.NODE_ENV !== 'production') globalForOtp.otpStore = otpStore
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -17,7 +21,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { action, email, otp, conversationId, orgId, intent = 'convert_ticket' } = body
 
-    if (action === 'send') {
+    if (action === 'send' || action === 'prepare_otp') {
       if (!email || !email.includes('@')) {
         return NextResponse.json({ success: false, error: 'Valid email required.' }, { status: 400 })
       }
@@ -34,7 +38,12 @@ export async function POST(req: NextRequest) {
       // Store OTP
       otpStore.set(email.toLowerCase(), { code, expires, clientId: client.id, conversationId })
 
-      // Send email via WHMCS SendEmail API
+      // If action is prepare_otp, return early so frontend can optimistically show the OTP screen
+      if (action === 'prepare_otp') {
+         return NextResponse.json({ success: true, name: client.firstname })
+      }
+
+      // Otherwise, continue to dispatch (for backwards compatibility or simple calls)
       const subject = `Your Support Chat Login OTP: ${code}`
       const message = `
 Hello ${client.firstname},
@@ -47,7 +56,6 @@ If you did not request this, you can safely ignore this email.
 
 - Hostnin Support Team
 `
-
       await whmcsRequest('SendEmail', {
         customtype: 'general',
         id: client.id,
@@ -56,6 +64,36 @@ If you did not request this, you can safely ignore this email.
       }, 15000, 1, true)
 
       return NextResponse.json({ success: true, name: client.firstname })
+    }
+
+    if (action === 'dispatch_email') {
+      if (!email) return NextResponse.json({ success: false, error: 'Email required.' }, { status: 400 })
+      const record = otpStore.get(email.toLowerCase())
+      if (!record) return NextResponse.json({ success: false, error: 'No OTP generated.' }, { status: 400 })
+      
+      const client = await getClientDetailsByEmailFast(email)
+      if (!client || !client.id) return NextResponse.json({ success: false }, { status: 404 })
+
+      const subject = `Your Support Chat Login OTP: ${record.code}`
+      const message = `
+Hello ${client.firstname},
+
+Your one-time login code for Support Chat is:
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">${record.code}</h1>
+This code expires in <strong>10 minutes</strong>.
+
+If you did not request this, you can safely ignore this email.
+
+- Hostnin Support Team
+`
+      await whmcsRequest('SendEmail', {
+        customtype: 'general',
+        id: client.id,
+        customsubject: subject,
+        custommessage: message,
+      }, 15000, 1, true)
+
+      return NextResponse.json({ success: true })
     }
 
     if (action === 'verify') {
