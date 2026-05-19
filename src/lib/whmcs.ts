@@ -792,14 +792,25 @@ export async function openTicket(
     }>('OpenTicket', params, 30000, 3, true);
 }
 
-export async function addTicketReply(ticketId: number, message: string, clientId: number) {
-    return whmcsRequest<{
-        result: 'success';
-    }>('AddTicketReply', {
+export async function addTicketReply(
+    ticketId: number, 
+    message: string, 
+    clientId: number,
+    attachments?: Array<{ name: string; data: string }>
+) {
+    const params: Record<string, string | number> = {
         ticketid: ticketId,
         message,
         clientid: clientId,
-    }, 30000, 3, true);
+    };
+
+    if (attachments && attachments.length > 0) {
+        params.attachments = Buffer.from(JSON.stringify(attachments)).toString('base64');
+    }
+
+    return whmcsRequest<{
+        result: 'success';
+    }>('AddTicketReply', params, 30000, 3, true);
 }
 
 export async function getSupportDepartments() {

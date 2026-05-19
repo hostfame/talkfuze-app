@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const body = await req.json()
-    const { clientId, message: replyMessage } = body
+    const { clientId, message: replyMessage, attachments, videoLinks } = body
 
     if (!clientId) {
       return NextResponse.json({ success: false, error: 'clientId is required.' }, { status: 400 })
@@ -19,7 +19,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, error: 'Message is required.' }, { status: 400 })
     }
 
-    const result = await addTicketReply(ticketId, replyMessage, clientId)
+    let finalMessage = replyMessage;
+    if (videoLinks && Array.isArray(videoLinks) && videoLinks.length > 0) {
+      const validLinks = videoLinks.filter(l => l && l.trim().length > 0);
+      if (validLinks.length > 0) {
+        finalMessage += '\n\n---\n**Video Attachments:**\n' + validLinks.map(l => `- ${l}`).join('\n');
+      }
+    }
+
+    // Limit to 3 physical attachments
+    const safeAttachments = Array.isArray(attachments) ? attachments.slice(0, 3) : undefined;
+
+    const result = await addTicketReply(ticketId, finalMessage, clientId, safeAttachments)
 
     return NextResponse.json({ success: true, result })
   } catch (error: unknown) {

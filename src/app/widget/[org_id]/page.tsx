@@ -798,11 +798,18 @@ export default function WidgetPage() {
       const res = await fetch(`/api/widget/whmcs/tickets/${selectedTicket.ticketid}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: whmcsUser.clientId, message: ticketReplyInput })
+        body: JSON.stringify({ 
+          clientId: whmcsUser.clientId, 
+          message: ticketReplyInput,
+          attachments: ticketImages,
+          videoLinks: ticketVideoLinks
+        })
       });
       const data = await res.json();
       if (data.success) {
         setTicketReplyInput("");
+        setTicketImages([]);
+        setTicketVideoLinks([]);
         await handleFetchTicketDetails(selectedTicket.ticketid); // Refresh
       }
     } catch (err) {
@@ -815,6 +822,54 @@ export default function WidgetPage() {
   const [newTicketSubject, setNewTicketSubject] = useState("");
   const [newTicketMessage, setNewTicketMessage] = useState("");
   const [newTicketDept, setNewTicketDept] = useState(1);
+  const [whmcsDepartments, setWhmcsDepartments] = useState<Array<{id: number, name: string}>>([]);
+  
+  const [ticketImages, setTicketImages] = useState<Array<{ name: string; data: string }>>([]);
+  const [ticketVideoLinks, setTicketVideoLinks] = useState<string[]>([]);
+  const ticketFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTicketImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+      if (ticketImages.length >= 3) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Data = event.target?.result?.toString().split(',')[1];
+        if (base64Data) {
+          setTicketImages(prev => [...prev, { name: file.name, data: base64Data }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    if (ticketFileInputRef.current) {
+      ticketFileInputRef.current.value = '';
+    }
+  };
+
+  const removeTicketImage = (index: number) => {
+    setTicketImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addTicketVideoLink = () => {
+    if (ticketVideoLinks.length < 3) {
+      setTicketVideoLinks(prev => [...prev, ""]);
+    }
+  };
+
+  const updateTicketVideoLink = (index: number, val: string) => {
+    setTicketVideoLinks(prev => {
+      const newLinks = [...prev];
+      newLinks[index] = val;
+      return newLinks;
+    });
+  };
+
+  const removeTicketVideoLink = (index: number) => {
+    setTicketVideoLinks(prev => prev.filter((_, i) => i !== index));
+  };
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTicketSubject || !newTicketMessage || !whmcsUser) return;
@@ -823,12 +878,21 @@ export default function WidgetPage() {
       const res = await fetch('/api/widget/whmcs/tickets/new', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: whmcsUser.clientId, deptid: newTicketDept, subject: newTicketSubject, message: newTicketMessage })
+        body: JSON.stringify({ 
+          clientId: whmcsUser.clientId, 
+          deptid: newTicketDept, 
+          subject: newTicketSubject, 
+          message: newTicketMessage,
+          attachments: ticketImages,
+          videoLinks: ticketVideoLinks
+        })
       });
       const data = await res.json();
       if (data.success) {
         setNewTicketSubject("");
         setNewTicketMessage("");
+        setTicketImages([]);
+        setTicketVideoLinks([]);
         setTicketView('list'); // Go back to list, useEffect will fetch tickets
       }
     } catch (err) {
@@ -841,6 +905,20 @@ export default function WidgetPage() {
   useEffect(() => {
     if (whmcsUser && ticketView === 'list') {
       fetchWhmcsTickets(whmcsUser.clientId);
+    }
+    
+    if (ticketView === 'new' && whmcsDepartments.length === 0) {
+      fetch('/api/widget/whmcs/departments')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.departments) {
+            setWhmcsDepartments(data.departments);
+            if (data.departments.length > 0) {
+              setNewTicketDept(data.departments[0].id);
+            }
+          }
+        })
+        .catch(console.error);
     }
   }, [ticketView, whmcsUser]);
 
@@ -1576,9 +1654,9 @@ export default function WidgetPage() {
             )}
 
             {ticketView === 'list' && (
-              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc]">
+              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] animate-in slide-in-from-left-4 fade-in duration-300">
                  {/* Header */}
-                 <div className="flex items-center justify-between px-6 pt-[80px] pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
+                 <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
                     <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Support Tickets</h2>
                     <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
                       <Plus size={14} /> New Ticket
@@ -1605,9 +1683,9 @@ export default function WidgetPage() {
             )}
 
             {ticketView === 'detail' && selectedTicket && (
-              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] z-50">
+              <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] z-50 animate-in slide-in-from-right-4 fade-in duration-300">
                  {/* Header */}
-                 <div className="flex items-center gap-3 px-4 pt-[80px] pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0 z-10">
+                 <div className="flex items-center gap-3 px-4 pt-6 pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0 z-10">
                     <button onClick={() => setTicketView('list')} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                       <ChevronLeft size={20} />
                     </button>
@@ -1619,23 +1697,23 @@ export default function WidgetPage() {
                  {/* Chat Area */}
                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-[80px]">
                     {/* Initial Message */}
-                    <div className="flex flex-col gap-1 items-end">
-                      <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap">
+                    <div className="flex flex-col gap-1 items-end w-full">
+                      <div className="bg-[#0070f3] text-white rounded-[18px] rounded-br-[4px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap break-words">
                         {selectedTicket.message}
                       </div>
                     </div>
                     {/* Replies */}
                     {selectedTicket.replies?.reply?.map((reply: any, idx: number) => (
-                      <div key={idx} className={`flex flex-col gap-1 ${reply.admin ? 'items-start' : 'items-end'}`}>
+                      <div key={idx} className={`flex flex-col gap-1 w-full ${reply.admin ? 'items-start' : 'items-end'}`}>
                         {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Support Team'}</span>}
-                        <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap shadow-sm`}>
+                        <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] whitespace-pre-wrap break-words shadow-sm`}>
                           {reply.message}
                         </div>
                       </div>
                     ))}
                  </div>
                  {/* Input Bar */}
-                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 pb-[10px]">
+                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-3 z-20">
                    <div className="flex items-end gap-2 bg-slate-50 rounded-[20px] p-1.5 border border-slate-200 focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-100/50 transition-all">
                      <textarea 
                        value={ticketReplyInput}
@@ -1652,9 +1730,9 @@ export default function WidgetPage() {
             )}
 
             {ticketView === 'new' && (
-              <div className="flex flex-col h-full absolute inset-0 bg-white z-50">
+              <div className="flex flex-col h-full absolute inset-0 bg-white z-50 animate-in slide-in-from-right-4 fade-in duration-300">
                  {/* Header */}
-                 <div className="flex items-center gap-3 px-4 pt-[80px] pb-4 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
+                 <div className="flex items-center gap-3 px-4 pt-6 pb-4 border-b border-slate-100 bg-white shrink-0 shadow-sm z-10">
                     <button onClick={() => setTicketView('list')} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                       <ChevronLeft size={20} />
                     </button>
@@ -1671,9 +1749,13 @@ export default function WidgetPage() {
                           onChange={(e) => setNewTicketDept(parseInt(e.target.value))}
                           className="w-full bg-white border border-slate-200 rounded-[12px] p-3.5 text-[14px] text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all appearance-none font-medium shadow-sm cursor-pointer group-hover:border-slate-300"
                         >
-                          <option value={1}>General Support</option>
-                          <option value={2}>Billing & Sales</option>
-                          <option value={3}>Technical Support</option>
+                          {whmcsDepartments.length > 0 ? (
+                            whmcsDepartments.map(dept => (
+                              <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))
+                          ) : (
+                            <option value={newTicketDept}>Loading departments...</option>
+                          )}
                         </select>
                         <ChevronDown size={16} className="absolute right-4 top-4 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
                       </div>

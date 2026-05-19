@@ -1375,7 +1375,15 @@ export default function ChatThread({
               {stagedAttachments.length > 0 && (
                 <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
                   {stagedAttachments.map((item, idx) => (
-                    <div key={item.id} className="relative inline-block border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
+                    <div 
+                      key={item.id} 
+                      className={`relative inline-block border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0 ${item.previewUrl && !item.type.startsWith('video/') ? 'cursor-zoom-in' : ''}`}
+                      onClick={() => {
+                        if (item.previewUrl && !item.type.startsWith('video/')) {
+                          setZoomedImage(item.previewUrl)
+                        }
+                      }}
+                    >
                       {item.previewUrl ? (
                         item.type.startsWith('video/') ? (
                           <div className="relative h-16 w-16 bg-slate-950 flex items-center justify-center select-none">
@@ -1423,7 +1431,10 @@ export default function ChatThread({
 
                       {/* Delete button */}
                       <button 
-                        onClick={() => removeAttachment(idx)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeAttachment(idx);
+                        }}
                         className={`absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white transition-opacity ${item.status === 'uploading' ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}
                         disabled={item.status === 'uploading'}
                       >
