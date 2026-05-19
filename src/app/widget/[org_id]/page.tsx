@@ -351,6 +351,48 @@ export default function WidgetPage() {
   const greetingTitle = settings?.greetingTitle || 'Hey there 👋'
   const greetingSubtitle = settings?.greetingSubtitle || 'How can we help?'
   
+  const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
+  const activeAgent = lastAgentMessage?.agent || null;
+  const headerName = activeAgent?.name || 'Hostnin Support';
+  const headerSubtitle = activeAgent ? 'Active' : 'We typically reply in under 60 seconds';
+
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setIsHeaderMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const [showTicketLogin, setShowTicketLogin] = useState(false);
+
+  const handleDownloadTranscript = () => {
+    const text = messages.map(m => `[${new Date(m.created_at).toLocaleString()}] ${m.sender_type === 'agent' ? m.agent?.name || 'Agent' : 'You'}: ${m.content}`).join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `TalkFuze_Transcript_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setIsHeaderMenuOpen(false);
+  };
+
+  const handleConvertToTicket = () => {
+    setIsHeaderMenuOpen(false);
+    setShowTicketLogin(true);
+  };
+
+  const handleExpandWindow = () => {
+    setIsHeaderMenuOpen(false);
+    window.parent.postMessage({ type: 'TALKFUZE_EXPAND' }, '*');
+  };
+
   const headerStyle = isCustomColor ? { backgroundColor: settings.color } : {}
 
   return (
@@ -395,16 +437,11 @@ export default function WidgetPage() {
             
             {/* Header Text */}
             <div className="mb-2">
-              <div className="flex -space-x-2 mb-4">
-                 <div className="w-10 h-10 rounded-full border-[2px] border-white bg-white flex items-center justify-center z-20 shadow-sm overflow-hidden">
-                    <img src="/talkfuze-logo.png" className="w-7 h-7 object-contain" alt="Logo" />
+              <div className="relative w-[52px] h-[52px] mb-4">
+                 <div className="w-[52px] h-[52px] rounded-full border-[2px] border-white/30 bg-white flex items-center justify-center shadow-lg overflow-hidden">
+                    <img src="/talkfuze-logo.png" className="w-8 h-8 object-contain" alt="Logo" />
                  </div>
-                 <div className="w-10 h-10 rounded-full border-[2px] border-white bg-blue-100 flex items-center justify-center z-10 shadow-sm text-blue-600 font-bold text-[14px]">
-                    A
-                 </div>
-                 <div className="w-10 h-10 rounded-full border-[2px] border-white bg-emerald-100 flex items-center justify-center z-0 shadow-sm text-emerald-600 font-bold text-[14px]">
-                    S
-                 </div>
+                 <div className="absolute bottom-1 right-0 w-3.5 h-3.5 bg-green-500 border-[2px] border-[#0070f3] rounded-full"></div>
               </div>
               <h1 className="text-[32px] font-bold tracking-tight text-white leading-[1.15] mb-1">{greetingTitle}</h1>
               <p className="text-white/90 text-[17px] font-medium tracking-tight">{greetingSubtitle}</p>
@@ -420,12 +457,21 @@ export default function WidgetPage() {
                   {lastMessage && <span className="text-[12px] text-slate-400">Just now</span>}
                </div>
                <div className="flex items-center gap-3">
-                 <div className="w-[42px] h-[42px] rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
-                    <Bot size={24} />
+                 <div className="relative shrink-0">
+                    {activeAgent?.avatar_url ? (
+                      <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                        <img src={activeAgent.avatar_url} className="w-full h-full object-cover" alt={headerName} />
+                      </div>
+                    ) : (
+                      <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                         <img src="/talkfuze-logo.png" className="w-[26px] h-[26px] object-contain" alt="Logo" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                  </div>
                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-[15px] font-bold text-slate-800 tracking-tight">Support Team</span>
+                      <span className="text-[15px] font-bold text-slate-800 tracking-tight">{headerName}</span>
                       <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
                     </div>
                     <p className="text-[14px] text-slate-500 truncate mt-0.5 tracking-tight">
@@ -443,7 +489,7 @@ export default function WidgetPage() {
                <div className="p-4 flex items-center justify-between text-left">
                   <div>
                     <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">Chat with us</h3>
-                    <p className="text-[13px] text-slate-500 tracking-tight">We typically reply in under 10 minutes</p>
+                    <p className="text-[13px] text-slate-500 tracking-tight">We typically reply in under 60 seconds</p>
                   </div>
                   <div className="w-[32px] h-[32px] bg-[#64748b] text-white rounded-full flex items-center justify-center rotate-0 shrink-0 shadow-sm">
                     <Send size={14} className="-rotate-45 ml-0.5 mt-0.5" />
@@ -466,20 +512,40 @@ export default function WidgetPage() {
                  </button>
                  <div className="flex items-center gap-2.5">
                    <div className="relative">
-                     <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
-                        <Bot size={18} />
-                     </div>
+                     {activeAgent?.avatar_url ? (
+                       <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                          <img src={activeAgent.avatar_url} className="w-full h-full object-cover" alt={headerName} />
+                       </div>
+                     ) : (
+                       <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                          <img src="/talkfuze-logo.png" className="w-5 h-5 object-contain" alt="Logo" />
+                       </div>
+                     )}
+                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                    </div>
                    <div className="flex flex-col">
-                     <span className="font-bold text-[14px] text-slate-800 leading-tight">Support Team</span>
-                     <span className="text-[12px] text-slate-500 leading-tight">We typically reply in under 10 minutes</span>
+                     <span className="font-bold text-[14px] text-slate-800 leading-tight">{headerName}</span>
+                     <span className="text-[12px] text-slate-500 leading-tight">{headerSubtitle}</span>
                    </div>
                  </div>
               </div>
               <div className="flex items-center gap-0.5 text-slate-400">
-                 <button className="p-1.5 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                 </button>
+                 <div className="relative" ref={headerMenuRef}>
+                   <button 
+                     onClick={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)} 
+                     className="p-1.5 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50"
+                   >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                   </button>
+                   
+                   {isHeaderMenuOpen && (
+                     <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-100 rounded-xl shadow-lg z-50 py-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                       <button onClick={handleConvertToTicket} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium">Convert to Ticket</button>
+                       <button onClick={handleExpandWindow} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium">Expand Window</button>
+                       <button onClick={handleDownloadTranscript} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium">Download Transcript</button>
+                     </div>
+                   )}
+                 </div>
                  <button className="p-1.5 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
                     <X size={20} strokeWidth={2.5} />
                  </button>
@@ -540,7 +606,7 @@ export default function WidgetPage() {
                       </div>
                     </div>
                     {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Support Team'} • Just now</span>
+                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Hostnin Support'} • Just now</span>
                     )}
                   </div>
                 ) : (
@@ -637,9 +703,37 @@ export default function WidgetPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                        </button>
                     </div>
-                  )}
-               </div>
-            </div>
+                   )}
+                </div>
+             </div>
+
+             {/* Convert to Ticket Modal */}
+             {showTicketLogin && (
+               <>
+                 {/* Backdrop */}
+                 <div 
+                   className="absolute inset-0 bg-slate-900/20 backdrop-blur-[1px] z-40 animate-in fade-in duration-200" 
+                   onClick={() => setShowTicketLogin(false)}
+                 />
+                 {/* Bottom Sheet */}
+                 <div className="absolute bottom-0 left-0 right-0 bg-white z-50 border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
+                    <div className="flex justify-between items-center mb-4">
+                       <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">Convert to Ticket</h3>
+                       <button onClick={() => setShowTicketLogin(false)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors"><X size={18} strokeWidth={2.5} /></button>
+                    </div>
+                    <p className="text-slate-500 text-[14px] mb-5 tracking-tight leading-relaxed">To link this conversation with your WHMCS account, please verify your email address.</p>
+                    <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-2">Registered Email</label>
+                    <input 
+                       type="email" 
+                       placeholder="e.g. admin@example.com"
+                       className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3.5 text-[14px] mb-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                    />
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] active:scale-[0.98]">
+                       Send Login OTP
+                    </button>
+                 </div>
+               </>
+             )}
           </div>
         )}
 

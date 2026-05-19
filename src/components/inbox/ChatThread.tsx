@@ -995,7 +995,7 @@ export default function ChatThread({
             return (
               <div key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
-                <div className="text-[11px] text-slate-500 mr-9 mb-0.5">{agentName}</div>
+                <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                 
                 <div className="flex items-end justify-end gap-2 max-w-[75%]">
                   <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
