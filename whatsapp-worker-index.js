@@ -29,8 +29,30 @@ app.use(express.json({ limit: '50mb' }));
 // Helpers
 // ─────────────────────────────────────────────
 
+function unwrapMessage(msg) {
+  if (!msg) return null;
+  let m = msg.message;
+  if (!m) return null;
+
+  // Recursively unwrap standard Baileys wrappers (like ephemeral, disappearing, or view-once messages)
+  while (m) {
+    if (m.ephemeralMessage?.message) {
+      m = m.ephemeralMessage.message;
+    } else if (m.viewOnceMessage?.message) {
+      m = m.viewOnceMessage.message;
+    } else if (m.viewOnceMessageV2?.message) {
+      m = m.viewOnceMessageV2.message;
+    } else if (m.documentWithCaptionMessage?.message) {
+      m = m.documentWithCaptionMessage.message;
+    } else {
+      break;
+    }
+  }
+  return m;
+}
+
 function extractText(msg) {
-  const m = msg.message;
+  const m = unwrapMessage(msg);
   if (!m) return '';
   return m.conversation
     || m.extendedTextMessage?.text
@@ -41,7 +63,7 @@ function extractText(msg) {
 }
 
 function getContentType(msg) {
-  const m = msg.message;
+  const m = unwrapMessage(msg);
   if (!m) return 'text';
   if (m.imageMessage) return 'image';
   if (m.audioMessage || m.pttMessage) return 'audio';

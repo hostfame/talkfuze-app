@@ -348,7 +348,7 @@ export default function WidgetPage() {
   // Dynamic values with fallbacks
   const themeColor = settings?.color || 'linear-gradient(to bottom right, #2563eb, #1d4ed8)' // tailwind blue-600 to blue-700
   const isCustomColor = !!settings?.color
-  const greetingTitle = settings?.greetingTitle || 'Hey there 👋'
+  const greetingTitle = settings?.greetingTitle || 'Hey there! 👋'
   const greetingSubtitle = settings?.greetingSubtitle || 'How can we help?'
   
   const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
@@ -517,11 +517,11 @@ export default function WidgetPage() {
               </div>
 
               {/* Right Side: Team Avatars Stack */}
-              <div className="flex items-center mr-6">
-                <div className="flex -space-x-3 relative">
-                  <img src="/team/1.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-30" alt="Team member" />
-                  <img src="/team/2.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-20" alt="Team member" />
-                  <img src="/team/3.avif" className="w-[42px] h-[42px] rounded-full border-[2.5px] border-slate-500 object-cover shadow-sm relative z-10" alt="Team member" />
+              <div className="flex items-center mr-3">
+                <div className="flex -space-x-2.5 relative">
+                  <img src="/team/1.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-30" alt="Team member" />
+                  <img src="/team/2.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-20" alt="Team member" />
+                  <img src="/team/3.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-10" alt="Team member" />
                 </div>
               </div>
             </div>
@@ -955,21 +955,21 @@ export default function WidgetPage() {
       {/* Bottom Navigation */}
       {activeTab !== 'messages' && (
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[40px] px-6 py-[12px] z-20">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'home' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
              <div className="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'home' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
              </div>
              <span className={`text-[12px] ${activeTab === 'home' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Home</span>
           </button>
           
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${(activeTab as any) === 'messages' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${(activeTab as any) === 'messages' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
              <div className="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={(activeTab as any) === 'messages' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
              </div>
              <span className={`text-[12px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Messages</span>
           </button>
           
-          <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'tickets' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+          <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'tickets' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'tickets' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
              <span className={`text-[12px] ${activeTab === 'tickets' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Tickets</span>
           </button>
