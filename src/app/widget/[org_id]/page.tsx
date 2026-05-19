@@ -953,24 +953,24 @@ export default function WidgetPage() {
 
       {/* Bottom Navigation */}
       {activeTab !== 'messages' && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[40px] px-6 py-[12px] z-20">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'home' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[60px] px-6 py-[12px] z-20">
+          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'home' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <svg width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.262 21c-2.31 0-3.376-1.574-6.262-1.574-2.887 0-3.953 1.574-6.262 1.574-1.926 0-3.666-1.127-4.453-2.883-.787-1.755-.544-3.805.621-5.34C5.071 11.242 7.005 10.3 9 10.3c1.782 0 3.336.855 4.39 2.062a.807.807 0 0 0 1.22 0C15.663 11.155 17.218 10.3 19 10.3c1.996 0 3.93.942 5.094 2.477 1.165 1.535 1.408 3.585.621 5.341C23.928 19.873 22.188 21 20.262 21" fill="currentColor"></path><path d="M4.331 10.669c-1.399.78-2.617 1.83-3.6 3.102A13.978 13.978 0 0 1 0 14c0-7.732 6.268-14 14-14s14 6.268 14 14a13.982 13.982 0 0 1-.731-.229c-.983-1.272-2.201-2.321-3.6-3.102C22.25 9.875 20.655 9.5 19 9.5c-1.956 0-3.82.723-5 1.954C12.82 10.223 10.956 9.5 9 9.5c-1.655 0-3.25.375-4.669 1.169" fill="currentColor"></path></svg>
              </div>
-             <span className={`text-[12px] ${activeTab === 'home' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Home</span>
+             <span className={`text-[13px] ${activeTab === 'home' ? 'font-bold' : 'font-medium'} tracking-tight`}>Home</span>
           </button>
           
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${(activeTab as any) === 'messages' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
+          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[5px] ${(activeTab as any) === 'messages' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={(activeTab as any) === 'messages' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <svg width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.448 6A5.448 5.448 0 0 0 0 11.448v7.466A5.448 5.448 0 0 0 5.448 24.36h3.266v2.8a.84.84 0 0 0 1.417.61l4.47-4.185h7.95A5.448 5.448 0 0 0 28 18.136V6a3 3 0 0 0-3-3H3a3 3 0 0 0-3 3" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="M11.667 11.277h4.666a1.167 1.167 0 0 0 0-2.333h-4.666a1.167 1.167 0 1 0 0 2.333M7 16.723a1.167 1.167 0 0 1 1.167-1.167h11.666a1.167 1.167 0 0 1 0 2.334H8.167A1.167 1.167 0 0 1 7 16.723" fill="#fff"></path></svg>
              </div>
-             <span className={`text-[12px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Messages</span>
+             <span className={`text-[13px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-medium'} tracking-tight`}>Messages</span>
           </button>
           
-          <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'tickets' ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
-             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'tickets' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
-             <span className={`text-[12px] ${activeTab === 'tickets' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Tickets</span>
+          <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'tickets' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
+             <svg width="26" height="26" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M14 28c7.732 0 14-6.268 14-14S21.732 0 14 0 0 6.268 0 14s6.268 14 14 14m0-5.834c-1.127 0-2.042-.914-2.042-2.041 0-1.128.915-2.042 2.042-2.042 1.127 0 2.042.914 2.042 2.042 0 1.127-.915 2.041-2.042 2.041m2.593-9.522a2.6 2.6 0 0 0-1.89-1.921c-2.31-.607-4.484 1.13-4.484 3.324a1.05 1.05 0 0 1-2.1 0c0-3.308 3.125-5.918 6.574-5.012a4.7 4.7 0 0 1 3.425 3.475c.677 2.637-1.077 5.1-3.201 6.517-.557.37-1.417.844-1.417 1.638a1.05 1.05 0 1 1-2.1 0c0-1.745 1.488-2.616 2.585-3.346 1.341-.89 2.222-2.008 1.874-3.364h.734Z" fill="currentColor"></path></svg>
+             <span className={`text-[13px] ${activeTab === 'tickets' ? 'font-bold' : 'font-medium'} tracking-tight`}>Help</span>
           </button>
         </div>
       )}
