@@ -159,7 +159,7 @@ export default function WidgetPage() {
   const fetchConversations = async () => {
     if (!org_id || !deviceId) return
     try {
-      const data = await getWidgetConversations(org_id, deviceId)
+      const data = await getWidgetConversations(org_id, deviceId, Date.now())
       if (data) setConversations(data)
     } catch (e) {
       console.error("Fetch convs error", e)
@@ -173,7 +173,7 @@ export default function WidgetPage() {
       return
     }
     try {
-      const data = await getWidgetMessages(org_id, deviceId, activeConversationId)
+      const data = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now())
       if (data) {
         setMessages(data as WidgetMessage[])
       }

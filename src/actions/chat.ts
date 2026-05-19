@@ -111,7 +111,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   return { success: true, conversationId: conversation.id }
 }
 
-export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null) {
+export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null, _cacheBuster?: number) {
   noStore();
   if (!orgId || !deviceId) return [];
   
@@ -275,7 +275,7 @@ export async function startNewConversation(orgId: string, deviceId: string) {
   }
 }
 
-export async function getWidgetConversations(orgId: string, deviceId: string) {
+export async function getWidgetConversations(orgId: string, deviceId: string, _cacheBuster?: number) {
   noStore();
   if (!orgId || !deviceId) return [];
   
