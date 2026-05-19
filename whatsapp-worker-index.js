@@ -34,6 +34,15 @@ function unwrapMessage(msg) {
   let m = msg.message;
   if (!m) return null;
 
+  // Ignore system, protocol, reactions and distribution messages
+  if (
+    m.senderKeyDistributionMessage ||
+    m.protocolMessage ||
+    m.reactionMessage
+  ) {
+    return null;
+  }
+
   // Recursively unwrap standard Baileys wrappers (like ephemeral, disappearing, or view-once messages)
   while (m) {
     if (m.ephemeralMessage?.message) {
@@ -48,6 +57,12 @@ function unwrapMessage(msg) {
       break;
     }
   }
+
+  // Verify that unwrapped result isn't an ignored type
+  if (m && (m.senderKeyDistributionMessage || m.protocolMessage || m.reactionMessage)) {
+    return null;
+  }
+
   return m;
 }
 
@@ -149,15 +164,58 @@ async function upsertContact(jid, name) {
     normalizedJid = normalizedJid.replace('@lid', '@s.whatsapp.net');
   }
 
-  const { data: existing } = await supabase
+  // 1. Direct platform_id check
+  let { data: existing } = await supabase
     .from('contacts')
-    .select('id, name')
+    .select('id, name, platform_id, metadata, phone')
     .eq('org_id', ORG_ID)
     .eq('platform_type', 'whatsapp')
     .eq('platform_id', normalizedJid)
     .maybeSingle();
 
+  // 2. Fallback check by matching real_phone, phone, or platform_id clean digits
+  if (!existing && normalizedJid && !normalizedJid.endsWith('@g.us')) {
+    const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
+    
+    if (cleanNumber.length >= 9) {
+      const { data: matchedContacts } = await supabase
+        .from('contacts')
+        .select('id, name, platform_id, metadata, phone')
+        .eq('org_id', ORG_ID)
+        .eq('platform_type', 'whatsapp');
+
+      if (matchedContacts && matchedContacts.length > 0) {
+        existing = matchedContacts.find(c => {
+          const cPhone = c.phone ? c.phone.replace(/\D/g, '') : null;
+          const cRealPhone = c.metadata?.real_phone ? String(c.metadata.real_phone).replace(/\D/g, '') : null;
+          const cPlatformNumber = c.platform_id ? c.platform_id.split('@')[0].replace(/\D/g, '') : null;
+          
+          return (cPhone && cPhone === cleanNumber) || 
+                 (cRealPhone && cRealPhone === cleanNumber) ||
+                 (cPlatformNumber && cPlatformNumber === cleanNumber);
+        });
+
+        if (existing) {
+          console.log(`[UPSERT-CONTACT] Matched incoming ${normalizedJid} to existing contact ID ${existing.id} (Name: ${existing.name})`);
+        }
+      }
+    }
+  }
+
   if (existing) {
+    // If incoming JID is different from stored JID (e.g. one is Phone, other is LID)
+    // we want to merge them by saving the real_phone/metadata on the primary record.
+    const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
+    const currentRealPhone = existing.metadata?.real_phone;
+    
+    if (!currentRealPhone && cleanNumber.length >= 9 && !normalizedJid.endsWith('@g.us')) {
+      const updatedMetadata = { ...(existing.metadata || {}), real_phone: cleanNumber };
+      await supabase
+        .from('contacts')
+        .update({ metadata: updatedMetadata })
+        .eq('id', existing.id);
+    }
+
     // Update name if we got a better one
     if (name && name !== existing.name && !normalizedJid.endsWith('@g.us')) {
       await supabase.from('contacts').update({ name }).eq('id', existing.id);
@@ -165,12 +223,21 @@ async function upsertContact(jid, name) {
     return existing.id;
   }
 
-  const displayName = name || normalizedJid.split('@')[0].replace(/\D/g, '').slice(-10);
+  // Create new contact
+  const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
+  const displayName = name || cleanNumber.slice(-10);
+  const metadata = {};
+  if (cleanNumber.length >= 9 && !normalizedJid.endsWith('@g.us')) {
+    metadata.real_phone = cleanNumber;
+  }
+
   const { data: created } = await supabase.from('contacts').insert({
     org_id: ORG_ID,
     platform_id: normalizedJid,
     platform_type: 'whatsapp',
     name: displayName,
+    phone: cleanNumber.length >= 9 ? cleanNumber : null,
+    metadata
   }).select('id').single();
 
   return created.id;
@@ -273,6 +340,11 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
 async function processMessage(msg) {
   // Skip messages sent by us (handled by the send endpoint)
   if (isFromMe(msg)) return;
+
+  // Skip protocol, distribution, and reaction messages
+  const unwrapped = unwrapMessage(msg);
+  if (!unwrapped) return;
+
   // Skip status messages
   let conversationJid = getConversationJid(msg);
   if (conversationJid === 'status@broadcast') return;
@@ -514,7 +586,7 @@ async function processOutboundMessage(msg) {
 
     const { data: contact } = await supabaseRealtime
       .from('contacts')
-      .select('platform_id')
+      .select('platform_id, phone, metadata')
       .eq('id', conv.contact_id)
       .single();
 
@@ -526,6 +598,17 @@ async function processOutboundMessage(msg) {
 
     if (jid.endsWith('@lid')) {
       jid = jid.replace('@lid', '@s.whatsapp.net');
+    }
+
+    // Resolve LID to PN (Phone Number) JID if real phone is available in metadata or phone
+    const realPhone = contact.metadata?.real_phone || contact.phone;
+    if (realPhone) {
+      const cleanPhone = realPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length >= 9 && !realPhone.includes('@')) {
+        const phoneJid = `${cleanPhone}@s.whatsapp.net`;
+        console.log(`[OUTBOUND] Resolving JID from LID ${jid} to verified Phone JID ${phoneJid}`);
+        jid = phoneJid;
+      }
     }
 
     let sentResult;
