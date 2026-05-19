@@ -551,11 +551,14 @@ export default function WidgetPage() {
               </div>
 
               {/* Right Side: Team Avatars Stack */}
-              <div className="flex items-center mr-3">
+              <div className="flex items-center mr-1">
                 <div className="flex -space-x-2.5 relative">
-                  <img src="/team/1.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-30" alt="Team member" />
-                  <img src="/team/2.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-20" alt="Team member" />
-                  <img src="/team/3.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-10" alt="Team member" />
+                  <img src="/team/1.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-40" alt="Team member" />
+                  <img src="/team/2.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-30" alt="Team member" />
+                  <img src="/team/3.avif" className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 object-cover shadow-sm relative z-20" alt="Team member" />
+                  <div className="w-[32px] h-[32px] rounded-full border-[2px] border-slate-500 bg-slate-700/80 flex items-center justify-center text-[11px] font-bold text-white shadow-sm relative z-10">
+                    +9
+                  </div>
                 </div>
               </div>
             </div>

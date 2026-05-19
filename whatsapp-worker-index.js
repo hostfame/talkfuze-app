@@ -126,6 +126,102 @@ function extractSentMessageId(result) {
 }
 
 // ─────────────────────────────────────────────
+// LID-to-Phone resolution (in-memory cache)
+// WhatsApp LID numbers are NOT phone numbers.
+// e.g. 186771535069352@lid != 8801889877754
+// We must resolve LID -> real phone via Evolution API.
+// ─────────────────────────────────────────────
+
+const lidToPhoneCache = new Map();
+
+async function resolveLidToPhone(lidJid) {
+  // Only resolve @lid JIDs
+  const rawLid = lidJid.endsWith('@lid') ? lidJid : lidJid.replace('@s.whatsapp.net', '@lid');
+  const lidNumber = rawLid.split('@')[0];
+
+  // Check cache first
+  if (lidToPhoneCache.has(lidNumber)) {
+    return lidToPhoneCache.get(lidNumber);
+  }
+
+  try {
+    // Try to find contacts in Evolution that match this LID
+    // The findContacts endpoint returns all contacts; we look for matching LID
+    const res = await fetch(`${EVOLUTION_API_URL}/chat/findContacts/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ where: { id: rawLid } })
+    });
+
+    if (res.ok) {
+      const contacts = await res.json();
+      const match = Array.isArray(contacts)
+        ? contacts.find(c => c.remoteJid === rawLid)
+        : null;
+
+      // If the contact has a pushName and we can find them by phone
+      // Evolution stores separate entries for phone and LID
+      if (match) {
+        // Search all contacts for one with same pushName but phone-based JID
+        const allRes = await fetch(`${EVOLUTION_API_URL}/chat/findContacts/${EVOLUTION_INSTANCE}`, {
+          method: 'POST',
+          headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        if (allRes.ok) {
+          const allContacts = await allRes.json();
+          // Find a phone-based contact with matching pushName
+          const phoneContact = allContacts.find(c =>
+            c.remoteJid &&
+            c.remoteJid.endsWith('@s.whatsapp.net') &&
+            !c.remoteJid.endsWith('@g.us') &&
+            c.pushName &&
+            match.pushName &&
+            c.pushName === match.pushName
+          );
+
+          if (phoneContact) {
+            const phone = phoneContact.remoteJid.split('@')[0];
+            lidToPhoneCache.set(lidNumber, phone);
+            console.log(`[LID-RESOLVE] Resolved ${rawLid} -> ${phone} via pushName match`);
+            return phone;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[LID-RESOLVE] Error resolving ${rawLid}:`, err.message);
+  }
+
+  // Try checking our own DB for contacts that have this LID stored in metadata
+  try {
+    const { data: dbContacts } = await supabase
+      .from('contacts')
+      .select('phone, metadata, platform_id')
+      .eq('org_id', ORG_ID)
+      .eq('platform_type', 'whatsapp');
+
+    if (dbContacts) {
+      const match = dbContacts.find(c =>
+        c.metadata?.lid === lidNumber ||
+        c.metadata?.lid === rawLid
+      );
+      if (match && match.phone) {
+        lidToPhoneCache.set(lidNumber, match.phone);
+        console.log(`[LID-RESOLVE] Resolved ${rawLid} -> ${match.phone} via DB metadata.lid`);
+        return match.phone;
+      }
+    }
+  } catch (err) {
+    console.error(`[LID-RESOLVE] DB fallback error:`, err.message);
+  }
+
+  console.log(`[LID-RESOLVE] Could not resolve ${rawLid} to phone number`);
+  return null;
+}
+
+// ─────────────────────────────────────────────
 // Channel bootstrap
 // ─────────────────────────────────────────────
 
@@ -159,87 +255,131 @@ async function getOrCreateChannel() {
 // ─────────────────────────────────────────────
 
 async function upsertContact(jid, name) {
-  let normalizedJid = jid;
-  if (normalizedJid && normalizedJid.endsWith('@lid')) {
-    normalizedJid = normalizedJid.replace('@lid', '@s.whatsapp.net');
+  const isGroup = jid.endsWith('@g.us');
+  const isLid = jid.endsWith('@lid') || /^\d{12,}@s\.whatsapp\.net$/.test(jid);
+  
+  let canonicalJid = jid;
+  let lidNumber = null;
+  let resolvedPhone = null;
+
+  // ── Step 1: If this is a LID, resolve to real phone number ──
+  if (!isGroup && isLid) {
+    lidNumber = jid.split('@')[0];
+    resolvedPhone = await resolveLidToPhone(jid);
+    
+    if (resolvedPhone) {
+      canonicalJid = `${resolvedPhone}@s.whatsapp.net`;
+      console.log(`[UPSERT-CONTACT] LID ${jid} resolved to canonical ${canonicalJid}`);
+    } else {
+      // Can't resolve - use the LID as-is but normalized
+      canonicalJid = jid.endsWith('@lid') ? jid.replace('@lid', '@s.whatsapp.net') : jid;
+      console.log(`[UPSERT-CONTACT] LID ${jid} unresolved, using ${canonicalJid}`);
+    }
   }
 
-  // 1. Direct platform_id check
+  // ── Step 2: Look up existing contact by canonical JID ──
   let { data: existing } = await supabase
     .from('contacts')
     .select('id, name, platform_id, metadata, phone')
     .eq('org_id', ORG_ID)
     .eq('platform_type', 'whatsapp')
-    .eq('platform_id', normalizedJid)
+    .eq('platform_id', canonicalJid)
     .maybeSingle();
 
-  // 2. Fallback check by matching real_phone, phone, or platform_id clean digits
-  if (!existing && normalizedJid && !normalizedJid.endsWith('@g.us')) {
-    const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
-    
-    if (cleanNumber.length >= 9) {
-      const { data: matchedContacts } = await supabase
+  // ── Step 3: Fallback - search by phone, real_phone, or LID in metadata ──
+  if (!existing && !isGroup) {
+    const searchPhone = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+
+    if (searchPhone.length >= 9) {
+      const { data: allContacts } = await supabase
         .from('contacts')
         .select('id, name, platform_id, metadata, phone')
         .eq('org_id', ORG_ID)
         .eq('platform_type', 'whatsapp');
 
-      if (matchedContacts && matchedContacts.length > 0) {
-        existing = matchedContacts.find(c => {
+      if (allContacts && allContacts.length > 0) {
+        existing = allContacts.find(c => {
           const cPhone = c.phone ? c.phone.replace(/\D/g, '') : null;
           const cRealPhone = c.metadata?.real_phone ? String(c.metadata.real_phone).replace(/\D/g, '') : null;
           const cPlatformNumber = c.platform_id ? c.platform_id.split('@')[0].replace(/\D/g, '') : null;
-          
-          return (cPhone && cPhone === cleanNumber) || 
-                 (cRealPhone && cRealPhone === cleanNumber) ||
-                 (cPlatformNumber && cPlatformNumber === cleanNumber);
+          const cLid = c.metadata?.lid || null;
+
+          // Match by phone number
+          if (cPhone && cPhone === searchPhone) return true;
+          if (cRealPhone && cRealPhone === searchPhone) return true;
+          if (cPlatformNumber && cPlatformNumber === searchPhone) return true;
+          // Match by stored LID
+          if (lidNumber && cLid && cLid === lidNumber) return true;
+          return false;
         });
 
         if (existing) {
-          console.log(`[UPSERT-CONTACT] Matched incoming ${normalizedJid} to existing contact ID ${existing.id} (Name: ${existing.name})`);
+          console.log(`[UPSERT-CONTACT] Fallback matched ${jid} to contact ${existing.id} (${existing.name})`);
         }
       }
     }
   }
 
+  // ── Step 4: Update existing or create new ──
   if (existing) {
-    // If incoming JID is different from stored JID (e.g. one is Phone, other is LID)
-    // we want to merge them by saving the real_phone/metadata on the primary record.
-    const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
-    const currentRealPhone = existing.metadata?.real_phone;
-    
-    if (!currentRealPhone && cleanNumber.length >= 9 && !normalizedJid.endsWith('@g.us')) {
-      const updatedMetadata = { ...(existing.metadata || {}), real_phone: cleanNumber };
-      await supabase
-        .from('contacts')
-        .update({ metadata: updatedMetadata })
-        .eq('id', existing.id);
+    const updates = {};
+    const metaUpdates = { ...(existing.metadata || {}) };
+    let needsMetaUpdate = false;
+
+    // Store LID mapping in metadata
+    if (lidNumber && !metaUpdates.lid) {
+      metaUpdates.lid = lidNumber;
+      needsMetaUpdate = true;
     }
 
-    // Update name if we got a better one
-    if (name && name !== existing.name && !normalizedJid.endsWith('@g.us')) {
-      await supabase.from('contacts').update({ name }).eq('id', existing.id);
+    // Store real phone if resolved and not already stored
+    if (resolvedPhone && !metaUpdates.real_phone) {
+      metaUpdates.real_phone = resolvedPhone;
+      needsMetaUpdate = true;
     }
+
+    // If we resolved a phone and the stored platform_id is a LID-based fake JID, upgrade it
+    if (resolvedPhone && existing.platform_id !== canonicalJid) {
+      updates.platform_id = canonicalJid;
+      console.log(`[UPSERT-CONTACT] Upgrading platform_id from ${existing.platform_id} to ${canonicalJid}`);
+    }
+
+    // Update phone field if missing
+    if (resolvedPhone && !existing.phone) {
+      updates.phone = resolvedPhone;
+    }
+
+    if (needsMetaUpdate) updates.metadata = metaUpdates;
+    if (name && name !== existing.name && !isGroup) updates.name = name;
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('contacts').update(updates).eq('id', existing.id);
+    }
+
     return existing.id;
   }
 
-  // Create new contact
-  const cleanNumber = normalizedJid.split('@')[0].replace(/\D/g, '');
-  const displayName = name || cleanNumber.slice(-10);
+  // ── Step 5: Create new contact ──
+  const phoneNumber = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+  const displayName = name || phoneNumber.slice(-10);
   const metadata = {};
-  if (cleanNumber.length >= 9 && !normalizedJid.endsWith('@g.us')) {
-    metadata.real_phone = cleanNumber;
+  if (phoneNumber.length >= 9 && !isGroup) {
+    metadata.real_phone = phoneNumber;
+  }
+  if (lidNumber) {
+    metadata.lid = lidNumber;
   }
 
   const { data: created } = await supabase.from('contacts').insert({
     org_id: ORG_ID,
-    platform_id: normalizedJid,
+    platform_id: canonicalJid,
     platform_type: 'whatsapp',
     name: displayName,
-    phone: cleanNumber.length >= 9 ? cleanNumber : null,
+    phone: phoneNumber.length >= 9 ? phoneNumber : null,
     metadata
   }).select('id').single();
 
+  console.log(`[UPSERT-CONTACT] Created new contact ${created.id} for ${canonicalJid} (${displayName})`);
   return created.id;
 }
 
@@ -578,12 +718,35 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
     : mimetype?.startsWith('video/') ? 'video'
     : 'document';
 
-  const endpoint = mediaType === 'image' ? 'sendMedia'
-    : mediaType === 'audio' ? 'sendWhatsAppAudio'
-    : mediaType === 'video' ? 'sendMedia'
-    : 'sendMedia';
+  // Audio uses a completely different endpoint and payload structure
+  if (mediaType === 'audio') {
+    const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        number: jid,
+        options: {
+          delay: 0,
+          presence: 'recording',
+          encoding: true  // Converts to ogg/opus for WhatsApp native PTT
+        },
+        audioMessage: {
+          audio: mediaUrl
+        }
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Evolution sendWhatsAppAudio failed: ${err}`);
+    }
+    return res.json();
+  }
 
-  const res = await fetch(`${EVOLUTION_API_URL}/message/${endpoint}/${EVOLUTION_INSTANCE}`, {
+  // Non-audio media (image, video, document)
+  const res = await fetch(`${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`, {
     method: 'POST',
     headers: {
       'apikey': EVOLUTION_API_KEY,
@@ -593,8 +756,6 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       number: jid,
       mediatype: mediaType,
       media: mediaUrl,
-      audio: mediaUrl, // Required by sendWhatsAppAudio
-      pTT: mediaType === 'audio', // Sends as dynamic voice message waveform
       caption: caption || '',
       mimetype
     })
