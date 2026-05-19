@@ -115,6 +115,27 @@ export default function SipDialer() {
     } catch (e) {}
   }
 
+  // Bind underlying SIP session state transitions for 100% immediate real-time execution
+  const bindSessionEvents = (session: any) => {
+    if (!session) return
+    
+    // Direct state listener bypassing wrapper delays
+    session.stateChange.addListener((newState: any) => {
+      console.log(`[SIP] Direct Session State Change: ${newState}`)
+      if (newState === 'Terminating' || newState === 'Terminated') {
+        setStatus('Registered')
+        setSessionState(SessionState.Terminated)
+        stopSynthesizedRing()
+        stopTimer()
+      } else if (newState === 'Established') {
+        setStatus('Connected')
+        setSessionState(SessionState.Established)
+        stopSynthesizedRing()
+        startTimer()
+      }
+    })
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -146,6 +167,11 @@ export default function SipDialer() {
         if (session && session.remoteIdentity) {
           callerId = session.remoteIdentity.uri.user || 'Unknown'
           setNumber(callerId)
+        }
+
+        // Bind session events immediately to trigger lightning-fast real-time updates
+        if (session) {
+          bindSessionEvents(session)
         }
 
         // Play premium synthesized ringing tone
@@ -229,6 +255,12 @@ export default function SipDialer() {
       setStatus('Dialing...')
       const cleanNumber = number.replace(/[\s-]/g, '')
       await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
+      
+      // Bind session events to outbound session immediately
+      const session = (userAgent as any).session
+      if (session) {
+        bindSessionEvents(session)
+      }
     } catch (e) {
       console.error("Dial failed", e)
       setStatus('Call Failed')
@@ -238,6 +270,13 @@ export default function SipDialer() {
 
   const handleHangup = async () => {
     if (!userAgent) return
+    
+    // Instant Optimistic Reset to ensure perfect real-time feedback
+    setStatus('Registered')
+    setSessionState(SessionState.Terminated)
+    stopSynthesizedRing()
+    stopTimer()
+    
     try {
       await userAgent.hangup()
     } catch (e) {
@@ -247,9 +286,12 @@ export default function SipDialer() {
 
   const handleAnswer = async () => {
     if (!userAgent) return
+    
+    // Instant Optimistic Connect UI change
+    setStatus('Connecting...')
+    stopSynthesizedRing()
+    
     try {
-      setStatus('Connecting...')
-      stopSynthesizedRing()
       await userAgent.answer()
     } catch (e) {
       console.error("Answer failed", e)
@@ -258,10 +300,14 @@ export default function SipDialer() {
 
   const handleDecline = async () => {
     if (!userAgent) return
+    
+    // Instant Optimistic Decline UI reset
+    setStatus('Registered')
+    setSessionState(SessionState.Terminated)
+    stopSynthesizedRing()
+    
     try {
-      stopSynthesizedRing()
       await userAgent.decline()
-      setStatus('Registered')
     } catch (e) {
       console.error("Decline failed", e)
     }
