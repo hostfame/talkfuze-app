@@ -271,12 +271,12 @@ export default function ConversationList({
                       </svg>
                     )}
                     {isTyping ? (
-                      <p className="text-[13px] text-blue-500 font-semibold truncate leading-none animate-pulse flex items-center gap-1">
+                      <p className="text-[13px] text-blue-500 font-semibold truncate leading-normal py-[2px] animate-pulse flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></span>
                         typing...
                       </p>
                     ) : (
-                      <p className={`text-[13.5px] truncate leading-none flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
+                      <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400' : 'text-slate-600 font-medium'}`}>
                         {lastMessage ? (
                           <>
                             {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
