@@ -21,6 +21,95 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={`flex items-center gap-3 p-1.5 rounded-full min-w-[220px] ${isDark ? '' : ''}`}>
+      <audio 
+        ref={audioRef} 
+        src={url} 
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => { setIsPlaying(false); setProgress(0); setCurrentTime(0); }}
+        className="hidden" 
+      />
+      
+      <button 
+        onClick={togglePlay} 
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95 ${isDark ? 'bg-white text-[#64748b] shadow-sm' : 'bg-blue-600 text-white shadow-sm'}`}
+      >
+        {isPlaying ? (
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        ) : (
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+        )}
+      </button>
+
+      <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-2">
+        <div className="flex items-center gap-2 w-full">
+          <div 
+            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${isDark ? 'bg-white/30' : 'bg-blue-600/20'}`}
+            onClick={(e) => {
+               if(audioRef.current && duration) {
+                 const rect = e.currentTarget.getBoundingClientRect();
+                 const x = e.clientX - rect.left;
+                 const percentage = x / rect.width;
+                 audioRef.current.currentTime = percentage * duration;
+               }
+            }}
+          >
+            <div 
+              className={`h-full transition-all duration-100 ease-linear ${isDark ? 'bg-white' : 'bg-blue-600'}`} 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        
+        <div className={`text-[10px] font-semibold tracking-wide flex justify-between ${isDark ? 'text-white/80' : 'text-slate-500'}`}>
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function renderTextWithLinks(text: string, isAgent: boolean) {
   if (!text) return text;
   
@@ -142,6 +231,37 @@ export default function ChatThread({
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  const handleResolveAndReview = async () => {
+    if (!conversationId || !conversation) return
+    setIsMenuOpen(false)
+    try {
+      const message = "Did we fix your issue? If yes, please leave a quick review here: https://g.page/r/hostnin/review\n\nIf no, click here to escalate: https://hostnin.com/contact"
+      
+      const tempId = crypto.randomUUID()
+      addOptimisticMessage(conversationId, {
+        id: tempId,
+        sender_type: 'agent',
+        sender_id: currentUser?.id ?? null,
+        content: message,
+        content_type: 'text',
+        metadata: null,
+        is_internal: false,
+        status: 'sending',
+        created_at: new Date().toISOString()
+      })
+      
+      await replyToConversation(orgId, conversationId, message, false)
+      removeOptimisticMessage(conversationId, tempId)
+      
+      // Auto-archive after sending CSAT
+      await toggleConversationFlag(conversationId, 'is_archived', true)
+      
+    } catch (error) {
+      console.error(error)
+      alert("Failed to send review prompt or archive conversation")
+    }
+  }
 
   const handleThreadAction = async (action: string) => {
     if (!conversationId || !conversation) return
@@ -773,6 +893,10 @@ export default function ChatThread({
               <button onClick={() => handleThreadAction('mute')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <BellOff size={14} className="opacity-50" /> {conversation?.is_muted ? 'Unmute' : 'Mute'}
               </button>
+              <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+              <button onClick={handleResolveAndReview} className="w-full text-left px-4 py-2 text-[13px] text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center gap-2 font-medium">
+                <CheckCheck size={14} className="opacity-70" /> Resolve & Ask Review
+              </button>
               <button onClick={() => handleThreadAction('archive')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <Archive size={14} className="opacity-50" /> {conversation?.is_archived ? 'Unarchive' : 'Archive'}
               </button>
@@ -869,12 +993,12 @@ export default function ChatThread({
             const agentInitial = agentName.charAt(0).toUpperCase();
 
             return (
-              <div key={msg.id || idx} className={`flex items-end justify-end gap-2 mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
-                <div className="flex flex-col items-end gap-1 max-w-[75%]">
-                  {/* Agent Name Banner */}
-                  <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
-                  
-                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] w-full leading-relaxed whitespace-pre-wrap break-words font-normal`}>
+              <div key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
+                {/* Agent Name Banner */}
+                <div className="text-[11px] text-slate-500 mr-9 mb-0.5">{agentName}</div>
+                
+                <div className="flex items-end justify-end gap-2 max-w-[75%]">
+                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                   {msg.content_type === 'image' && msg.metadata?.media_url ? (
                     <div className="relative">
                       <img 
@@ -890,9 +1014,9 @@ export default function ChatThread({
                       <Paperclip size={16} />
                       <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
                     </a>
-                  ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
+                  ) : msg.content_type === 'audio' && (msg.metadata?.media_url || msg.metadata?.url) ? (
                     <div className="flex flex-col gap-1">
-                      <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
+                      <CustomAudioPlayer url={(msg.metadata.media_url || msg.metadata.url) as string} isDark={!msg.is_internal} />
                       {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
                   ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
@@ -906,14 +1030,28 @@ export default function ChatThread({
                   ) : (
                     <div>{renderTextWithLinks(msg.content, true)}</div>
                   )}
+                  </div>
+                  
+                  {/* Agent Avatar */}
+                  <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
+                    {agent?.avatar_url ? (
+                      <img src={agent.avatar_url} alt={agentName} className="w-full h-full object-cover" />
+                    ) : (
+                      agentInitial
+                    )}
+                  </div>
+                </div>
+                
+                {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
+                <div className="flex justify-end items-center gap-1 mt-1 mr-9">
+                  <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
-                    <div className="flex justify-end items-center gap-1 mt-0.5 opacity-90 -mr-1">
-                      <span className="text-[10.5px] text-slate-400 mr-1">{msgTime}</span>
+                    <>
                       {msg.status === 'sending' ? (
-                        <Clock size={12} className="text-white/60 animate-pulse" />
+                        <Clock size={12} className="text-slate-400 animate-pulse" />
                       ) : msg.status === 'failed' ? (
                         <span 
-                          className="text-[10px] text-red-300 cursor-pointer hover:text-red-200 underline ml-1"
+                          className="text-[10px] text-red-500 cursor-pointer hover:text-red-600 underline ml-1"
                           onClick={() => {
                             if (conversationId) removeOptimisticMessage(conversationId, msg.id)
                           }}
@@ -922,31 +1060,16 @@ export default function ChatThread({
                           Failed
                         </span>
                       ) : msg.status === 'read' ? (
-                        <CheckCheck size={14} className="text-blue-200" />
+                        <CheckCheck size={14} className="text-blue-500" />
                       ) : msg.status === 'delivered' ? (
-                        <CheckCheck size={14} className="text-white/80" />
+                        <CheckCheck size={14} className="text-slate-400" />
                       ) : (
-                        <Check size={14} className="text-white/80" />
+                        <Check size={14} className="text-slate-400" />
                       )}
-                    </div>
-                  )}
-                  {msg.is_internal && (
-                    <div className="flex justify-end mt-0.5 opacity-90 mr-1">
-                      <span className="text-[10.5px] text-slate-400">{msgTime}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Agent Avatar */}
-                <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
-                  {agent?.avatar_url ? (
-                    <img src={agent.avatar_url} alt={agentName} className="w-full h-full object-cover" />
-                  ) : (
-                    agentInitial
+                    </>
                   )}
                 </div>
               </div>
-            </div>
             )
           } else {
             return (
@@ -971,10 +1094,10 @@ export default function ChatThread({
                       {msg.metadata?.participant_name ? msg.metadata.participant_name.charAt(0).toUpperCase() : contactInitial}
                     </div>
                   )}
-                  <div className="max-w-[70%] flex flex-col gap-1">
+                  <div className="max-w-[75%] flex flex-col items-start gap-1">
                     {/* Participant Name Banner for Group Chats */}
                     {msg.metadata?.participant_name && (
-                      <div className="text-[11px] text-slate-500 ml-1 mb-0.5">{msg.metadata.participant_name}</div>
+                      <div className="text-[11px] text-slate-500 mb-0.5">{msg.metadata.participant_name}</div>
                     )}
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
                       {msg.content_type === 'image' && msg.metadata?.media_url ? (
@@ -992,9 +1115,9 @@ export default function ChatThread({
                           <Paperclip size={16} />
                           <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
                         </a>
-                      ) : msg.content_type === 'audio' && msg.metadata?.media_url ? (
+                      ) : msg.content_type === 'audio' && (msg.metadata?.media_url || msg.metadata?.url) ? (
                         <div className="flex flex-col gap-1">
-                          <audio controls src={msg.metadata.media_url} className="w-[240px] h-[40px] outline-none" />
+                          <CustomAudioPlayer url={(msg.metadata.media_url || msg.metadata.url) as string} isDark={false} />
                           {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
                       ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
@@ -1009,10 +1132,12 @@ export default function ChatThread({
                         <div>{renderTextWithLinks(msg.content, false)}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 mt-0.5 ml-1">
-                      <span className="text-[10.5px] text-slate-400">{msgTime}</span>
-                    </div>
                   </div>
+                </div>
+                
+                {/* Time (OUTSIDE the bubble and avatar stack) */}
+                <div className="flex items-center gap-1 mt-1 ml-11">
+                  <span className="text-[11px] text-slate-400">{msgTime}</span>
                 </div>
               </div>
             )

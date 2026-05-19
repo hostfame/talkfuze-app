@@ -1,8 +1,8 @@
 import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban } from "lucide-react"
 import { useState, useEffect } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
-import { getCrmData, getParticipants, toggleContactBanStatus } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket } from "@/actions/whmcs"
+import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
@@ -35,6 +35,13 @@ interface WhmcsTicket {
   status: string;
   deptname: string;
   lastreply: string;
+}
+
+interface WhmcsInvoice {
+  id: number;
+  status: string;
+  total: string;
+  duedate: string;
 }
 
 function firstRelation<T>(relation: Relation<T> | undefined) {
@@ -129,6 +136,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsClient, setWhmcsClient] = useState<WhmcsClient | null>(null)
   const [whmcsServices, setWhmcsServices] = useState<{ products: WhmcsProduct[], domains: WhmcsDomain[] } | null>(null)
   const [whmcsTickets, setWhmcsTickets] = useState<WhmcsTicket[]>([])
+  const [whmcsInvoices, setWhmcsInvoices] = useState<WhmcsInvoice[]>([])
+  const [isConvertingTicket, setIsConvertingTicket] = useState(false)
+  const [isSendingLink, setIsSendingLink] = useState<number | null>(null)
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
 
@@ -147,7 +157,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const [isBanned, setIsBanned] = useState(false)
   const [isBanning, setIsBanning] = useState(false)
-  const [portalTab, setPortalTab] = useState<'services' | 'domains' | 'tickets'>('services')
+  const [portalTab, setPortalTab] = useState<'services' | 'domains' | 'tickets' | 'invoices'>('services')
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
@@ -195,6 +205,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setWhmcsClient(null);
     setWhmcsServices(null);
     setWhmcsTickets([]);
+    setWhmcsInvoices([]);
     setLastSearchedQuery('');
     setCrmSearchQuery('');
   }
@@ -207,12 +218,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       const client = await fetchWhmcsClient(query.trim());
       if (client) {
         setWhmcsClient(client);
-        const [services, tickets] = await Promise.all([
+        const [services, tickets, invoices] = await Promise.all([
           fetchWhmcsServices(client.id),
-          fetchWhmcsTickets(client.id)
+          fetchWhmcsTickets(client.id),
+          fetchWhmcsUnpaidInvoices(client.id)
         ]);
         setWhmcsServices(services);
         setWhmcsTickets(tickets);
+        setWhmcsInvoices(invoices);
 
         // Bind to user so we don't need to search again next time
         if (contact?.id) {
@@ -227,11 +240,46 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         setWhmcsClient(null);
         setWhmcsServices(null);
         setWhmcsTickets([]);
+        setWhmcsInvoices([]);
       }
     } catch (error) {
       console.error("Error in manual search:", error);
     } finally {
       setIsCrmLoading(false);
+    }
+  }
+
+  const handleConvertToTicket = async () => {
+    if (!conversation?.id || !whmcsClient?.id) return;
+    setIsConvertingTicket(true);
+    try {
+      const result = await convertChatToTicket(conversation.id, whmcsClient.id);
+      if (result.success) {
+        alert(`Chat converted to ticket #${result.ticket?.ticketid || 'successfully'}!`);
+        const tickets = await fetchWhmcsTickets(whmcsClient.id);
+        setWhmcsTickets(tickets);
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (e) {
+      alert("Failed to convert chat to ticket.");
+    } finally {
+      setIsConvertingTicket(false);
+    }
+  }
+
+  const handleSendInvoiceLink = async (invoiceId: number) => {
+    if (!conversation?.id) return;
+    setIsSendingLink(invoiceId);
+    try {
+      const invoiceUrl = `https://my.hostnin.com/viewinvoice.php?id=${invoiceId}`;
+      const message = `You have an unpaid invoice. Please pay securely here: ${invoiceUrl}`;
+      await replyToConversation(orgId, conversation.id, message, 'text');
+      alert("Invoice link sent successfully!");
+    } catch (e) {
+      alert("Failed to send invoice link.");
+    } finally {
+      setIsSendingLink(null);
     }
   }
 
@@ -242,6 +290,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setWhmcsClient(null)
     setWhmcsServices(null)
     setWhmcsTickets([])
+    setWhmcsInvoices([])
     setCrmData(null)
     setLastSearchedQuery("")
     
@@ -549,6 +598,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 >
                   Tickets {whmcsTickets && `(${whmcsTickets.length})`}
                 </button>
+                <button 
+                  onClick={() => setPortalTab('invoices')}
+                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'invoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  Invoices {whmcsInvoices && `(${whmcsInvoices.length})`}
+                </button>
               </div>
 
               {portalTab === 'services' && (
@@ -601,12 +656,22 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h3>
-                    <button 
-                      onClick={() => setShowCreateTicket(true)}
-                      className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
-                    >
-                      Create New
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleConvertToTicket}
+                        disabled={isConvertingTicket}
+                        className="text-[11px] font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 transition-colors px-2 py-1 rounded disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {isConvertingTicket ? <Loader2 size={10} className="animate-spin" /> : <Database size={10} />}
+                        Convert Chat
+                      </button>
+                      <button 
+                        onClick={() => setShowCreateTicket(true)}
+                        className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
+                      >
+                        Create New
+                      </button>
+                    </div>
                   </div>
                   {whmcsTickets?.length > 0 ? (
                     <div className="space-y-3">
@@ -631,6 +696,45 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     </div>
                   ) : (
                     <p className="text-[12px] text-slate-500 text-center py-4">No recent tickets found.</p>
+                  )}
+                </div>
+              )}
+
+              {portalTab === 'invoices' && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Unpaid Invoices</h3>
+                  </div>
+                  {whmcsInvoices?.length > 0 ? (
+                    <div className="space-y-3">
+                      {whmcsInvoices.map((invoice: WhmcsInvoice) => (
+                        <div key={invoice.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group">
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <div>
+                              <a href={`https://my.hostnin.com/viewinvoice.php?id=${invoice.id}`} target="_blank" rel="noreferrer" className="text-[12px] font-medium text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-1.5">
+                                Invoice #{invoice.id}
+                                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
+                              </a>
+                              <p className="text-[11px] text-slate-500 mt-0.5">Due: {invoice.duedate}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[11px] font-bold text-red-600 dark:text-red-400 block mb-1">BDT {invoice.total}</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded uppercase">{invoice.status}</span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleSendInvoiceLink(invoice.id)}
+                            disabled={isSendingLink === invoice.id}
+                            className="w-full text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded disabled:opacity-50 flex items-center justify-center gap-1.5"
+                          >
+                            {isSendingLink === invoice.id ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                            Push Link to Chat
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-slate-500 text-center py-4">No unpaid invoices found.</p>
                   )}
                 </div>
               )}

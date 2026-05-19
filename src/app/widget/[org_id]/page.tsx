@@ -1,11 +1,19 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, Mic, StopCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages, getWidgetSettings } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
+
+type WidgetMessage = AppMessage & {
+  agent?: {
+    name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
 
 function getStoredDeviceId() {
   if (typeof window === 'undefined') return ""
@@ -18,14 +26,112 @@ function getStoredDeviceId() {
   return deviceId
 }
 
+const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={`flex items-center gap-3 p-1.5 rounded-full min-w-[220px]`}>
+      <audio 
+        ref={audioRef} 
+        src={url} 
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => { setIsPlaying(false); setProgress(0); setCurrentTime(0); }}
+        className="hidden" 
+      />
+      
+      <button 
+        onClick={togglePlay} 
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95 ${isDark ? 'bg-white text-[#64748b] shadow-sm' : 'bg-blue-600 text-white shadow-sm'}`}
+      >
+        {isPlaying ? (
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        ) : (
+           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+        )}
+      </button>
+
+      <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-2">
+        <div className="flex items-center gap-2 w-full">
+          <div 
+            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${isDark ? 'bg-white/30' : 'bg-blue-600/20'}`}
+            onClick={(e) => {
+               if(audioRef.current && duration) {
+                 const rect = e.currentTarget.getBoundingClientRect();
+                 const x = e.clientX - rect.left;
+                 const percentage = x / rect.width;
+                 audioRef.current.currentTime = percentage * duration;
+               }
+            }}
+          >
+            <div 
+              className={`h-full transition-all duration-100 ease-linear ${isDark ? 'bg-white' : 'bg-blue-600'}`} 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        
+        <div className={`text-[10px] font-semibold tracking-wide flex justify-between ${isDark ? 'text-white/80' : 'text-slate-500'}`}>
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function WidgetPage() {
   const params = useParams()
   const org_id = params.org_id as string
   const [deviceId] = useState(getStoredDeviceId)
-  const [messages, setMessages] = useState<AppMessage[]>([])
+  const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [settings, setSettings] = useState<any>(null)
+  
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  
+  // Audio Recording State
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingDuration, setRecordingDuration] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
   
   type Tab = 'home' | 'messages' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
@@ -54,7 +160,7 @@ export default function WidgetPage() {
       try {
         const data = await getWidgetMessages(org_id, deviceId)
         if (data && data.length > 0) {
-          setMessages(data as AppMessage[])
+          setMessages(data as WidgetMessage[])
         }
       } catch (e) {
         console.error("Fetch messages error", e)
@@ -80,6 +186,114 @@ export default function WidgetPage() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, activeTab])
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setInput((prev) => prev + emojiData.emoji)
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const formData = new FormData()
+        formData.append('file', audioBlob, 'voice-message.webm')
+        
+        setIsSending(true)
+        try {
+          const result = await uploadWidgetMedia(formData)
+          if (result?.success && result.url) {
+            await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url })
+          }
+        } catch (e) {
+          console.error(e)
+        } finally {
+          setIsSending(false)
+        }
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+      setRecordingDuration(0)
+      timerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1)
+      }, 1000)
+    } catch (e: any) {
+      console.error("Microphone access denied or error:", e)
+      alert("Microphone access denied or not available. Please check browser permissions.")
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = null // prevent upload
+      mediaRecorderRef.current.stop()
+      // Stop all tracks
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      setIsRecording(false)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !deviceId) return;
+    
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    setIsSending(true);
+    try {
+      const result = await uploadWidgetMedia(formData);
+      if (result?.success && result.url) {
+        let contentType: "image" | "video" | "audio" | "file" = "file";
+        if (file.type.startsWith('image/')) contentType = "image";
+        else if (file.type.startsWith('video/')) contentType = "video";
+        else if (file.type.startsWith('audio/')) contentType = "audio";
+        
+        await sendWidgetMessage(org_id, deviceId, '[Attachment]', contentType, { 
+          url: result.url,
+          filename: file.name,
+          mimetype: file.type
+        });
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Failed to upload file.");
+    } finally {
+      setIsSending(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isSending || !deviceId) return
@@ -286,20 +500,57 @@ export default function WidgetPage() {
               )}
 
               {messages.map((msg, idx) => {
-                const isAiOrAgent = msg.sender_type === 'ai' || msg.sender_type === 'agent';
+                const isSystem = msg.sender_type === 'system';
+                const isAgent = msg.sender_type === 'agent';
+                const isAiOrAgent = isAgent || msg.sender_type === 'ai';
+
+                if (isSystem) {
+                  return (
+                    <div key={idx} className="flex justify-center my-4">
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+                        {msg.agent?.avatar_url ? (
+                          <img src={msg.agent.avatar_url} className="w-[22px] h-[22px] rounded-full object-cover shrink-0 border border-white shadow-sm" alt="Agent Avatar" />
+                        ) : (
+                          <div className="w-[22px] h-[22px] rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 border border-white shadow-sm">
+                            <Bot size={12}/>
+                          </div>
+                        )}
+                        <span className="text-[12px] font-semibold text-slate-600 leading-none mr-1">{msg.content}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return isAiOrAgent ? (
                   <div key={idx} className="flex flex-col gap-1 items-start mb-1">
-                    <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
-                      {msg.content}
+                    <div className="flex gap-2 items-end">
+                      {msg.agent?.avatar_url ? (
+                        <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full shrink-0 bg-blue-600 flex items-center justify-center text-white">
+                          <Bot size={12}/>
+                        </div>
+                      )}
+                      <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
+                        {msg.content_type === 'audio' ? (
+                          <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={false} />
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
                     </div>
                     {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-1">Support Team • Just now</span>
+                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Support Team'} • Just now</span>
                     )}
                   </div>
                 ) : (
                   <div key={idx} className="flex flex-col gap-1 items-end mb-1">
                     <div className="bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight">
-                      {msg.content}
+                      {msg.content_type === 'audio' ? (
+                        <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={true} />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 )
@@ -319,45 +570,74 @@ export default function WidgetPage() {
             
             {/* Embedded Composer (Intercom style floating box) */}
             <div className="absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-[#f9fafb] via-[#f9fafb] to-transparent z-40 pointer-events-none">
-               <div className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden pointer-events-auto flex flex-col">
-                  <textarea 
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSend()
-                      }
-                    }}
-                    placeholder="Message..."
-                    className="w-full bg-transparent border-none focus:ring-0 resize-none text-[15px] text-slate-800 placeholder:text-slate-400 p-4 pb-0 min-h-[52px] max-h-[120px] outline-none"
-                    rows={1}
-                    disabled={isSending}
-                  ></textarea>
-                  <div className="flex justify-between items-center px-2 pb-2 pt-1">
-                     <div className="flex items-center gap-0.5 text-slate-400">
-                        <button className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+               <div className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-visible pointer-events-auto flex flex-col relative">
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-[105%] right-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden border border-slate-100">
+                      <EmojiPicker onEmojiClick={handleEmojiClick} width={280} height={300} searchDisabled skinTonesDisabled previewConfig={{showPreview: false}} />
+                    </div>
+                  )}
+
+                  {isRecording ? (
+                    <div className="flex items-center justify-between p-4 min-h-[52px]">
+                      <div className="flex items-center gap-2 text-red-500 animate-pulse">
+                        <Mic size={18} />
+                        <span className="text-[14px] font-bold">{formatDuration(recordingDuration)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={cancelRecording} className="text-slate-400 hover:text-slate-600 text-[13px] font-medium px-2 py-1">Cancel</button>
+                        <button onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors">
+                          <StopCircle size={20} />
                         </button>
-                        <button className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-                        </button>
-                        <button className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50 flex items-center justify-center">
-                           <div className="text-[10px] font-bold border-2 border-current px-[3px] py-[1px] rounded-[4px] leading-none">GIF</div>
-                        </button>
-                        <button className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
-                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                        </button>
-                     </div>
-                     <button 
-                        onClick={handleSend}
-                        disabled={!input.trim() || isSending}
-                        className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#64748b] data-[active=true]:text-white mr-1"
-                        data-active={!!input.trim() && !isSending}
-                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                     </button>
-                  </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <textarea 
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSend()
+                        }
+                      }}
+                      placeholder="Message..."
+                      className="w-full bg-transparent border-none focus:ring-0 resize-none text-[15px] text-slate-800 placeholder:text-slate-400 p-4 pb-0 min-h-[52px] max-h-[120px] outline-none"
+                      rows={1}
+                      disabled={isSending}
+                    ></textarea>
+                  )}
+                  
+                  {!isRecording && (
+                     <div className="flex justify-between items-center px-2 pb-2 pt-1">
+                       <input 
+                         type="file" 
+                         ref={fileInputRef} 
+                         className="hidden" 
+                         onChange={handleFileUpload} 
+                         accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                       />
+                       <div className="flex items-center gap-0.5 text-slate-400">
+                          <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                          </button>
+                          <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-colors rounded-full ${showEmojiPicker ? 'text-blue-600 bg-blue-50' : 'hover:text-slate-600 hover:bg-slate-50'}`}>
+                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                          </button>
+                          <button onClick={startRecording} className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
+                             <Mic size={18} />
+                          </button>
+                       </div>
+                       <button 
+                          onClick={handleSend}
+                          disabled={!input.trim() || isSending}
+                          className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#64748b] data-[active=true]:text-white mr-1 shrink-0"
+                          data-active={!!input.trim() && !isSending}
+                       >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                       </button>
+                    </div>
+                  )}
                </div>
             </div>
           </div>
@@ -365,82 +645,47 @@ export default function WidgetPage() {
 
         {/* TICKETS TAB */}
         {activeTab === 'tickets' && (
-          <div className="pt-24 p-5 animate-in fade-in duration-300 flex flex-col items-center h-full text-center">
-             <div className="w-14 h-14 bg-white shadow-sm border border-slate-100 rounded-full flex items-center justify-center mb-3 text-blue-600 mt-4">
-                <Ticket size={24} />
-             </div>
-             <h3 className="font-bold text-slate-800 text-[18px] mb-1 tracking-tight">WHMCS Tickets</h3>
-             <p className="text-slate-500 text-[14px] mb-6 px-4 tracking-tight">Login with your account email to view and reply to your support tickets directly from here.</p>
-             
-             <div className="w-full max-w-[280px] bg-white p-4 rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 text-left">
-                <label className="block text-[13px] font-bold text-slate-800 mb-2 tracking-tight">Email Address</label>
-                <input 
-                  type="email" 
-                  placeholder="name@example.com"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[14px] text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all mb-3"
-                />
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-[11px] rounded-xl text-[14px] transition-colors shadow-sm flex justify-center items-center gap-2 tracking-tight">
-                   Send OTP
-                </button>
-                <div className="mt-3 text-center">
-                   <button className="text-slate-500 hover:text-slate-700 font-semibold text-[13px] transition-colors tracking-tight">
-                      Use Password Instead
+          <div className="pt-24 p-5 animate-in fade-in duration-300 flex flex-col h-full bg-[#f8fafc]">
+             <div className="flex-1 flex flex-col bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 pb-5 flex flex-col items-center border-b border-slate-50 text-center">
+                   <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3 text-blue-600 shadow-sm">
+                      <Ticket size={22} />
+                   </div>
+                   <h3 className="font-bold text-slate-800 text-[18px] mb-1.5 tracking-tight">Support Tickets</h3>
+                   <p className="text-slate-500 text-[13px] leading-relaxed">Manage your WHMCS support tickets directly from this widget. Sign in to continue.</p>
+                </div>
+                
+                <div className="p-6 pt-5 bg-slate-50/50 flex-1">
+                   <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-2">Email Address</label>
+                   <input 
+                     type="email" 
+                     placeholder="Enter your registered email"
+                     className="w-full bg-white border border-slate-200/80 shadow-sm rounded-xl p-3.5 text-[14px] text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all mb-4 placeholder:text-slate-400"
+                   />
+                   <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] active:scale-[0.98] flex justify-center items-center gap-2">
+                      Send Login OTP
                    </button>
-                </div>
-             </div>
-          </div>
-        )}
-
-        {/* ABOUT TAB */}
-        {activeTab === 'about' && (
-          <div className="pt-24 p-5 animate-in fade-in duration-300">
-             <div className="bg-white p-5 rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 mb-4">
-                <h3 className="font-bold text-slate-800 text-[18px] mb-2 tracking-tight">Hostnin BD</h3>
-                <p className="text-slate-500 text-[14px] leading-relaxed mb-4 tracking-tight">
-                  We provide enterprise-grade WordPress and VPS hosting solutions tailored for maximum performance and reliability.
-                </p>
-                <div className="space-y-3">
-                   <div className="flex items-center gap-3 text-[14px] font-medium text-slate-600 tracking-tight">
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0"><Info size={16}/></div>
-                      <span>Support available 24/7</span>
+                   
+                   <div className="mt-5 text-center flex items-center justify-center gap-3">
+                      <div className="h-px bg-slate-200 flex-1"></div>
+                      <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">OR</span>
+                      <div className="h-px bg-slate-200 flex-1"></div>
                    </div>
-                   <div className="flex items-center gap-3 text-[14px] font-medium text-slate-600 tracking-tight">
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0"><Zap size={16}/></div>
-                      <span>Powered by TalkFuze Enterprise</span>
+                   
+                   <div className="mt-5 text-center">
+                      <button className="text-slate-500 hover:text-slate-800 font-semibold text-[13px] transition-colors flex items-center justify-center gap-1.5 mx-auto">
+                         Login with Password
+                         <ChevronRight size={14} className="mt-0.5" />
+                      </button>
                    </div>
                 </div>
              </div>
           </div>
         )}
 
-      </div>
-
-      {/* Bottom Navigation */}
-      {activeTab !== 'messages' && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[40px] px-6 py-[12px] z-20">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
-             <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'home' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-             </div>
-             <span className={`text-[12px] ${activeTab === 'home' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Home</span>
-          </button>
-          
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[3px] ${(activeTab as any) === 'messages' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
-             <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={(activeTab as any) === 'messages' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                <div className="absolute -top-1 -right-1.5 w-[18px] h-[18px] bg-red-500 rounded-full border-[2px] border-white flex items-center justify-center text-white text-[10px] font-bold">1</div>
-             </div>
-             <span className={`text-[12px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Messages</span>
-          </button>
-          
           <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'tickets' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'tickets' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
              <span className={`text-[12px] ${activeTab === 'tickets' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Tickets</span>
-          </button>
-          
-          <button onClick={() => setActiveTab('about')} className={`flex flex-col items-center gap-[3px] ${activeTab === 'about' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'} transition-colors`}>
-             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={activeTab === 'about' ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-             <span className={`text-[12px] ${activeTab === 'about' ? 'font-bold' : 'font-semibold'} tracking-tight`}>Help</span>
           </button>
         </div>
       )}

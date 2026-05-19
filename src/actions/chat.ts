@@ -1,8 +1,9 @@
 "use server"
+import { unstable_noStore as noStore } from "next/cache";
 
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
-export async function sendWidgetMessage(orgId: string, deviceId: string, content: string) {
+export async function sendWidgetMessage(orgId: string, deviceId: string, content: string, contentType: string = 'text', metadata: Record<string, any> = {}) {
   if (!orgId || !deviceId || !content) {
     throw new Error("Missing required fields")
   }
@@ -94,15 +95,24 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
       conversation_id: conversation.id,
       sender_type: "contact",
       sender_id: contact.id,
-      content: content
+      content: content,
+      content_type: contentType,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null
     })
 
   if (msgErr) throw msgErr
+
+  // Update conversation last_message_at so it floats to the top of the inbox
+  await supabaseAdmin
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conversation.id)
 
   return { success: true, conversationId: conversation.id }
 }
 
 export async function getWidgetMessages(orgId: string, deviceId: string) {
+  noStore();
   if (!orgId || !deviceId) return [];
   
   try {
@@ -137,7 +147,40 @@ export async function getWidgetMessages(orgId: string, deviceId: string) {
       .order("created_at", { ascending: true })
       
     if (msgErr) console.error("getWidgetMessages msg err:", msgErr);
-    return messages || [];
+    
+    if (!messages || messages.length === 0) return [];
+    
+    // Fetch agent details for agent/system messages (must be valid UUIDs)
+    const agentIds = Array.from(new Set(
+      messages
+        .filter(m => m.sender_type === 'agent' || m.sender_type === 'system')
+        .map(m => m.sender_id)
+        .filter(id => id && id.length === 36 && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
+    ));
+    
+    let agentMap: Record<string, any> = {};
+    if (agentIds.length > 0) {
+      const { data: agents } = await supabaseAdmin
+        .from('users')
+        .select('id, name, avatar_url')
+        .in('id', agentIds);
+        
+      if (agents) {
+        agents.forEach(a => {
+          agentMap[a.id] = a;
+        });
+      }
+    }
+    
+    return messages.map(msg => {
+      if (msg.sender_type === 'agent' || msg.sender_type === 'system') {
+        return {
+          ...msg,
+          agent: agentMap[msg.sender_id] || null
+        }
+      }
+      return msg;
+    });
   } catch (e) {
     console.error("getWidgetMessages exception:", e);
     return [];
@@ -168,4 +211,30 @@ export async function getWidgetSettings(orgId: string) {
     console.error("getWidgetSettings exception:", e);
     return null;
   }
+}
+
+export async function uploadWidgetMedia(formData: FormData) {
+  const file = formData.get('file') as File;
+  if (!file) {
+    return { success: false, error: "No file provided" };
+  }
+
+  const fileExt = file.name ? file.name.split('.').pop() : 'webm';
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+  const filePath = `widget-uploads/${fileName}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from('media')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error("uploadWidgetMedia error:", uploadError);
+    return { success: false, error: uploadError.message };
+  }
+
+  const { data: urlData } = supabaseAdmin.storage
+    .from('media')
+    .getPublicUrl(filePath);
+
+  return { success: true, url: urlData.publicUrl };
 }
