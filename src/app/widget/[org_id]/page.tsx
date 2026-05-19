@@ -678,7 +678,6 @@ export default function WidgetPage() {
                </button>
             </div>
           </div>
-        </div>
 
         {/* CHAT TAB (THREAD) */}
         <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'chat' ? 'translate-x-0 opacity-100 z-30' : 'translate-x-full opacity-0 z-10 pointer-events-none'}`}>

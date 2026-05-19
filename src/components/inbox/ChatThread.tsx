@@ -1408,10 +1408,17 @@ export default function ChatThread({
               
               <button 
                 onClick={handleSend}
-                disabled={!input.trim() || isSending}
-                className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
+                disabled={(!input.trim() && pendingAttachments.length === 0) || isSending || isUploading}
+                className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
-                {isInternal ? 'Add Note' : 'Send'}
+                {isSending || isUploading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  isInternal ? 'Add Note' : 'Send'
+                )}
               </button>
             </div>
           </div>

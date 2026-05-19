@@ -593,6 +593,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
       number: jid,
       mediatype: mediaType,
       media: mediaUrl,
+      audio: mediaUrl, // Required by sendWhatsAppAudio
+      pTT: mediaType === 'audio', // Sends as dynamic voice message waveform
       caption: caption || '',
       mimetype
     })
