@@ -513,7 +513,7 @@ export default function WidgetPage() {
             <div className="mb-2">
               <div className="relative w-[52px] h-[52px] mb-4">
                  <div className="w-[52px] h-[52px] rounded-full border-[2px] border-white/30 bg-white flex items-center justify-center shadow-lg overflow-hidden">
-                    <img src="/talkfuze-logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+                    <img src="/hostnin-logo.png" className="w-8 h-8 object-contain" alt="Hostnin Logo" />
                  </div>
                  <div className="absolute bottom-1 right-0 w-3.5 h-3.5 bg-green-500 border-[2px] border-[#0070f3] rounded-full"></div>
               </div>

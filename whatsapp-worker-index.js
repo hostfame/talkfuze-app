@@ -1,593 +1,601 @@
 require('dotenv').config();
 global.WebSocket = require('ws');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, downloadMediaMessage } = require('@whiskeysockets/baileys');
+
+const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
-const pino = require('pino');
-const qrcode = require('qrcode-terminal');
-const QRCodeBase64 = require('qrcode');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const ORG_ID = process.env.ORG_ID; // In MVP, hardcoded org id
+const ORG_ID = process.env.ORG_ID;
+const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
+const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || 'talkfuze_evolution_key_2026';
+const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || 'talkfuze';
+const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || '3001');
+const WEBHOOK_PUBLIC_URL = process.env.WEBHOOK_PUBLIC_URL || `http://46.225.152.127:${WEBHOOK_PORT}`;
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !ORG_ID) {
-  console.error("Missing environment variables");
+  console.error('Missing environment variables');
   process.exit(1);
 }
 
-const fs = require('fs');
-const path = require('path');
-const logStream = fs.createWriteStream(path.join(__dirname, 'crash.log'), { flags: 'a' });
-
-process.on('uncaughtException', (err) => {
-  const timestamp = new Date().toISOString();
-  const logMsg = `[${timestamp}] UNCAUGHT EXCEPTION: ${err.message}\nStack: ${err.stack}\n\n`;
-  console.error(logMsg);
-  logStream.write(logMsg);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  const timestamp = new Date().toISOString();
-  const logMsg = `[${timestamp}] UNHANDLED REJECTION at: ${promise}\nReason: ${reason}\n\n`;
-  console.error(logMsg);
-  logStream.write(logMsg);
-});
-
-const WebSocket = require('ws');
-const { messageQueue } = require('./queue');
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: false },
-  realtime: {
-    transport: WebSocket
-  }
+  auth: { persistSession: false }
 });
 
-// Store removed for Baileys v7 compatibility
+const app = express();
+app.use(express.json({ limit: '50mb' }));
 
-async function registerChannel() {
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+function extractText(msg) {
+  const m = msg.message;
+  if (!m) return '';
+  return m.conversation
+    || m.extendedTextMessage?.text
+    || m.imageMessage?.caption
+    || m.videoMessage?.caption
+    || m.documentMessage?.caption
+    || '';
+}
+
+function getContentType(msg) {
+  const m = msg.message;
+  if (!m) return 'text';
+  if (m.imageMessage) return 'image';
+  if (m.audioMessage || m.pttMessage) return 'audio';
+  if (m.videoMessage) return 'video';
+  if (m.documentMessage) return 'file';
+  if (m.stickerMessage) return 'image';
+  return 'text';
+}
+
+function isFromMe(msg) {
+  return msg.key?.fromMe === true;
+}
+
+function getSender(msg) {
+  const jid = msg.key?.participant || msg.key?.remoteJid || '';
+  return jid;
+}
+
+function getConversationJid(msg) {
+  return msg.key?.remoteJid || '';
+}
+
+function resolveName(msg) {
+  return msg.pushName || msg.key?.participant?.split('@')[0] || '';
+}
+
+function mediaPlaceholder(contentType) {
+  if (contentType === 'image') return '[Image]';
+  if (contentType === 'audio') return '[Audio Voice Message]';
+  if (contentType === 'video') return '[Video]';
+  return '[Attachment]';
+}
+
+function formatQrCode(base64) {
+  if (!base64) return null;
+  return base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+}
+
+function extractSentMessageId(result) {
+  return result?.key?.id
+    || result?.message?.key?.id
+    || result?.data?.key?.id
+    || result?.data?.message?.key?.id
+    || null;
+}
+
+// ─────────────────────────────────────────────
+// Channel bootstrap
+// ─────────────────────────────────────────────
+
+let whatsappChannelId = null;
+
+async function getOrCreateChannel() {
   const { data: existing } = await supabase
     .from('channels')
-    .select('id, config')
+    .select('id')
     .eq('org_id', ORG_ID)
     .eq('type', 'whatsapp')
-    .limit(1);
+    .limit(1)
+    .maybeSingle();
 
-  if (!existing || existing.length === 0) {
-    await supabase.from('channels').insert({
-      org_id: ORG_ID,
-      type: 'whatsapp',
-      config: {}
+  if (existing) {
+    return existing.id;
+  }
+
+  const { data: created } = await supabase.from('channels').insert({
+    org_id: ORG_ID,
+    type: 'whatsapp',
+    config: { status: 'pending' },
+    is_active: true
+  }).select('id').single();
+
+  return created.id;
+}
+
+// ─────────────────────────────────────────────
+// Upsert contact
+// ─────────────────────────────────────────────
+
+async function upsertContact(jid, name) {
+  const { data: existing } = await supabase
+    .from('contacts')
+    .select('id, name')
+    .eq('org_id', ORG_ID)
+    .eq('platform_type', 'whatsapp')
+    .eq('platform_id', jid)
+    .maybeSingle();
+
+  if (existing) {
+    // Update name if we got a better one
+    if (name && name !== existing.name && !jid.endsWith('@g.us')) {
+      await supabase.from('contacts').update({ name }).eq('id', existing.id);
+    }
+    return existing.id;
+  }
+
+  const displayName = name || jid.split('@')[0].replace(/\D/g, '').slice(-10);
+  const { data: created } = await supabase.from('contacts').insert({
+    org_id: ORG_ID,
+    platform_id: jid,
+    platform_type: 'whatsapp',
+    name: displayName,
+  }).select('id').single();
+
+  return created.id;
+}
+
+// ─────────────────────────────────────────────
+// Upsert conversation
+// ─────────────────────────────────────────────
+
+async function upsertConversation(contactId, channelId) {
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('org_id', ORG_ID)
+    .eq('contact_id', contactId)
+    .eq('channel_id', channelId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data: created } = await supabase.from('conversations').insert({
+    org_id: ORG_ID,
+    contact_id: contactId,
+    channel_id: channelId,
+    status: 'open'
+  }).select('id').single();
+
+  return created.id;
+}
+
+// ─────────────────────────────────────────────
+// Download media via Evolution API
+// ─────────────────────────────────────────────
+
+async function downloadAndUploadMedia(msgId, contentType, conversationJid) {
+  try {
+    const res = await fetch(`${EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: { key: { id: msgId } }, convertToMp4: false })
     });
-    console.log("Registered WhatsApp channel in DB.");
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.base64 || !data.mediaType) return null;
+
+    const buffer = Buffer.from(data.base64, 'base64');
+    const ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
+    const fileName = `${conversationJid.replace('@', '_')}/${Date.now()}.${ext}`;
+    const mimeType = data.mediaType;
+
+    const { error } = await supabase.storage
+      .from('media')
+      .upload(fileName, buffer, { contentType: mimeType, upsert: false });
+
+    if (error) {
+      console.error('Storage upload error:', error.message);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
+    return { url: urlData.publicUrl, mimeType, fileName };
+  } catch (err) {
+    console.error('Media download error:', err.message);
+    return null;
   }
 }
 
-// Listen for outgoing messages from Supabase
-supabase
-  .channel('whatsapp_outbound')
-  .on('postgres_changes', { 
-    event: 'INSERT', 
-    schema: 'public', 
-    table: 'messages',
-    filter: `org_id=eq.${ORG_ID}`
-  }, async (payload) => {
-    const newMsg = payload.new;
-    console.log("Realtime INSERT received:", JSON.stringify(newMsg));
-    
-    // If it's an agent or AI replying, and it doesn't have a platform_message_id yet, and it's not an internal note
-    if ((newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai') && !newMsg.platform_message_id && !newMsg.is_internal) {
-      try {
-        const { data: conv } = await supabase
-          .from('conversations')
-          .select('contact_id, channels!inner(id, type, config)')
-          .eq('id', newMsg.conversation_id)
-          .single();
+// ─────────────────────────────────────────────
+// Process inbound message
+// ─────────────────────────────────────────────
 
-        if (conv && conv.channels.type === 'whatsapp') {
-          const { data: contact } = await supabase
-            .from('contacts')
-            .select('platform_id')
-            .eq('id', conv.contact_id)
-            .single();
+async function processMessage(msg) {
+  // Skip messages sent by us (handled by the send endpoint)
+  if (isFromMe(msg)) return;
+  // Skip status messages
+  const conversationJid = getConversationJid(msg);
+  if (conversationJid === 'status@broadcast') return;
 
-          if (contact && global.sock) {
-            // Check if it's a raw number or already contains the domain (like @lid or @s.whatsapp.net)
-            const jid = contact.platform_id.includes('@') 
-              ? contact.platform_id 
-              : `${contact.platform_id}@s.whatsapp.net`;
-              
-            let sentMsg;
-            if (newMsg.content_type === 'image' || newMsg.content_type === 'file' || newMsg.content_type === 'audio') {
-              const mediaUrl = newMsg.metadata?.media_url;
-              if (mediaUrl) {
-                const res = await fetch(mediaUrl);
-                const arrayBuffer = await res.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                
-                if (newMsg.content_type === 'image') {
-                  sentMsg = await global.sock.sendMessage(jid, { image: buffer, caption: newMsg.content === '[Attachment]' || newMsg.content === '[Image]' ? '' : newMsg.content });
-                } else if (newMsg.content_type === 'audio') {
-                  sentMsg = await global.sock.sendMessage(jid, { audio: buffer, ptt: true, mimetype: 'audio/mp4' });
-                } else {
-                  sentMsg = await global.sock.sendMessage(jid, { document: buffer, mimetype: newMsg.metadata?.mimetype || 'application/octet-stream', fileName: newMsg.metadata?.filename || 'Document' });
-                }
-              } else {
-                sentMsg = await global.sock.sendMessage(jid, { text: newMsg.content });
-              }
-            } else {
-              sentMsg = await global.sock.sendMessage(jid, { text: newMsg.content });
-            }
-            
-            // Optionally update the message with the platform_message_id so we know it was sent successfully
-            if (sentMsg && sentMsg.key) {
-              await supabase
-                .from('messages')
-                .update({ platform_message_id: sentMsg.key.id })
-                .eq('id', newMsg.id);
-            }
-            
-            
-            console.log(`Sent reply to ${jid}`);
-          }
-        } else if (conv && (conv.channels.type === 'messenger' || conv.channels.type === 'instagram')) {
-          const { data: contact } = await supabase
-            .from('contacts')
-            .select('platform_id')
-            .eq('id', conv.contact_id)
-            .single();
+  const isGroup = conversationJid.endsWith('@g.us');
+  const senderJid = getSender(msg);
+  const senderName = resolveName(msg);
+  const text = extractText(msg);
+  const contentType = getContentType(msg);
+  const msgId = msg.key?.id;
 
-          if (contact && conv.channels.config && conv.channels.config.access_token) {
-            const pageAccessToken = conv.channels.config.access_token;
-            const recipientId = contact.platform_id;
-            
-            const payload = {
-              recipient: { id: recipientId },
-              message: { text: newMsg.content }
-            };
+  try {
+    if (msgId) {
+      const { data: existingMessage } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('org_id', ORG_ID)
+        .eq('platform_message_id', msgId)
+        .limit(1)
+        .maybeSingle();
 
-            const fbRes = await fetch(`https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            const fbData = await fbRes.json();
-            
-            if (fbData.message_id) {
-              await supabase
-                .from('messages')
-                .update({ platform_message_id: fbData.message_id, status: 'sent' })
-                .eq('id', newMsg.id);
-              console.log(`Sent ${conv.channels.type} reply to ${recipientId}`);
-            } else {
-              console.error(`${conv.channels.type} send error:`, fbData);
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Error sending outbound message:", e);
-      }
-    }
-  })
-  .subscribe((status) => {
-    console.log('Realtime status:', status);
-  });
-
-async function startWhatsApp() {
-  await registerChannel();
-
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
-
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true,
-    browser: Browsers.macOS('Desktop'),
-    logger: pino({ level: "silent" })
-  });
-  
-  global.sock = sock;
-  
-  global.sock = sock;
-
-  sock.ev.on('creds.update', saveCreds);
-
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-    
-    if (qr) {
-      console.log("Scan this QR code in WhatsApp!");
-      try {
-        const qrBase64 = await QRCodeBase64.toDataURL(qr);
-        await supabase
-          .from('channels')
-          .update({ config: { status: 'pending', qr_code: qrBase64 } })
-          .eq('org_id', ORG_ID)
-          .eq('type', 'whatsapp');
-        console.log("Pushed QR code to Supabase for UI.");
-      } catch (err) {
-        console.error("Failed to generate/push Base64 QR", err);
+      if (existingMessage) {
+        console.log(`[MSG] Duplicate dropped: ${msgId}`);
+        return;
       }
     }
 
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('Connection closed due to ', lastDisconnect.error, ', reconnecting ', shouldReconnect);
-      
-      if (!shouldReconnect) {
-        await supabase
-          .from('channels')
-          .update({ config: { status: 'disconnected' } })
-          .eq('org_id', ORG_ID)
-          .eq('type', 'whatsapp');
-      } else {
-        startWhatsApp();
+    const channelId = await getOrCreateChannel();
+    const contactId = await upsertContact(conversationJid, isGroup ? null : senderName);
+    const conversationId = await upsertConversation(contactId, channelId);
+
+    // Build metadata
+    const metadata = {
+      participant_jid: isGroup ? senderJid : null,
+      participant_name: isGroup ? senderName : null,
+    };
+
+    // Handle media
+    if (contentType !== 'text') {
+      const media = await downloadAndUploadMedia(msgId, contentType, conversationJid);
+      if (media) {
+        metadata.media_url = media.url;
+        metadata.mimetype = media.mimeType;
+        metadata.filename = media.fileName;
       }
-    } else if (connection === 'open') {
-      console.log('✅ WhatsApp Web connected!');
-      await supabase
-        .from('channels')
-        .update({ config: { status: 'connected' } })
+    }
+
+    // Insert message
+    await supabase.from('messages').insert({
+      org_id: ORG_ID,
+      conversation_id: conversationId,
+      platform_message_id: msgId,
+      sender_type: 'contact',
+      sender_id: contactId,
+      content: text || (contentType !== 'text' ? mediaPlaceholder(contentType) : ''),
+      content_type: contentType,
+      metadata,
+      status: 'delivered'
+    });
+
+    // Update conversation last_message_at
+    await supabase.from('conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${senderName || senderJid}: "${text.slice(0, 60)}"`);
+  } catch (err) {
+    console.error('[processMessage] Error:', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Webhooks (Incoming from Evolution API)
+// ─────────────────────────────────────────────
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+app.post('/webhook/evolution', async (req, res) => {
+  res.status(200).send('ok'); // respond fast
+
+  const body = req.body;
+  const event = body.event;
+
+  if (event === 'messages.upsert') {
+    const messages = body.data?.messages || (body.data ? [body.data] : []);
+    for (const msg of messages) {
+      await processMessage(msg).catch(err => console.error('processMessage failed:', err.message));
+    }
+  } else if (event === 'connection.update') {
+    const state = body.data?.state;
+    console.log(`[CONNECTION] Status: ${state}`);
+
+    // Fetch existing channel config to preserve QR and pairing codes
+    const { data: channel } = await supabase.from('channels')
+      .select('config')
+      .eq('org_id', ORG_ID)
+      .eq('type', 'whatsapp')
+      .maybeSingle();
+
+    const currentConfig = channel?.config || {};
+    const qrCode = currentConfig.qr_code || null;
+    const pairingCode = currentConfig.pairing_code || null;
+
+    if (state === 'open') {
+      // Device linked, QR no longer needed
+      await supabase.from('channels')
+        .update({ 
+          config: { status: 'connected', qr_code: null, pairing_code: null }, 
+          is_active: true 
+        })
+        .eq('org_id', ORG_ID)
+        .eq('type', 'whatsapp');
+    } else if (state === 'close') {
+      // Disconnected but keep the QR/pairing code so user can scan/reconnect
+      await supabase.from('channels')
+        .update({ 
+          config: { status: 'disconnected', qr_code: qrCode, pairing_code: pairingCode }, 
+          is_active: true 
+        })
+        .eq('org_id', ORG_ID)
+        .eq('type', 'whatsapp');
+    } else if (state === 'connecting') {
+      // Connecting / starting up: preserve QR code so UI doesn't buffer infinitely
+      await supabase.from('channels')
+        .update({ 
+          config: { status: 'pending', qr_code: qrCode, pairing_code: pairingCode }, 
+          is_active: true 
+        })
         .eq('org_id', ORG_ID)
         .eq('type', 'whatsapp');
     }
+  } else if (event === 'qrcode.updated') {
+    const qrBase64 = body.data?.qrcode?.base64 || body.data?.base64 || '';
+    const pairingCode = body.data?.qrcode?.pairingCode || '';
+    console.log('[QR] New QR code received!');
+    if (pairingCode) console.log('[QR] Pairing Code:', pairingCode);
+    console.log('[QR] Scan via Evolution Manager: http://46.225.152.127:8080/manager');
+    if (qrBase64) console.log('[QR] Base64 length:', qrBase64.length, '(has content)');
+    const channelId = await getOrCreateChannel();
+    await supabase.from('channels')
+      .update({
+        config: {
+          status: 'pending',
+          qr_code: formatQrCode(qrBase64),
+          pairing_code: pairingCode || null
+        },
+        is_active: true
+      })
+      .eq('id', channelId);
+  }
+});
+
+// ─────────────────────────────────────────────
+// Outbound: send message via Evolution API
+// Used by the Supabase Realtime listener below
+// ─────────────────────────────────────────────
+
+async function sendTextMessage(jid, text) {
+  const res = await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
+    method: 'POST',
+    headers: {
+      'apikey': EVOLUTION_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ number: jid, text })
   });
-
-  sock.ev.on('messages.upsert', async (m) => {
-    const msg = m.messages[0];
-    if (!msg.message) return; // ignore system events
-    if (msg.key.remoteJid === 'status@broadcast') return; // ignore status updates
-
-    let senderJid = msg.key.remoteJid;
-    let senderNumber = senderJid.split('@')[0];
-    let realPhone = null;
-    if (msg.key.remoteJidAlt) {
-      realPhone = msg.key.remoteJidAlt.split('@')[0];
-    } else if (!senderJid.includes('@lid')) {
-      realPhone = senderNumber;
-    }
-    let text = msg.message.conversation || msg.message.extendedTextMessage?.text;
-    
-    console.log("DEBUG MSG:", JSON.stringify({ key: msg.key, senderPn: msg.senderPn, participant: msg.participant }));
-    let pushName = msg.pushName || `+${senderNumber}`;
-    
-    // If this is a group, fetch the actual group name instead of the sender's name
-    if (senderJid.endsWith('@g.us')) {
-      try {
-        const groupMeta = await sock.groupMetadata(senderJid);
-        if (groupMeta && groupMeta.subject) {
-          pushName = groupMeta.subject;
-        }
-      } catch (err) {
-        console.error("Could not fetch group metadata:", err);
-      }
-    }
-    
-    let isFromMe = msg.key.fromMe;
-    let messageId = msg.key.id;
-    
-    let isMedia = false;
-    let mimeType = null;
-    let fileName = null;
-    let mediaUrl = null;
-    let contentType = 'text';
-
-    if (msg.message.imageMessage) {
-      isMedia = true;
-      mimeType = msg.message.imageMessage.mimetype;
-      contentType = 'image';
-      text = msg.message.imageMessage.caption || '[Image]';
-    } else if (msg.message.documentMessage) {
-      isMedia = true;
-      mimeType = msg.message.documentMessage.mimetype;
-      fileName = msg.message.documentMessage.fileName || 'Document';
-      contentType = 'file';
-      text = msg.message.documentMessage.caption || '[Attachment]';
-    } else if (msg.message.audioMessage) {
-      isMedia = true;
-      mimeType = msg.message.audioMessage.mimetype;
-      contentType = 'audio';
-      text = '[Audio Voice Message]';
-    } else if (msg.message.videoMessage) {
-      isMedia = true;
-      mimeType = msg.message.videoMessage.mimetype;
-      contentType = 'video';
-      text = msg.message.videoMessage.caption || '[Video]';
-    } else if (msg.message.stickerMessage) {
-      isMedia = true;
-      mimeType = msg.message.stickerMessage.mimetype;
-      contentType = 'image'; // Treat stickers as images for UI simplicity
-      text = '[Sticker]';
-    }
-
-    if (!text && !isMedia) return;
-
-    if (isMedia) {
-      try {
-        const buffer = await downloadMediaMessage(
-          msg,
-          'buffer',
-          { },
-          { logger: pino({ level: 'silent' }) }
-        );
-        
-        // Upload to Supabase Storage
-        const fileExt = mimeType ? mimeType.split('/')[1].split(';')[0] : 'bin';
-        const supabaseFileName = `${ORG_ID}/${senderNumber}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage.from('media').upload(supabaseFileName, buffer, { contentType: mimeType || 'application/octet-stream' });
-        
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('media').getPublicUrl(supabaseFileName);
-          mediaUrl = urlData.publicUrl;
-        } else {
-          console.error("Supabase Storage Upload Error:", uploadError);
-        }
-      } catch (err) {
-        console.error("Failed to download or upload media:", err);
-      }
-    }
-
-    console.log(`Received message ${isFromMe ? 'FROM ME to ' : 'FROM '}${senderNumber}: ${text || contentType}`);
-
-    try {
-      let { data: channels } = await supabase
-        .from('channels')
-        .select('id')
-        .eq('org_id', ORG_ID)
-        .eq('type', 'whatsapp')
-        .limit(1);
-      
-      if (!channels || channels.length === 0) return;
-      const channelId = channels[0].id;
-
-      // Check if contact exists
-      // We search by full JID so @lid accounts are properly separated and tracked
-      let { data: contacts } = await supabase
-        .from('contacts')
-        .select('id, name, avatar_url, metadata')
-        .eq('org_id', ORG_ID)
-        .eq('platform_type', 'whatsapp')
-        .eq('platform_id', senderJid)
-        .limit(1);
-
-      let contact = contacts && contacts.length > 0 ? contacts[0] : null;
-
-      if (!contact) {
-        // Fallback: Check if it was saved using the old format (just the number)
-        // If it exists in old format, we will use it and the outbound logic handles it.
-        const { data: oldContacts } = await supabase
-          .from('contacts')
-          .select('id, name, avatar_url')
-          .eq('org_id', ORG_ID)
-          .eq('platform_type', 'whatsapp')
-          .eq('platform_id', senderNumber)
-          .limit(1);
-          
-        if (oldContacts && oldContacts.length > 0) {
-          contact = oldContacts[0];
-          // Update the DB to use the full JID so future messages map correctly
-          await supabase.from('contacts').update({ platform_id: senderJid }).eq('id', contact.id);
-        }
-      }
-
-      // Helper: fetch WhatsApp profile pic and save to Supabase Storage
-      async function fetchAndSaveAvatar(jid, contactId) {
-        try {
-          const ppUrl = await sock.profilePictureUrl(jid, 'image');
-          if (!ppUrl) return null;
-          const response = await fetch(ppUrl);
-          if (!response.ok) return null;
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const path = `avatars/${contactId}.jpg`;
-          const { error } = await supabase.storage.from('media').upload(path, buffer, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-          if (error) return null;
-          const { data: urlData } = supabase.storage.from('media').getPublicUrl(path);
-          const avatarUrl = urlData.publicUrl;
-          await supabase.from('contacts').update({ avatar_url: avatarUrl }).eq('id', contactId);
-          return avatarUrl;
-        } catch (err) {
-          return null; // Privacy restricted - silently ignore
-        }
-      }
-
-      if (!contact) {
-        const { data: newContact } = await supabase
-          .from('contacts')
-          .insert({
-            org_id: ORG_ID,
-            platform_type: 'whatsapp',
-            platform_id: senderJid, // Save FULL JID!
-            name: pushName,
-            avatar_url: null,
-            metadata: realPhone ? { real_phone: realPhone } : {}
-          })
-          .select('id, name, metadata')
-          .single();
-        contact = newContact;
-        // Fetch profile picture for new contact (fire and forget)
-        if (contact) fetchAndSaveAvatar(senderJid, contact.id);
-      } else {
-        // Only update if name differs significantly from default
-        let updatePayload = {};
-        
-        if (pushName && pushName !== `+${senderNumber}` && contact.name.startsWith('+')) {
-          updatePayload.name = pushName;
-        } else if (contact.name.startsWith('WA User ')) {
-          updatePayload.name = pushName;
-        }
-        
-        if (realPhone && (!contact.metadata || contact.metadata.real_phone !== realPhone)) {
-          updatePayload.metadata = { ...(contact.metadata || {}), real_phone: realPhone };
-        }
-        
-        if (Object.keys(updatePayload).length > 0) {
-          // Fire and forget contact update so it doesn't block message insertion!
-          supabase.from('contacts').update(updatePayload).eq('id', contact.id).then();
-        }
-        
-        // Fetch avatar if not set yet (fire and forget)
-        if (!contact.avatar_url) fetchAndSaveAvatar(senderJid, contact.id);
-      }
-
-      let { data: convs } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('org_id', ORG_ID)
-        .eq('contact_id', contact.id)
-        .eq('status', 'open')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      let conversation = convs && convs.length > 0 ? convs[0] : null;
-
-      if (!conversation) {
-        const { data: newConv } = await supabase
-          .from('conversations')
-          .insert({
-            org_id: ORG_ID,
-            channel_id: channelId,
-            contact_id: contact.id,
-            status: 'open'
-          })
-          .select('id')
-          .single();
-        conversation = newConv;
-      }
-
-      // Check if this message ID already exists (to prevent dupes on reconnect)
-      const { data: existingMsg } = await supabase
-        .from('messages')
-        .select('id')
-        .eq('platform_message_id', messageId)
-        .limit(1);
-
-      if (!existingMsg || existingMsg.length === 0) {
-        // Enqueue the message to be processed safely by BullMQ
-        await messageQueue.add('insert-message', {
-          ORG_ID,
-          conversation,
-          isFromMe,
-          contactId: contact.id,
-          text,
-          contentType,
-          mediaUrl,
-          mimeType,
-          fileName,
-          messageId
-        }, {
-          attempts: 5,
-          backoff: { type: 'exponential', delay: 1000 }
-        });
-        
-        console.log(`[Queue] Added message ${messageId} to processing queue.`);
-      }
-    } catch (e) {
-      console.error("Error processing incoming message:", e);
-    }
-  });
-
-  sock.ev.on('messages.update', async (updates) => {
-    for (const update of updates) {
-      if (update.update.status) {
-        const messageId = update.key.id;
-        const status = update.update.status;
-        let dbStatus = null;
-        if (status === 3) dbStatus = 'delivered'; // WAMessageStatus.DELIVERY_ACK
-        if (status === 4) dbStatus = 'read';      // WAMessageStatus.READ
-
-        if (dbStatus) {
-          try {
-            await supabase
-              .from('messages')
-              .update({ status: dbStatus })
-              .eq('platform_message_id', messageId);
-            console.log(`Updated message ${messageId} status to ${dbStatus}`);
-          } catch (e) {
-            console.error(`Failed to update status for ${messageId}`, e);
-          }
-        }
-      }
-    }
-  });
-
-  // Handle Incoming Typing Indicators (Customer -> Agent)
-  sock.ev.on('presence.update', async (json) => {
-    try {
-      const jid = json.id;
-      const presences = Object.values(json.presences || {});
-      if (presences.length === 0) return;
-      
-      const lastKnown = presences[0].lastKnownPresence;
-      const isTyping = lastKnown === 'composing';
-      
-      // Look up contact by JID
-      const { data: contacts } = await supabase
-        .from('contacts')
-        .select('id')
-        .eq('org_id', ORG_ID)
-        .eq('platform_id', jid)
-        .limit(1);
-        
-      if (contacts && contacts.length > 0) {
-        // Look up open conversation
-        const { data: convs } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('contact_id', contacts[0].id)
-          .eq('status', 'open')
-          .limit(1);
-          
-        if (convs && convs.length > 0) {
-          const conversationId = convs[0].id;
-          
-          supabase.channel(`typing:${ORG_ID}`).send({
-            type: 'broadcast',
-            event: 'typingStatus',
-            payload: { conversation_id: conversationId, direction: 'contact', is_typing: isTyping }
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Error handling presence update:', e);
-    }
-  });
-
-  // Handle Outgoing Typing Indicators (Agent -> Customer)
-  supabase.channel(`typing:${ORG_ID}`)
-    .on('broadcast', { event: 'typingStatus' }, async (payload) => {
-      // Only process agent typing
-      if (payload.payload.direction === 'agent') {
-        try {
-          const isTyping = payload.payload.is_typing;
-          const conversationId = payload.payload.conversation_id;
-          
-          // Get contact JID from conversation
-          const { data: conv } = await supabase
-            .from('conversations')
-            .select('contact_id')
-            .eq('id', conversationId)
-            .single();
-            
-          if (conv) {
-            const { data: contact } = await supabase
-              .from('contacts')
-              .select('platform_id')
-              .eq('id', conv.contact_id)
-              .single();
-              
-            if (contact && contact.platform_id) {
-              await sock.sendPresenceUpdate(isTyping ? 'composing' : 'paused', contact.platform_id);
-            }
-          }
-        } catch (e) {
-          console.error('Error sending presence to WA:', e);
-        }
-      }
-    })
-    .subscribe();
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Evolution sendText failed: ${err}`);
+  }
+  return res.json();
 }
 
-startWhatsApp();
+async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
+  const mediaType = mimetype?.startsWith('image/') ? 'image'
+    : mimetype?.startsWith('audio/') ? 'audio'
+    : mimetype?.startsWith('video/') ? 'video'
+    : 'document';
+
+  const endpoint = mediaType === 'image' ? 'sendMedia'
+    : mediaType === 'audio' ? 'sendWhatsAppAudio'
+    : mediaType === 'video' ? 'sendMedia'
+    : 'sendMedia';
+
+  const res = await fetch(`${EVOLUTION_API_URL}/message/${endpoint}/${EVOLUTION_INSTANCE}`, {
+    method: 'POST',
+    headers: {
+      'apikey': EVOLUTION_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      number: jid,
+      mediatype: mediaType,
+      media: mediaUrl,
+      caption: caption || '',
+      mimetype
+    })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Evolution sendMedia failed: ${err}`);
+  }
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+// Supabase Realtime: watch for agent messages
+// ─────────────────────────────────────────────
+
+const WebSocket = require('ws');
+const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false },
+  realtime: { transport: WebSocket }
+});
+
+supabaseRealtime
+  .channel('outbound_messages')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'messages',
+    filter: `org_id=eq.${ORG_ID}`
+  }, async (payload) => {
+    const msg = payload.new;
+    if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
+    if (msg.is_internal) return;
+    if (msg.platform_message_id) return; // already sent
+
+    try {
+      const { data: conv } = await supabaseRealtime
+        .from('conversations')
+        .select('contact_id, channels!inner(type)')
+        .eq('id', msg.conversation_id)
+        .single();
+
+      if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+      const { data: contact } = await supabaseRealtime
+        .from('contacts')
+        .select('platform_id')
+        .eq('id', conv.contact_id)
+        .single();
+
+      if (!contact) return;
+
+      const jid = contact.platform_id.includes('@')
+        ? contact.platform_id
+        : `${contact.platform_id}@s.whatsapp.net`;
+
+      let sentResult;
+      if (msg.metadata?.media_url) {
+        sentResult = await sendMediaMessage(
+          jid,
+          msg.metadata.media_url,
+          msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
+          msg.metadata.mimetype
+        );
+      } else {
+        sentResult = await sendTextMessage(jid, msg.content);
+      }
+
+      // Save platform message id for dedup
+      const platformMessageId = extractSentMessageId(sentResult);
+      if (platformMessageId) {
+        await supabaseRealtime.from('messages')
+          .update({ platform_message_id: platformMessageId, status: 'delivered' })
+          .eq('id', msg.id);
+      }
+
+      console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
+    } catch (err) {
+      console.error('[OUTBOUND] Error:', err.message);
+      await supabaseRealtime.from('messages')
+        .update({
+          status: 'failed',
+          metadata: {
+            ...(msg.metadata || {}),
+            delivery_error: err.message,
+            delivery_failed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', msg.id);
+    }
+  })
+  .subscribe((status) => {
+    console.log('[REALTIME] Status:', status);
+  });
+
+// ─────────────────────────────────────────────
+// Register webhook with Evolution API on startup
+// ─────────────────────────────────────────────
+
+async function registerWebhook() {
+  const selfUrl = `${WEBHOOK_PUBLIC_URL.replace(/\/$/, '')}/webhook/evolution`;
+
+  try {
+    const res = await fetch(`${EVOLUTION_API_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        webhook: {
+          enabled: true,
+          url: selfUrl,
+          webhook_by_events: false,
+          webhook_base64: true,
+          events: [
+            'MESSAGES_UPSERT',
+            'CONNECTION_UPDATE',
+            'QRCODE_UPDATED'
+          ]
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.id) {
+      console.log('[WEBHOOK] Registered successfully. URL:', selfUrl);
+    } else {
+      console.error('[WEBHOOK] Registration failed:', JSON.stringify(data));
+    }
+  } catch (err) {
+    console.error('[WEBHOOK] Register failed:', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Start
+// ─────────────────────────────────────────────
+
+app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
+  console.log(`[SERVER] TalkFuze Evolution Bridge running on port ${WEBHOOK_PORT}`);
+  
+  // Register webhook with Evolution API
+  await registerWebhook();
+  
+  console.log('[READY] Listening for WhatsApp events...');
+  
+  // Signal PM2 that the application is ready (for wait_ready zero-downtime reloads)
+  if (process.send) {
+    process.send('ready');
+  }
+});
+
+// ─────────────────────────────────────────────
+// Error Boundaries & Graceful Shutdown
+// ─────────────────────────────────────────────
+
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err);
+  // Give PM2 time to process the log before exiting
+  setTimeout(() => process.exit(1), 500);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+async function gracefulShutdown(signal) {
+  console.log(`\n[SHUTDOWN] Received ${signal}, starting graceful shutdown...`);
+  // PM2 sends SIGINT by default on restart/reload
+  try {
+    // We could close db connections here if we had long-lived pools
+    console.log('[SHUTDOWN] Cleanup complete. Exiting.');
+    process.exit(0);
+  } catch (err) {
+    console.error('[SHUTDOWN] Error during cleanup:', err);
+    process.exit(1);
+  }
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
