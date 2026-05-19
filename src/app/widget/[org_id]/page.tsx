@@ -370,6 +370,78 @@ export default function WidgetPage() {
   }, []);
 
   const [showTicketLogin, setShowTicketLogin] = useState(false);
+  const [otpStep, setOtpStep] = useState<'email' | 'sending' | 'otp' | 'verifying' | 'success'>('email');
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpName, setOtpName] = useState('');
+  const [otpTicketId, setOtpTicketId] = useState('');
+
+  const resetOtpModal = () => {
+    setOtpStep('email');
+    setOtpEmail('');
+    setOtpCode('');
+    setOtpError('');
+    setOtpName('');
+    setOtpTicketId('');
+    setShowTicketLogin(false);
+  };
+
+  const conversationId = messages.find(m => m.conversation_id)?.conversation_id || '';
+
+  const handleSendOTP = async () => {
+    if (!otpEmail.trim() || !otpEmail.includes('@')) {
+      setOtpError('Please enter a valid email address.');
+      return;
+    }
+    setOtpError('');
+    setOtpStep('sending');
+    try {
+      const res = await fetch('/api/widget/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', email: otpEmail, conversationId, orgId: org_id }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setOtpError(data.error || 'Failed to send OTP. Please try again.');
+        setOtpStep('email');
+      } else {
+        setOtpName(data.name || '');
+        setOtpStep('otp');
+      }
+    } catch {
+      setOtpError('Network error. Please check your connection.');
+      setOtpStep('email');
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCode.trim() || otpCode.length < 6) {
+      setOtpError('Please enter the 6-digit code.');
+      return;
+    }
+    setOtpError('');
+    setOtpStep('verifying');
+    try {
+      const res = await fetch('/api/widget/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: otpEmail, otp: otpCode, conversationId, orgId: org_id }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setOtpError(data.error || 'Incorrect code. Please try again.');
+        setOtpStep('otp');
+      } else {
+        setOtpTicketId(data.ticketId || '');
+        setOtpStep('success');
+      }
+    } catch {
+      setOtpError('Network error. Please check your connection.');
+      setOtpStep('otp');
+    }
+  };
 
   const handleDownloadTranscript = () => {
     const text = messages.map(m => `[${new Date(m.created_at).toLocaleString()}] ${m.sender_type === 'agent' ? m.agent?.name || 'Agent' : 'You'}: ${m.content}`).join('\n\n');
@@ -385,6 +457,8 @@ export default function WidgetPage() {
 
   const handleConvertToTicket = () => {
     setIsHeaderMenuOpen(false);
+    setOtpStep('email');
+    setOtpError('');
     setShowTicketLogin(true);
   };
 
@@ -710,27 +784,100 @@ export default function WidgetPage() {
              {/* Convert to Ticket Modal */}
              {showTicketLogin && (
                <>
-                 {/* Backdrop */}
-                 <div 
-                   className="absolute inset-0 bg-slate-900/20 backdrop-blur-[1px] z-40 animate-in fade-in duration-200" 
-                   onClick={() => setShowTicketLogin(false)}
-                 />
-                 {/* Bottom Sheet */}
+                 <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[1px] z-40 animate-in fade-in duration-200" onClick={otpStep === 'email' ? resetOtpModal : undefined} />
                  <div className="absolute bottom-0 left-0 right-0 bg-white z-50 border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
-                    <div className="flex justify-between items-center mb-4">
-                       <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">Convert to Ticket</h3>
-                       <button onClick={() => setShowTicketLogin(false)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors"><X size={18} strokeWidth={2.5} /></button>
-                    </div>
-                    <p className="text-slate-500 text-[14px] mb-5 tracking-tight leading-relaxed">To link this conversation with your WHMCS account, please verify your email address.</p>
-                    <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-2">Registered Email</label>
-                    <input 
-                       type="email" 
-                       placeholder="e.g. admin@example.com"
-                       className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3.5 text-[14px] mb-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
-                    />
-                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] active:scale-[0.98]">
-                       Send Login OTP
-                    </button>
+
+                   {/* STEP: email */}
+                   {(otpStep === 'email' || otpStep === 'sending') && (
+                     <>
+                       <div className="flex justify-between items-center mb-3">
+                         <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">Convert to Ticket</h3>
+                         <button onClick={resetOtpModal} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors"><X size={18} strokeWidth={2.5} /></button>
+                       </div>
+                       <p className="text-slate-500 text-[14px] mb-5 leading-relaxed">Enter your registered WHMCS email. We'll send a 6-digit code to verify your identity.</p>
+                       <label className="block text-[12px] font-bold text-slate-600 uppercase tracking-wider mb-2">Email Address</label>
+                       <input
+                         type="email"
+                         value={otpEmail}
+                         onChange={e => { setOtpEmail(e.target.value); setOtpError(''); }}
+                         onKeyDown={e => e.key === 'Enter' && handleSendOTP()}
+                         placeholder="admin@yourdomain.com"
+                         disabled={otpStep === 'sending'}
+                         className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3.5 text-[14px] mb-1 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400 disabled:opacity-60"
+                       />
+                       {otpError && <p className="text-red-500 text-[13px] mb-3 mt-1">{otpError}</p>}
+                       {!otpError && <div className="mb-4" />}
+                       <button
+                         onClick={handleSendOTP}
+                         disabled={otpStep === 'sending'}
+                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-[0.98] flex items-center justify-center gap-2"
+                       >
+                         {otpStep === 'sending' ? (
+                           <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Sending Code...</>
+                         ) : 'Send Login OTP'}
+                       </button>
+                     </>
+                   )}
+
+                   {/* STEP: otp entry */}
+                   {(otpStep === 'otp' || otpStep === 'verifying') && (
+                     <>
+                       <div className="flex justify-between items-center mb-3">
+                         <button onClick={() => { setOtpStep('email'); setOtpError(''); }} className="text-slate-400 hover:text-slate-600 p-1 -ml-1 transition-colors">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                         </button>
+                         <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">Check your inbox</h3>
+                         <button onClick={resetOtpModal} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors"><X size={18} strokeWidth={2.5} /></button>
+                       </div>
+                       <p className="text-slate-500 text-[14px] mb-5 leading-relaxed">
+                         We sent a 6-digit code to <strong className="text-slate-700">{otpEmail}</strong>{otpName ? `. Hi ${otpName}!` : '.'} Enter it below.
+                       </p>
+                       <label className="block text-[12px] font-bold text-slate-600 uppercase tracking-wider mb-2">6-Digit Code</label>
+                       <input
+                         type="text"
+                         value={otpCode}
+                         onChange={e => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpError(''); }}
+                         onKeyDown={e => e.key === 'Enter' && handleVerifyOTP()}
+                         placeholder="000000"
+                         maxLength={6}
+                         disabled={otpStep === 'verifying'}
+                         className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3.5 text-[18px] text-center font-mono tracking-[0.5em] mb-1 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300 disabled:opacity-60"
+                       />
+                       {otpError && <p className="text-red-500 text-[13px] mb-3 mt-1">{otpError}</p>}
+                       {!otpError && <div className="mb-4" />}
+                       <button
+                         onClick={handleVerifyOTP}
+                         disabled={otpStep === 'verifying' || otpCode.length < 6}
+                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-[0.98] flex items-center justify-center gap-2"
+                       >
+                         {otpStep === 'verifying' ? (
+                           <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Verifying...</>
+                         ) : 'Verify & Convert'}
+                       </button>
+                       <button onClick={handleSendOTP} disabled={otpStep === 'verifying'} className="w-full text-center text-[13px] text-slate-400 hover:text-blue-600 mt-3 transition-colors disabled:opacity-40">
+                         Resend code
+                       </button>
+                     </>
+                   )}
+
+                   {/* STEP: success */}
+                   {otpStep === 'success' && (
+                     <div className="flex flex-col items-center text-center py-4">
+                       <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                         <svg className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                       </div>
+                       <h3 className="font-bold text-slate-800 text-[18px] mb-2">Ticket Created!</h3>
+                       {otpTicketId ? (
+                         <p className="text-slate-500 text-[14px] leading-relaxed mb-6">Your conversation has been converted to ticket <strong className="text-slate-700">#{otpTicketId}</strong>. We'll reply to <strong className="text-slate-700">{otpEmail}</strong> shortly.</p>
+                       ) : (
+                         <p className="text-slate-500 text-[14px] leading-relaxed mb-6">Your request has been received. We'll get back to you at <strong className="text-slate-700">{otpEmail}</strong> shortly.</p>
+                       )}
+                       <button onClick={resetOtpModal} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all active:scale-[0.98]">
+                         Done
+                       </button>
+                     </div>
+                   )}
+
                  </div>
                </>
              )}
