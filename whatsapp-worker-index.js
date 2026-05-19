@@ -718,36 +718,19 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
     : mimetype?.startsWith('video/') ? 'video'
     : 'document';
 
-  // Audio: download webm -> convert to ogg/opus via ffmpeg -> upload ogg to Supabase -> send URL
-  // Base64 produces fileLength:0 (empty bubble). URL with proper ogg works perfectly.
+  // Audio: download webm -> send raw base64 to Evolution with encoding:true
+  // Evolution's internal ffmpeg converts to ogg/opus and Baileys uploads to WhatsApp
+  // This exact approach was confirmed working via manual curl test (12:39 AM messages)
   if (mediaType === 'audio') {
-    const { execSync } = require('child_process');
-    const fs = require('fs');
-    const os = require('os');
-    const path = require('path');
-
-    const ts = Date.now();
-    const tmpDir = os.tmpdir();
-    const tmpInput = path.join(tmpDir, `talkfuze_audio_${ts}.webm`);
-    const tmpOutput = path.join(tmpDir, `talkfuze_audio_${ts}.ogg`);
-
     try {
       // Download audio from Supabase
       const audioRes = await fetch(mediaUrl);
       if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
       const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
-      fs.writeFileSync(tmpInput, audioBuffer);
+      const base64Audio = audioBuffer.toString('base64');
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
 
-      // Convert to ogg/opus with ffmpeg (optimized for WhatsApp native PTT specs)
-      execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 16000 -ac 1 -ar 16000 "${tmpOutput}" 2>/dev/null`);
-      const oggBuffer = fs.readFileSync(tmpOutput);
-
-      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus`);
-
-      // Send ogg as base64 directly - no Supabase upload needed
-      // encoding:false tells Evolution to pass the buffer directly to Baileys
-      // without re-encoding (which causes double-encoding corruption)
-      const base64Ogg = oggBuffer.toString('base64');
+      console.log(`[AUDIO] Sending ${audioBuffer.length}B webm as base64 (${base64Audio.length} chars) to ${phoneNumber}`);
 
       const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
@@ -756,20 +739,24 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          number: jid,
-          audio: base64Ogg,
-          encoding: false
+          number: phoneNumber,
+          audio: base64Audio,
+          encoding: true
         })
       });
+
+      const resBody = await res.text();
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Evolution sendWhatsAppAudio failed: ${err}`);
+        throw new Error(`Evolution sendWhatsAppAudio failed: ${resBody}`);
       }
-      return res.json();
-    } finally {
-      // Cleanup temp files
-      try { fs.unlinkSync(tmpInput); } catch {}
-      try { fs.unlinkSync(tmpOutput); } catch {}
+
+      const result = JSON.parse(resBody);
+      const am = result?.message?.audioMessage || {};
+      console.log(`[AUDIO] Evolution response: ptt=${am.ptt} fileLength=${am.fileLength} seconds=${am.seconds}`);
+      return result;
+    } catch (err) {
+      console.error(`[AUDIO] Error: ${err.message}`);
+      throw err;
     }
   }
 
