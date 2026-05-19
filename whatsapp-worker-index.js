@@ -768,7 +768,7 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
         body: JSON.stringify({
           number: jid,
           audio: oggUrl,
-          encoding: false  // Already converted to ogg/opus
+          delay: 1200
         })
       });
       if (!res.ok) {
