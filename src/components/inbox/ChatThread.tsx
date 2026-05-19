@@ -126,14 +126,15 @@ function renderTextWithLinks(text: string, isAgent: boolean) {
     return <span className="flex items-center gap-1"><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</span>;
   }
 
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlRegex = /((?:https?:\/\/|www\.)[^\s]+)/gi;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
     if (part.match(urlRegex)) {
+      const href = part.toLowerCase().startsWith('http') ? part : `https://${part}`;
       return (
         <a 
           key={i} 
-          href={part} 
+          href={href} 
           target="_blank" 
           rel="noopener noreferrer" 
           className={isAgent ? "underline underline-offset-2 hover:opacity-80 transition-opacity" : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 transition-all"}
