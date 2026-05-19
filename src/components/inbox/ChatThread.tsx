@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
+import { generateAiDraft } from "@/actions/ai"
 
 interface StagedAttachment {
   file: File;
@@ -643,6 +644,7 @@ export default function ChatThread({
 
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const [isAiDrafting, setIsAiDrafting] = useState(false)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
@@ -811,6 +813,35 @@ export default function ChatThread({
       console.error(e);
     } finally {
       setIsLoadingMore(false);
+    }
+  }
+
+  const handleAiDraft = async () => {
+    if (!conversationId) return
+    setIsAiDrafting(true)
+    
+    // Format context messages
+    const contextMessages = allMessages.slice(-20).map(m => {
+      const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+      const name = isAgent ? 'Agent' : contactName
+      return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+    }).join('\n')
+
+    try {
+      const response = await generateAiDraft(contextMessages, contactName)
+      if (response.success && response.text) {
+        setInput(response.text)
+        setIsInternal(false)
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+        }
+      } else {
+        alert("AI Draft Failed: " + (response.error || "Unknown error"))
+      }
+    } catch (e: any) {
+      alert("AI Draft Failed: " + (e?.message || "Unknown error"))
+    } finally {
+      setIsAiDrafting(false)
     }
   }
 
@@ -2016,6 +2047,15 @@ export default function ChatThread({
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
+              </button>
+              <button 
+                onClick={handleAiDraft}
+                disabled={isSending || isAiDrafting || allMessages.length === 0}
+                title="AI Auto-Reply Draft"
+                className={`p-1.5 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 text-slate-400 hover:text-purple-600 hover:bg-purple-50`}
+              >
+                {isAiDrafting ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} strokeWidth={2} />}
+                <span className="text-[12px] font-medium hidden sm:inline-block pr-1">AI Draft</span>
               </button>
             </div>
             <div className="flex items-center gap-3">
