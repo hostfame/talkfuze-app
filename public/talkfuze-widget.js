@@ -152,7 +152,7 @@
     const iframe = document.createElement('iframe');
     iframe.id = 'tf-iframe';
     iframe.src = WIDGET_URL;
-    iframe.allow = 'autoplay; microphone; camera';
+    iframe.allow = 'autoplay; microphone; camera; display-capture';
     
     iframeContainer.appendChild(iframe);
 
