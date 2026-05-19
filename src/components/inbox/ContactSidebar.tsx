@@ -1,5 +1,6 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban } from "lucide-react"
-import { useState, useEffect } from "react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket } from "@/actions/whmcs"
@@ -79,7 +80,110 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
   const effectivePhoneId = contactPhone || displayPlatformId
 
-  const [activeTab, setActiveTab] = useState<'details' | 'copilot'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
+  
+  // Co-Browsing States
+  const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined'>('idle')
+  const [coBrowseStream, setCoBrowseStream] = useState<MediaStream | null>(null)
+  const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    if (!conversation?.id) return
+
+    const cobrowseChannel = supabase.channel(`cobrowse:${conversation.id}`)
+      .on('broadcast', { event: 'request_declined' }, () => {
+        setCoBrowseStatus('declined')
+        setTimeout(() => setCoBrowseStatus('idle'), 5000)
+      })
+      .on('broadcast', { event: 'screen_share_stopped' }, () => {
+        handleEndCoBrowseSession()
+      })
+      .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
+        try {
+          setCoBrowseStatus('active')
+          const pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+          });
+          coBrowseConnectionRef.current = pc
+
+          pc.ontrack = (event) => {
+            if (videoRef.current) {
+              videoRef.current.srcObject = event.streams[0];
+            }
+            setCoBrowseStream(event.streams[0]);
+          };
+
+          await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+
+          await cobrowseChannel.send({
+            type: 'broadcast',
+            event: 'webrtc_answer',
+            payload: { answer }
+          });
+
+          pc.onicecandidate = (event) => {
+            if (event.candidate) {
+              cobrowseChannel.send({
+                type: 'broadcast',
+                event: 'ice_candidate',
+                payload: { candidate: event.candidate }
+              });
+            }
+          };
+
+          const candidatesChannel = supabase.channel(`cobrowse:${conversation.id}`)
+            .on('broadcast', { event: 'ice_candidate' }, async (p) => {
+              if (p.payload.candidate) {
+                await pc.addIceCandidate(new RTCIceCandidate(p.payload.candidate));
+              }
+            })
+            .subscribe()
+
+        } catch (err) {
+          console.error("Co-browse WebRTC establish error", err)
+          setCoBrowseStatus('idle')
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(cobrowseChannel)
+    }
+  }, [conversation?.id])
+
+  const handleRequestCoBrowse = () => {
+    if (!conversation?.id) return
+    setCoBrowseStatus('requested')
+    const cobrowseChannel = supabase.channel(`cobrowse:${conversation.id}`)
+    cobrowseChannel.send({
+      type: 'broadcast',
+      event: 'request_screen_share'
+    })
+  }
+
+  const handleEndCoBrowseSession = () => {
+    if (coBrowseConnectionRef.current) {
+      coBrowseConnectionRef.current.close()
+      coBrowseConnectionRef.current = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setCoBrowseStream(null)
+    setCoBrowseStatus('idle')
+
+    if (conversation?.id) {
+      const cobrowseChannel = supabase.channel(`cobrowse:${conversation.id}`)
+      cobrowseChannel.send({
+        type: 'broadcast',
+        event: 'screen_share_ended'
+      })
+    }
+  }
+
   const [summary, setSummary] = useState<string | null>(null)
   const [draft, setDraft] = useState<string | null>(null)
   const [isSummarizing, setIsSummarizing] = useState(false)
@@ -350,7 +454,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   return (
     <div className="flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
-      {/* Tabs */}
       <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30">
         <button 
           onClick={() => setActiveTab('details')}
@@ -364,8 +467,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         >
           <Database size={14} className={activeTab === 'copilot' ? 'text-blue-500' : ''} /> Portal
         </button>
+        <button 
+          onClick={() => setActiveTab('cobrowse')}
+          className={`px-4 py-3 text-[14px] transition-colors border-b-2 flex items-center gap-1.5 ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+        >
+          <Monitor size={14} className={activeTab === 'cobrowse' ? 'text-blue-500' : ''} /> Co-Browse
+        </button>
         <div className="flex-1"></div>
-        <button className="p-2 mb-2 text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-all active:scale-95 shadow-sm"><ExternalLink size={14} strokeWidth={2.5}/></button>
       </div>
 
       {activeTab === 'details' && (
@@ -810,6 +918,81 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           )}
 
           </div>
+        </div>
+      )}
+
+      {activeTab === 'cobrowse' && (
+        <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-900/50 p-4 space-y-4 overflow-y-auto">
+          <div className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm flex flex-col items-center text-center">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-3">
+              <Monitor size={20} />
+            </div>
+            <h4 className="text-[14px] font-semibold text-slate-900 dark:text-white">Live Co-Browsing Screen</h4>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Securely view and guide visitors through their browser screen in real time.
+            </p>
+          </div>
+
+          {coBrowseStatus === 'idle' && (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50 space-y-4">
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 text-center">
+                Co-browsing is inactive. Send a request to initiate screen sharing.
+              </p>
+              <button 
+                onClick={handleRequestCoBrowse}
+                className="px-4 py-2.5 bg-[#0070f3] hover:bg-blue-700 active:scale-95 text-white font-semibold text-[13px] rounded-lg shadow-sm transition-all"
+              >
+                Request Screen Share
+              </button>
+            </div>
+          )}
+
+          {coBrowseStatus === 'requested' && (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 space-y-4">
+              <Loader2 className="animate-spin text-[#0070f3]" size={28} />
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Waiting for user approval</p>
+                <p className="text-[11.5px] text-slate-400 mt-0.5">A prompt has been sent to the visitor's screen.</p>
+              </div>
+              <button 
+                onClick={handleEndCoBrowseSession}
+                className="px-4 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-all"
+              >
+                Cancel Request
+              </button>
+            </div>
+          )}
+
+          {coBrowseStatus === 'declined' && (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 border border-red-200/50 dark:border-red-900/40 rounded-xl bg-red-50/50 dark:bg-red-950/20 space-y-3">
+              <X className="text-red-500" size={24} />
+              <p className="text-[13px] font-semibold text-red-700 dark:text-red-400 text-center">Request Declined</p>
+              <p className="text-[11.5px] text-red-500/80 text-center">The visitor declined the co-browsing request.</p>
+            </div>
+          )}
+
+          {coBrowseStatus === 'active' && (
+            <div className="flex-1 flex flex-col min-h-0 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-900 overflow-hidden relative shadow-lg">
+              <video 
+                ref={videoRef}
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-contain bg-slate-950 flex-1 min-h-0"
+              />
+              <div className="absolute bottom-3 left-3 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-800/40 rounded-lg p-2.5 flex items-center justify-between z-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                  <span className="text-[11.5px] font-bold text-white uppercase tracking-wider">Live</span>
+                </div>
+                <button 
+                  onClick={handleEndCoBrowseSession}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm"
+                >
+                  End Session
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

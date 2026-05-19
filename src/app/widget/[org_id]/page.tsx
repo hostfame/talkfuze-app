@@ -289,6 +289,129 @@ export default function WidgetPage() {
   const [ticketLoading, setTicketLoading] = useState(false)
   const [ticketError, setTicketError] = useState("")
   
+  // Co-Browsing WebRTC State
+  const [showCoBrowseRequest, setShowCoBrowseRequest] = useState(false)
+  const [isCoBrowsingActive, setIsCoBrowsingActive] = useState(false)
+  const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const coBrowseStreamRef = useRef<MediaStream | null>(null)
+
+  useEffect(() => {
+    if (!activeConversationId || activeConversationId === 'new') return
+
+    const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
+      .on('broadcast', { event: 'request_screen_share' }, () => {
+        setShowCoBrowseRequest(true)
+      })
+      .on('broadcast', { event: 'screen_share_ended' }, () => {
+        if (coBrowseStreamRef.current) {
+          coBrowseStreamRef.current.getTracks().forEach(t => t.stop())
+          coBrowseStreamRef.current = null
+        }
+        if (coBrowseConnectionRef.current) {
+          coBrowseConnectionRef.current.close()
+          coBrowseConnectionRef.current = null
+        }
+        setIsCoBrowsingActive(false)
+        setShowCoBrowseRequest(false)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(cobrowseChannel)
+    }
+  }, [activeConversationId])
+
+  const handleAcceptCoBrowse = async () => {
+    setShowCoBrowseRequest(false)
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      coBrowseStreamRef.current = stream
+      setIsCoBrowsingActive(true)
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+      coBrowseConnectionRef.current = pc
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
+
+      stream.getVideoTracks()[0].onended = () => {
+        cobrowseChannel.send({
+          type: 'broadcast',
+          event: 'screen_share_stopped'
+        })
+        pc.close()
+        coBrowseConnectionRef.current = null
+        coBrowseStreamRef.current = null
+        setIsCoBrowsingActive(false)
+      }
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      await cobrowseChannel.send({
+        type: 'broadcast',
+        event: 'webrtc_offer',
+        payload: { offer }
+      })
+
+      const answerChannel = supabase.channel(`cobrowse:${activeConversationId}`)
+        .on('broadcast', { event: 'webrtc_answer' }, async (payload) => {
+          if (pc.signalingState !== 'stable') {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+          }
+        })
+        .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
+          if (payload.payload.candidate) {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+          }
+        })
+        .subscribe()
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          cobrowseChannel.send({
+            type: 'broadcast',
+            event: 'ice_candidate',
+            payload: { candidate: event.candidate }
+          })
+        }
+      }
+
+    } catch (e) {
+      console.error("Co-browse failed", e)
+      setIsCoBrowsingActive(false)
+    }
+  }
+
+  const handleDeclineCoBrowse = () => {
+    setShowCoBrowseRequest(false)
+    const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
+    cobrowseChannel.send({
+      type: 'broadcast',
+      event: 'request_declined'
+    })
+  }
+
+  const handleStopCoBrowse = () => {
+    if (coBrowseStreamRef.current) {
+      coBrowseStreamRef.current.getTracks().forEach(t => t.stop())
+      coBrowseStreamRef.current = null
+    }
+    if (coBrowseConnectionRef.current) {
+      coBrowseConnectionRef.current.close()
+      coBrowseConnectionRef.current = null
+    }
+    const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
+    cobrowseChannel.send({
+      type: 'broadcast',
+      event: 'screen_share_stopped'
+    })
+    setIsCoBrowsingActive(false)
+  }
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const ticketEndRef = useRef<HTMLDivElement>(null)
 
@@ -2225,6 +2348,55 @@ export default function WidgetPage() {
           </button>
         </div>
       )}
+
+      {/* Co-Browsing Screen Share Request Alert */}
+      {showCoBrowseRequest && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 max-w-sm w-full text-center flex flex-col items-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-4 shadow-sm animate-pulse">
+              <Video size={28} strokeWidth={2} />
+            </div>
+            <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">Live Co-Browsing View</h3>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+              Our support agent wants to visually guide you through your dashboard. Accept to securely share your screen.
+            </p>
+            <div className="flex gap-2 w-full">
+              <button 
+                onClick={handleDeclineCoBrowse}
+                className="flex-1 py-3 text-[13.5px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all"
+              >
+                Decline
+              </button>
+              <button 
+                onClick={handleAcceptCoBrowse}
+                className="flex-1 py-3 text-[13.5px] font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
+              >
+                Share Screen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Co-Browsing Active Float Indicator */}
+      {isCoBrowsingActive && (
+        <div className="absolute bottom-[80px] left-4 right-4 z-40 bg-[#E5F1FF]/90 dark:bg-blue-950/80 backdrop-blur-md border border-blue-200/50 dark:border-blue-800/40 rounded-xl px-4 py-3 flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping animate-pulse"></div>
+            <div className="flex flex-col">
+              <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200">Screen sharing active</span>
+              <span className="text-[10px] text-[#0070f3] dark:text-blue-400 font-medium">Agent is viewing your window</span>
+            </div>
+          </div>
+          <button 
+            onClick={handleStopCoBrowse}
+            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-2 rounded-lg shadow-sm transition-all uppercase tracking-wide"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+
     </div>
   )
 }
