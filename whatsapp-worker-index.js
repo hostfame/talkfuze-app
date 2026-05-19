@@ -23,7 +23,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -632,7 +632,7 @@ async function processOutboundMessage(msg) {
       sentResult = await sendMediaMessage(
         jid,
         msg.metadata.media_url,
-        msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
+        msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]' ? msg.content : '',
         msg.metadata.mimetype
       );
     } else {
