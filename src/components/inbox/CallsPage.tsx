@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause } from "lucide-react"
+import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause, Phone } from "lucide-react"
 import { getCallLogs } from "@/actions/calls"
 import { useInboxStore } from "@/lib/store"
 
@@ -92,6 +92,7 @@ interface CallLog {
   status: string;
   recording_url?: string | null;
   agent_name?: string | null;
+  customer_name?: string | null;
 }
 
 export default function CallsPage() {
@@ -127,8 +128,52 @@ export default function CallsPage() {
     return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   }
 
+  const getStatusBadge = (status: string) => {
+    const s = (status || '').toUpperCase()
+    if (s === 'ANSWERED') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          Answered
+        </span>
+      )
+    }
+    if (s === 'CANCEL') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+          Cancelled
+        </span>
+      )
+    }
+    if (s === 'NOANSWER') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+          No Answer
+        </span>
+      )
+    }
+    if (s === 'BUSY') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+          Busy
+        </span>
+      )
+    }
+    if (s === 'CHANUNAVAIL' || s === 'CONGESTION') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+          Failed
+        </span>
+      )
+    }
+    return (
+      <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+        {status}
+      </span>
+    )
+  }
+
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery)
+    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery) || (log.customer_name && log.customer_name.toLowerCase().includes(searchQuery.toLowerCase()))
     const logDate = new Date(log.created_at).toISOString().split('T')[0]
     const matchesDate = dateFilter ? logDate === dateFilter : true
     return matchesSearch && matchesDate
@@ -138,45 +183,46 @@ export default function CallsPage() {
     <div className="flex-1 bg-white dark:bg-slate-900 flex flex-col h-full overflow-hidden border-l border-slate-200 dark:border-slate-800">
       {/* Sleek Inbox-Style Header */}
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 bg-white/95 dark:bg-slate-900/95 z-20 sticky top-0 backdrop-blur-sm">
-        <div className="relative flex-1 max-w-3xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input 
+        <div className="flex-1">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Phone size={20} className="text-blue-500" />
+            Calls
+          </h1>
+          <p className="text-[13px] text-slate-500">View telephony call histories and audio playback recordings.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
             type="text"
-            placeholder="Search phone numbers..."
+            placeholder="Search name or phone..."
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-[13px] rounded-md outline-none focus:ring-1 focus:ring-blue-500 w-56 transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-lg text-[14px] text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all outline-none"
           />
-        </div>
-        <div className="relative flex items-center shrink-0">
-          <Calendar className="absolute left-3.5 text-slate-400 pointer-events-none z-10" size={14} />
-          <input 
+          <input
             type="date"
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-[13px] rounded-md outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="w-[160px] pl-10 pr-8 py-2 text-[14px] bg-slate-100 dark:bg-slate-800 border border-transparent rounded-lg text-slate-700 dark:text-slate-300 focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 transition-all outline-none appearance-none cursor-pointer relative"
           />
           {dateFilter && (
-            <button 
+            <button
               onClick={() => setDateFilter('')}
-              className="absolute right-2.5 p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors z-10"
+              className="text-[12px] text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             >
-              <X size={14} />
+              Clear Date
             </button>
           )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 pb-24">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex flex-col gap-2 p-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="w-full h-12 bg-slate-100 dark:bg-slate-800/50 rounded-lg animate-pulse"></div>
-            ))}
+          <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+            <span>Loading call logs...</span>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-center">
+          <div className="flex flex-col items-center justify-center h-64 text-center py-12">
             <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
               <PhoneOff className="text-slate-400" size={28} />
             </div>
@@ -189,8 +235,8 @@ export default function CallsPage() {
             <thead className="sticky top-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">
               <tr className="border-b border-slate-200 dark:border-slate-800 text-[12px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
                 <th className="py-3 px-6 whitespace-nowrap">Direction</th>
-                <th className="py-3 px-6 whitespace-nowrap">From</th>
-                <th className="py-3 px-6 whitespace-nowrap">To</th>
+                <th className="py-3 px-6 whitespace-nowrap">Agent</th>
+                <th className="py-3 px-6 whitespace-nowrap">Customer</th>
                 <th className="py-3 px-6 whitespace-nowrap">Date</th>
                 <th className="py-3 px-6 whitespace-nowrap">Duration</th>
                 <th className="py-3 px-6 whitespace-nowrap">Status</th>
@@ -210,13 +256,23 @@ export default function CallsPage() {
                       <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{log.direction}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">
-                    {log.direction === 'inbound' 
-                      ? log.to_number 
-                      : (log.agent_name || (log.from_number === 'talkfuze_agent' ? currentUser?.name || 'TalkFuze Agent' : log.from_number))}
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {log.agent_name && log.agent_name !== 'Client' ? log.agent_name : (currentUser?.name || 'Imran Mahmud')}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-mono">09617875955</span>
+                    </div>
                   </td>
-                  <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[13px] whitespace-nowrap">
-                    {log.direction === 'inbound' ? log.from_number : log.to_number}
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {log.customer_name || 'Unknown Contact'}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                        {log.direction === 'inbound' ? log.from_number : log.to_number}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-3 px-6 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(log.created_at)}</td>
                   <td className="py-3 px-6 text-slate-600 dark:text-slate-400 whitespace-nowrap">
@@ -225,20 +281,14 @@ export default function CallsPage() {
                     </div>
                   </td>
                   <td className="py-3 px-6 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide
-                      ${log.status === 'ANSWERED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 
-                        log.status === 'MISSED' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 
-                        'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
-                    >
-                      {log.status}
-                    </span>
+                    {getStatusBadge(log.status)}
                   </td>
                   {isAdmin && (
                     <td className="py-3 px-6 w-64 whitespace-nowrap">
-                      {log.recording_url ? (
+                      {log.status === 'ANSWERED' && log.duration_seconds > 0 && log.recording_url ? (
                         <CustomAudioPlayer src={log.recording_url} />
                       ) : (
-                        <span className="text-slate-400 text-[13px] italic">No recording</span>
+                        <span className="text-slate-400/70 text-[13px] italic">—</span>
                       )}
                     </td>
                   )}
