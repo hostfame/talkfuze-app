@@ -742,31 +742,13 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
       execSync(`ffmpeg -y -i "${tmpInput}" -c:a libopus -b:a 16000 -ac 1 -ar 16000 "${tmpOutput}" 2>/dev/null`);
       const oggBuffer = fs.readFileSync(tmpOutput);
 
-      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus (16k lightweight)`);
+      console.log(`[AUDIO] Converted ${audioBuffer.length}B webm -> ${oggBuffer.length}B ogg/opus`);
 
-      // Upload converted ogg to Supabase storage
-      const oggFileName = `agent-uploads/voice_${ts}.ogg`;
-      const { error: uploadErr } = await supabase.storage
-        .from('media')
-        .upload(oggFileName, oggBuffer, { contentType: 'audio/ogg', upsert: false });
+      // Send ogg as base64 directly - no Supabase upload needed
+      // encoding:false tells Evolution to pass the buffer directly to Baileys
+      // without re-encoding (which causes double-encoding corruption)
+      const base64Ogg = oggBuffer.toString('base64');
 
-      if (uploadErr) {
-        throw new Error(`Supabase ogg upload failed: ${uploadErr.message}`);
-      }
-
-      const { data: urlData } = supabase.storage.from('media').getPublicUrl(oggFileName);
-      const oggUrl = urlData.publicUrl;
-      console.log(`[AUDIO] Uploaded ogg to: ${oggUrl}`);
-
-      // Wait for CDN propagation and verify URL is accessible
-      await new Promise(r => setTimeout(r, 1500));
-      const verifyRes = await fetch(oggUrl, { method: 'HEAD' });
-      if (!verifyRes.ok) {
-        console.error(`[AUDIO] OGG URL not accessible after upload: ${verifyRes.status}`);
-        await new Promise(r => setTimeout(r, 2000));
-      }
-
-      // Send ogg URL to Evolution API
       const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
         headers: {
@@ -775,8 +757,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
         },
         body: JSON.stringify({
           number: jid,
-          audio: oggUrl,
-          delay: 1200
+          audio: base64Ogg,
+          encoding: false
         })
       });
       if (!res.ok) {
