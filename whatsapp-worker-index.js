@@ -250,14 +250,24 @@ async function upsertContact(jid, name) {
 async function upsertConversation(contactId, channelId) {
   const { data: existing } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id, status')
     .eq('org_id', ORG_ID)
     .eq('contact_id', contactId)
     .eq('channel_id', channelId)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing.id;
+  if (existing) {
+    if (existing.status !== 'open') {
+      // Reopen the conversation if it was closed
+      await supabase
+        .from('conversations')
+        .update({ status: 'open', last_message_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    }
+    return existing.id;
+  }
 
   const { data: created } = await supabase.from('conversations').insert({
     org_id: ORG_ID,
@@ -345,9 +355,23 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
   }
 }
 
-// ─────────────────────────────────────────────
-// Process inbound message
-// ─────────────────────────────────────────────
+// In-memory concurrency locks to prevent race conditions on parallel message processing for the same user
+const locks = new Map();
+
+async function acquireLock(key) {
+  while (locks.has(key)) {
+    await locks.get(key);
+  }
+  let resolveLock;
+  const lockPromise = new Promise(resolve => {
+    resolveLock = resolve;
+  });
+  locks.set(key, lockPromise);
+  return () => {
+    locks.delete(key);
+    resolveLock();
+  };
+}
 
 async function processMessage(msg) {
   // Skip protocol, distribution, and reaction messages
@@ -362,25 +386,27 @@ async function processMessage(msg) {
     conversationJid = conversationJid.replace('@lid', '@s.whatsapp.net');
   }
 
-  const isGroup = conversationJid.endsWith('@g.us');
-  let senderJid = getSender(msg);
-  if (senderJid && senderJid.endsWith('@lid')) {
-    senderJid = senderJid.replace('@lid', '@s.whatsapp.net');
-  }
-
-  const senderName = resolveName(msg);
-  const text = extractText(msg);
-  const contentType = getContentType(msg);
-  const msgId = msg.key?.id;
-  const fromMe = isFromMe(msg);
-
-  // Drop incoming text messages with empty or blank content (junk, reaction stub noise)
-  if (contentType === 'text' && !text.trim()) {
-    console.log(`[MSG] Skipping empty text message: ${msgId}`);
-    return;
-  }
+  const release = await acquireLock(conversationJid);
 
   try {
+    const isGroup = conversationJid.endsWith('@g.us');
+    let senderJid = getSender(msg);
+    if (senderJid && senderJid.endsWith('@lid')) {
+      senderJid = senderJid.replace('@lid', '@s.whatsapp.net');
+    }
+
+    const senderName = resolveName(msg);
+    const text = extractText(msg);
+    const contentType = getContentType(msg);
+    const msgId = msg.key?.id;
+    const fromMe = isFromMe(msg);
+
+    // Drop incoming text messages with empty or blank content (junk, reaction stub noise)
+    if (contentType === 'text' && !text.trim()) {
+      console.log(`[MSG] Skipping empty text message: ${msgId}`);
+      return;
+    }
+
     if (msgId) {
       const { data: existingMessage } = await supabase
         .from('messages')
@@ -437,6 +463,8 @@ async function processMessage(msg) {
     console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${fromMe ? 'Agent (Me)' : (senderName || senderJid)}: "${text.slice(0, 60)}"`);
   } catch (err) {
     console.error('[processMessage] Error:', err.message);
+  } finally {
+    release();
   }
 }
 
