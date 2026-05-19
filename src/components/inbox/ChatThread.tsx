@@ -1265,6 +1265,7 @@ export default function ChatThread({
                     setShowMacroMenu(false)
                   }
                 } else if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.nativeEvent.isComposing) return
                   e.preventDefault()
                   handleSend()
                 }
