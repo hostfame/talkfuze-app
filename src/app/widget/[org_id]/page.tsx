@@ -623,7 +623,12 @@ export default function WidgetPage() {
         {activeTab === 'messages' && !activeConversationId && (
           <div className="h-full flex flex-col relative z-30 bg-[#f9fafb]">
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
-               <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
+               <div className="flex items-center gap-2">
+                 <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-2 rounded-md hover:bg-slate-50">
+                    <IntercomBackIcon size={18} />
+                 </button>
+                 <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
+               </div>
                <button className="p-1.5 hover:bg-slate-50 transition-colors rounded-full text-slate-400 -mr-1.5" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M13.25 3.95L12.05 2.75L8 6.8L3.95 2.75L2.75 3.95L6.8 8L2.75 12.05L3.95 13.25L8 9.2L12.05 13.25L13.25 12.05L9.2 8L13.25 3.95Z" /></svg>
                </button>
