@@ -117,20 +117,27 @@ export async function assignConversation(orgId: string, conversationId: string, 
   return true;
 }
 
-export async function getMessages(conversationId: string) {
+export async function getMessages(conversationId: string, limit: number = 50, beforeTimestamp?: string) {
   if (!conversationId) return []
   
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("messages")
     .select("*")
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
+    
+  if (beforeTimestamp) {
+    query = query.lt("created_at", beforeTimestamp)
+  }
+  
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(limit)
 
   if (error) {
     console.error(error)
     return []
   }
-  return data
+  return data.reverse()
 }
 
 export async function replyToConversation(

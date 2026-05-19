@@ -3,7 +3,7 @@
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
 import { playUISound } from "@/lib/sounds"
@@ -236,7 +236,11 @@ export default function WidgetPage() {
   const [deviceId] = useState(getStoredDeviceId)
   const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
+  const [isAgentTyping, setIsAgentTyping] = useState(false)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
   const [settings, setSettings] = useState<any>(null)
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -332,6 +336,24 @@ export default function WidgetPage() {
     }
   }
 
+  const loadMoreMessages = async () => {
+    if (!org_id || !deviceId || isLoadingMore || !hasMoreMessages || activeConversationId === 'new') return;
+    setIsLoadingMore(true);
+    const oldestMsg = messages[0];
+    try {
+      const olderMessages = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now(), 50, oldestMsg.created_at);
+      if (olderMessages && olderMessages.length > 0) {
+        setMessages(prev => [...olderMessages as WidgetMessage[], ...prev]);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
   const fetchMsgs = async () => {
     if (!org_id || !deviceId) return
     if (activeConversationId === 'new') {
@@ -363,6 +385,27 @@ export default function WidgetPage() {
     fetchConversations()
     fetchMsgs()
     
+    const typingChannel = supabase.channel(`typing:${org_id}`)
+    const presenceChannel = supabase.channel(`presence:${org_id}`)
+    presenceChannel.on('presence', { event: 'sync' }, () => {})
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({
+          user: deviceId,
+          activeConversationId: activeConversationId || null,
+          online_at: new Date().toISOString()
+        })
+      }
+    })
+
+    const typingChannel = supabase.channel(`typing:${org_id}`)
+      .on('broadcast', { event: 'typingStatus' }, (payload) => {
+        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === activeConversationId) {
+          setIsAgentTyping(payload.payload.is_typing)
+        }
+      })
+      .subscribe()
+      
     const channel = supabase
       .channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
@@ -399,6 +442,8 @@ export default function WidgetPage() {
 
     return () => {
       supabase.removeChannel(channel)
+      supabase.removeChannel(typingChannel)
+      supabase.removeChannel(presenceChannel)
     }
   }, [org_id, deviceId, activeConversationId])
 
@@ -1268,7 +1313,9 @@ export default function WidgetPage() {
                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="text-[15px] font-bold text-slate-800 tracking-tight">{headerName}</span>
-                      <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+                       {lastMessage && lastMessage.sender_type !== 'contact' && lastMessage.status !== 'read' && (
+                         <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+                      )}
                     </div>
                     <p className="text-[14px] text-slate-500 truncate mt-0.5 tracking-tight">
                       {lastMessage ? (lastMessage.sender_type === 'contact' ? 'You: ' + lastMessage.content : lastMessage.content) : "If you still need help with anything..."}
@@ -1338,8 +1385,9 @@ export default function WidgetPage() {
                            <p className="text-[14px] text-slate-500 truncate tracking-tight pr-4">
                               {conv.latestMessage ? (conv.latestMessage.sender_type === 'contact' ? 'You: ' + conv.latestMessage.content : conv.latestMessage.content) : 'No messages yet'}
                            </p>
-                           {/* Unread indicator placeholder */}
-                           {/* <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div> */}
+                           {conv.latestMessage && conv.latestMessage.sender_type !== 'contact' && conv.latestMessage.status !== 'read' && (
+                              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0"></div>
+                           )}
                          </div>
                       </div>
                    </div>
@@ -1420,6 +1468,18 @@ export default function WidgetPage() {
                 <span className="text-[11px] text-slate-400 ml-[32px]">Support Team</span>
               </div>
 
+              {messages.length >= 50 && hasMoreMessages && (
+                <div className="flex justify-center mb-2">
+                  <button 
+                    onClick={loadMoreMessages}
+                    disabled={isLoadingMore}
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-[12px] font-medium transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {isLoadingMore ? "Loading..." : "Load previous messages"}
+                  </button>
+                </div>
+              )}
+
               {messages.map((msg, idx) => {
                 const isSystem = msg.sender_type === 'system';
                 const isAgent = msg.sender_type === 'agent';
@@ -1486,7 +1546,19 @@ export default function WidgetPage() {
               })}
               
               {/* Typing Indicator */}
-              <div className="flex items-start gap-1 opacity-0 transition-opacity duration-300 hidden" id="tf-typing-indicator">
+              {isAgentTyping && (
+              <div className="flex items-start gap-1 animate-in fade-in duration-300" id="tf-typing-indicator">
+                 <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
+                 </div>
+                 <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1 min-h-[36px]">
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                 </div>
+              </div>
+              )}
+              <div className="hidden" id="tf-old-typing-indicator">
                  <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-4 px-4 text-[15px] text-slate-800 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -1523,7 +1595,24 @@ export default function WidgetPage() {
                   ) : (
                     <textarea 
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={(e) => {
+                        setInput(e.target.value)
+                        if (activeConversationId && activeConversationId !== 'new') {
+                          supabase.channel(`typing:${org_id}`).send({
+                            type: 'broadcast',
+                            event: 'typingStatus',
+                            payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: true }
+                          })
+                          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+                          typingTimeoutRef.current = setTimeout(() => {
+                            supabase.channel(`typing:${org_id}`).send({
+                              type: 'broadcast',
+                              event: 'typingStatus',
+                              payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false }
+                            })
+                          }, 2000)
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           if (e.nativeEvent.isComposing) return

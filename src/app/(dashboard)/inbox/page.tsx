@@ -109,12 +109,13 @@ export default function InboxPage() {
         .from('messages')
         .select('*')
         .eq('conversation_id', selectedId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(50)
 
       if (!isActive) return
 
       if (data && data.length > 0) {
-        setMessages(selectedId, data as AppMessage[])
+        setMessages(selectedId, data.reverse() as AppMessage[])
       } else {
         // Fallback to Server Action if client fails or returns empty
         const fallbackData = await getMessages(selectedId)

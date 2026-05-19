@@ -243,9 +243,14 @@ export default function ConversationList({
                       </span>
                     )}
                   </div>
-                  <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 font-medium' : 'text-slate-400'}`}>
-                    {time}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 font-medium' : 'text-slate-400'}`}>
+                      {time}
+                    </span>
+                    {lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read' && (
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-0.5 shadow-sm"></div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   {isWhatsApp && (

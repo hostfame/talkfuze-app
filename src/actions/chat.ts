@@ -111,7 +111,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   return { success: true, conversationId: conversation.id }
 }
 
-export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null, _cacheBuster?: number) {
+export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null, _cacheBuster?: number, limit: number = 50, beforeTimestamp?: string) {
   noStore();
   if (!orgId || !deviceId) return [];
   
@@ -145,11 +145,20 @@ export async function getWidgetMessages(orgId: string, deviceId: string, convers
     }
     
     // Get messages
-    const { data: messages, error: msgErr } = await supabaseAdmin
+    let msgQuery = supabaseAdmin
       .from("messages")
       .select("*")
       .eq("conversation_id", targetConvId)
-      .order("created_at", { ascending: true })
+      
+    if (beforeTimestamp) {
+      msgQuery = msgQuery.lt("created_at", beforeTimestamp)
+    }
+    
+    let { data: messages, error: msgErr } = await msgQuery
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      
+    if (messages) messages = messages.reverse()
       
     if (msgErr) console.error("getWidgetMessages msg err:", msgErr);
     
@@ -364,5 +373,23 @@ export async function getWidgetConversations(orgId: string, deviceId: string, _c
   } catch (err) {
     console.error("getWidgetConversations err:", err);
     return [];
+  }
+}
+
+export async function markMessagesAsRead(conversationId: string, role: 'contact' | 'agent') {
+  if (!conversationId) return;
+  try {
+    // If role is contact, they are reading agent/system messages.
+    // If role is agent, they are reading contact messages.
+    const senderTypes = role === 'contact' ? ['agent', 'system'] : ['contact'];
+    
+    await supabaseAdmin
+      .from('messages')
+      .update({ status: 'read' })
+      .eq('conversation_id', conversationId)
+      .in('sender_type', senderTypes)
+      .eq('status', 'delivered'); // or 'sent'
+  } catch (e) {
+    console.error('Failed to mark messages as read', e);
   }
 }

@@ -3,7 +3,8 @@
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
+import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
+import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName } from "@/actions/contacts"
 import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
@@ -209,6 +210,7 @@ export default function ChatThread({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isConverting, setIsConverting] = useState(false)
   const [showResolveConfirm, setShowResolveConfirm] = useState(false)
+  const [isResolving, setIsResolving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation, isLoaded } = useInboxStore()
 
@@ -254,8 +256,7 @@ export default function ChatThread({
 
   const executeResolveAndReview = async () => {
     if (!conversationId || !conversation) return
-    setShowResolveConfirm(false)
-    setIsMenuOpen(false)
+    setIsResolving(true)
     try {
       const message = "Did we fix your issue? If yes, please leave a quick review here: https://g.page/r/hostnin/review\n\nIf no, click here to escalate: https://hostnin.com/contact"
       
@@ -278,9 +279,13 @@ export default function ChatThread({
       // Auto-archive after sending CSAT
       await toggleConversationFlag(conversationId, 'is_archived', true)
       
+      setShowResolveConfirm(false)
+      setIsMenuOpen(false)
     } catch (error) {
       console.error(error)
       alert("Failed to send review prompt or archive conversation")
+    } finally {
+      setIsResolving(false)
     }
   }
 
@@ -422,6 +427,8 @@ export default function ChatThread({
   }, [input, conversationId])
 
   const [isSending, setIsSending] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
   const [isInternal, setIsInternal] = useState(false)
   const { 
     optimisticMessages: optimisticByConv,
@@ -540,6 +547,10 @@ export default function ChatThread({
         confirmOptimisticMessage(conversationId, msg.content ?? '');
       }
     });
+    // Mark as read when messages load or change
+    if (messages.length > 0) {
+      markMessagesAsRead(conversationId, 'agent');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, conversationId])
 
@@ -607,6 +618,24 @@ export default function ChatThread({
   const applyMacro = (message: string) => {
     setInput(message)
     setShowMacroMenu(false)
+  }
+
+  const loadMoreMessages = async () => {
+    if (!messages.length || isLoadingMore || !hasMoreMessages || !conversationId) return;
+    setIsLoadingMore(true);
+    const oldestMsg = messages[0];
+    try {
+      const olderMessages = await getMessages(conversationId, 50, oldestMsg.created_at);
+      if (olderMessages.length > 0) {
+        useInboxStore.getState().setMessages(conversationId, [...olderMessages, ...messages]);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
+    }
   }
 
   const handleSend = async () => {
@@ -1113,7 +1142,7 @@ export default function ChatThread({
             <>
               <button 
                 onClick={handleResolveAndReview}
-                className="px-2.5 py-1 text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-lg flex items-center gap-1 transition-all mr-1 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                className="px-2.5 py-1 text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-lg flex items-center gap-1 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.03] active:scale-[0.97] mr-1 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
                 title="Resolve & Ask Review"
               >
                 <CheckCheck size={14} strokeWidth={2.5} />
@@ -1176,6 +1205,18 @@ export default function ChatThread({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#0B0F19]">
+        
+        {messages.length >= 50 && hasMoreMessages && (
+          <div className="flex justify-center mb-6">
+            <button 
+              onClick={loadMoreMessages}
+              disabled={isLoadingMore}
+              className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-[12px] font-medium transition-colors disabled:opacity-50"
+            >
+              {isLoadingMore ? "Loading..." : "Load previous messages"}
+            </button>
+          </div>
+        )}
         
         {allMessages.length === 0 && !isCustomerTyping && (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-70 mt-10">
@@ -1811,15 +1852,21 @@ export default function ChatThread({
             <div className="flex gap-2.5 mt-6">
               <button 
                 onClick={() => setShowResolveConfirm(false)}
-                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.98]"
+                disabled={isResolving}
+                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button 
                 onClick={executeResolveAndReview}
-                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 rounded-xl transition-all duration-300 ease-in-out shadow-sm hover:shadow-md active:scale-[0.98]"
+                disabled={isResolving}
+                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.02] active:scale-[0.97] shadow-sm hover:shadow-md active:shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Resolve
+                {isResolving ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  "Resolve"
+                )}
               </button>
             </div>
           </div>
