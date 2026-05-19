@@ -414,8 +414,17 @@ export default function ChatThread({
 
   // Removed forced internal mode - users can reply immediately and it will auto-join
 
-  // Load participants when conversation changes
+  // Load participants and reset composer inputs when conversation changes to prevent cross-customer leakage
   useEffect(() => {
+    setInput("")
+    setPendingAttachments([])
+    attachmentPreviews.forEach(preview => {
+      if (preview) URL.revokeObjectURL(preview)
+    })
+    setAttachmentPreviews([])
+    setShowMacroMenu(false)
+    setIsInternal(false)
+
     if (!conversationId) return
     setIsLoadingParticipants(true)
     getParticipants(conversationId).then(data => {
@@ -662,9 +671,14 @@ export default function ChatThread({
   const sendRecording = () => {
     if (!mediaRecorderRef.current || !conversationId) return
     
+    const actualMimeType = mediaRecorderRef.current.mimeType || 'audio/webm'
+    const extension = actualMimeType.includes('mp4') ? 'mp4' : 
+                      actualMimeType.includes('ogg') ? 'ogg' :
+                      actualMimeType.includes('wav') ? 'wav' : 'webm'
+    
     mediaRecorderRef.current.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-      const file = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' })
+      const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
+      const file = new File([audioBlob], `voice-message.${extension}`, { type: actualMimeType })
       
       const localUrl = URL.createObjectURL(audioBlob)
       const tempId = crypto.randomUUID()

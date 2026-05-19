@@ -541,7 +541,7 @@ export default function WidgetPage() {
         
         {/* HOME TAB */}
         {activeTab === 'home' && (
-          <div className="px-5 pt-12 pb-6 flex flex-col gap-5 animate-in fade-in duration-300">
+          <div className="px-5 pt-12 pb-6 flex flex-col gap-5 animate-in fade-in slide-in-from-left-4 duration-300 ease-out">
             
             {/* Header Graphics (Ahrefs Style) */}
             <div className="flex justify-between items-center mt-4 mb-6">
@@ -621,7 +621,7 @@ export default function WidgetPage() {
 
         {/* CONVERSATIONS LIST TAB */}
         {activeTab === 'messages' && !activeConversationId && (
-          <div className="h-full flex flex-col relative z-30 bg-[#f9fafb]">
+          <div className="h-full flex flex-col relative z-30 bg-[#f9fafb] animate-in fade-in slide-in-from-right-2 duration-300 ease-out">
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-2">
                  <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-2 rounded-md hover:bg-slate-50">
@@ -683,7 +683,7 @@ export default function WidgetPage() {
 
         {/* CHAT TAB (THREAD) */}
         {activeTab === 'messages' && activeConversationId && (
-          <div className="h-full flex flex-col relative z-30 bg-white">
+          <div className="h-full flex flex-col relative z-30 bg-white animate-in fade-in slide-in-from-right-4 duration-300 ease-out">
             
             {/* Thread Header */}
             <div className="bg-white border-b border-slate-100 px-3 py-3 flex justify-between items-center shrink-0 shadow-sm relative z-30">
