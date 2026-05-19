@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
@@ -17,6 +17,9 @@ export default function SipDialer() {
   
   const [userAgent, setUserAgent] = useState<Web.SimpleUser | null>(null)
   const [sessionState, setSessionState] = useState<SessionState>(SessionState.Initial)
+  
+  const [isMuted, setIsMuted] = useState(false)
+  const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
   
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -127,6 +130,8 @@ export default function SipDialer() {
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
         stopTimer()
+        setActiveCallSession(null)
+        setIsMuted(false)
       } else if (newState === 'Established') {
         setStatus('Connected')
         setSessionState(SessionState.Established)
@@ -161,6 +166,7 @@ export default function SipDialer() {
       onCallReceived: () => {
         setStatus('Incoming Call...')
         setSessionState(SessionState.Initial)
+        setIsMuted(false)
         
         const session = (simpleUser as any).session
         let callerId = 'Unknown'
@@ -168,6 +174,8 @@ export default function SipDialer() {
           callerId = session.remoteIdentity.uri.user || 'Unknown'
           setNumber(callerId)
         }
+
+        setActiveCallSession({ number: callerId, direction: 'inbound' })
 
         // Bind session events immediately to trigger lightning-fast real-time updates
         if (session) {
@@ -197,7 +205,10 @@ export default function SipDialer() {
           setIncomingCallerName(callerId)
         }
       },
-      onCallCreated: () => setStatus('Calling...'),
+      onCallCreated: () => {
+        setStatus('Calling...')
+        setActiveCallSession(prev => prev || { number: number.replace(/[\s-]/g, ''), direction: 'outbound' })
+      },
       onCallAnswered: () => {
         setStatus('Connected')
         setSessionState(SessionState.Established)
@@ -209,6 +220,8 @@ export default function SipDialer() {
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
         stopTimer()
+        setActiveCallSession(null)
+        setIsMuted(false)
       },
       onRegistered: () => {
         setStatus('Registered')
@@ -219,12 +232,16 @@ export default function SipDialer() {
         setIsRegistered(false)
         stopSynthesizedRing()
         stopTimer()
+        setActiveCallSession(null)
+        setIsMuted(false)
       },
       onServerDisconnect: () => {
         setStatus('Disconnected')
         setIsRegistered(false)
         stopSynthesizedRing()
         stopTimer()
+        setActiveCallSession(null)
+        setIsMuted(false)
       }
     }
 
@@ -254,6 +271,7 @@ export default function SipDialer() {
     try {
       setStatus('Dialing...')
       const cleanNumber = number.replace(/[\s-]/g, '')
+      setActiveCallSession({ number: cleanNumber, direction: 'outbound' })
       await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
       
       // Bind session events to outbound session immediately
@@ -264,6 +282,8 @@ export default function SipDialer() {
     } catch (e) {
       console.error("Dial failed", e)
       setStatus('Call Failed')
+      setActiveCallSession(null)
+      setIsMuted(false)
       setTimeout(() => setStatus('Registered'), 3000)
     }
   }
@@ -276,6 +296,8 @@ export default function SipDialer() {
     setSessionState(SessionState.Terminated)
     stopSynthesizedRing()
     stopTimer()
+    setActiveCallSession(null)
+    setIsMuted(false)
     
     try {
       await userAgent.hangup()
@@ -305,12 +327,19 @@ export default function SipDialer() {
     setStatus('Registered')
     setSessionState(SessionState.Terminated)
     stopSynthesizedRing()
+    setActiveCallSession(null)
+    setIsMuted(false)
     
     try {
       await userAgent.decline()
     } catch (e) {
       console.error("Decline failed", e)
     }
+  }
+
+  const handleMuteRing = () => {
+    setIsMuted(true)
+    stopSynthesizedRing()
   }
 
   const handleKeyPress = (num: string) => {
@@ -323,13 +352,17 @@ export default function SipDialer() {
       <audio ref={remoteAudioRef} autoPlay />
 
       {/* Modern Premium macOS Incoming Call Floating Banner Notification */}
-      {status === 'Incoming Call...' && (
+      {activeCallSession && (
         <div className="fixed top-6 right-6 z-[9999] w-[340px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 shadow-[0_15px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] rounded-3xl p-4 flex items-center justify-between gap-3 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="flex items-center gap-3 min-w-0">
             {/* Avatar with ringing pulsing ripples */}
             <div className="relative shrink-0">
-              <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-25" />
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-[16px] shadow-md">
+              {status === 'Incoming Call...' && !isMuted && (
+                <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-25" />
+              )}
+              <div className={`w-12 h-12 rounded-full bg-gradient-to-tr ${
+                status === 'Connected' ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-indigo-600'
+              } text-white flex items-center justify-center font-bold text-[16px] shadow-md`}>
                 {incomingCallerName ? incomingCallerName.slice(0, 2).toUpperCase() : 'IN'}
               </div>
             </div>
@@ -340,27 +373,48 @@ export default function SipDialer() {
                 {incomingCallerName || 'Inbound Call'}
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                TalkFuze Call • {number}
+                {status === 'Connected' ? `Connected • ${formatTime(callDuration)}` :
+                 status === 'Incoming Call...' ? `Incoming Call • ${number}` :
+                 status === 'Connecting...' ? 'Connecting...' :
+                 status === 'Calling...' || status === 'Dialing...' ? 'Calling...' :
+                 `${status} • ${number}`}
               </span>
             </div>
           </div>
           
           {/* Apple-style Decline and Answer circular pill actions */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <button 
-              onClick={handleDecline}
-              className="w-10 h-10 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(239,68,68,0.25)] cursor-pointer"
-              title="Decline"
-            >
-              <PhoneOff size={16} strokeWidth={2.5} />
-            </button>
-            <button 
-              onClick={handleAnswer}
-              className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(16,185,129,0.25)] cursor-pointer"
-              title="Answer"
-            >
-              <Phone size={16} strokeWidth={2.5} className="animate-bounce" style={{ animationDuration: '1.2s' }} />
-            </button>
+            {status === 'Incoming Call...' ? (
+              <>
+                <button 
+                  onClick={handleMuteRing}
+                  disabled={isMuted}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    isMuted 
+                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
+                      : 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)]'
+                  }`}
+                  title={isMuted ? "Muted" : "Mute Ringtone"}
+                >
+                  <VolumeX size={16} strokeWidth={2.5} />
+                </button>
+                <button 
+                  onClick={handleAnswer}
+                  className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(16,185,129,0.25)] cursor-pointer"
+                  title="Answer"
+                >
+                  <Phone size={16} strokeWidth={2.5} className="animate-bounce" style={{ animationDuration: '1.2s' }} />
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={handleHangup}
+                className="w-10 h-10 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(239,68,68,0.25)] cursor-pointer"
+                title="Hang up"
+              >
+                <PhoneOff size={16} strokeWidth={2.5} />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -438,10 +492,15 @@ export default function SipDialer() {
               {status === 'Incoming Call...' ? (
                 <div className="flex gap-4">
                   <button
-                    onClick={handleDecline}
-                    className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
+                    onClick={handleMuteRing}
+                    disabled={isMuted}
+                    className={`w-[64px] h-[64px] rounded-full flex items-center justify-center shadow-md transition-all ${
+                      isMuted 
+                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
+                        : 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)] cursor-pointer'
+                    }`}
                   >
-                    <PhoneOff size={24} strokeWidth={2} />
+                    <VolumeX size={24} strokeWidth={2} />
                   </button>
                   <button
                     onClick={handleAnswer}

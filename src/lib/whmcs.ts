@@ -385,8 +385,7 @@ export async function getClientDetailsByEmailFast(email: string) {
             email: email,
         }, 8000, 1); // 8s timeout, 1 retry (max ~16s vs ~120s)
         return result;
-    } catch (error) {
-        console.error('[WHMCS] getClientDetailsByEmailFast error:', error);
+    } catch {
         return null;
     }
 }
