@@ -10,6 +10,17 @@ import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 
+interface StagedAttachment {
+  file: File;
+  id: string;
+  url?: string;
+  type: string;
+  name: string;
+  progress: number;
+  status: 'uploading' | 'uploaded' | 'failed';
+  previewUrl: string | null;
+}
+
 const AVATAR_COLORS = [
   'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500',
   'bg-pink-500', 'bg-teal-500', 'bg-red-500', 'bg-indigo-500'
@@ -397,8 +408,7 @@ export default function ChatThread({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadFileName, setUploadFileName] = useState("")
   
-  const [pendingAttachments, setPendingAttachments] = useState<File[]>([])
-  const [attachmentPreviews, setAttachmentPreviews] = useState<(string | null)[]>([])
+  const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([])
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
@@ -417,11 +427,10 @@ export default function ChatThread({
   // Load participants and reset composer inputs when conversation changes to prevent cross-customer leakage
   useEffect(() => {
     setInput("")
-    setPendingAttachments([])
-    attachmentPreviews.forEach(preview => {
-      if (preview) URL.revokeObjectURL(preview)
+    stagedAttachments.forEach(att => {
+      if (att.previewUrl) URL.revokeObjectURL(att.previewUrl)
     })
-    setAttachmentPreviews([])
+    setStagedAttachments([])
     setShowMacroMenu(false)
     setIsInternal(false)
 
@@ -436,11 +445,11 @@ export default function ChatThread({
   // Revoke object URLs on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
-      attachmentPreviews.forEach(preview => {
-        if (preview) URL.revokeObjectURL(preview)
+      stagedAttachments.forEach(att => {
+        if (att.previewUrl) URL.revokeObjectURL(att.previewUrl)
       })
     }
-  }, [attachmentPreviews])
+  }, [stagedAttachments])
 
   async function handleJoinThread() {
     if (!conversationId || !currentUser) return
@@ -541,14 +550,13 @@ export default function ChatThread({
   }
 
   const handleSend = async () => {
-    if ((!input.trim() && pendingAttachments.length === 0) || !conversationId) return
+    if ((!input.trim() && stagedAttachments.length === 0) || !conversationId) return
 
     const msgText = input.trim()
-    const currentAttachments = [...pendingAttachments]
+    const currentAttachments = [...stagedAttachments]
     
     setInput("")
-    setPendingAttachments([])
-    setAttachmentPreviews([])
+    setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
 
@@ -594,9 +602,9 @@ export default function ChatThread({
         
         const uploadPromises = currentAttachments.map(async (attachment) => {
           const tempId = crypto.randomUUID()
-          const isImage = attachment.type.startsWith('image/')
-          const isAudio = attachment.type.startsWith('audio/')
-          const isVideo = attachment.type.startsWith('video/')
+          const isImage = attachment.type?.startsWith('image/')
+          const isAudio = attachment.type?.startsWith('audio/')
+          const isVideo = attachment.type?.startsWith('video/')
           const optimisticContent = isImage ? '[Image]' : isAudio ? '[Audio Voice Message]' : isVideo ? '[Video]' : '[Attachment]'
           
           addOptimisticMessage(conversationId, {
@@ -604,7 +612,7 @@ export default function ChatThread({
             sender_type: 'agent',
             sender_id: currentUser?.id ?? null,
             content: optimisticContent,
-            content_type: getContentType(attachment),
+            content_type: getContentType(attachment.file),
             metadata: null,
             is_internal: isInternal,
             status: 'sending',
@@ -612,7 +620,12 @@ export default function ChatThread({
           })
           
           try {
-            const meta = await uploadToStorage(attachment)
+            // Already uploaded in background! Use the pre-saved url.
+            const meta = {
+              url: attachment.url || '',
+              type: attachment.type || '',
+              name: attachment.name || ''
+            }
             let contentType = 'file'
             if (meta.type.startsWith('image/')) contentType = 'image'
             else if (meta.type.startsWith('audio/')) contentType = 'audio'
@@ -794,37 +807,80 @@ export default function ChatThread({
     }
   }
 
-  const stageAttachments = (files: File[]) => {
-    setPendingAttachments(prev => {
-      const newFiles = [...prev, ...files].slice(0, 5); // Max 5 files
-      
-      const newPreviews = newFiles.map(file => {
-        if (file.type.startsWith('image/')) {
-          return URL.createObjectURL(file);
-        } else {
-          return null;
-        }
+  const uploadFileStaged = async (item: StagedAttachment) => {
+    try {
+      const res = await uploadWithProgress(item.file, (percent) => {
+        setStagedAttachments(prev => prev.map(s => {
+          if (s.id === item.id) {
+            return { ...s, progress: percent };
+          }
+          return s;
+        }));
       });
       
-      // Revoke old previews to prevent memory leaks
-      attachmentPreviews.forEach(p => { if (p) URL.revokeObjectURL(p) });
-      setAttachmentPreviews(newPreviews);
-      
-      return newFiles;
+      setStagedAttachments(prev => prev.map(s => {
+        if (s.id === item.id) {
+          return { 
+            ...s, 
+            status: 'uploaded', 
+            url: res.url, 
+            type: res.type, 
+            name: res.name, 
+            progress: 100 
+          };
+        }
+        return s;
+      }));
+    } catch (err) {
+      console.error("Failed to upload staged file:", err);
+      setStagedAttachments(prev => prev.map(s => {
+        if (s.id === item.id) {
+          return { ...s, status: 'failed', progress: 0 };
+        }
+        return s;
+      }));
+    }
+  }
+
+  const stageAttachments = (files: File[]) => {
+    setStagedAttachments(prev => {
+      const incoming = files.slice(0, 5 - prev.length);
+      if (incoming.length === 0) return prev;
+
+      const newStaged = incoming.map(file => {
+        const id = crypto.randomUUID();
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const previewUrl = (isImage || isVideo) ? URL.createObjectURL(file) : null;
+        
+        const item: StagedAttachment = {
+          file,
+          id,
+          previewUrl,
+          progress: 1, // start at 1% for active feedback
+          status: 'uploading',
+          type: file.type,
+          name: file.name
+        };
+
+        // Fire background upload immediately
+        uploadFileStaged(item);
+
+        return item;
+      });
+
+      return [...prev, ...newStaged];
     });
   }
 
   const removeAttachment = (index: number) => {
-    setPendingAttachments(prev => {
-      const newFiles = [...prev];
-      newFiles.splice(index, 1);
-      return newFiles;
-    });
-    setAttachmentPreviews(prev => {
-      const newPreviews = [...prev];
-      const removed = newPreviews.splice(index, 1)[0];
-      if (removed) URL.revokeObjectURL(removed);
-      return newPreviews;
+    setStagedAttachments(prev => {
+      const copy = [...prev];
+      const removed = copy.splice(index, 1)[0];
+      if (removed && removed.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return copy;
     });
   }
 
@@ -1288,36 +1344,45 @@ export default function ChatThread({
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              {pendingAttachments.length > 0 && (
+              {stagedAttachments.length > 0 && (
                 <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
-                  {pendingAttachments.map((file, idx) => (
-                    <div key={idx} className="relative inline-block border rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
-                      {attachmentPreviews[idx] ? (
-                        <img src={attachmentPreviews[idx] as string} alt="Preview" className="h-16 w-16 object-cover" />
+                  {stagedAttachments.map((item, idx) => (
+                    <div key={item.id} className="relative inline-block border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden group bg-slate-50 dark:bg-slate-800 shrink-0">
+                      {item.previewUrl ? (
+                        <img src={item.previewUrl} alt="Preview" className="h-16 w-16 object-cover" />
                       ) : (
-                        <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1">
+                        <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1 select-none">
                           <Paperclip size={18} className="text-slate-400" />
-                          <span className="text-[9px] text-slate-400 truncate w-full text-center leading-tight">{file.name.split('.').pop()?.toUpperCase()}</span>
+                          <span className="text-[9px] text-slate-400 truncate w-full text-center leading-tight font-medium">{item.name.split('.').pop()?.toUpperCase()}</span>
                         </div>
                       )}
-                      {/* Upload progress overlay */}
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <>
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px] transition-opacity">
-                            <span className="text-white text-[11px] font-bold drop-shadow-sm">{uploadProgress}%</span>
-                          </div>
-                          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/20">
+                      
+                      {/* Premium circular tank-filling wave upload overlay */}
+                      {item.status === 'uploading' && (
+                        <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center backdrop-blur-[1px] select-none z-10 transition-all">
+                          <div className="relative w-8 h-8 rounded-full border border-white/30 flex items-center justify-center overflow-hidden">
                             <div 
-                              className="h-full bg-[#0070f3] transition-all duration-150 ease-out" 
-                              style={{ width: `${uploadProgress}%` }}
+                              className="absolute bottom-0 left-0 right-0 bg-[#0070f3] transition-all duration-300 ease-out" 
+                              style={{ height: `${item.progress}%` }}
                             />
+                            <span className="relative text-[9px] font-bold text-white z-10">{item.progress}%</span>
                           </div>
-                        </>
+                        </div>
                       )}
+
+                      {/* Red cross failure overlay */}
+                      {item.status === 'failed' && (
+                        <div className="absolute inset-0 bg-red-950/70 flex flex-col items-center justify-center backdrop-blur-[1px] text-white select-none z-10 transition-all">
+                          <X size={16} className="text-red-300 font-bold" />
+                          <span className="text-[9px] font-semibold text-red-200 mt-0.5">Failed</span>
+                        </div>
+                      )}
+
+                      {/* Delete button */}
                       <button 
                         onClick={() => removeAttachment(idx)}
-                        className={`absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white transition-opacity ${uploadProgress > 0 && uploadProgress < 100 ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}
-                        disabled={uploadProgress > 0 && uploadProgress < 100}
+                        className={`absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white transition-opacity ${item.status === 'uploading' ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}
+                        disabled={item.status === 'uploading'}
                       >
                         <X size={12} />
                       </button>
@@ -1357,7 +1422,7 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${pendingAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
               ></textarea>
             </div>
           )}
@@ -1374,14 +1439,14 @@ export default function ChatThread({
               />
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isSending || isRecording}
+                disabled={stagedAttachments.some(s => s.status === 'uploading') || isSending || isRecording}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
-                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
+                {stagedAttachments.some(s => s.status === 'uploading') ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} strokeWidth={2} />}
               </button>
               <button 
                 onClick={isRecording ? stopRecording : startRecording}
-                disabled={isUploading || isSending}
+                disabled={stagedAttachments.some(s => s.status === 'uploading') || isSending}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
@@ -1405,13 +1470,18 @@ export default function ChatThread({
               
               <button 
                 onClick={handleSend}
-                disabled={(!input.trim() && pendingAttachments.length === 0) || isSending || isUploading}
+                disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAttachments.some(s => s.status === 'uploading')}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
-                {isSending || isUploading ? (
+                {isSending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
                     <span>Sending...</span>
+                  </>
+                ) : stagedAttachments.some(s => s.status === 'uploading') ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Uploading...</span>
                   </>
                 ) : (
                   isInternal ? 'Add Note' : 'Send'
