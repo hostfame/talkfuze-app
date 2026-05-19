@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, Mic, StopCircle } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
@@ -625,7 +625,7 @@ export default function WidgetPage() {
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-2">
                  <button onClick={() => setActiveTab('home')} className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 -ml-2 rounded-md hover:bg-slate-50">
-                    <IntercomBackIcon size={18} />
+                    <ChevronLeft size={18} />
                  </button>
                  <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
                </div>
