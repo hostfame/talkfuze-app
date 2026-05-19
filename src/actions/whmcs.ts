@@ -96,7 +96,7 @@ export async function fetchWhmcsUnpaidInvoices(clientId: number) {
   }
 }
 
-export async function convertChatToTicket(conversationId: string, clientId: number, deptId: number = 1) {
+export async function convertChatToTicket(conversationId: string, clientId: number, deptId: number = 1, agentId?: string) {
   try {
     // Fetch last 15 messages
     const { data: messages, error } = await supabaseAdmin
@@ -123,6 +123,19 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
     const finalMessage = `This ticket was automatically generated from a TalkFuze chat escalation.\n\n=== CHAT TRANSCRIPT ===\n\n${transcript}`
 
     const result = await openTicket(clientId, deptId, subject, finalMessage)
+
+    // Auto-insert system message into the conversation
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      org_id: messages[0].org_id,
+      sender_type: 'system',
+      sender_id: agentId || null,
+      content: 'Your ticket is created',
+      content_type: 'system',
+      is_internal: false,
+      status: 'delivered',
+    })
+
     return { success: true, ticket: result }
   } catch (error: any) {
     console.error("Failed to convert chat to WHMCS ticket:", error)

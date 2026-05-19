@@ -10,6 +10,7 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import { playUISound } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
@@ -60,10 +61,15 @@ export default function InboxPage() {
         const currentFilter = useInboxStore.getState().activeFilter as any
         getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         // Refresh conversation list so last message preview updates
         const currentFilter = useInboxStore.getState().activeFilter as any
         getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        
+        // Play sound if the message is from a contact
+        if (payload.new && payload.new.sender_type === 'contact') {
+           playUISound('receive')
+        }
       })
       .subscribe()
 

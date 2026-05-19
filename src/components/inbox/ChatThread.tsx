@@ -1,10 +1,11 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
 import { updateContactName } from "@/actions/contacts"
+import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
@@ -206,6 +207,7 @@ export default function ChatThread({
   }, [input])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isConverting, setIsConverting] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation, isLoaded } = useInboxStore()
 
@@ -350,6 +352,40 @@ export default function ChatThread({
             throw e
           }
         }
+      } else if (action === 'convert') {
+        setIsConverting(true)
+        try {
+          const rawPlatformId = contact?.platform_id || ""
+          const isLid = rawPlatformId.endsWith('@lid')
+          const isMessenger = contact?.platform_type === 'messenger'
+          const isInstagram = contact?.platform_type === 'instagram'
+          const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
+          const metadataPhone = (contact?.metadata as Record<string, any>)?.real_phone
+          const displayPlatformId = metadataPhone || platformId
+          const contactPhone = contact?.phone
+          const effectivePhoneId = contactPhone || displayPlatformId
+
+          const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
+          const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
+
+          const client = await fetchWhmcsClient(cleanPhone)
+          if (!client) {
+            alert(`No matching WHMCS client profile found for ${cleanPhone}. Please link a client profile in the Portal tab first.`)
+            setIsConverting(false)
+            return
+          }
+
+          const result = await convertChatToTicket(conversationId, client.id, 1, currentUser?.id)
+          if (result.success) {
+            alert(`Chat successfully converted to ticket #${result.ticket?.tid || ''}!`)
+          } else {
+            alert("Error: " + result.error)
+          }
+        } catch (e: any) {
+          alert("Failed to convert chat: " + (e?.message || e))
+        } finally {
+          setIsConverting(false)
+        }
       }
     } catch (e) {
       console.error('Failed to perform action:', e)
@@ -412,6 +448,9 @@ export default function ChatThread({
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  
+
+
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
@@ -1097,11 +1136,23 @@ export default function ChatThread({
               <button onClick={handleResolveAndReview} className="w-full text-left px-4 py-2 text-[13px] text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center gap-2 font-medium">
                 <CheckCheck size={14} className="opacity-70" /> Resolve & Ask Review
               </button>
+              <button 
+                onClick={() => handleThreadAction('convert')} 
+                disabled={isConverting}
+                className="w-full text-left px-4 py-2 text-[13px] text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 flex items-center gap-2 font-medium disabled:opacity-50"
+              >
+                {isConverting ? (
+                  <Loader2 size={14} className="animate-spin shrink-0" />
+                ) : (
+                  <Database size={14} className="opacity-70 shrink-0" />
+                )}
+                Convert to Ticket
+              </button>
               <button onClick={() => handleThreadAction('archive')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <Archive size={14} className="opacity-50" /> {conversation?.is_archived ? 'Unarchive' : 'Archive'}
               </button>
               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
-              <button onClick={() => handleThreadAction('delete')} className="w-full text-left px-4 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 font-medium">
+              <button onClick={() => handleThreadAction('delete')} className="w-full text-left px-4 py-2 text-[13px] text-red-600 dark:red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2 font-medium">
                 <Trash2 size={14} className="opacity-70" /> Remove thread
               </button>
             </div>
@@ -1121,6 +1172,11 @@ export default function ChatThread({
         )}
 
         {allMessages.map((msg, idx) => {
+          const safeMeta = typeof msg.metadata === 'string' 
+            ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })() 
+            : (msg.metadata || {});
+          
+          const mediaUrl = (safeMeta.media_url || safeMeta.url) as string;
           // System messages: render as centered event label
           if (msg.sender_type === 'system' || msg.content_type === 'system') {
             const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -1141,6 +1197,26 @@ export default function ChatThread({
                       {msg.content.replace('the conversation', 'the chat')}
                     </span>
                     <span className="text-[10.5px] text-slate-400 ml-1">{msgTime}</span>
+                  </div>
+                </div>
+              )
+            }
+
+            if (msg.content === "Your ticket is created" || msg.content.includes("ticket is created")) {
+              return (
+                <div key={msg.id || idx} className="flex justify-center my-5">
+                  <div className="flex items-center gap-2.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-800 shrink-0 overflow-hidden flex items-center justify-center">
+                      {agent?.avatar_url ? (
+                        <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-300">T</span>
+                      )}
+                    </div>
+                    <span className="text-[12px] text-purple-700 dark:text-purple-300 font-semibold">
+                      Your ticket is created
+                    </span>
+                    <span className="text-[10.5px] text-purple-400 dark:text-purple-500/70 ml-1">{msgTime}</span>
                   </div>
                 </div>
               )
@@ -1210,7 +1286,7 @@ export default function ChatThread({
                   <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                     {/* Render Reply Preview if present */}
                     {(() => {
-                      const replyTo = (msg.metadata as any)?.reply_to;
+                      const replyTo = safeMeta.reply_to;
                       if (!replyTo) return null;
                       return (
                         <div 
@@ -1235,30 +1311,32 @@ export default function ChatThread({
                         </div>
                       );
                     })()}
-                  {msg.content_type === 'image' && msg.metadata?.media_url ? (
-                    <div className="relative">
-                      <img 
-                        src={msg.metadata.media_url} 
-                        alt="Attachment" 
-                        className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
-                        onClick={() => setZoomedImage(msg.metadata?.media_url ?? null)}
-                      />
+                  {msg.content_type === 'image' && (mediaUrl) ? (
+                    <div className="mb-2">
+                      <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                        <img 
+                          src={(mediaUrl) as string} 
+                          alt="Attachment" 
+                          className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setZoomedImage((mediaUrl) as string)}
+                        />
+                      </div>
                       {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
-                  ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
-                    <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
+                  ) : msg.content_type === 'file' && (mediaUrl) ? (
+                    <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
                       <Paperclip size={16} />
-                      <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
+                      <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
                     </a>
-                  ) : msg.content_type === 'audio' && (msg.metadata?.media_url || msg.metadata?.url) ? (
+                  ) : msg.content_type === 'audio' && (mediaUrl) ? (
                     <div className="flex flex-col gap-1">
-                      <CustomAudioPlayer url={(msg.metadata.media_url || msg.metadata.url) as string} isDark={!msg.is_internal} />
+                      <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={!msg.is_internal} />
                       {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
                     </div>
-                  ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
-                    <div className="flex flex-col gap-1">
-                      <video controls preload="metadata" className="max-w-[240px] max-h-[240px] rounded-lg bg-black/10 dark:bg-white/5">
-                        <source src={msg.metadata.media_url} type={msg.metadata?.mimetype || 'video/mp4'} />
+                  ) : msg.content_type === 'video' && (mediaUrl) ? (
+                    <div className="mb-2">
+                      <video controls className="max-w-[240px] rounded-lg border border-slate-100 dark:border-slate-700 bg-black">
+                        <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                         Your browser does not support the video tag.
                       </video>
                       {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
@@ -1315,7 +1393,7 @@ export default function ChatThread({
                   {msg.metadata?.participant_avatar ? (
                     <img 
                       src={msg.metadata.participant_avatar} 
-                      alt={msg.metadata.participant_name || contactName}
+                      alt={safeMeta.participant_name || contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
                     />
                   ) : ((contact?.avatar_url) && !(contact?.platform_id?.endsWith('@g.us'))) ? (
@@ -1327,18 +1405,18 @@ export default function ChatThread({
                     />
                   ) : (
                     <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
-                      {msg.metadata?.participant_name ? msg.metadata.participant_name.charAt(0).toUpperCase() : contactInitial}
+                      {safeMeta.participant_name ? safeMeta.participant_name.charAt(0).toUpperCase() : contactInitial}
                     </div>
                   )}
                   <div className="max-w-[75%] flex flex-col items-start gap-1">
                     {/* Participant Name Banner for Group Chats */}
-                    {msg.metadata?.participant_name && (
-                      <div className="text-[11px] text-slate-500 mb-0.5">{msg.metadata.participant_name}</div>
+                    {safeMeta.participant_name && (
+                      <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
                     <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
                       {/* Render Reply Preview if present */}
                       {(() => {
-                        const replyTo = (msg.metadata as any)?.reply_to;
+                        const replyTo = safeMeta.reply_to;
                         if (!replyTo) return null;
                         return (
                           <div 
@@ -1363,30 +1441,32 @@ export default function ChatThread({
                           </div>
                         );
                       })()}
-                      {msg.content_type === 'image' && msg.metadata?.media_url ? (
-                        <div className="relative">
-                          <img 
-                            src={msg.metadata.media_url} 
-                            alt="Attachment" 
-                            className="max-w-[240px] max-h-[240px] rounded-lg object-cover mb-1 cursor-zoom-in hover:opacity-95 transition-opacity" 
-                            onClick={() => setZoomedImage(msg.metadata?.media_url ?? null)}
-                          />
+                      {msg.content_type === 'image' && (mediaUrl) ? (
+                        <div className="mb-2">
+                          <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                            <img 
+                              src={(mediaUrl) as string} 
+                              alt="Attachment" 
+                              className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setZoomedImage((mediaUrl) as string)}
+                            />
+                          </div>
                           {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
-                      ) : msg.content_type === 'file' && msg.metadata?.media_url ? (
-                        <a href={msg.metadata.media_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
+                      ) : msg.content_type === 'file' && (mediaUrl) ? (
+                        <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
                           <Paperclip size={16} />
-                          <span className="text-[13px] underline truncate max-w-[180px]">{msg.metadata.filename || 'Download File'}</span>
+                          <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
                         </a>
-                      ) : msg.content_type === 'audio' && (msg.metadata?.media_url || msg.metadata?.url) ? (
+                      ) : msg.content_type === 'audio' && (mediaUrl) ? (
                         <div className="flex flex-col gap-1">
-                          <CustomAudioPlayer url={(msg.metadata.media_url || msg.metadata.url) as string} isDark={false} />
+                          <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={false} />
                           {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
                         </div>
-                      ) : msg.content_type === 'video' && msg.metadata?.media_url ? (
-                        <div className="flex flex-col gap-1">
-                          <video controls preload="metadata" className="max-w-[240px] max-h-[240px] rounded-lg bg-black/5 dark:bg-white/5">
-                            <source src={msg.metadata.media_url} type={msg.metadata?.mimetype || 'video/mp4'} />
+                      ) : msg.content_type === 'video' && (mediaUrl) ? (
+                        <div className="mb-2">
+                          <video controls className="max-w-[240px] rounded-lg border border-slate-200 dark:border-slate-700 bg-black">
+                            <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                             Your browser does not support the video tag.
                           </video>
                           {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}

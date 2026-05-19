@@ -658,14 +658,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h3>
                     <div className="flex gap-2">
                       <button 
-                        onClick={handleConvertToTicket}
-                        disabled={isConvertingTicket}
-                        className="text-[11px] font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 transition-colors px-2 py-1 rounded disabled:opacity-50 flex items-center gap-1"
-                      >
-                        {isConvertingTicket ? <Loader2 size={10} className="animate-spin" /> : <Database size={10} />}
-                        Convert Chat
-                      </button>
-                      <button 
                         onClick={() => setShowCreateTicket(true)}
                         className="text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1 rounded"
                       >

@@ -1,11 +1,12 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
+import { playUISound } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
 type WidgetMessage = AppMessage & {
@@ -239,6 +240,22 @@ export default function WidgetPage() {
   const [settings, setSettings] = useState<any>(null)
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
   
   // Audio Recording State
   const [isRecording, setIsRecording] = useState(false)
@@ -324,7 +341,18 @@ export default function WidgetPage() {
     try {
       const data = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now())
       if (data) {
-        setMessages(data as WidgetMessage[])
+        setMessages(prev => {
+          const prevLen = prev.filter(m => !m.id.startsWith('temp-')).length;
+          const newLen = data.length;
+          if (newLen > prevLen) {
+             const lastMsg = data[data.length - 1];
+             // If last message is not from the user, play receive sound
+             if (lastMsg.sender_type !== 'contact') {
+                 playUISound('receive');
+             }
+          }
+          return data as WidgetMessage[];
+        })
       }
     } catch (e) {
       console.error("Fetch messages error", e)
@@ -337,9 +365,25 @@ export default function WidgetPage() {
     
     const channel = supabase
       .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         fetchConversations()
-        fetchMsgs()
+        
+        const newMsg = payload.new as any;
+        if (newMsg && newMsg.conversation_id === activeConversationId) {
+          setMessages(prev => {
+            // Prevent duplicate insertion
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            
+            // Play receive sound for incoming messages
+            if (newMsg.sender_type !== 'contact') {
+                playUISound('receive');
+            }
+            return [...prev, newMsg as WidgetMessage];
+          });
+        } else if (activeConversationId === 'new') {
+          // Edge case if we were on 'new' and someone replied to our first message fast
+          fetchMsgs();
+        }
       })
       .subscribe()
 
@@ -591,6 +635,7 @@ export default function WidgetPage() {
 
     const messageText = input.trim()
     setInput("")
+    playUISound('send')
     
     const optimisticId = `temp-${Date.now()}`
     
@@ -1242,9 +1287,12 @@ export default function WidgetPage() {
         </div>
 
         {/* CONVERSATIONS LIST TAB */}
-        <div className={`absolute inset-0 overflow-y-auto pb-[120px] scrollbar-hide bg-[#f9fafb] flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto bg-[#f9fafb] flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-1.5">
+                 <button onClick={() => setActiveTab('home')} className="p-1 -ml-2 hover:bg-slate-50 transition-colors rounded-full text-slate-400">
+                   <ChevronLeft size={20} />
+                 </button>
                  <h1 className="text-[18px] font-bold text-slate-800 tracking-tight">Messages</h1>
                </div>
                <button className="p-1.5 hover:bg-slate-50 transition-colors rounded-full text-slate-400 -mr-1.5" onClick={() => window.parent.postMessage({ type: 'TALKFUZE_CLOSE' }, '*')}>
@@ -1252,7 +1300,7 @@ export default function WidgetPage() {
                </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[120px] flex flex-col gap-0 relative z-30 bg-white">
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-[80px] flex flex-col gap-0 relative z-30 bg-white">
                {conversations.length === 0 ? (
                  <div className="text-center text-slate-500 mt-10 text-[14px]">No messages yet.</div>
                ) : (
@@ -1290,7 +1338,7 @@ export default function WidgetPage() {
             </div>
 
             {/* Floating Chat with us button */}
-            <div className="absolute bottom-[90px] left-0 right-0 flex justify-center z-40 pointer-events-none">
+            <div className="absolute bottom-[24px] left-0 right-0 flex justify-center z-40 pointer-events-none">
                <button onClick={() => { setActiveConversationId('new'); setActiveTab('chat'); }} className="pointer-events-auto bg-[#5a718c] hover:bg-[#4d6179] text-white px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 font-semibold text-[14px] transition-all">
                   Chat with us
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
@@ -1368,17 +1416,18 @@ export default function WidgetPage() {
                 const isAiOrAgent = isAgent || msg.sender_type === 'ai';
 
                 if (isSystem) {
+                  const isTicketCreated = msg.content === 'Your ticket is created' || msg.content.includes('ticket is created');
                   return (
                     <div key={idx} className="flex justify-center my-4">
-                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+                      <div className={`flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${isTicketCreated ? 'bg-purple-50 border border-purple-100' : 'bg-slate-50 border border-slate-100'}`}>
                         {msg.agent?.avatar_url ? (
                           <img src={msg.agent.avatar_url} className="w-[22px] h-[22px] rounded-full object-cover shrink-0 border border-white shadow-sm" alt="Agent Avatar" />
                         ) : (
-                          <div className="w-[22px] h-[22px] rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0 border border-white shadow-sm">
-                            <Bot size={12}/>
+                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm ${isTicketCreated ? 'bg-purple-600' : 'bg-blue-600'}`}>
+                            {isTicketCreated ? <Database size={10} strokeWidth={2.5}/> : <Bot size={12}/>}
                           </div>
                         )}
-                        <span className="text-[12px] font-semibold text-slate-600 leading-none mr-1">{msg.content}</span>
+                        <span className={`text-[12px] font-semibold leading-none mr-1 ${isTicketCreated ? 'text-purple-700' : 'text-slate-600'}`}>{msg.content}</span>
                       </div>
                     </div>
                   );
@@ -1443,7 +1492,7 @@ export default function WidgetPage() {
                <div className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-visible pointer-events-auto flex flex-col relative">
                   
                   {showEmojiPicker && (
-                    <div className="absolute bottom-[105%] right-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden border border-slate-100">
+                    <div ref={emojiPickerRef} className="absolute bottom-[105%] right-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden border border-slate-100">
                       <EmojiPicker onEmojiClick={handleEmojiClick} width={280} height={300} searchDisabled skinTonesDisabled previewConfig={{showPreview: false}} />
                     </div>
                   )}
@@ -2009,7 +2058,7 @@ export default function WidgetPage() {
       </div>
 
       {/* Bottom Navigation */}
-      {activeTab !== 'chat' && !isFullScreenTicketView && (
+      {activeTab !== 'chat' && activeTab !== 'messages' && !isFullScreenTicketView && (
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[60px] px-6 py-[12px] z-20">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
