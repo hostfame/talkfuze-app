@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead } from "@/actions/chat"
@@ -294,6 +294,151 @@ export default function WidgetPage() {
   const [isCoBrowsingActive, setIsCoBrowsingActive] = useState(false)
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const coBrowseStreamRef = useRef<MediaStream | null>(null)
+
+  // Live Voice Call State
+  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active' | 'declined' | 'ended'>('idle')
+  const [isCallMuted, setIsCallMuted] = useState(false)
+  const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const voiceStreamRef = useRef<MediaStream | null>(null)
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [callDuration, setCallDuration] = useState(0)
+  const callTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (!activeConversationId || activeConversationId === 'new') return
+
+    const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+      .on('broadcast', { event: 'voice_call_answered' }, async (payload) => {
+        try {
+          setCallStatus('active')
+          const pc = voiceConnectionRef.current
+          if (pc) {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+          }
+          setCallDuration(0)
+          if (callTimerRef.current) clearInterval(callTimerRef.current)
+          callTimerRef.current = setInterval(() => {
+            setCallDuration(d => d + 1)
+          }, 1000)
+        } catch (err) {
+          console.error("Answer setup failed", err)
+        }
+      })
+      .on('broadcast', { event: 'voice_call_declined' }, () => {
+        handleEndVoiceCall(false)
+        setCallStatus('declined')
+        setTimeout(() => setCallStatus('idle'), 5000)
+      })
+      .on('broadcast', { event: 'voice_call_ended' }, () => {
+        handleEndVoiceCall(false)
+      })
+      .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
+        if (payload.payload.candidate && voiceConnectionRef.current) {
+          await voiceConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(callChannel)
+      if (callTimerRef.current) clearInterval(callTimerRef.current)
+    }
+  }, [activeConversationId])
+
+  const handleStartVoiceCall = async () => {
+    if (!activeConversationId || activeConversationId === 'new') return
+    try {
+      setCallStatus('calling')
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      voiceStreamRef.current = stream
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+      voiceConnectionRef.current = pc
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.ontrack = (event) => {
+        const audio = document.createElement('audio');
+        audio.autoplay = true;
+        audio.srcObject = event.streams[0];
+        voiceAudioRef.current = audio;
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+          callChannel.send({
+            type: 'broadcast',
+            event: 'ice_candidate',
+            payload: { candidate: event.candidate }
+          })
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+      callChannel.send({
+        type: 'broadcast',
+        event: 'voice_call_incoming',
+        payload: { offer }
+      })
+
+    } catch (err) {
+      console.error("Mic access denied or WebRTC error", err)
+      setCallStatus('idle')
+      alert("Microphone access is required to make audio calls.")
+    }
+  }
+
+  const handleEndVoiceCall = (sendBroadcast = true) => {
+    if (voiceStreamRef.current) {
+      voiceStreamRef.current.getTracks().forEach(t => t.stop())
+      voiceStreamRef.current = null
+    }
+    if (voiceConnectionRef.current) {
+      voiceConnectionRef.current.close()
+      voiceConnectionRef.current = null
+    }
+    if (voiceAudioRef.current) {
+      voiceAudioRef.current.pause()
+      voiceAudioRef.current = null
+    }
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current)
+      callTimerRef.current = null
+    }
+    
+    if (sendBroadcast && activeConversationId && activeConversationId !== 'new') {
+      const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+      callChannel.send({
+        type: 'broadcast',
+        event: 'voice_call_ended'
+      })
+    }
+    
+    setCallStatus('idle')
+    setIsCallMuted(false)
+  }
+
+  const toggleMuteVoiceCall = () => {
+    if (voiceStreamRef.current) {
+      const audioTrack = voiceStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsCallMuted(!audioTrack.enabled);
+      }
+    }
+  }
+
+  const formatCallDuration = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
 
   useEffect(() => {
     if (!activeConversationId || activeConversationId === 'new') return
@@ -1556,6 +1701,13 @@ export default function WidgetPage() {
                  </div>
               </div>
               <div className="flex items-center gap-0.5 text-slate-400">
+                  <button 
+                    onClick={handleStartVoiceCall}
+                    className="p-1.5 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50 flex items-center justify-center mr-1"
+                    title="Call Support"
+                  >
+                    <Phone size={18} strokeWidth={2.3} className="text-slate-500 hover:text-blue-600 transition-colors" />
+                  </button>
                  <div className="relative" ref={headerMenuRef}>
                    <button 
                      onClick={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)} 
@@ -2393,6 +2545,46 @@ export default function WidgetPage() {
             className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-2 rounded-lg shadow-sm transition-all uppercase tracking-wide"
           >
             Stop
+          </button>
+        </div>
+      )}
+
+      {/* Active Call UI Overlay for Visitor */}
+      {callStatus !== 'idle' && (
+        <div className="absolute top-[72px] left-3 right-3 z-[60] bg-slate-900/95 dark:bg-slate-950/98 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col items-center justify-center text-white shadow-2xl animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 w-full justify-between border-b border-slate-800/50 pb-3 mb-3.5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#0070f3] flex items-center justify-center animate-pulse">
+                <Phone className="text-white" size={18} strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[13.5px] font-bold">Voice Call</span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  {callStatus === 'calling' ? 'Calling support...' : callStatus === 'active' ? `Call active • ${formatCallDuration(callDuration)}` : callStatus === 'declined' ? 'Call declined' : 'Connecting...'}
+                </span>
+              </div>
+            </div>
+            
+            {callStatus === 'active' && (
+              <button 
+                onClick={toggleMuteVoiceCall}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isCallMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+              >
+                {isCallMuted ? (
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
+                ) : (
+                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
+                )}
+              </button>
+            )}
+          </div>
+          
+          <button 
+            onClick={() => handleEndVoiceCall(true)}
+            className="w-full py-3 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 shadow-md transition-all"
+          >
+            <PhoneOff size={16} strokeWidth={2.5} />
+            End Call
           </button>
         </div>
       )}
