@@ -65,22 +65,52 @@
   button.style.cssText = `
     width: 60px;
     height: 60px;
-    background: #2563EB; /* Tailwind blue-600 */
+    background: white;
     border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, background 0.2s ease;
+    position: relative;
+    border: 2px solid white;
   `;
 
-  // Chat Icon SVG
-  const chatIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-  // Close Icon SVG
-  const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+  const agentImages = [
+    `${baseUrl}/team/1.avif`,
+    `${baseUrl}/team/2.avif`,
+    `${baseUrl}/team/3.avif`
+  ];
+  let currentImageIndex = 0;
 
-  button.innerHTML = chatIcon;
+  function renderAvatar() {
+    return `
+      <div style="position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;">
+        <img id="talkfuze-agent-avatar" src="${agentImages[currentImageIndex]}" style="width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease;" />
+      </div>
+      <div style="position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 11px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">1</div>
+    `;
+  }
+
+  // Close Icon SVG (consistent gray)
+  const closeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+  button.innerHTML = renderAvatar();
+
+  // Rotate images every 4 seconds
+  setInterval(() => {
+    if (isOpen) return; // Don't switch if open
+    currentImageIndex = (currentImageIndex + 1) % agentImages.length;
+    const imgEl = document.getElementById('talkfuze-agent-avatar');
+    if (imgEl) {
+      imgEl.style.opacity = '0';
+      setTimeout(() => {
+        imgEl.src = agentImages[currentImageIndex];
+        imgEl.style.opacity = '1';
+      }, 300);
+    }
+  }, 4000);
 
   // Toggle Logic
   let isOpen = false;
@@ -90,6 +120,9 @@
       iframe.style.opacity = '1';
       iframe.style.transform = 'translateY(0) scale(1)';
       iframe.style.pointerEvents = 'all';
+      button.style.background = 'white'; // White when open for consistency
+      button.style.border = '2px solid #e2e8f0'; // Subtle slate border
+
       button.innerHTML = closeIcon;
       button.style.transform = 'scale(0.9)';
       setTimeout(() => button.style.transform = 'scale(1)', 150);
@@ -100,7 +133,9 @@
       iframe.style.opacity = '0';
       iframe.style.transform = 'translateY(20px) scale(0.95)';
       iframe.style.pointerEvents = 'none';
-      button.innerHTML = chatIcon;
+      button.style.background = 'white'; // White when closed for avatars
+      button.style.border = '2px solid white';
+      button.innerHTML = renderAvatar();
       button.style.transform = 'scale(0.9)';
       setTimeout(() => button.style.transform = 'scale(1)', 150);
     }

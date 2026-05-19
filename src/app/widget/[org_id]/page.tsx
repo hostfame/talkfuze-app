@@ -115,6 +115,120 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
   );
 };
 
+const FileIcon = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+    <polyline points="14 2 14 8 20 8" />
+  </svg>
+);
+
+const VideoIcon = ({ size = 20, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="23 7 16 12 23 17 23 7" />
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+);
+
+const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
+  const meta = (msg.metadata || {}) as any;
+  const url = meta.url || "";
+  const filename = meta.filename || "";
+  const mimetype = meta.mimetype || "";
+  const progress = meta.uploadProgress || 0;
+  const status = msg.status as string;
+
+  // 1. If currently uploading, render the progressive fill overlay
+  if (status === 'uploading') {
+    const isImageOrVideo = msg.content_type === 'image' || msg.content_type === 'video';
+    
+    if (isImageOrVideo && url) {
+      return (
+        <div className="relative rounded-[14px] overflow-hidden max-w-[240px] max-h-[200px] border border-slate-200/50 shadow-sm animate-in fade-in duration-300">
+          {msg.content_type === 'image' ? (
+            <img src={url} className="w-full h-full object-cover blur-[2px] opacity-60" alt="Uploading Preview" />
+          ) : (
+            <div className="w-[200px] h-[150px] bg-slate-900/10 blur-[2px] flex items-center justify-center">
+              <VideoIcon size={24} className="text-slate-400" />
+            </div>
+          )}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/40 text-white gap-2">
+            {/* Sleek water-tank fill progress circle */}
+            <div className="relative w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center overflow-hidden">
+              <div 
+                className="absolute bottom-0 left-0 right-0 bg-[#0070f3] transition-all duration-300 ease-out" 
+                style={{ height: `${progress}%` }}
+              />
+              <span className="relative text-[11px] font-bold text-white z-10">{progress}%</span>
+            </div>
+            <span className="text-[10px] font-semibold text-white/95 tracking-wide">Uploading...</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`flex flex-col gap-2 p-3.5 rounded-[14px] min-w-[200px] animate-in fade-in duration-300 ${isDark ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-800'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-lg shrink-0 ${isDark ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-600'}`}>
+            <FileIcon size={20} className="animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13.5px] font-semibold truncate leading-snug">{filename || 'Uploading...'}</p>
+            <p className="text-[10px] opacity-65 font-medium mt-0.5">Uploading {progress}%</p>
+          </div>
+        </div>
+        <div className="h-1.5 w-full bg-slate-200/30 rounded-full overflow-hidden">
+          <div className="h-full bg-[#0070f3] rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Render completed types
+  switch (msg.content_type) {
+    case 'image':
+      return (
+        <div className="relative group overflow-hidden rounded-[14px] border border-slate-200/30 shadow-sm transition-all duration-300">
+          <img 
+            src={url} 
+            alt={filename || 'Image Attachment'} 
+            className="max-w-[240px] max-h-[200px] rounded-[14px] object-cover cursor-pointer transition-all duration-300 hover:brightness-95 group-hover:scale-[1.01]"
+            onClick={() => window.open(url, '_blank')}
+          />
+        </div>
+      );
+    case 'video':
+      return (
+        <video 
+          src={url} 
+          controls 
+          className="max-w-[240px] max-h-[200px] rounded-[14px] overflow-hidden border border-slate-200/30 shadow-sm" 
+        />
+      );
+    case 'audio':
+      return <CustomAudioPlayer url={url} isDark={isDark} />;
+    case 'file':
+      return (
+        <a 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={`flex items-center gap-3 p-3 rounded-[14px] transition-all shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${isDark ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-100'}`}
+        >
+          <div className={`p-2.5 rounded-lg shrink-0 ${isDark ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-500'}`}>
+            <FileIcon size={20} />
+          </div>
+          <div className="flex-1 min-w-0 pr-1">
+            <p className="text-[13.5px] font-semibold truncate leading-snug">{filename || 'Download Document'}</p>
+            <p className="text-[10px] opacity-65 font-medium uppercase tracking-wider mt-0.5">{mimetype ? mimetype.split('/')[1] || 'FILE' : 'FILE'}</p>
+          </div>
+        </a>
+      );
+    default:
+      return <span className="break-words">{msg.content}</span>;
+  }
+};
+
 export default function WidgetPage() {
   const params = useParams()
   const org_id = params.org_id as string
@@ -200,7 +314,7 @@ export default function WidgetPage() {
   }, [org_id, deviceId, activeConversationId])
 
   useEffect(() => {
-    if (activeTab === 'chat' || activeTab === 'messages') {
+    if (activeTab === 'chat') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, activeTab])
@@ -288,35 +402,153 @@ export default function WidgetPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !deviceId) return;
     
     const file = e.target.files[0];
+    const tempId = `temp-upload-${Date.now()}`;
+    
+    // Determine content type
+    let contentType: "image" | "video" | "audio" | "file" = "file";
+    if (file.type.startsWith('image/')) contentType = "image";
+    else if (file.type.startsWith('video/')) contentType = "video";
+    else if (file.type.startsWith('audio/')) contentType = "audio";
+
+    // Generate local preview URL if applicable to show instantaneous preview
+    const localUrl = (contentType === 'image' || contentType === 'video' || contentType === 'audio')
+      ? URL.createObjectURL(file)
+      : '';
+
+    // Create a sleek optimistic uploading message
+    const uploadingMsg: WidgetMessage = {
+      id: tempId,
+      conversation_id: activeConversationId === 'new' ? '' : activeConversationId || '',
+      org_id,
+      sender_type: 'contact',
+      sender_id: null,
+      content: '[Attachment]',
+      content_type: contentType,
+      metadata: {
+        url: localUrl,
+        filename: file.name,
+        mimetype: file.type,
+        uploadProgress: 0,
+        status: 'uploading'
+      } as any,
+      platform_message_id: null,
+      is_internal: false,
+      status: 'uploading' as any,
+      created_at: new Date().toISOString()
+    };
+
+    // Add directly to messages state
+    setMessages(prev => [...prev, uploadingMsg]);
+
+    // Use XMLHttpRequest for real-time progress events to /api/upload
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload', true);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        setMessages(prev => prev.map(m => {
+          if (m.id === tempId) {
+            return {
+              ...m,
+              metadata: {
+                ...m.metadata,
+                uploadProgress: percentComplete
+              }
+            };
+          }
+          return m;
+        }));
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (response.success && response.url) {
+            if (activeConversationId === 'new') {
+              await startNewConversation(org_id, deviceId);
+            }
+            
+            const res = await sendWidgetMessage(org_id, deviceId, '[Attachment]', contentType, { 
+              url: response.url,
+              filename: file.name,
+              mimetype: file.type
+            });
+
+            if (res?.success && res.conversationId && activeConversationId === 'new') {
+              setActiveConversationId(res.conversationId);
+            }
+
+            // Update local temp message state to final sent state
+            setMessages(prev => prev.map(m => {
+              if (m.id === tempId) {
+                return {
+                  ...m,
+                  status: 'sent',
+                  metadata: {
+                    ...m.metadata,
+                    url: response.url,
+                    uploadProgress: 100,
+                    status: 'sent'
+                  }
+                };
+              }
+              return m;
+            }));
+          } else {
+            throw new Error(response.error || 'Upload failed');
+          }
+        } catch (err) {
+          console.error("Progressive upload complete but processing failed:", err);
+          setMessages(prev => prev.map(m => {
+            if (m.id === tempId) {
+              return {
+                ...m,
+                status: 'error' as any,
+                content: 'Failed to upload attachment.'
+              };
+            }
+            return m;
+          }));
+        }
+      } else {
+        setMessages(prev => prev.map(m => {
+          if (m.id === tempId) {
+            return {
+              ...m,
+              status: 'error' as any,
+              content: 'Failed to upload attachment.'
+            };
+          }
+          return m;
+        }));
+      }
+    };
+
+    xhr.onerror = () => {
+      setMessages(prev => prev.map(m => {
+        if (m.id === tempId) {
+          return {
+            ...m,
+            status: 'error' as any,
+            content: 'Failed to upload attachment.'
+          };
+        }
+        return m;
+      }));
+    };
+
     const formData = new FormData();
     formData.append('file', file);
-    
-    setIsSending(true);
-    try {
-      const result = await uploadWidgetMedia(formData);
-      if (result?.success && result.url) {
-        let contentType: "image" | "video" | "audio" | "file" = "file";
-        if (file.type.startsWith('image/')) contentType = "image";
-        else if (file.type.startsWith('video/')) contentType = "video";
-        else if (file.type.startsWith('audio/')) contentType = "audio";
-        
-        await sendWidgetMessage(org_id, deviceId, '[Attachment]', contentType, { 
-          url: result.url,
-          filename: file.name,
-          mimetype: file.type
-        });
-      }
-    } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Failed to upload file.");
-    } finally {
-      setIsSending(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    xhr.send(formData);
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSend = async () => {
@@ -605,7 +837,7 @@ export default function WidgetPage() {
 
             {/* Start Chat Button */}
             <div 
-              className="bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
+              className="group bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
               onClick={() => { setActiveConversationId('new'); setActiveTab('chat'); }}
             >
                <div className="p-4 flex items-center justify-between text-left">
@@ -613,7 +845,7 @@ export default function WidgetPage() {
                     <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">Chat with us</h3>
                     <p className="text-[13px] text-slate-500 tracking-tight">Active now</p>
                   </div>
-                  <div className="w-[32px] h-[32px] bg-[#0070f3] text-white rounded-full flex items-center justify-center rotate-0 shrink-0 shadow-sm">
+                  <div className="w-[32px] h-[32px] bg-slate-100 group-hover:bg-slate-200 text-slate-500 group-hover:text-slate-700 rounded-full flex items-center justify-center rotate-0 shrink-0 transition-colors">
                     <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>
                   </div>
                </div>
@@ -778,12 +1010,8 @@ export default function WidgetPage() {
                           <Bot size={12}/>
                         </div>
                       )}
-                      <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
-                        {msg.content_type === 'audio' ? (
-                          <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={false} />
-                        ) : (
-                          msg.content
-                        )}
+                      <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
+                        {renderMessageContent(msg, false)}
                       </div>
                     </div>
                     {idx === messages.length - 1 && (
@@ -792,16 +1020,12 @@ export default function WidgetPage() {
                   </div>
                 ) : (() => {
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                  const isSending = msg.status === 'sending';
+                  const isSending = msg.status === 'sending' || msg.status === 'uploading';
                   const isSeen = !isSending && messages.slice(idx + 1).some(m => m.sender_type === 'agent' || m.sender_type === 'ai');
                   return (
                     <div key={idx} className="flex flex-col gap-0.5 items-end mb-1">
-                      <div className="bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight">
-                        {msg.content_type === 'audio' ? (
-                          <CustomAudioPlayer url={(msg.metadata as any)?.url} isDark={true} />
-                        ) : (
-                          msg.content
-                        )}
+                      <div className={msg.content_type === 'text' ? "bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
+                        {renderMessageContent(msg, true)}
                       </div>
                       <div className="flex items-center gap-1 mr-0.5">
                         {msgTime && <span className="text-[11px] text-slate-400">{msgTime}</span>}
@@ -1010,40 +1234,39 @@ export default function WidgetPage() {
 
         {/* TICKETS TAB */}
         {activeTab === 'tickets' && (
-          <div className="pt-24 p-5 animate-in fade-in duration-300 flex flex-col h-full bg-[#f8fafc]">
-             <div className="flex-1 flex flex-col bg-white rounded-[20px] shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 pb-5 flex flex-col items-center border-b border-slate-50 text-center">
-                   <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3 text-blue-600 shadow-sm">
-                      <Ticket size={22} />
-                   </div>
-                   <h3 className="font-bold text-slate-800 text-[18px] mb-1.5 tracking-tight">Support Tickets</h3>
-                   <p className="text-slate-500 text-[13px] leading-relaxed">Manage your WHMCS support tickets directly from this widget. Sign in to continue.</p>
+          <div className="pt-20 px-6 pb-[90px] animate-in fade-in duration-300 flex flex-col h-full bg-white relative z-10">
+             
+             {/* Main Content Area */}
+             <div className="flex-1 flex flex-col mx-auto w-full relative z-20">
+                
+                {/* Header */}
+                <div className="mb-6">
+                   <h2 className="text-[26px] font-bold text-slate-900 tracking-tight leading-tight">Log in with your email</h2>
                 </div>
                 
-                <div className="p-6 pt-5 bg-slate-50/50 flex-1">
-                   <label className="block text-[12px] font-bold text-slate-700 uppercase tracking-wider mb-2">Email Address</label>
-                   <input 
-                     type="email" 
-                     placeholder="Enter your registered email"
-                     className="w-full bg-white border border-slate-200/80 shadow-sm rounded-xl p-3.5 text-[14px] text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all mb-4 placeholder:text-slate-400"
-                   />
-                   <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:shadow-[0_6px_16px_rgba(37,99,235,0.3)] active:scale-[0.98] flex justify-center items-center gap-2">
-                      Send Login OTP
+                {/* Input Area */}
+                <div className="flex flex-col gap-4">
+                   <div className="relative border border-slate-300 rounded-[12px] pt-2 pb-1.5 px-4 focus-within:border-slate-800 focus-within:ring-1 focus-within:ring-slate-800 transition-all bg-white">
+                     <label className="block text-[12px] font-semibold text-slate-700 mb-0.5">Email</label>
+                     <input 
+                       type="email" 
+                       placeholder="admin@yourdomain.com"
+                       className="w-full text-[16px] text-slate-900 bg-transparent outline-none placeholder:text-slate-400 font-medium"
+                     />
+                   </div>
+                   
+                   <button className="text-[14px] font-semibold text-blue-600 hover:text-blue-700 transition-colors text-left self-start">
+                     Login with Password instead?
                    </button>
-                   
-                   <div className="mt-5 text-center flex items-center justify-center gap-3">
-                      <div className="h-px bg-slate-200 flex-1"></div>
-                      <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">OR</span>
-                      <div className="h-px bg-slate-200 flex-1"></div>
-                   </div>
-                   
-                   <div className="mt-5 text-center">
-                      <button className="text-slate-500 hover:text-slate-800 font-semibold text-[13px] transition-colors flex items-center justify-center gap-1.5 mx-auto">
-                         Login with Password
-                         <ChevronRight size={14} className="mt-0.5" />
-                      </button>
-                   </div>
                 </div>
+                
+                {/* Bottom Button */}
+                <div className="mt-auto pt-8 pb-2">
+                   <button className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-4 rounded-[14px] text-[16px] transition-all shadow-[0_4px_12px_rgba(15,23,42,0.15)] hover:shadow-[0_6px_16px_rgba(15,23,42,0.25)] active:scale-[0.98]">
+                      Next
+                   </button>
+                </div>
+
              </div>
           </div>
         )}
