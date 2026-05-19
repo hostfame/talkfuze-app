@@ -549,7 +549,7 @@ export default function WidgetPage() {
                       </div>
                     ) : (
                       <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                         <img src="/talkfuze-logo.png" className="w-[26px] h-[26px] object-contain" alt="Logo" />
+                         <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Logo" />
                       </div>
                     )}
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -603,7 +603,7 @@ export default function WidgetPage() {
                        </div>
                      ) : (
                        <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                          <img src="/talkfuze-logo.png" className="w-5 h-5 object-contain" alt="Logo" />
+                          <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Logo" />
                        </div>
                      )}
                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
@@ -639,7 +639,7 @@ export default function WidgetPage() {
 
             <div className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
               <div className="text-center mb-4 mt-2">
-                 <p className="text-[13px] text-slate-500 tracking-tight">Got a question? Send us a message — we're here to help 🙂</p>
+                 <p className="text-[13px] text-slate-500 tracking-tight">Send a message to start a message with us</p>
               </div>
 
               {messages.length === 0 && (
