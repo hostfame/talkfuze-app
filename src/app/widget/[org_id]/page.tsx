@@ -917,7 +917,7 @@ export default function WidgetPage() {
                          <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">Convert to Ticket</h3>
                          <button onClick={resetOtpModal} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors"><X size={18} strokeWidth={2.5} /></button>
                        </div>
-                       <p className="text-slate-500 text-[14px] mb-5 leading-relaxed">Enter your registered WHMCS email. We'll send a 6-digit code to verify your identity.</p>
+                       <p className="text-slate-500 text-[14px] mb-5 leading-relaxed">Enter your registered hostnin account email. We'll send a 6-digit code to verify your identity.</p>
                        <label className="block text-[12px] font-bold text-slate-600 uppercase tracking-wider mb-2">Email Address</label>
                        <input
                          type="email"
