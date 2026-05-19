@@ -385,7 +385,8 @@ export async function getClientDetailsByEmailFast(email: string) {
             email: email,
         }, 8000, 1); // 8s timeout, 1 retry (max ~16s vs ~120s)
         return result;
-    } catch {
+    } catch (error) {
+        console.error('[WHMCS] getClientDetailsByEmailFast error:', error);
         return null;
     }
 }
@@ -1297,3 +1298,25 @@ export async function getClients(searchStr: string) {
         clients: result.clients?.client || [],
     };
 }
+
+export async function getClientByPhone(phoneStr: string) {
+    const result = await whmcsRequest<{
+        result: 'success' | 'error';
+        clients?: Array<{
+            id: number;
+            firstname: string;
+            lastname: string;
+            companyname: string;
+            email: string;
+            phonenumber: string;
+            status: string;
+        }>;
+    }>('GetClientByPhone', {
+        phone: phoneStr,
+    });
+
+    return {
+        clients: result.clients || [],
+    };
+}
+

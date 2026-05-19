@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       // Look up client in WHMCS
       const client = await getClientDetailsByEmailFast(email)
       if (!client || !client.id) {
-        return NextResponse.json({ success: false, error: 'No WHMCS account found for this email. Please check and try again.' }, { status: 404 })
+        return NextResponse.json({ success: false, error: 'No account found for this email. Please check and try again.' }, { status: 404 })
       }
 
       const code = generateOTP()
@@ -51,7 +51,7 @@ If you did not request this, you can safely ignore this email.
 `
 
       await whmcsRequest('SendEmail', {
-        messagename: 'General Email',
+        customtype: 'general',
         id: client.id,
         customsubject: subject,
         custommessage: message,
