@@ -124,7 +124,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
   );
 };
 
-function renderTextWithLinks(text: string, isAgent: boolean) {
+function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserProfile[] = []) {
   if (!text) return text;
   
   if (text === '[Audio Voice Message]') {
@@ -142,6 +142,8 @@ function renderTextWithLinks(text: string, isAgent: boolean) {
 
   const urlRegex = /((?:https?:\/\/|www\.)[^\s]+)/gi;
   const parts = text.split(urlRegex);
+  const mentionRegex = /(@\d+)/g;
+  
   return parts.map((part, i) => {
     if (part.match(urlRegex)) {
       const href = part.toLowerCase().startsWith('http') ? part : `https://${part}`;
@@ -158,7 +160,41 @@ function renderTextWithLinks(text: string, isAgent: boolean) {
         </a>
       );
     }
-    return part;
+    
+    // Check for mentions in non-URL parts
+    const mentionParts = part.split(mentionRegex);
+    if (mentionParts.length === 1) return part;
+    
+    return mentionParts.map((mPart, j) => {
+      if (mPart.match(mentionRegex)) {
+        const numberStr = mPart.substring(1); // remove @
+        let displayName = mPart;
+        
+        // Try to find member by phone matching last 10 digits
+        const cleanMention = numberStr.replace(/\D/g, '');
+        if (cleanMention.length >= 10 && teamMembers && teamMembers.length > 0) {
+          const mentionLast10 = cleanMention.slice(-10);
+          const member = teamMembers.find(m => {
+            if (!(m as any).phone) return false;
+            const cleanPhone = (m as any).phone.replace(/\D/g, '');
+            return cleanPhone.length >= 10 && cleanPhone.slice(-10) === mentionLast10;
+          });
+          if (member && member.name) {
+            displayName = `@${member.name}`;
+          }
+        }
+        
+        return (
+          <span 
+            key={`${i}-${j}`} 
+            className={`px-1.5 py-0.5 mx-0.5 rounded-md font-medium text-[0.9em] inline-block ${isAgent ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'}`}
+          >
+            {displayName}
+          </span>
+        );
+      }
+      return mPart;
+    });
   });
 }
 
@@ -1650,7 +1686,7 @@ export default function ChatThread({
                           onClick={() => setZoomedImage((mediaUrl) as string)}
                         />
                       </div>
-                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
+                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers)}</div>}
                     </div>
                   ) : msg.content_type === 'file' && (mediaUrl) ? (
                     <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
@@ -1660,7 +1696,7 @@ export default function ChatThread({
                   ) : msg.content_type === 'audio' && (mediaUrl) ? (
                     <div className="flex flex-col gap-1">
                       <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={!msg.is_internal} />
-                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
+                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers)}</div>}
                     </div>
                   ) : msg.content_type === 'video' && (mediaUrl) ? (
                     <div className="mb-2">
@@ -1668,10 +1704,10 @@ export default function ChatThread({
                         <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                         Your browser does not support the video tag.
                       </video>
-                      {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true)}</div>}
+                      {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers)}</div>}
                     </div>
                   ) : (
-                    <div>{renderTextWithLinks(msg.content, true)}</div>
+                    <div>{renderTextWithLinks(msg.content, true, teamMembers)}</div>
                   )}
                   </div>
                   
@@ -1780,7 +1816,7 @@ export default function ChatThread({
                               onClick={() => setZoomedImage((mediaUrl) as string)}
                             />
                           </div>
-                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
+                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers)}</div>}
                         </div>
                       ) : msg.content_type === 'file' && (mediaUrl) ? (
                         <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
@@ -1790,7 +1826,7 @@ export default function ChatThread({
                       ) : msg.content_type === 'audio' && (mediaUrl) ? (
                         <div className="flex flex-col gap-1">
                           <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={false} />
-                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
+                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers)}</div>}
                         </div>
                       ) : msg.content_type === 'video' && (mediaUrl) ? (
                         <div className="mb-2">
@@ -1798,10 +1834,10 @@ export default function ChatThread({
                             <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                             Your browser does not support the video tag.
                           </video>
-                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false)}</div>}
+                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers)}</div>}
                         </div>
                       ) : (
-                        <div>{renderTextWithLinks(msg.content, false)}</div>
+                        <div>{renderTextWithLinks(msg.content, false, teamMembers)}</div>
                       )}
                     </div>
                   </div>

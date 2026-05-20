@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test E-Commerce Store</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f3f4f6; margin: 0; padding: 0; }
+        header { background: white; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #111827; }
+        .hero { background: #2563eb; color: white; padding: 100px 20px; text-align: center; }
+        .hero h1 { font-size: 48px; margin-bottom: 20px; }
+        .products { display: flex; gap: 20px; padding: 40px; justify-content: center; }
+        .product { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 250px; text-align: center; }
+        .product img { width: 100%; height: 200px; background: #e5e7eb; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Hostnin Store (Demo)</div>
+        <div>
+            <a href="#" style="margin-right: 20px; text-decoration: none; color: #4b5563;">Shop</a>
+            <a href="#" style="text-decoration: none; color: #4b5563;">Login</a>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>Welcome to our Store</h1>
+        <p>This is a dummy page to test the TalkFuze Widget.</p>
+    </div>
+
+    <div class="products">
+        <div class="product">
+            <div class="img"></div>
+            <h3>Premium Server</h3>
+            <p>$99.00</p>
+        </div>
+        <div class="product">
+            <div class="img"></div>
+            <h3>Cloud Hosting</h3>
+            <p>$49.00</p>
+        </div>
+    </div>
+
+    <!-- Inject TalkFuze Widget -->
+    <script src="http://localhost:3000/embed.js" data-org-id="ec2f8436-05dc-4621-8a7f-57202f865b8e"></script>
+
+</body>
+</html>
