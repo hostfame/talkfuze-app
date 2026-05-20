@@ -133,9 +133,29 @@
         }
             
         @media (max-width: 480px) {
-            #tf-iframe-container {
-                width: calc(100vw - 40px);
-                height: calc(100vh - 120px);
+            #tf-widget-container.tf-mobile-open {
+                bottom: 0px !important;
+                right: 0px !important;
+                left: 0px !important;
+                top: 0px !important;
+                width: 100% !important;
+                height: 100% !important;
+                align-items: stretch !important;
+            }
+            
+            #tf-widget-container.tf-mobile-open #tf-iframe-container {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: 100% !important;
+                max-height: 100% !important;
+                border-radius: 0px !important;
+                margin-bottom: 0px !important;
+                box-shadow: none !important;
+                transform-origin: center center !important;
+            }
+
+            #tf-widget-container.tf-mobile-open #tf-launcher {
+                display: none !important;
             }
         }
     `;
@@ -194,6 +214,13 @@
         if (isOpen) {
             launcher.classList.add('tf-open');
             iframeContainer.classList.add('tf-open');
+            
+            // Lock body scroll and apply full-screen styles on mobile viewports
+            if (window.innerWidth <= 480) {
+                document.body.style.overflow = 'hidden';
+                container.classList.add('tf-mobile-open');
+            }
+            
             if (playSound && !isSoundMuted) swooshAudio.play().catch(e => console.log('Audio play blocked:', e));
             // small delay to allow display:block to apply before animating opacity/transform
             setTimeout(() => {
@@ -205,6 +232,13 @@
         } else {
             launcher.classList.remove('tf-open');
             iframeContainer.classList.remove('tf-animate-in');
+            
+            // Unlock body scroll and remove full-screen overlay styles on mobile
+            if (window.innerWidth <= 480) {
+                document.body.style.overflow = '';
+                container.classList.remove('tf-mobile-open');
+            }
+            
             if (playSound && !isSoundMuted) swooshAudio.play().catch(e => console.log('Audio play blocked:', e));
             setTimeout(() => {
                 iframeContainer.classList.remove('tf-open');

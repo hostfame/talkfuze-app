@@ -53,9 +53,25 @@
   const style = document.createElement('style');
   style.innerHTML = `
     @media (max-width: 480px) {
-      #talkfuze-container iframe {
-        width: calc(100vw - 40px);
-        height: calc(100vh - 120px);
+      #talkfuze-container.tf-mobile-open {
+        bottom: 0px !important;
+        right: 0px !important;
+        left: 0px !important;
+        top: 0px !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      #talkfuze-container.tf-mobile-open iframe {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0px !important;
+        margin-bottom: 0px !important;
+        box-shadow: none !important;
+      }
+      #talkfuze-container.tf-mobile-open div {
+        display: none !important;
       }
     }
   `;
@@ -121,6 +137,13 @@
       iframe.style.opacity = '1';
       iframe.style.transform = 'translateY(0) scale(1)';
       iframe.style.pointerEvents = 'all';
+      
+      // Apply full screen classes and body overflow styling on mobile viewports
+      if (window.innerWidth <= 480) {
+        document.body.style.overflow = 'hidden';
+        container.classList.add('tf-mobile-open');
+      }
+      
       button.style.background = 'white'; // White when open for consistency
       button.style.border = '2px solid #e2e8f0'; // Subtle slate border
 
@@ -134,6 +157,13 @@
       iframe.style.opacity = '0';
       iframe.style.transform = 'translateY(20px) scale(0.95)';
       iframe.style.pointerEvents = 'none';
+      
+      // Restore body scroll and remove full-screen overlay styles on mobile
+      if (window.innerWidth <= 480) {
+        document.body.style.overflow = '';
+        container.classList.remove('tf-mobile-open');
+      }
+      
       button.style.background = 'white'; // White when closed for avatars
       button.style.border = '2px solid white';
       button.innerHTML = renderAvatar();
