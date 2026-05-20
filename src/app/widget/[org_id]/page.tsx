@@ -854,29 +854,99 @@ export default function WidgetPage() {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const tempId = `temp-upload-${Date.now()}`
+        const localUrl = URL.createObjectURL(audioBlob)
+
+        // 1. Create a sleek optimistic uploading message for instant layout inclusion
+        const uploadingMsg: WidgetMessage = {
+          id: tempId,
+          conversation_id: activeConversationId === 'new' ? '' : activeConversationId || '',
+          org_id,
+          sender_type: 'contact',
+          sender_id: null,
+          content: '[Audio Voice Message]',
+          content_type: 'audio',
+          metadata: {
+            url: localUrl,
+            filename: 'voice-message.webm',
+            mimetype: 'audio/webm',
+            uploadProgress: 0,
+            status: 'uploading'
+          } as any,
+          platform_message_id: null,
+          is_internal: false,
+          status: 'uploading' as any,
+          created_at: new Date().toISOString()
+        }
+
+        // 2. Add directly to messages state
+        setMessages(prev => [...prev, uploadingMsg])
+
+        // 3. Stop all recording tracks immediately so browser mic state turns off
+        stream.getTracks().forEach(track => track.stop())
+
+        // 4. Use progressive upload via XHR so we don't freeze the text box/input layout!
         const formData = new FormData()
         formData.append('file', audioBlob, 'voice-message.webm')
-        
-        setIsSending(true)
-        try {
-          const result = await uploadWidgetMedia(formData)
-          if (result?.success && result.url) {
-            if (activeConversationId === 'new') {
-              await startNewConversation(org_id, deviceId)
+
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', '/api/upload', true)
+
+        xhr.onload = async () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText)
+              if (response.success && response.url) {
+                if (activeConversationId === 'new') {
+                  await startNewConversation(org_id, deviceId)
+                }
+                
+                const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { 
+                  url: response.url,
+                  filename: 'voice-message.webm',
+                  mimetype: 'audio/webm'
+                }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
+
+                if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
+                  setActiveConversationId(res.conversationId)
+                }
+
+                // Update local temp message state to final sent state
+                setMessages(prev => prev.map(m => {
+                  if (m.id === tempId) {
+                    return {
+                      ...m,
+                      status: 'sent',
+                      metadata: {
+                        ...m.metadata,
+                        url: response.url,
+                        uploadProgress: 100,
+                        status: 'sent'
+                      }
+                    }
+                  }
+                  return m
+                }))
+              } else {
+                throw new Error(response.error || 'Upload failed')
+              }
+            } catch (err) {
+              console.error("Voice message upload complete but processing failed:", err)
+              setMessages(prev => prev.filter(m => m.id !== tempId))
+              setToastError("Failed to send voice message. Please try again.")
             }
-            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
-            if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
-              setActiveConversationId(res.conversationId)
-            }
+          } else {
+            setMessages(prev => prev.filter(m => m.id !== tempId))
+            setToastError("Failed to upload voice message. Please try again.")
           }
-        } catch (e) {
-          console.error(e)
-        } finally {
-          setIsSending(false)
         }
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop())
+
+        xhr.onerror = () => {
+          setMessages(prev => prev.filter(m => m.id !== tempId))
+          setToastError("Network error during voice message upload.")
+        }
+
+        xhr.send(formData)
       }
 
       mediaRecorder.start()
