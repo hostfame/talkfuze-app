@@ -608,7 +608,12 @@ export default function ChatThread({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       voiceStreamRef.current = stream
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection({
+        onConnectionFailed: () => {
+          console.warn('[Agent] Agent-initiated call ICE failed, auto-ending');
+          handleEndVoiceCall(true);
+        }
+      });
       voiceConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
