@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
@@ -1642,6 +1642,44 @@ export default function ChatThread({
                       {msg.content.replace('the conversation', 'the chat')}
                     </span>
                     <span className="text-[10.5px] text-red-400 dark:text-red-500/70 ml-1">{msgTime}</span>
+                  </div>
+                </div>
+              )
+            }
+
+            if (msg.content === 'Started a voice call') return null;
+
+            if (msg.content.includes("voice call")) {
+              const isMissed = msg.content.includes("Missed");
+              return (
+                <div key={msg.id || idx} className="flex justify-center my-5">
+                  <div className={`flex items-center gap-3 border px-4 py-2 rounded-xl shadow-sm min-w-[200px] ${
+                    isMissed 
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/30' 
+                      : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30'
+                  }`}>
+                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
+                      isMissed
+                        ? 'bg-red-100 dark:bg-red-800'
+                        : 'bg-emerald-100 dark:bg-emerald-800'
+                    }`}>
+                      {isMissed 
+                        ? <PhoneMissed size={14} className="text-red-600 dark:text-red-300" />
+                        : <Phone size={14} className="text-emerald-600 dark:text-emerald-300" />
+                      }
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={`text-[12px] font-semibold ${
+                        isMissed ? 'text-red-800 dark:text-red-300' : 'text-emerald-800 dark:text-emerald-300'
+                      }`}>
+                        {isMissed ? 'Missed Voice Call' : 'Voice Call'}
+                      </span>
+                      <span className={`text-[11px] font-medium ${
+                        isMissed ? 'text-red-600/70 dark:text-red-400/70' : 'text-emerald-600/70 dark:text-emerald-400/70'
+                      }`}>
+                        {msgTime} {safeMeta.duration ? `• ${safeMeta.duration}` : ''}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )

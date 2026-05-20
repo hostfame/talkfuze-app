@@ -340,6 +340,7 @@ export default function WidgetPage() {
   const voiceStreamRef = useRef<MediaStream | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
   const [callDuration, setCallDuration] = useState(0)
+  const callDurationRef = useRef(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -354,9 +355,11 @@ export default function WidgetPage() {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
           }
           setCallDuration(0)
+          callDurationRef.current = 0
           if (callTimerRef.current) clearInterval(callTimerRef.current)
           callTimerRef.current = setInterval(() => {
             setCallDuration(d => d + 1)
+            callDurationRef.current += 1
           }, 1000)
         } catch (err) {
           console.error("Answer setup failed", err)
@@ -488,8 +491,19 @@ export default function WidgetPage() {
         event: 'voice_call_ended'
       })
     }
+
+    if (activeConversationId && activeConversationId !== 'new') {
+      const duration = callDurationRef.current;
+      if (duration > 0) {
+        sendWidgetMessage(org_id, deviceId, `Voice call ended`, 'system', { duration: formatCallDuration(duration) }, activeConversationId);
+      } else {
+        sendWidgetMessage(org_id, deviceId, `Missed voice call`, 'system', {}, activeConversationId);
+      }
+    }
     
     setCallStatus('idle')
+    setCallDuration(0)
+    callDurationRef.current = 0
     setIsCallMuted(false)
   }
 
