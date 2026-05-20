@@ -351,6 +351,7 @@ export default function WidgetPage() {
   const [isCoBrowsingActive, setIsCoBrowsingActive] = useState(false)
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const coBrowseStreamRef = useRef<MediaStream | null>(null)
+  const coBrowseBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
   // Premium toast notification state
   const [toastError, setToastError] = useState<string | null>(null)
@@ -595,12 +596,30 @@ export default function WidgetPage() {
         const pc = coBrowseConnectionRef.current;
         if (pc && pc.signalingState !== 'stable') {
           await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+
+          // Flush buffered candidates
+          if (coBrowseBufferedCandidatesRef.current.length > 0) {
+            for (const candidate of coBrowseBufferedCandidatesRef.current) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {
+                console.error("Error adding buffered candidate:", e);
+              }
+            }
+            coBrowseBufferedCandidatesRef.current = [];
+          }
         }
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
         const pc = coBrowseConnectionRef.current;
-        if (pc && payload.payload.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+        if (pc && pc.remoteDescription && payload.payload.candidate) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+          } catch (e) {
+            console.error("Error adding ice candidate:", e);
+          }
+        } else if (payload.payload.candidate) {
+          coBrowseBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
       .subscribe()
@@ -687,6 +706,7 @@ export default function WidgetPage() {
   }
 
   const handleStopCoBrowse = () => {
+    coBrowseBufferedCandidatesRef.current = [];
     if (coBrowseStreamRef.current) {
       coBrowseStreamRef.current.getTracks().forEach(t => t.stop())
       coBrowseStreamRef.current = null

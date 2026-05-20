@@ -89,6 +89,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
+  const bufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+
   useEffect(() => {
     if (!conversation?.id) return
 
@@ -102,8 +104,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       })
       .on('broadcast', { event: 'ice_candidate' }, async (p) => {
         const pc = coBrowseConnectionRef.current;
-        if (pc && p.payload.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(p.payload.candidate));
+        if (pc && pc.remoteDescription && p.payload.candidate) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(p.payload.candidate));
+          } catch (e) {
+            console.error("Error adding ice candidate:", e);
+          }
+        } else if (p.payload.candidate) {
+          bufferedCandidatesRef.current.push(p.payload.candidate);
         }
       })
       .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
@@ -129,6 +137,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           });
           coBrowseConnectionRef.current = pc
 
+          pc.onconnectionstatechange = () => {
+            console.log("Co-browse WebRTC Connection State:", pc.connectionState);
+          };
+          pc.oniceconnectionstatechange = () => {
+            console.log("Co-browse WebRTC ICE Connection State:", pc.iceConnectionState);
+          };
+
           pc.ontrack = (event) => {
             if (videoRef.current) {
               videoRef.current.srcObject = event.streams[0];
@@ -137,6 +152,19 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           };
 
           await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.offer));
+
+          // Flush buffered candidates
+          if (bufferedCandidatesRef.current.length > 0) {
+            for (const candidate of bufferedCandidatesRef.current) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {
+                console.error("Error adding buffered candidate:", e);
+              }
+            }
+            bufferedCandidatesRef.current = [];
+          }
+
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
@@ -187,6 +215,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
 
   const handleEndCoBrowseSession = () => {
+    bufferedCandidatesRef.current = [];
     if (coBrowseConnectionRef.current) {
       coBrowseConnectionRef.current.close()
       coBrowseConnectionRef.current = null
