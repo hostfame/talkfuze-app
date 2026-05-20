@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause, Phone } from "lucide-react"
+import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause, Phone, Globe } from "lucide-react"
 import { getCallLogs } from "@/actions/calls"
 import { useInboxStore } from "@/lib/store"
 import { supabase } from "@/lib/supabase"
@@ -94,6 +94,8 @@ interface CallLog {
   recording_url?: string | null;
   agent_name?: string | null;
   customer_name?: string | null;
+  call_type?: string | null;
+  conversation_id?: string | null;
 }
 
 export default function CallsPage() {
@@ -185,10 +187,17 @@ export default function CallsPage() {
         </span>
       )
     }
-    if (s === 'NOANSWER') {
+    if (s === 'NOANSWER' || s === 'NO ANSWER') {
       return (
         <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
           No Answer
+        </span>
+      )
+    }
+    if (s === 'MISSED') {
+      return (
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+          Missed
         </span>
       )
     }
@@ -214,7 +223,7 @@ export default function CallsPage() {
   }
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery) || (log.customer_name && log.customer_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery) || (log.customer_name && log.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) || (log.call_type === 'browser' && 'browser'.includes(searchQuery.toLowerCase()))
     const logDate = new Date(log.created_at).toISOString().split('T')[0]
     const matchesDate = dateFilter ? logDate === dateFilter : true
     return matchesSearch && matchesDate
@@ -337,12 +346,16 @@ export default function CallsPage() {
                 <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
                   <td className="py-3 px-6 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      {log.direction === 'inbound' ? (
+                      {log.call_type === 'browser' ? (
+                        <Globe size={15} className="text-blue-500" />
+                      ) : log.direction === 'inbound' ? (
                         <PhoneIncoming size={15} className={log.status === 'MISSED' ? 'text-rose-500' : 'text-blue-500'} />
                       ) : (
                         <PhoneOutgoing size={15} className="text-emerald-500" />
                       )}
-                      <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">{log.direction}</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">
+                        {log.call_type === 'browser' ? 'Browser' : log.direction}
+                      </span>
                     </div>
                   </td>
                   <td className="py-3 px-6 whitespace-nowrap">
