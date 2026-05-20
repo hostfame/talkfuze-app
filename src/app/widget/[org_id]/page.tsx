@@ -2357,27 +2357,27 @@ export default function WidgetPage() {
                       <div key={idx} className="flex justify-center my-5">
                         <div className={`flex items-center gap-3 border px-4 py-2.5 rounded-2xl shadow-sm min-w-[200px] ${
                           isMissed
-                            ? 'bg-red-50 border-red-100'
-                            : 'bg-emerald-50 border-emerald-100'
+                            ? 'bg-slate-50 border-slate-200'
+                            : 'bg-blue-50 border-blue-100'
                         }`}>
                           <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center ${
                             isMissed
-                              ? 'bg-red-100'
-                              : 'bg-emerald-100'
+                              ? 'bg-slate-200'
+                              : 'bg-blue-100'
                           }`}>
                             {isMissed
-                              ? <PhoneOff size={15} className="text-red-600" />
-                              : <Phone size={15} className="text-emerald-600" />
+                              ? <PhoneOff size={15} className="text-slate-500" />
+                              : <Phone size={15} className="text-blue-600" />
                             }
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <span className={`text-[12.5px] font-bold tracking-tight ${
-                              isMissed ? 'text-red-800' : 'text-emerald-800'
+                              isMissed ? 'text-slate-600' : 'text-blue-700'
                             }`}>
                               {isMissed ? 'Missed Voice Call' : 'Voice Call Ended'}
                             </span>
                             <span className={`text-[11px] font-medium ${
-                              isMissed ? 'text-red-500' : 'text-emerald-500'
+                              isMissed ? 'text-slate-400' : 'text-blue-500/70'
                             }`}>
                               {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
                             </span>
@@ -2412,15 +2412,15 @@ export default function WidgetPage() {
                   const isJoined = msg.content.includes('joined');
                   return (
                     <div key={idx} className="flex justify-center my-4">
-                      <div className={`flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${isTicketCreated ? 'bg-purple-50 border border-purple-100' : 'bg-slate-50 border border-slate-100'}`}>
+                      <div className={`flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${isTicketCreated ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50 border border-slate-100'}`}>
                         {msg.agent?.avatar_url ? (
                           <img src={msg.agent.avatar_url} className="w-[22px] h-[22px] rounded-full object-cover shrink-0 border border-white shadow-sm" alt="Agent Avatar" />
                         ) : (
-                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm ${isTicketCreated ? 'bg-purple-600' : 'bg-[#0070f3]'}`}>
+                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm bg-[#0070f3]`}>
                             {isTicketCreated ? <Database size={10} strokeWidth={2.5}/> : (isJoined ? <User size={11} strokeWidth={2.5}/> : <Sparkles size={11} strokeWidth={2.5}/>)}
                           </div>
                         )}
-                        <span className={`text-[12px] font-semibold leading-none mr-1 ${isTicketCreated ? 'text-purple-700' : 'text-slate-600'}`}>{msg.content}</span>
+                        <span className={`text-[12px] font-semibold leading-none mr-1 ${isTicketCreated ? 'text-blue-700' : 'text-slate-600'}`}>{msg.content}</span>
                       </div>
                     </div>
                   );

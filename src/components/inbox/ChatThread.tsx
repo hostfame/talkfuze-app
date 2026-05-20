@@ -1925,18 +1925,18 @@ export default function ChatThread({
             if (msg.content === "Your ticket is created" || msg.content.includes("ticket is created")) {
               return (
                 <div key={msg.id || idx} className="flex justify-center my-5">
-                  <div className="flex items-center gap-2.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 px-3 py-1.5 rounded-full shadow-sm">
-                    <div className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-800 shrink-0 overflow-hidden flex items-center justify-center">
+                  <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-800 shrink-0 overflow-hidden flex items-center justify-center">
                       {agent?.avatar_url ? (
                         <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-300">T</span>
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-300">T</span>
                       )}
                     </div>
-                    <span className="text-[12px] text-purple-700 dark:text-purple-300 font-semibold">
+                    <span className="text-[12px] text-blue-700 dark:text-blue-300 font-semibold">
                       Your ticket is created
                     </span>
-                    <span className="text-[10.5px] text-purple-400 dark:text-purple-500/70 ml-1">{msgTime}</span>
+                    <span className="text-[10.5px] text-blue-400 dark:text-blue-500/70 ml-1">{msgTime}</span>
                   </div>
                 </div>
               )
@@ -1945,18 +1945,18 @@ export default function ChatThread({
             if (agent && msg.content.includes('left')) {
               return (
                 <div key={msg.id || idx} className="flex justify-center my-5">
-                  <div className="flex items-center gap-2.5 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 px-3 py-1.5 rounded-full shadow-sm">
-                    <div className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-800 shrink-0 overflow-hidden flex items-center justify-center">
+                  <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
                       {agent.avatar_url ? (
                         <img src={agent.avatar_url} alt="" className="w-full h-full object-cover opacity-80" />
                       ) : (
-                        <span className="text-[10px] font-bold text-red-600 dark:text-red-300">{agent.name.charAt(0).toUpperCase()}</span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{agent.name.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
-                    <span className="text-[12px] text-red-600 dark:text-red-400 font-medium">
+                    <span className="text-[12px] text-slate-500 dark:text-slate-400 font-medium">
                       {msg.content.replace('the conversation', 'the chat')}
                     </span>
-                    <span className="text-[10.5px] text-red-400 dark:text-red-500/70 ml-1">{msgTime}</span>
+                    <span className="text-[10.5px] text-slate-400 dark:text-slate-500/70 ml-1">{msgTime}</span>
                   </div>
                 </div>
               )
@@ -1970,29 +1970,29 @@ export default function ChatThread({
                 <div key={msg.id || idx} className="flex justify-center my-5">
                   <div className={`flex items-center gap-3 border px-4 py-2 rounded-xl shadow-sm min-w-[200px] ${
                     isMissed 
-                      ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/30' 
-                      : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30'
+                      ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' 
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
                   }`}>
                     <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
                       isMissed
-                        ? 'bg-red-100 dark:bg-red-800'
-                        : 'bg-emerald-100 dark:bg-emerald-800'
+                        ? 'bg-slate-200 dark:bg-slate-700'
+                        : 'bg-blue-100 dark:bg-blue-800'
                     }`}>
                       {isMissed 
-                        ? <PhoneMissed size={14} className="text-red-600 dark:text-red-300" />
-                        : <Phone size={14} className="text-emerald-600 dark:text-emerald-300" />
+                        ? <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
+                        : <Phone size={14} className="text-blue-600 dark:text-blue-300" />
                       }
                     </div>
                     <div className="flex flex-col">
                       <span className={`text-[12px] font-semibold ${
-                        isMissed ? 'text-red-800 dark:text-red-300' : 'text-emerald-800 dark:text-emerald-300'
+                        isMissed ? 'text-slate-600 dark:text-slate-300' : 'text-blue-700 dark:text-blue-300'
                       }`}>
                         {isMissed ? 'Missed Voice Call' : 'Voice Call'}
                       </span>
                       <span className={`text-[11px] font-medium ${
-                        isMissed ? 'text-red-600/70 dark:text-red-400/70' : 'text-emerald-600/70 dark:text-emerald-400/70'
+                        isMissed ? 'text-slate-400 dark:text-slate-500' : 'text-blue-500/70 dark:text-blue-400/70'
                       }`}>
-                        {msgTime} {safeMeta.duration ? `• ${safeMeta.duration}` : ''}
+                        {msgTime} {safeMeta.duration ? `\u2022 ${safeMeta.duration}` : ''}
                       </span>
                     </div>
                   </div>

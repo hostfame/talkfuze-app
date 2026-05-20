@@ -175,42 +175,42 @@ export default function CallsPage() {
     const s = (status || '').toUpperCase()
     if (s === 'ANSWERED' || s === 'ANSWER') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
           Answered
         </span>
       )
     }
     if (s === 'CANCEL' || s === 'CANCELLED') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
           Cancelled
         </span>
       )
     }
     if (s === 'NOANSWER' || s === 'NO ANSWER') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           No Answer
         </span>
       )
     }
     if (s === 'MISSED') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           Missed
         </span>
       )
     }
     if (s === 'BUSY') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           Busy
         </span>
       )
     }
     if (s === 'CHANUNAVAIL' || s === 'CONGESTION') {
       return (
-        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+        <span className="px-2.5 py-1 text-[11px] font-bold rounded-md uppercase tracking-wide bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           Failed
         </span>
       )
@@ -349,9 +349,9 @@ export default function CallsPage() {
                       {log.call_type === 'browser' ? (
                         <Globe size={15} className="text-blue-500" />
                       ) : log.direction === 'inbound' ? (
-                        <PhoneIncoming size={15} className={log.status === 'MISSED' ? 'text-rose-500' : 'text-blue-500'} />
+                        <PhoneIncoming size={15} className={log.status === 'MISSED' || log.status === 'NOANSWER' || log.status === 'NO ANSWER' ? 'text-slate-400' : 'text-blue-500'} />
                       ) : (
-                        <PhoneOutgoing size={15} className="text-emerald-500" />
+                        <PhoneOutgoing size={15} className="text-blue-500" />
                       )}
                       <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">
                         {log.call_type === 'browser' ? 'Browser' : log.direction}
