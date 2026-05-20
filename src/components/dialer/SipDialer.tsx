@@ -6,6 +6,7 @@ import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
+import { getLastCallForNumber, findConversationByPhone, saveCallNote } from '@/actions/calls'
 
 const isPhoneNumber = (str: string) => {
   if (!str) return false
@@ -14,7 +15,7 @@ const isPhoneNumber = (str: string) => {
 }
 
 export default function SipDialer() {
-  const { currentUser, pendingDialNumber, clearPendingDial } = useInboxStore()
+  const { currentUser, pendingDialNumber, clearPendingDial, setSelectedId } = useInboxStore()
   const [isOpen, setIsOpen] = useState(false)
   const [number, setNumber] = useState('')
   const [status, setStatus] = useState('Disconnected')
@@ -52,6 +53,11 @@ export default function SipDialer() {
   const [showInCallKeypad, setShowInCallKeypad] = useState(false)
   const [isMicMuted, setIsMicMuted] = useState(false)
   const [isClientExpanded, setIsClientExpanded] = useState(false)
+  const [callNote, setCallNote] = useState('')
+  const [isSavingNote, setIsSavingNote] = useState(false)
+  const [noteSaved, setNoteSaved] = useState(false)
+  const [lastCallInfo, setLastCallInfo] = useState<{ created_at: string; duration_seconds: number; direction: string; status: string } | null>(null)
+  const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null)
   
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -208,6 +214,11 @@ export default function SipDialer() {
         setIceState('new')
         setCanHangUp(true)
         setWhmcsClientInfo(null)
+        setCallNote('')
+        setNoteSaved(false)
+        setLastCallInfo(null)
+        setMatchedConversationId(null)
+        setIsClientExpanded(false)
         setIsOnHold(false)
         setIsMicMuted(false)
         setShowTransferInput(false)
@@ -425,6 +436,23 @@ export default function SipDialer() {
               }
             })
             .catch(err => console.error("WHMCS dynamic client lookup failed:", err))
+
+          // Fetch last call history for this number
+          if (currentUser?.org_id) {
+            getLastCallForNumber(currentUser.org_id, cleanCaller)
+              .then(lastCall => { if (lastCall) setLastCallInfo(lastCall) })
+              .catch(() => {})
+
+            // Auto-find conversation for this caller
+            findConversationByPhone(currentUser.org_id, cleanCaller)
+              .then(convId => {
+                if (convId) {
+                  setMatchedConversationId(convId)
+                  setSelectedId(convId) // Auto-navigate to their conversation
+                }
+              })
+              .catch(() => {})
+          }
         } else {
           setIncomingCallerName(callerId)
         }
@@ -559,6 +587,11 @@ export default function SipDialer() {
     setIceState('new')
     setCanHangUp(true)
     setWhmcsClientInfo(null)
+    setCallNote('')
+    setNoteSaved(false)
+    setLastCallInfo(null)
+    setMatchedConversationId(null)
+    setIsClientExpanded(false)
     setIsOnHold(false)
     setIsMicMuted(false)
     setShowTransferInput(false)
@@ -607,6 +640,11 @@ export default function SipDialer() {
     setIsMuted(false)
     setIceState('new')
     setWhmcsClientInfo(null)
+    setCallNote('')
+    setNoteSaved(false)
+    setLastCallInfo(null)
+    setMatchedConversationId(null)
+    setIsClientExpanded(false)
     setIsOnHold(false)
     setIsMicMuted(false)
     setShowTransferInput(false)
@@ -918,6 +956,65 @@ export default function SipDialer() {
                   </a>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Last Call History */}
+          {lastCallInfo && (
+            <div className="mx-3 mb-2 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Previous Call</span>
+                <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                  {(() => {
+                    const diff = Date.now() - new Date(lastCallInfo.created_at).getTime()
+                    const mins = Math.floor(diff / 60000)
+                    const hours = Math.floor(diff / 3600000)
+                    const days = Math.floor(diff / 86400000)
+                    const timeAgo = days > 0 ? `${days}d ago` : hours > 0 ? `${hours}h ago` : `${mins}m ago`
+                    const dur = lastCallInfo.duration_seconds
+                    const durStr = dur >= 60 ? `${Math.floor(dur / 60)}m ${dur % 60}s` : `${dur}s`
+                    return `${timeAgo}, ${durStr}`
+                  })()}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Call Notes */}
+          {matchedConversationId && (
+            <div className="mx-3 mb-2">
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 overflow-hidden">
+                <textarea
+                  value={callNote}
+                  onChange={(e) => { setCallNote(e.target.value); setNoteSaved(false) }}
+                  placeholder="Add call note..."
+                  className="w-full px-2.5 py-2 text-[11px] bg-transparent outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400 resize-none"
+                  rows={2}
+                />
+                {callNote.trim() && (
+                  <div className="flex items-center justify-end px-2 pb-1.5 gap-1.5">
+                    {noteSaved && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Saved</span>
+                    )}
+                    <button
+                      onClick={async () => {
+                        if (!callNote.trim() || !currentUser?.org_id || !currentUser?.id) return
+                        setIsSavingNote(true)
+                        const res = await saveCallNote(currentUser.org_id, matchedConversationId, callNote.trim(), currentUser.id)
+                        setIsSavingNote(false)
+                        if (res.success) {
+                          setNoteSaved(true)
+                          setCallNote('')
+                        }
+                      }}
+                      disabled={isSavingNote || noteSaved}
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+                    >
+                      {isSavingNote ? 'Saving...' : 'Save Note'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
