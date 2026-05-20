@@ -161,7 +161,7 @@ const VideoIcon = ({ size = 20, className = "" }) => (
 
 const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
   const meta = (msg.metadata || {}) as any;
-  const url = meta.url || "";
+  const url = meta.url || meta.media_url || "";
   const filename = meta.filename || "";
   const mimetype = meta.mimetype || "";
   const progress = meta.uploadProgress || 0;
@@ -1728,7 +1728,7 @@ export default function WidgetPage() {
   const isFullScreenTicketView = activeTab === 'tickets' && (ticketView === 'detail' || ticketView === 'new');
 
   return (
-    <div className="h-full w-full flex flex-col bg-white rounded-2xl shadow-xl overflow-hidden font-sans relative">
+    <div className="h-full w-full flex flex-col bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xl overflow-hidden font-sans relative">
       
       {/* Background Gradient for Home/Tickets/About */}
       {activeTab !== 'messages' && activeTab !== 'chat' && !isFullScreenTicketView && (
