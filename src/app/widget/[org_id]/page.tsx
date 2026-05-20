@@ -426,6 +426,7 @@ export default function WidgetPage() {
   const [callDuration, setCallDuration] = useState(0)
   const callDurationRef = useRef(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const voiceChannelRef = useRef<any>(null)
 
   useEffect(() => {
     if (!activeConversationId || activeConversationId === 'new') return
@@ -481,10 +482,12 @@ export default function WidgetPage() {
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-      .subscribe()
+    voiceChannelRef.current = callChannel
+    callChannel.subscribe()
 
     return () => {
       supabase.removeChannel(callChannel)
+      voiceChannelRef.current = null
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
   }, [activeConversationId])
@@ -524,6 +527,13 @@ export default function WidgetPage() {
         return
       }
       
+      let callChannel = voiceChannelRef.current;
+      if (!callChannel || callChannel.topic !== `realtime:voicecall:${targetConvId}`) {
+        callChannel = supabase.channel(`voicecall:${targetConvId}`);
+        callChannel.subscribe();
+        voiceChannelRef.current = callChannel;
+      }
+
       voiceStreamRef.current = stream
 
       const pc = new RTCPeerConnection({
@@ -559,9 +569,8 @@ export default function WidgetPage() {
       };
 
       pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          const callChannel = supabase.channel(`voicecall:${targetConvId}`)
-          callChannel.send({
+        if (event.candidate && voiceChannelRef.current) {
+          voiceChannelRef.current.send({
             type: 'broadcast',
             event: 'ice_candidate',
             payload: { candidate: event.candidate }
@@ -572,8 +581,6 @@ export default function WidgetPage() {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const callChannel = supabase.channel(`voicecall:${targetConvId}`);
-      
       const globalChannel = supabase.channel(`voicecall_global:${org_id}`);
       globalChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
@@ -585,11 +592,13 @@ export default function WidgetPage() {
           
           // Delay the actual offer broadcast by 1.5s to ensure agent has switched tabs
           setTimeout(() => {
-            callChannel.send({
-              type: 'broadcast',
-              event: 'voice_call_incoming',
-              payload: { offer }
-            });
+            if (voiceChannelRef.current) {
+              voiceChannelRef.current.send({
+                type: 'broadcast',
+                event: 'voice_call_incoming',
+                payload: { offer }
+              });
+            }
           }, 1500);
         }
       });
@@ -624,9 +633,8 @@ export default function WidgetPage() {
       callTimerRef.current = null
     }
     
-    if (sendBroadcast && activeConversationId && activeConversationId !== 'new') {
-      const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
-      callChannel.send({
+    if (sendBroadcast && voiceChannelRef.current) {
+      voiceChannelRef.current.send({
         type: 'broadcast',
         event: 'voice_call_ended'
       })

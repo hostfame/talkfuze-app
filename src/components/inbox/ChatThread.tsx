@@ -357,6 +357,7 @@ export default function ChatThread({
   const [callDuration, setCallDuration] = useState(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
+  const voiceChannelRef = useRef<any>(null)
 
   const playRingtone = () => {
     if (isRingtoneMuted) return
@@ -404,10 +405,13 @@ export default function ChatThread({
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-      .subscribe()
+      
+    voiceChannelRef.current = callChannel
+    callChannel.subscribe()
 
     return () => {
       supabase.removeChannel(callChannel)
+      voiceChannelRef.current = null
       stopRingtone()
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
@@ -460,9 +464,8 @@ export default function ChatThread({
       };
 
       pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          const callChannel = supabase.channel(`voicecall:${conversationId}`)
-          callChannel.send({
+        if (event.candidate && voiceChannelRef.current) {
+          voiceChannelRef.current.send({
             type: 'broadcast',
             event: 'ice_candidate',
             payload: { candidate: event.candidate }
@@ -487,12 +490,13 @@ export default function ChatThread({
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      const callChannel = supabase.channel(`voicecall:${conversationId}`)
-      await callChannel.send({
-        type: 'broadcast',
-        event: 'voice_call_answered',
-        payload: { answer }
-      })
+      if (voiceChannelRef.current) {
+        await voiceChannelRef.current.send({
+          type: 'broadcast',
+          event: 'voice_call_answered',
+          payload: { answer }
+        })
+      }
 
       setCallDuration(0)
       if (callTimerRef.current) clearInterval(callTimerRef.current)
@@ -513,9 +517,8 @@ export default function ChatThread({
     stopRingtone()
     setIncomingCall(null)
     setCallStatus('idle')
-    if (conversationId) {
-      const callChannel = supabase.channel(`voicecall:${conversationId}`)
-      callChannel.send({
+    if (voiceChannelRef.current) {
+      voiceChannelRef.current.send({
         type: 'broadcast',
         event: 'voice_call_declined'
       })
@@ -549,9 +552,8 @@ export default function ChatThread({
       callTimerRef.current = null
     }
 
-    if (sendBroadcast && conversationId) {
-      const callChannel = supabase.channel(`voicecall:${conversationId}`)
-      callChannel.send({
+    if (sendBroadcast && voiceChannelRef.current) {
+      voiceChannelRef.current.send({
         type: 'broadcast',
         event: 'voice_call_ended'
       })
