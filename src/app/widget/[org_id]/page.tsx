@@ -478,6 +478,8 @@ export default function WidgetPage() {
         const audio = document.createElement('audio');
         audio.autoplay = true;
         audio.srcObject = event.streams[0];
+        // Must attach to DOM for Safari/Chrome to play WebRTC audio streams reliably
+        document.body.appendChild(audio);
         voiceAudioRef.current = audio;
       };
 
@@ -521,6 +523,9 @@ export default function WidgetPage() {
     }
     if (voiceAudioRef.current) {
       voiceAudioRef.current.pause()
+      if (voiceAudioRef.current.parentNode) {
+        voiceAudioRef.current.parentNode.removeChild(voiceAudioRef.current)
+      }
       voiceAudioRef.current = null
     }
     if (callTimerRef.current) {
