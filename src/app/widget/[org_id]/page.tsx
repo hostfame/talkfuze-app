@@ -699,11 +699,24 @@ export default function WidgetPage() {
       
     const channel = supabase
       .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         fetchConversations()
         
         const newMsg = payload.new as any;
         if (newMsg && newMsg.conversation_id === activeConversationId) {
+          
+          // Fetch agent details for realtime incoming agent/system messages
+          if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
+            const { data: agentData } = await supabase
+              .from('users')
+              .select('id, name, avatar_url')
+              .eq('id', newMsg.sender_id)
+              .single();
+            if (agentData) {
+              newMsg.agent = agentData;
+            }
+          }
+
           setMessages(prev => {
             // Prevent duplicate insertion
             if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -1557,7 +1570,7 @@ export default function WidgetPage() {
             <div className="flex justify-between items-center mt-4 mb-6">
               {/* Left Side: Company Logo */}
               <div className="flex items-center h-[32px]">
-                <img src="/team/logo.png" className="h-[28px] w-auto object-contain" alt="Logo" />
+                <img src={settings?.logo_url || "/team/logo.png"} className="h-[28px] w-auto object-contain" alt="Logo" />
               </div>
 
               {/* Right Side: Team Avatars Stack */}
