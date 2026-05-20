@@ -81,6 +81,7 @@ interface InboxState {
   currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
   pendingDialNumber: string | null
+  mobileView: 'list' | 'chat'
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
@@ -92,6 +93,7 @@ interface InboxState {
   removeConversation: (id: string) => void
   triggerDial: (number: string) => void
   clearPendingDial: () => void
+  setMobileView: (view: 'list' | 'chat') => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -103,6 +105,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   currentUser: null,
   messagesMap: {},
   pendingDialNumber: null,
+  mobileView: 'list',
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -128,5 +131,7 @@ export const useInboxStore = create<InboxState>((set) => ({
     selectedId: state.selectedId === id ? null : state.selectedId
   })),
   triggerDial: (number) => set({ pendingDialNumber: number }),
-  clearPendingDial: () => set({ pendingDialNumber: null })
+  clearPendingDial: () => set({ pendingDialNumber: null }),
+  setMobileView: (mobileView) => set({ mobileView })
 }))
+

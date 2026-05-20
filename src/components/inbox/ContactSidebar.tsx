@@ -119,15 +119,17 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       })
       .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
         try {
-          setCoBrowseStatus('active')
-          const pc = createPeerConnection();
+           setCoBrowseStatus('active')
+          const pc = createPeerConnection({
+            onConnectionFailed: () => {
+              console.warn('[Dashboard] Co-browse ICE failed');
+              handleEndCoBrowseSession();
+            }
+          });
           coBrowseConnectionRef.current = pc
 
           pc.onconnectionstatechange = () => {
             console.log("Co-browse WebRTC Connection State:", pc.connectionState);
-          };
-          pc.oniceconnectionstatechange = () => {
-            console.log("Co-browse WebRTC ICE Connection State:", pc.iceConnectionState);
           };
 
           pc.ontrack = (event) => {
@@ -497,7 +499,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
 
   return (
-    <div className="flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
+    <div className="hidden md:flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30 overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('details')}

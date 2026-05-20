@@ -38,8 +38,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   return (
     <>
-      {/* Secondary Sidebar (Folders / Filters) */}
-      <aside className="w-[190px] flex flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto">
+      {/* Secondary Sidebar (Folders / Filters) - hidden on mobile */}
+      <aside className="hidden md:flex w-[190px] flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto">
         <div className="p-5 pb-2 flex justify-between items-center">
           <h2 className="font-medium text-[15px] text-slate-900 dark:text-white">Inbox</h2>
           <div className="flex gap-1">

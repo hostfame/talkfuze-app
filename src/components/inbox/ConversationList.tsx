@@ -152,7 +152,7 @@ export default function ConversationList({
   });
 
   return (
-    <div className="flex flex-col h-full w-[320px] shrink-0 bg-white border-r border-slate-200 z-10 relative">
+    <div className="flex flex-col h-full w-full shrink-0 bg-white border-r border-slate-200 z-10 relative">
       
       {/* Header & Search */}
       <div className="px-5 pt-5 pb-3 flex items-center gap-3 shrink-0 bg-white border-b border-slate-200">

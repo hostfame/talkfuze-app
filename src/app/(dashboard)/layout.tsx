@@ -34,8 +34,8 @@ export default async function DashboardLayout({
   return (
     <AuthProvider user={profile}>
       <div className="flex h-screen overflow-hidden bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm font-sans">
-        {/* 1. Far Left Thin Navigation Strip */}
-        <aside className="w-[64px] flex flex-col items-center py-5 bg-slate-50/50 dark:bg-slate-950 border-r border-slate-200/60 dark:border-slate-800 z-10 shrink-0">
+        {/* 1. Far Left Thin Navigation Strip - hidden on mobile */}
+        <aside className="hidden md:flex w-[64px] flex-col items-center py-5 bg-slate-50/50 dark:bg-slate-950 border-r border-slate-200/60 dark:border-slate-800 z-10 shrink-0">
           <div className="w-10 h-10 mb-6 flex items-center justify-center active:scale-95 transition-all">
             <img src="/talkfuze-logo.png" alt="TalkFuze Logo" className="w-full h-full object-contain rounded-xl" />
           </div>

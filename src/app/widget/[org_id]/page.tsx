@@ -419,7 +419,7 @@ export default function WidgetPage() {
   }, [toastError])
 
   // Live Voice Call State
-  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active' | 'declined' | 'ended'>('idle')
+  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'active' | 'declined' | 'ended' | 'ringing'>('idle')
   const [isCallMuted, setIsCallMuted] = useState(false)
   const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
   const voiceStreamRef = useRef<MediaStream | null>(null)
@@ -429,6 +429,7 @@ export default function WidgetPage() {
   const callDurationRef = useRef(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const voiceChannelRef = useRef<any>(null)
+  const incomingAgentCallRef = useRef<{ offer: any } | null>(null)
 
   useEffect(() => {
     if (!activeConversationId || activeConversationId === 'new') return
@@ -471,6 +472,11 @@ export default function WidgetPage() {
       })
       .on('broadcast', { event: 'voice_call_ended' }, () => {
         handleEndVoiceCall(false)
+      })
+      .on('broadcast', { event: 'voice_call_from_agent' }, (payload) => {
+        // Agent is calling the visitor
+        incomingAgentCallRef.current = { offer: payload.payload.offer }
+        setCallStatus('ringing')
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
         const pc = voiceConnectionRef.current;
@@ -538,7 +544,13 @@ export default function WidgetPage() {
 
       voiceStreamRef.current = stream
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection({
+        onConnectionFailed: () => {
+          console.warn('[Widget] Voice call ICE failed, auto-ending');
+          handleEndVoiceCall(true);
+          setToastError('Call connection failed. Please try again.');
+        }
+      });
       voiceConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -650,6 +662,98 @@ export default function WidgetPage() {
     }
   }
 
+  // Visitor answers an agent-initiated call
+  const handleAnswerAgentCall = async () => {
+    const incoming = incomingAgentCallRef.current;
+    if (!incoming || !activeConversationId) return;
+    try {
+      setCallStatus('active')
+      incomingAgentCallRef.current = null;
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      voiceStreamRef.current = stream;
+
+      const pc = createPeerConnection({
+        onConnectionFailed: () => {
+          console.warn('[Widget] Agent-initiated call ICE failed, auto-ending');
+          handleEndVoiceCall(true);
+          setToastError('Call connection failed. Please try again.');
+        }
+      });
+      voiceConnectionRef.current = pc;
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.ontrack = (event) => {
+        const audio = document.createElement('audio');
+        audio.autoplay = true;
+        audio.srcObject = event.streams[0];
+        document.body.appendChild(audio);
+        audio.play().catch(e => console.error("Visitor Audio Play Error:", e));
+        voiceAudioRef.current = audio;
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && voiceChannelRef.current) {
+          voiceChannelRef.current.send({
+            type: 'broadcast',
+            event: 'ice_candidate',
+            payload: { candidate: event.candidate }
+          })
+        }
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(incoming.offer));
+
+      // Flush buffered candidates
+      if (voiceBufferedCandidatesRef.current.length > 0) {
+        for (const candidate of voiceBufferedCandidatesRef.current) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error("Error adding buffered candidate:", e);
+          }
+        }
+        voiceBufferedCandidatesRef.current = [];
+      }
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      if (voiceChannelRef.current) {
+        voiceChannelRef.current.send({
+          type: 'broadcast',
+          event: 'voice_call_answered_by_visitor',
+          payload: { answer }
+        })
+      }
+
+      setCallDuration(0)
+      callDurationRef.current = 0
+      if (callTimerRef.current) clearInterval(callTimerRef.current)
+      callTimerRef.current = setInterval(() => {
+        setCallDuration(d => d + 1)
+        callDurationRef.current += 1
+      }, 1000)
+    } catch (err) {
+      console.error("Visitor failed to answer agent call", err)
+      setCallStatus('idle')
+      setToastError("Microphone access is required to answer calls.")
+    }
+  }
+
+  // Visitor declines an agent-initiated call
+  const handleDeclineAgentCall = () => {
+    incomingAgentCallRef.current = null;
+    setCallStatus('idle')
+    if (voiceChannelRef.current) {
+      voiceChannelRef.current.send({
+        type: 'broadcast',
+        event: 'voice_call_declined_by_visitor'
+      })
+    }
+  }
+
   const formatCallDuration = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -727,7 +831,12 @@ export default function WidgetPage() {
       coBrowseStreamRef.current = stream
       setIsCoBrowsingActive(true)
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection({
+        onConnectionFailed: () => {
+          console.warn('[Widget] Co-browse ICE failed');
+          handleStopCoBrowse();
+        }
+      });
       coBrowseConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -2937,43 +3046,65 @@ export default function WidgetPage() {
         </div>
       )}
 
-      {/* Active Call UI Overlay for Visitor */}
-      {callStatus !== 'idle' && (
-        <div className="absolute top-[72px] left-3 right-3 z-[60] bg-slate-900/95 dark:bg-slate-950/98 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col items-center justify-center text-white shadow-2xl animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-3 w-full justify-between border-b border-slate-800/50 pb-3 mb-3.5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0070f3] flex items-center justify-center animate-pulse">
-                <Phone className="text-white" size={18} strokeWidth={2.5} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[13.5px] font-bold">Voice Call</span>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {callStatus === 'calling' ? 'Calling support...' : callStatus === 'active' ? `Call active • ${formatCallDuration(callDuration)}` : callStatus === 'declined' ? 'Call declined' : 'Connecting...'}
-                </span>
-              </div>
-            </div>
-            
-            {callStatus === 'active' && (
-              <button 
-                onClick={toggleMuteVoiceCall}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isCallMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-              >
-                {isCallMuted ? (
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
-                ) : (
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
-                )}
-              </button>
-            )}
+      {/* Incoming Call from Agent - Accept/Decline */}
+      {callStatus === 'ringing' && (
+        <div className="absolute top-[72px] left-3 right-3 z-[60] bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 text-center animate-in slide-in-from-top-4 duration-300">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-[#0070f3] rounded-t-2xl" />
+          <div className="w-10 h-10 mx-auto bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 rounded-full flex items-center justify-center mb-2 shadow-sm animate-pulse">
+            <Phone size={20} strokeWidth={2.5} />
           </div>
-          
-          <button 
-            onClick={() => handleEndVoiceCall(true)}
-            className="w-full py-3 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[13px] rounded-xl flex items-center justify-center gap-2 shadow-md transition-all"
-          >
-            <PhoneOff size={16} strokeWidth={2.5} />
-            End Call
-          </button>
+          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white mb-0.5">Incoming Voice Call</h3>
+          <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-3">Support agent wants to talk with you</p>
+          <div className="flex gap-2">
+            <button onClick={handleDeclineAgentCall} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[13px] rounded-xl transition-all active:scale-95">
+              Decline
+            </button>
+            <button onClick={handleAnswerAgentCall} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-[13px] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm">
+              <Phone size={14} strokeWidth={2.5} />
+              Accept
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Compact Active Call Banner for Visitor */}
+      {(callStatus === 'calling' || callStatus === 'active' || callStatus === 'declined') && (
+        <div className="absolute top-[72px] left-0 right-0 z-[60] animate-in slide-in-from-top duration-200">
+          <div className={`mx-0 px-4 py-2 flex items-center justify-between ${callStatus === 'declined' ? 'bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50' : 'bg-slate-900 text-white border-b border-slate-800'}`}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {callStatus === 'active' ? (
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              ) : callStatus === 'calling' ? (
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
+              ) : null}
+              <span className={`text-[12px] font-semibold truncate ${callStatus === 'declined' ? 'text-red-600 dark:text-red-400' : ''}`}>
+                {callStatus === 'calling' ? 'Calling support...' : callStatus === 'active' ? `Call active - ${formatCallDuration(callDuration)}` : 'Call declined'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {callStatus === 'active' && (
+                <button 
+                  onClick={toggleMuteVoiceCall}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isCallMuted ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                >
+                  {isCallMuted ? (
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
+                  ) : (
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
+                  )}
+                </button>
+              )}
+              {callStatus !== 'declined' && (
+                <button 
+                  onClick={() => handleEndVoiceCall(true)}
+                  className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all uppercase tracking-wide flex items-center gap-1"
+                >
+                  <PhoneOff size={11} strokeWidth={2.5} />
+                  End
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
       {/* Premium Branded Toast Error Notification */}

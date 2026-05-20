@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -327,6 +327,7 @@ type ChatThreadProps = {
   activeAgents?: { name: string; activity: 'viewing' | 'typing' }[]
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
+  onBackToList?: () => void
 }
 
 export default function ChatThread({ 
@@ -338,7 +339,8 @@ export default function ChatThread({
   isCustomerOnline = false,
   activeAgents = [],
   conversation = null,
-  currentUser
+  currentUser,
+  onBackToList
 }: ChatThreadProps) {
   const contact = firstRelation(conversation?.contact)
   const contactName = contact?.name || 'Contact'
@@ -468,7 +470,12 @@ export default function ChatThread({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       voiceStreamRef.current = stream
 
-      const pc = createPeerConnection();
+      const pc = createPeerConnection({
+        onConnectionFailed: () => {
+          console.warn('[Agent] Voice call ICE failed, auto-ending');
+          handleEndVoiceCall(true);
+        }
+      });
       voiceConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -1603,6 +1610,15 @@ export default function ChatThread({
       {/* Header */}
       <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
+          {/* Mobile back button */}
+          {onBackToList && (
+            <button 
+              onClick={onBackToList}
+              className="md:hidden p-1.5 -ml-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+            >
+              <ArrowLeft size={20} strokeWidth={2} />
+            </button>
+          )}
           <div className="flex items-center gap-2 group">
             {isEditingName ? (
               <div className="flex items-center gap-1.5">

@@ -23,7 +23,8 @@ export default function InboxPage() {
     selectedId, setSelectedId,
     messagesMap, setMessages, addMessage,
     teamMembers, setTeamMembers,
-    isLoaded, setCurrentUser
+    isLoaded, setCurrentUser,
+    mobileView, setMobileView
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
@@ -329,6 +330,11 @@ export default function InboxPage() {
 
   const handleSelectConversation = (id: string) => {
     setSelectedId(id)
+    setMobileView('chat')
+  }
+
+  const handleBackToList = () => {
+    setMobileView('list')
   }
 
   const activeConversation = conversations.find(c => c.id === selectedId)
@@ -343,34 +349,41 @@ export default function InboxPage() {
 
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">
-      <ConversationList 
-        conversations={conversations} 
-        selectedId={selectedId} 
-        onSelect={handleSelectConversation}
-        typingState={typingState}
-        onlineUsers={onlineUsers}
-        orgId={ORG_ID}
-      />
-      <ChatThread 
-        conversationId={selectedId} 
-        messages={messages} 
-        orgId={ORG_ID}
-        teamMembers={teamMembers}
-        isCustomerTyping={selectedId ? typingState[selectedId] : false}
-        activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
-        isCustomerOnline={(() => {
-          if (!activeConversation) return false;
-          // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object
-          const contact = Array.isArray(activeConversation.contact) ? activeConversation.contact[0] : activeConversation.contact;
-          return contact ? onlineUsers.has(contact.id) : false;
-        })()}
-        conversation={activeConversation}
-        currentUser={currentUser as UserProfile}
-      />
-      <ContactSidebar 
-        conversation={activeConversation}
-        orgId={ORG_ID}
-      />
+      {/* ConversationList: visible on desktop always, on mobile only when mobileView is 'list' */}
+      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[320px] shrink-0`}>
+        <ConversationList 
+          conversations={conversations} 
+          selectedId={selectedId} 
+          onSelect={handleSelectConversation}
+          typingState={typingState}
+          onlineUsers={onlineUsers}
+          orgId={ORG_ID}
+        />
+      </div>
+      {/* ChatThread + ContactSidebar: visible on desktop always, on mobile only when mobileView is 'chat' */}
+      <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 min-w-0`}>
+        <ChatThread 
+          conversationId={selectedId} 
+          messages={messages} 
+          orgId={ORG_ID}
+          teamMembers={teamMembers}
+          isCustomerTyping={selectedId ? typingState[selectedId] : false}
+          activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
+          isCustomerOnline={(() => {
+            if (!activeConversation) return false;
+            // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object
+            const contact = Array.isArray(activeConversation.contact) ? activeConversation.contact[0] : activeConversation.contact;
+            return contact ? onlineUsers.has(contact.id) : false;
+          })()}
+          conversation={activeConversation}
+          currentUser={currentUser as UserProfile}
+          onBackToList={handleBackToList}
+        />
+        <ContactSidebar 
+          conversation={activeConversation}
+          orgId={ORG_ID}
+        />
+      </div>
     </div>
   )
 }

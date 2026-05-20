@@ -27,6 +27,58 @@ export const ICE_SERVERS: RTCIceServer[] = [
   },
 ]
 
-export function createPeerConnection(): RTCPeerConnection {
-  return new RTCPeerConnection({ iceServers: ICE_SERVERS })
+/** Connection timeout in milliseconds - if ICE doesn't connect in 15s, auto-cleanup */
+const ICE_CONNECTION_TIMEOUT_MS = 15000
+
+export type PeerConnectionCallbacks = {
+  /** Called when ICE connection fails or disconnects after being connected */
+  onConnectionFailed?: () => void
+  /** Called when connection successfully establishes */
+  onConnected?: () => void
+}
+
+/**
+ * Creates a monitored RTCPeerConnection with auto-timeout and connection
+ * state tracking. Automatically cleans up if ICE never connects.
+ */
+export function createPeerConnection(callbacks?: PeerConnectionCallbacks): RTCPeerConnection {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
+
+  // ICE connection timeout - auto-close if stuck in "checking" for too long
+  let iceTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    if (pc.iceConnectionState === 'checking' || pc.iceConnectionState === 'new') {
+      console.warn('[WebRTC] ICE connection timeout after 15s, closing')
+      callbacks?.onConnectionFailed?.()
+    }
+    iceTimeout = null
+  }, ICE_CONNECTION_TIMEOUT_MS)
+
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState
+    console.log(`[WebRTC] ICE state: ${state}`)
+
+    if (state === 'connected' || state === 'completed') {
+      // Connection successful, clear timeout
+      if (iceTimeout) { clearTimeout(iceTimeout); iceTimeout = null }
+      callbacks?.onConnected?.()
+    }
+
+    if (state === 'failed') {
+      if (iceTimeout) { clearTimeout(iceTimeout); iceTimeout = null }
+      console.error('[WebRTC] ICE connection failed')
+      callbacks?.onConnectionFailed?.()
+    }
+
+    if (state === 'disconnected') {
+      // Brief disconnection, might recover. Wait 5s then check.
+      setTimeout(() => {
+        if (pc.iceConnectionState === 'disconnected') {
+          console.warn('[WebRTC] ICE still disconnected after 5s, treating as failed')
+          callbacks?.onConnectionFailed?.()
+        }
+      }, 5000)
+    }
+  }
+
+  return pc
 }
