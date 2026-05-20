@@ -203,6 +203,7 @@ export async function getWidgetMessages(orgId: string, deviceId: string, convers
 }
 
 export async function getWidgetSettings(orgId: string) {
+  noStore();
   if (!orgId) return null;
   try {
     const { data: org, error } = await supabaseAdmin

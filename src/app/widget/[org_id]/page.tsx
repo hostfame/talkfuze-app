@@ -1802,14 +1802,15 @@ export default function WidgetPage() {
 
                 if (isSystem) {
                   const isTicketCreated = msg.content === 'Your ticket is created' || msg.content.includes('ticket is created');
+                  const isJoined = msg.content.includes('joined');
                   return (
                     <div key={idx} className="flex justify-center my-4">
                       <div className={`flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${isTicketCreated ? 'bg-purple-50 border border-purple-100' : 'bg-slate-50 border border-slate-100'}`}>
                         {msg.agent?.avatar_url ? (
                           <img src={msg.agent.avatar_url} className="w-[22px] h-[22px] rounded-full object-cover shrink-0 border border-white shadow-sm" alt="Agent Avatar" />
                         ) : (
-                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm ${isTicketCreated ? 'bg-purple-600' : 'bg-blue-600'}`}>
-                            {isTicketCreated ? <Database size={10} strokeWidth={2.5}/> : <Bot size={12}/>}
+                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm ${isTicketCreated ? 'bg-purple-600' : 'bg-[#0070f3]'}`}>
+                            {isTicketCreated ? <Database size={10} strokeWidth={2.5}/> : (isJoined ? <User size={11} strokeWidth={2.5}/> : <Sparkles size={11} strokeWidth={2.5}/>)}
                           </div>
                         )}
                         <span className={`text-[12px] font-semibold leading-none mr-1 ${isTicketCreated ? 'text-purple-700' : 'text-slate-600'}`}>{msg.content}</span>
@@ -1824,8 +1825,8 @@ export default function WidgetPage() {
                       {msg.agent?.avatar_url ? (
                         <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full shrink-0 bg-blue-600 flex items-center justify-center text-white">
-                          <Bot size={12}/>
+                        <div className="w-6 h-6 rounded-full shrink-0 bg-[#0070f3] flex items-center justify-center text-white font-bold text-[11px]">
+                          {msg.agent?.name ? msg.agent.name.charAt(0).toUpperCase() : 'H'}
                         </div>
                       )}
                       <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
@@ -2521,22 +2522,22 @@ export default function WidgetPage() {
 
       {/* Bottom Navigation */}
       {activeTab !== 'chat' && activeTab !== 'messages' && !isFullScreenTicketView && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-center gap-[60px] px-6 py-[12px] z-20">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
+        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-between px-2 py-1 z-20">
+          <button onClick={() => setActiveTab('home')} className={`flex-1 flex flex-col items-center justify-center py-2 gap-[5px] ${activeTab === 'home' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeWidth="1.7" d="M2.85 9.35c0-.423.218-.85.635-1.143l7.496-5.172h.001a1.84 1.84 0 0 1 2.036 0l7.495 5.17.002.002c.417.293.635.72.635 1.142V19.7c0 .73-.676 1.45-1.65 1.45h-15c-.974 0-1.65-.72-1.65-1.45z"></path><path stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" d="M17.25 15A7.86 7.86 0 0 1 12 17.002 7.86 7.86 0 0 1 6.75 15"></path></svg>
              </div>
              <span className={`text-[13px] ${activeTab === 'home' ? 'font-bold' : 'font-medium'} tracking-tight`}>Home</span>
           </button>
           
-          <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-[5px] ${(activeTab as any) === 'messages' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
+          <button onClick={() => setActiveTab('messages')} className={`flex-1 flex flex-col items-center justify-center py-2 gap-[5px] ${(activeTab as any) === 'messages' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <div className="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" aria-hidden="true"><mask id="msg-mask" fill="#fff"><path fillRule="evenodd" d="M19 2a3 3 0 0 1 3 3v15.806c0 1.335-1.613 2.005-2.559 1.062L15.56 18H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z" clipRule="evenodd"></path></mask><path fill="currentColor" d="m19.441 21.868 1.2-1.204zM15.56 18v-1.7h.702l.498.496zM20.3 5A1.3 1.3 0 0 0 19 3.7V.3A4.7 4.7 0 0 1 23.7 5zm0 8.956V5h3.4v8.956zm0 2.544v-2.544h3.4V16.5zm0 4.306V16.5h3.4v4.306zm.341-.142a.23.23 0 0 0-.218-.043.23.23 0 0 0-.123.185h3.4c0 2.848-3.441 4.277-5.459 2.267zm-3.882-3.868 3.882 3.868-2.4 2.409-3.882-3.869zM5 16.3h10.559v3.4H5zM3.7 15A1.3 1.3 0 0 0 5 16.3v3.4A4.7 4.7 0 0 1 .3 15zm0-10v10H.3V5zM5 3.7A1.3 1.3 0 0 0 3.7 5H.3A4.7 4.7 0 0 1 5 .3zm14 0H5V.3h14z" mask="url(#msg-mask)"></path><path fill="currentColor" fillRule="evenodd" d="M17 7a.85.85 0 0 1 0 1.7H7A.85.85 0 1 1 7 7zm-5 4a.85.85 0 0 1 0 1.7H7A.85.85 0 0 1 7 11z" clipRule="evenodd"></path></svg>
              </div>
              <span className={`text-[13px] ${(activeTab as any) === 'messages' ? 'font-bold' : 'font-medium'} tracking-tight`}>Messages</span>
           </button>
           
-          <button onClick={() => setActiveTab('tickets')} className={`flex flex-col items-center gap-[5px] ${activeTab === 'tickets' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
+          <button onClick={() => setActiveTab('tickets')} className={`flex-1 flex flex-col items-center justify-center py-2 gap-[5px] ${activeTab === 'tickets' ? 'text-[#7384a2]' : 'text-[#6c6f74] hover:text-[#7384a2]'} transition-colors`}>
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.65" stroke="currentColor" strokeWidth="1.7"></circle><path stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" d="M9.664 8.576a2.41 2.41 0 1 1 4.102 2.39l-1.075 1.104c-.326.322-.765.76-.765 1.544v.364"></path><circle cx="11.927" cy="16.884" r="0.884" fill="currentColor"></circle></svg>
              <span className={`text-[13px] ${activeTab === 'tickets' ? 'font-bold' : 'font-medium'} tracking-tight`}>Help</span>
           </button>
@@ -2545,25 +2546,26 @@ export default function WidgetPage() {
 
       {/* Co-Browsing Screen Share Request Alert */}
       {showCoBrowseRequest && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 max-w-sm w-full text-center flex flex-col items-center animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-4 shadow-sm animate-pulse">
-              <Video size={28} strokeWidth={2} />
+        <div className="absolute top-4 left-4 right-4 z-[100] flex items-start justify-center animate-in slide-in-from-top-4 duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-blue-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 w-full text-center flex flex-col items-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-[#0070f3]"></div>
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-2 shadow-sm animate-pulse shrink-0">
+              <Video size={20} strokeWidth={2.5} />
             </div>
-            <h3 className="text-[17px] font-bold text-slate-900 dark:text-white mb-2">Live Co-Browsing View</h3>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-              Our support agent wants to visually guide you through your dashboard. Accept to securely share your screen.
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">Live Co-Browsing View</h3>
+            <p className="text-[12.5px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed px-1">
+              Our support agent wants to visually guide you. Accept to securely share your screen.
             </p>
             <div className="flex gap-2 w-full">
               <button 
                 onClick={handleDeclineCoBrowse}
-                className="flex-1 py-3 text-[13.5px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all"
+                className="flex-1 py-2.5 text-[13px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all"
               >
                 Decline
               </button>
               <button 
                 onClick={handleAcceptCoBrowse}
-                className="flex-1 py-3 text-[13.5px] font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
+                className="flex-1 py-2.5 text-[13px] font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
               >
                 Share Screen
               </button>
