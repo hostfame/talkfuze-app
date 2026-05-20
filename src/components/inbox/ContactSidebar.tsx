@@ -463,15 +463,15 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         </button>
         <button 
           onClick={() => setActiveTab('copilot')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          <Database size={14} className={activeTab === 'copilot' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'} /> Portal
+          Portal
         </button>
         <button 
           onClick={() => setActiveTab('cobrowse')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 flex items-center gap-1.5 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          <Monitor size={14} className={activeTab === 'cobrowse' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'} /> Co-Browse
+          Co-Browse
         </button>
         <div className="flex-1"></div>
       </div>
