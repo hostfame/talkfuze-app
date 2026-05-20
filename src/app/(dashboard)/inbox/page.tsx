@@ -101,9 +101,21 @@ export default function InboxPage() {
         }
       })
       .subscribe()
+      
+    // Global voice call listener
+    const globalCallChannel = supabase.channel(`voicecall_global:${ORG_ID}`)
+      .on('broadcast', { event: 'voice_call_alert' }, (payload) => {
+        if (payload.payload.conversationId) {
+          useInboxStore.getState().setSelectedId(payload.payload.conversationId);
+          // Play a small alert sound immediately (ChatThread will play ringtone later)
+          playUISound('receive');
+        }
+      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
+      supabase.removeChannel(globalCallChannel)
     }
   }, [ORG_ID])
 

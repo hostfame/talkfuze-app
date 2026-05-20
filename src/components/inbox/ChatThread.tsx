@@ -455,6 +455,7 @@ export default function ChatThread({
         audio.autoplay = true;
         audio.srcObject = event.streams[0];
         document.body.appendChild(audio);
+        audio.play().catch(e => console.error("Agent Audio Play Error:", e));
         voiceAudioRef.current = audio;
       };
 

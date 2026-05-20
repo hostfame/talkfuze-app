@@ -553,6 +553,7 @@ export default function WidgetPage() {
         audio.srcObject = event.streams[0];
         // Must attach to DOM for Safari/Chrome to play WebRTC audio streams reliably
         document.body.appendChild(audio);
+        audio.play().catch(e => console.error("Customer Audio Play Error:", e));
         voiceAudioRef.current = audio;
       };
 
@@ -570,12 +571,27 @@ export default function WidgetPage() {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const callChannel = supabase.channel(`voicecall:${targetConvId}`)
-      callChannel.send({
-        type: 'broadcast',
-        event: 'voice_call_incoming',
-        payload: { offer }
-      })
+      const callChannel = supabase.channel(`voicecall:${targetConvId}`);
+      
+      const globalChannel = supabase.channel(`voicecall_global:${org_id}`);
+      globalChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          globalChannel.send({
+            type: 'broadcast',
+            event: 'voice_call_alert',
+            payload: { conversationId: targetConvId }
+          });
+          
+          // Delay the actual offer broadcast by 1.5s to ensure agent has switched tabs
+          setTimeout(() => {
+            callChannel.send({
+              type: 'broadcast',
+              event: 'voice_call_incoming',
+              payload: { offer }
+            });
+          }, 1500);
+        }
+      });
 
     } catch (err: any) {
       console.error("Mic access denied or WebRTC error", err)
