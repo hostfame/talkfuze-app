@@ -1397,23 +1397,13 @@ export default function ChatThread({
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
           {isJoined ? (
-            <>
-              <button 
-                onClick={handleResolveAndReview}
-                className="px-2.5 py-1 text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-lg flex items-center gap-1 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.03] active:scale-[0.97] mr-1 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
-                title="Resolve & Ask Review"
-              >
-                <CheckCheck size={14} strokeWidth={2.5} />
-                Resolve
-              </button>
-              <button 
-                onClick={() => handleThreadAction('leave')}
-                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                title="Leave thread"
-              >
-                <LogOut size={18} strokeWidth={2} />
-              </button>
-            </>
+            <button 
+              onClick={() => handleThreadAction('leave')}
+              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              title="Leave thread"
+            >
+              <LogOut size={18} strokeWidth={2} />
+            </button>
           ) : null}
 
           <button 
@@ -2172,45 +2162,6 @@ export default function ChatThread({
           >
             <X size={24} />
           </button>
-        </div>,
-        document.body
-      )}
-      {/* Custom Resolve Confirmation Modal */}
-      {showResolveConfirm && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] p-4">
-          <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-4 border border-slate-200/60 dark:border-slate-700 shadow-sm">
-                <CheckCheck size={22} strokeWidth={2.5} />
-              </div>
-              <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">
-                Resolve & Ask Review
-              </h3>
-              <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed">
-                Are you sure you want to resolve this conversation and send the Google review request message?
-              </p>
-            </div>
-            <div className="flex gap-2.5 mt-6">
-              <button 
-                onClick={() => setShowResolveConfirm(false)}
-                disabled={isResolving}
-                className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={executeResolveAndReview}
-                disabled={isResolving}
-                className="flex-1 px-4 py-2.5 text-[13px] font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200 rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.02] active:scale-[0.97] shadow-sm hover:shadow-md active:shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isResolving ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  "Resolve"
-                )}
-              </button>
-            </div>
-          </div>
         </div>,
         document.body
       )}
