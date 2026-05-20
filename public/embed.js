@@ -26,6 +26,7 @@
     display: flex;\
     flex-direction: column;\
     align-items: flex-end;\
+    pointer-events: none;\
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\
   ';
 
@@ -93,6 +94,7 @@
     transition: transform 0.2s ease, background 0.2s ease;\
     position: relative;\
     border: 2px solid white;\
+    pointer-events: auto;\
   ';
 
   var agentImages = [
@@ -143,6 +145,7 @@
     
     if (window.innerWidth <= 480) {
       document.body.style.overflow = 'hidden';
+      container.style.pointerEvents = 'auto';
       container.classList.add('tf-mobile-open');
     }
     
@@ -168,6 +171,7 @@
     
     if (window.innerWidth <= 480) {
       document.body.style.overflow = '';
+      container.style.pointerEvents = 'none';
       container.classList.remove('tf-mobile-open');
     }
     
