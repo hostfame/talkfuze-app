@@ -3324,7 +3324,7 @@ export default function WidgetPage() {
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
               ) : null}
               <span className={`text-[12px] font-semibold truncate ${callStatus === 'declined' ? 'text-red-600 dark:text-red-400' : ''}`}>
-                {callStatus === 'calling' ? 'Calling support...' : callStatus === 'active' ? `Call active - ${formatCallDuration(callDuration)}` : 'Call declined'}
+                {callStatus === 'calling' ? 'Ringing...' : callStatus === 'active' ? `${formatCallDuration(callDuration)}` : 'Call declined'}
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
