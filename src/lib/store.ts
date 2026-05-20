@@ -80,6 +80,7 @@ interface InboxState {
   activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived'
   currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
+  pendingDialNumber: string | null
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
@@ -89,6 +90,8 @@ interface InboxState {
   addMessage: (convoId: string, message: AppMessage) => void
   updateConversation: (id: string, payload: Partial<ConversationWithDetails>) => void
   removeConversation: (id: string) => void
+  triggerDial: (number: string) => void
+  clearPendingDial: () => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -99,6 +102,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   activeFilter: 'all',
   currentUser: null,
   messagesMap: {},
+  pendingDialNumber: null,
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -122,5 +126,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   removeConversation: (id) => set((state) => ({
     conversations: state.conversations.filter((c) => c.id !== id),
     selectedId: state.selectedId === id ? null : state.selectedId
-  }))
+  })),
+  triggerDial: (number) => set({ pendingDialNumber: number }),
+  clearPendingDial: () => set({ pendingDialNumber: null })
 }))

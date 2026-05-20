@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2 } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
@@ -14,7 +14,7 @@ const isPhoneNumber = (str: string) => {
 }
 
 export default function SipDialer() {
-  const { currentUser } = useInboxStore()
+  const { currentUser, pendingDialNumber, clearPendingDial } = useInboxStore()
   const [isOpen, setIsOpen] = useState(false)
   const [number, setNumber] = useState('')
   const [status, setStatus] = useState('Disconnected')
@@ -44,6 +44,13 @@ export default function SipDialer() {
   const [isTabConflict, setIsTabConflict] = useState(false)
   const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null)
   const [iceState, setIceState] = useState('new')
+  
+  // Phase 1: Advanced Call Controls
+  const [isOnHold, setIsOnHold] = useState(false)
+  const [showTransferInput, setShowTransferInput] = useState(false)
+  const [transferNumber, setTransferNumber] = useState('')
+  const [showInCallKeypad, setShowInCallKeypad] = useState(false)
+  const [isMicMuted, setIsMicMuted] = useState(false)
   
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -200,6 +207,11 @@ export default function SipDialer() {
         setIceState('new')
         setCanHangUp(true)
         setWhmcsClientInfo(null)
+        setIsOnHold(false)
+        setIsMicMuted(false)
+        setShowTransferInput(false)
+        setTransferNumber('')
+        setShowInCallKeypad(false)
         cleanupMediaTracks(session)
       } else if (newState === 'Established') {
         setStatus('Connected')
@@ -602,8 +614,162 @@ export default function SipDialer() {
   }
 
   const handleKeyPress = (num: string) => {
-    setNumber(prev => prev + num)
+    // During active call, send DTMF tones instead of appending to number
+    if (sessionState === SessionState.Established && userAgent) {
+      sendDTMF(num)
+    } else {
+      setNumber(prev => prev + num)
+    }
   }
+
+  // === PHASE 1: HOLD / RESUME ===
+  const handleHold = async () => {
+    if (!userAgent) return
+    try {
+      const session = (userAgent as any).session
+      if (!session) return
+      
+      if (isOnHold) {
+        // Resume: send re-INVITE with sendrecv
+        await session.invite({
+          sessionDescriptionHandlerModifiers: [
+            (sdp: any) => {
+              sdp.body = sdp.body?.replace(/a=sendonly/g, 'a=sendrecv').replace(/a=inactive/g, 'a=sendrecv')
+            }
+          ]
+        })
+        setIsOnHold(false)
+      } else {
+        // Hold: send re-INVITE with sendonly
+        await session.invite({
+          sessionDescriptionHandlerModifiers: [
+            (sdp: any) => {
+              sdp.body = sdp.body?.replace(/a=sendrecv/g, 'a=sendonly')
+            }
+          ]
+        })
+        setIsOnHold(true)
+      }
+    } catch (e) {
+      console.error('[SIP] Hold/Resume failed:', e)
+      // Fallback: just mute local audio tracks
+      try {
+        const session = (userAgent as any).session
+        const pc = session?.sessionDescriptionHandler?.peerConnection
+        if (pc) {
+          pc.getSenders().forEach((sender: any) => {
+            if (sender.track && sender.track.kind === 'audio') {
+              sender.track.enabled = isOnHold
+            }
+          })
+          setIsOnHold(!isOnHold)
+        }
+      } catch (fallbackErr) {
+        console.error('[SIP] Hold fallback failed:', fallbackErr)
+      }
+    }
+  }
+
+  // === PHASE 1: MIC MUTE (separate from ring mute) ===
+  const handleMicMute = () => {
+    if (!userAgent) return
+    try {
+      const session = (userAgent as any).session
+      const pc = session?.sessionDescriptionHandler?.peerConnection
+      if (pc) {
+        pc.getSenders().forEach((sender: any) => {
+          if (sender.track && sender.track.kind === 'audio') {
+            sender.track.enabled = isMicMuted // toggle: if currently muted, enable
+          }
+        })
+        setIsMicMuted(!isMicMuted)
+      }
+    } catch (e) {
+      console.error('[SIP] Mic mute failed:', e)
+    }
+  }
+
+  // === PHASE 1: IN-CALL DTMF ===
+  const sendDTMF = (digit: string) => {
+    if (!userAgent) return
+    try {
+      const session = (userAgent as any).session
+      if (!session || !session.sessionDescriptionHandler) return
+      
+      // Try SIP INFO method first (most compatible)
+      const options = {
+        requestOptions: {
+          body: {
+            contentDisposition: 'render',
+            contentType: 'application/dtmf-relay',
+            content: `Signal=${digit}\r\nDuration=160`
+          }
+        }
+      }
+      session.info(options)
+      console.log(`[DTMF] Sent digit: ${digit}`)
+    } catch (e) {
+      console.error('[DTMF] Send failed:', e)
+    }
+  }
+
+  // === PHASE 1: BLIND TRANSFER ===
+  const handleBlindTransfer = async () => {
+    if (!userAgent || !transferNumber.trim()) return
+    try {
+      const session = (userAgent as any).session
+      if (!session) return
+      
+      const targetURI = `sip:${transferNumber.trim()}@sip.talkfuze.com`
+      await session.refer(targetURI)
+      
+      console.log(`[SIP] Blind transfer to ${transferNumber} initiated`)
+      
+      // Reset UI state
+      setShowTransferInput(false)
+      setTransferNumber('')
+      setStatus('Transferred')
+      setTimeout(() => {
+        setStatus('Registered')
+        setSessionState(SessionState.Terminated)
+        setActiveCallSession(null)
+        setIsMuted(false)
+        setIsMicMuted(false)
+        setIsOnHold(false)
+        setIceState('new')
+        setWhmcsClientInfo(null)
+        stopTimer()
+      }, 2000)
+    } catch (e) {
+      console.error('[SIP] Blind transfer failed:', e)
+    }
+  }
+
+  // === PHASE 1: CLICK-TO-CALL ===
+  useEffect(() => {
+    if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...') {
+      setNumber(pendingDialNumber)
+      clearPendingDial()
+      // Auto-dial after short delay to let state settle
+      setTimeout(async () => {
+        if (userAgent && isRegistered) {
+          try {
+            setStatus('Dialing...')
+            await userAgent.call(`sip:${pendingDialNumber.replace(/[\s-]/g, '')}@sip.talkfuze.com`)
+            setActiveCallSession({ number: pendingDialNumber.replace(/[\s-]/g, ''), direction: 'outbound' })
+            const session = (userAgent as any).session
+            if (session) {
+              bindSessionEvents(session)
+            }
+          } catch (e) {
+            console.error('Click-to-call dial failed:', e)
+            setStatus('Call Failed')
+            setTimeout(() => setStatus('Registered'), 3000)
+          }
+        }
+      }, 200)
+    }
+  }, [pendingDialNumber])
 
   return (
     <>
@@ -698,22 +864,131 @@ export default function SipDialer() {
                 </button>
               </>
             ) : (
-              <button 
-                onClick={handleHangup}
-                disabled={!canHangUp}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(239,68,68,0.2)] cursor-pointer ${
-                  !canHangUp 
-                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
-                    : 'bg-rose-500 hover:bg-rose-600 active:scale-95 text-white'
-                }`}
-                title={!canHangUp ? "Connecting..." : "Hang up"}
-              >
-                {!canHangUp ? (
-                  <Loader2 size={15} className="animate-spin text-slate-400" />
-                ) : (
-                  <PhoneOff size={15} strokeWidth={2.5} />
+              <div className="flex flex-col gap-2">
+                {/* Transfer Input Overlay */}
+                {showTransferInput && (
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl px-2 py-1.5 transition-all animate-in fade-in slide-in-from-right-3 duration-200">
+                    <input
+                      type="text"
+                      value={transferNumber}
+                      onChange={(e) => setTransferNumber(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleBlindTransfer() }}
+                      placeholder="Number..."
+                      className="w-[100px] text-[11px] font-semibold bg-transparent outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleBlindTransfer}
+                      disabled={!transferNumber.trim()}
+                      className="text-[9px] font-bold px-2 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                    >
+                      Transfer
+                    </button>
+                    <button
+                      onClick={() => { setShowTransferInput(false); setTransferNumber('') }}
+                      className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 )}
-              </button>
+                
+                {/* In-Call DTMF Mini Keypad */}
+                {showInCallKeypad && sessionState === SessionState.Established && (
+                  <div className="grid grid-cols-4 gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-2 transition-all animate-in fade-in slide-in-from-right-3 duration-200">
+                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => sendDTMF(key)}
+                        className="w-7 h-7 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                      >
+                        {key}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Control Strip */}
+                <div className="flex items-center gap-1.5">
+                  {/* Hold/Resume */}
+                  {sessionState === SessionState.Established && (
+                    <button
+                      onClick={handleHold}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                        isOnHold
+                          ? 'bg-amber-500 text-white shadow-[0_2px_6px_rgba(245,158,11,0.3)]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                      title={isOnHold ? "Resume" : "Hold"}
+                    >
+                      {isOnHold ? <Play size={13} strokeWidth={2.5} /> : <Pause size={13} strokeWidth={2.5} />}
+                    </button>
+                  )}
+                  
+                  {/* Mic Mute */}
+                  {sessionState === SessionState.Established && (
+                    <button
+                      onClick={handleMicMute}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                        isMicMuted
+                          ? 'bg-rose-500 text-white shadow-[0_2px_6px_rgba(239,68,68,0.3)]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                      title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
+                    >
+                      {isMicMuted ? <MicOff size={13} strokeWidth={2.5} /> : <Mic size={13} strokeWidth={2.5} />}
+                    </button>
+                  )}
+                  
+                  {/* DTMF Keypad Toggle */}
+                  {sessionState === SessionState.Established && (
+                    <button
+                      onClick={() => setShowInCallKeypad(!showInCallKeypad)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                        showInCallKeypad
+                          ? 'bg-blue-500 text-white shadow-[0_2px_6px_rgba(59,130,246,0.3)]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                      title="Keypad"
+                    >
+                      <Grid3X3 size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
+                  
+                  {/* Transfer */}
+                  {sessionState === SessionState.Established && (
+                    <button
+                      onClick={() => setShowTransferInput(!showTransferInput)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                        showTransferInput
+                          ? 'bg-indigo-500 text-white shadow-[0_2px_6px_rgba(99,102,241,0.3)]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                      title="Transfer Call"
+                    >
+                      <PhoneForwarded size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
+                  
+                  {/* Hangup */}
+                  <button 
+                    onClick={handleHangup}
+                    disabled={!canHangUp}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(239,68,68,0.2)] cursor-pointer ${
+                      !canHangUp 
+                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
+                        : 'bg-rose-500 hover:bg-rose-600 active:scale-95 text-white'
+                    }`}
+                    title={!canHangUp ? "Connecting..." : "Hang up"}
+                  >
+                    {!canHangUp ? (
+                      <Loader2 size={15} className="animate-spin text-slate-400" />
+                    ) : (
+                      <PhoneOff size={15} strokeWidth={2.5} />
+                    )}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
