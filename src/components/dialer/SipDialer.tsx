@@ -803,7 +803,7 @@ export default function SipDialer() {
 
       {/* Modern Premium macOS Incoming Call Floating Banner Notification */}
       {activeCallSession && (
-        <div className="fixed top-6 right-6 z-[9999] w-auto min-w-[290px] max-w-[360px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.5)] rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
+        <div className="fixed top-6 right-[12px] z-[9999] w-[276px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.5)] rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Text Information */}
             <div className="flex flex-col min-w-0 flex-1">
