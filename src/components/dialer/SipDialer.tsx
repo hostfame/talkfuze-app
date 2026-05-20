@@ -805,24 +805,6 @@ export default function SipDialer() {
       {activeCallSession && (
         <div className="fixed top-6 right-6 z-[9999] w-auto min-w-[290px] max-w-[360px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.5)] rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Avatar with ringing pulsing ripples */}
-            <div className="relative shrink-0">
-              {status === 'Incoming Call...' && !isMuted && (
-                <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-25" />
-              )}
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${
-                status === 'Connected' ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-indigo-600'
-              } text-white flex items-center justify-center shadow-md`}>
-                {isPhoneNumber(incomingCallerName) ? (
-                  <User size={18} className="stroke-[2.5]" />
-                ) : (
-                  <span className="font-bold text-[14px]">
-                    {incomingCallerName ? incomingCallerName.slice(0, 2).toUpperCase() : 'IN'}
-                  </span>
-                )}
-              </div>
-            </div>
-            
             {/* Text Information */}
             <div className="flex flex-col min-w-0 flex-1">
               <span className="font-bold text-slate-900 dark:text-white text-[14px] truncate leading-tight">
