@@ -445,8 +445,11 @@ export default function ChatThread({
         }
       })
       
-    voiceChannelRef.current = callChannel
-    callChannel.subscribe()
+    callChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        voiceChannelRef.current = callChannel
+      }
+    })
 
     return () => {
       supabase.removeChannel(callChannel)
@@ -657,12 +660,25 @@ export default function ChatThread({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      if (voiceChannelRef.current) {
-        voiceChannelRef.current.send({
+      // Wait for channel to be subscribed (up to 3s)
+      let ch = voiceChannelRef.current;
+      if (!ch) {
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 100));
+          ch = voiceChannelRef.current;
+          if (ch) break;
+        }
+      }
+
+      if (ch) {
+        ch.send({
           type: 'broadcast',
           event: 'voice_call_from_agent',
           payload: { offer }
         })
+      } else {
+        console.error("Voice channel not ready after 3s, cannot send offer");
+        handleEndVoiceCall(false);
       }
     } catch (err) {
       console.error("Agent call initiation failed", err)

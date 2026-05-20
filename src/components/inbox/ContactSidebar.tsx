@@ -337,8 +337,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         }
       })
       
-    coBrowseChannelRef.current = cobrowseChannel;
-    cobrowseChannel.subscribe()
+    cobrowseChannel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        coBrowseChannelRef.current = cobrowseChannel;
+      }
+    })
 
     return () => {
       supabase.removeChannel(cobrowseChannel)

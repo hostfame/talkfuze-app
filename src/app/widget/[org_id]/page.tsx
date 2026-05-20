@@ -534,8 +534,11 @@ export default function WidgetPage() {
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-    voiceChannelRef.current = callChannel
-    callChannel.subscribe()
+    callChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        voiceChannelRef.current = callChannel
+      }
+    })
 
     return () => {
       supabase.removeChannel(callChannel)
@@ -582,8 +585,14 @@ export default function WidgetPage() {
       let callChannel = voiceChannelRef.current;
       if (!callChannel || callChannel.topic !== `realtime:voicecall:${targetConvId}`) {
         callChannel = supabase.channel(`voicecall:${targetConvId}`);
-        callChannel.subscribe();
-        voiceChannelRef.current = callChannel;
+        await new Promise<void>((resolve) => {
+          callChannel.subscribe((status: string) => {
+            if (status === 'SUBSCRIBED') {
+              voiceChannelRef.current = callChannel;
+              resolve();
+            }
+          });
+        });
       }
 
       voiceStreamRef.current = stream
@@ -863,8 +872,11 @@ export default function WidgetPage() {
           coBrowseBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-    coBrowseChannelRef.current = cobrowseChannel
-    cobrowseChannel.subscribe()
+    cobrowseChannel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        coBrowseChannelRef.current = cobrowseChannel
+      }
+    })
 
     return () => {
       stopAlertLoop()
