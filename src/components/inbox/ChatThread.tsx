@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -344,10 +344,12 @@ export default function ChatThread({
   const contactName = contact?.name || 'Contact'
   const contactInitial = contactName.charAt(0).toUpperCase()
   const avatarColor = getAvatarColor(contactName)
+  const channelObj = firstRelation(conversation?.channel) || firstRelation(conversation?.channels)
+  const isWebWidget = channelObj?.type === 'widget'
 
   // Voice Call Agent-Side States
   const [incomingCall, setIncomingCall] = useState<{ offer: any } | null>(null)
-  const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active'>('idle')
+  const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active' | 'calling'>('idle')
   const [isMuted, setIsMuted] = useState(false)
   const [isRingtoneMuted, setIsRingtoneMuted] = useState(false)
   const [canHangUpVoice, setCanHangUpVoice] = useState(true)
@@ -392,6 +394,39 @@ export default function ChatThread({
         playRingtone()
       })
       .on('broadcast', { event: 'voice_call_ended' }, () => {
+        handleEndVoiceCall(false)
+      })
+      .on('broadcast', { event: 'voice_call_answered_by_visitor' }, async (payload) => {
+        // Visitor accepted agent-initiated call
+        try {
+          const pc = voiceConnectionRef.current;
+          if (pc) {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+            // Flush buffered candidates
+            if (voiceBufferedCandidatesRef.current.length > 0) {
+              for (const candidate of voiceBufferedCandidatesRef.current) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) {
+                  console.error("Error adding buffered candidate:", e);
+                }
+              }
+              voiceBufferedCandidatesRef.current = [];
+            }
+          }
+          setCallStatus('active')
+          setCanHangUpVoice(false)
+          setTimeout(() => setCanHangUpVoice(true), 5000)
+          setCallDuration(0)
+          if (callTimerRef.current) clearInterval(callTimerRef.current)
+          callTimerRef.current = setInterval(() => {
+            setCallDuration(d => d + 1)
+          }, 1000)
+        } catch (err) {
+          console.error("Agent-initiated call answer setup failed", err)
+        }
+      })
+      .on('broadcast', { event: 'voice_call_declined_by_visitor' }, () => {
         handleEndVoiceCall(false)
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
@@ -555,6 +590,55 @@ export default function ChatThread({
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
       }
+    }
+  }
+
+  // Agent-initiated voice call
+  const handleStartVoiceCallFromAgent = async () => {
+    if (!conversationId || callStatus !== 'idle') return
+    try {
+      setCallStatus('calling')
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      voiceStreamRef.current = stream
+
+      const pc = createPeerConnection();
+      voiceConnectionRef.current = pc
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.ontrack = (event) => {
+        const audio = document.createElement('audio');
+        audio.autoplay = true;
+        audio.srcObject = event.streams[0];
+        document.body.appendChild(audio);
+        audio.play().catch(e => console.error("Agent Audio Play Error:", e));
+        voiceAudioRef.current = audio;
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && voiceChannelRef.current) {
+          voiceChannelRef.current.send({
+            type: 'broadcast',
+            event: 'ice_candidate',
+            payload: { candidate: event.candidate }
+          })
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      if (voiceChannelRef.current) {
+        voiceChannelRef.current.send({
+          type: 'broadcast',
+          event: 'voice_call_from_agent',
+          payload: { offer }
+        })
+      }
+    } catch (err) {
+      console.error("Agent call initiation failed", err)
+      setCallStatus('idle')
+      alert("Microphone permission is required to place calls.")
     }
   }
 
@@ -1517,7 +1601,7 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Header */}
-      <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-20 sticky top-0 shadow-sm">
+      <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 group">
             {isEditingName ? (
@@ -1559,6 +1643,15 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
+          {isWebWidget && callStatus === 'idle' && (
+            <button 
+              onClick={handleStartVoiceCallFromAgent}
+              className="p-1.5 text-slate-500 hover:text-[#0070f3] hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-md transition-colors"
+              title="Call visitor"
+            >
+              <Phone size={18} strokeWidth={2} />
+            </button>
+          )}
           {isJoined ? (
             <button 
               onClick={() => handleThreadAction('leave')}
@@ -1648,38 +1741,48 @@ export default function ChatThread({
         </div>
       )}
 
-      {/* Active Call Panel Overlay for Agent */}
-      {callStatus === 'active' && (
+      {/* Active/Calling Call Panel Overlay for Agent */}
+      {(callStatus === 'active' || callStatus === 'calling') && (
         <div className="bg-slate-900 border-b border-slate-850 px-4 py-3 flex items-center justify-between text-white shrink-0 z-30 animate-in slide-in-from-top duration-200">
           <div className="flex items-center gap-2.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+            {callStatus === 'calling' ? (
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+            )}
             <div className="flex flex-col">
-              <span className="text-[12.5px] font-bold text-white tracking-tight">Active Voice Call with {contactName}</span>
-              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{formatCallDuration(callDuration)}</span>
+              <span className="text-[12.5px] font-bold text-white tracking-tight">
+                {callStatus === 'calling' ? `Calling ${contactName}...` : `Active Voice Call with ${contactName}`}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                {callStatus === 'calling' ? 'Ringing' : formatCallDuration(callDuration)}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleMuteVoiceCall}
-              className={`p-2 rounded-xl transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-              title={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? (
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
-              ) : (
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
-              )}
-            </button>
+            {callStatus === 'active' && (
+              <button 
+                onClick={toggleMuteVoiceCall}
+                className={`p-2 rounded-xl transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
+                ) : (
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
+                )}
+              </button>
+            )}
             <button 
               onClick={() => handleEndVoiceCall(true)}
-              disabled={!canHangUpVoice}
+              disabled={callStatus === 'active' && !canHangUpVoice}
               className={`font-bold text-[11px] px-3.5 py-2 rounded-xl transition-all uppercase tracking-wide shadow-sm flex items-center gap-1.5 ${
-                !canHangUpVoice 
+                callStatus === 'active' && !canHangUpVoice 
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed shadow-inner'
                   : 'bg-red-500 hover:bg-red-600 active:scale-95 text-white cursor-pointer'
               }`}
             >
-              {!canHangUpVoice ? (
+              {callStatus === 'calling' ? 'Cancel' : (callStatus === 'active' && !canHangUpVoice) ? (
                 <>
                   <Loader2 size={12} className="animate-spin text-slate-500" />
                   Connecting...
