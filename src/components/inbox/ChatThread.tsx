@@ -1726,7 +1726,7 @@ export default function ChatThread({
                           onClick={() => setZoomedImage((mediaUrl) as string)}
                         />
                       </div>
-                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                      {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                     </div>
                   ) : msg.content_type === 'file' && (mediaUrl) ? (
                     <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
@@ -1736,7 +1736,7 @@ export default function ChatThread({
                   ) : msg.content_type === 'audio' && (mediaUrl) ? (
                     <div className="flex flex-col gap-1">
                       <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={!msg.is_internal} />
-                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                      {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                     </div>
                   ) : msg.content_type === 'video' && (mediaUrl) ? (
                     <div className="mb-2">
@@ -1744,10 +1744,10 @@ export default function ChatThread({
                         <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                         Your browser does not support the video tag.
                       </video>
-                      {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                      {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                     </div>
                   ) : (
-                    <div>{renderTextWithLinks(msg.content, true, teamMembers, (msg.metadata as any)?.mentions)}</div>
+                    <div>{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>
                   )}
                   </div>
                   
@@ -1858,7 +1858,7 @@ export default function ChatThread({
                               onClick={() => setZoomedImage((mediaUrl) as string)}
                             />
                           </div>
-                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                         </div>
                       ) : msg.content_type === 'file' && (mediaUrl) ? (
                         <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
@@ -1868,7 +1868,7 @@ export default function ChatThread({
                       ) : msg.content_type === 'audio' && (mediaUrl) ? (
                         <div className="flex flex-col gap-1">
                           <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={false} />
-                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                         </div>
                       ) : msg.content_type === 'video' && (mediaUrl) ? (
                         <div className="mb-2">
@@ -1876,10 +1876,10 @@ export default function ChatThread({
                             <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                             Your browser does not support the video tag.
                           </video>
-                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, (msg.metadata as any)?.mentions)}</div>}
+                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                         </div>
                       ) : (
-                        <div>{renderTextWithLinks(msg.content, false, teamMembers, (msg.metadata as any)?.mentions)}</div>
+                        <div>{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>
                       )}
                     </div>
                   </div>
