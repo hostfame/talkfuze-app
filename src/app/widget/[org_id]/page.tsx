@@ -1016,7 +1016,7 @@ export default function WidgetPage() {
       metadata: null,
       platform_message_id: null,
       is_internal: false,
-      status: 'sending',
+      status: 'delivered', // Optimistically fake delivery for instant UX
       created_at: new Date().toISOString()
     }])
     setIsSending(true)
