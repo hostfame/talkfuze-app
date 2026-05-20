@@ -1,10 +1,16 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
+
+const isPhoneNumber = (str: string) => {
+  if (!str) return false
+  const clean = str.replace(/[\s\-\+]/g, '')
+  return /^\d+$/.test(clean) && clean.length > 5
+}
 
 export default function SipDialer() {
   const { currentUser } = useInboxStore()
@@ -543,73 +549,79 @@ export default function SipDialer() {
 
       {/* Modern Premium macOS Incoming Call Floating Banner Notification */}
       {activeCallSession && (
-        <div className="fixed top-6 right-6 z-[9999] w-[340px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 shadow-[0_15px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] rounded-3xl p-4 flex items-center justify-between gap-3 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="fixed top-6 right-6 z-[9999] w-auto min-w-[290px] max-w-[360px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80 shadow-[0_12px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.5)] rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-500 animate-in fade-in slide-in-from-top-5 duration-300">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Avatar with ringing pulsing ripples */}
             <div className="relative shrink-0">
               {status === 'Incoming Call...' && !isMuted && (
                 <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-25" />
               )}
-              <div className={`w-12 h-12 rounded-full bg-gradient-to-tr ${
+              <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${
                 status === 'Connected' ? 'from-emerald-500 to-teal-600' : 'from-blue-500 to-indigo-600'
-              } text-white flex items-center justify-center font-bold text-[16px] shadow-md`}>
-                {incomingCallerName ? incomingCallerName.slice(0, 2).toUpperCase() : 'IN'}
+              } text-white flex items-center justify-center shadow-md`}>
+                {isPhoneNumber(incomingCallerName) ? (
+                  <User size={18} className="stroke-[2.5]" />
+                ) : (
+                  <span className="font-bold text-[14px]">
+                    {incomingCallerName ? incomingCallerName.slice(0, 2).toUpperCase() : 'IN'}
+                  </span>
+                )}
               </div>
             </div>
             
             {/* Text Information */}
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-slate-900 dark:text-white text-[15px] truncate">
-                {incomingCallerName || 'Inbound Call'}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="font-bold text-slate-900 dark:text-white text-[14px] truncate leading-tight">
+                {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
               </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate flex items-center gap-1">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate flex items-center gap-1 mt-0.5">
                 {iceState === 'disconnected' ? (
                   <>
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 animate-pulse shrink-0" />
-                    <span className="text-amber-600 dark:text-amber-400 font-semibold animate-pulse">Weak Connection • Reconnecting audio...</span>
+                    <AlertTriangle className="w-3 h-3 text-amber-500 animate-pulse shrink-0" />
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold animate-pulse">Weak Connection</span>
                   </>
                 ) : (
                   status === 'Connected' ? `Connected • ${formatTime(callDuration)}` :
-                  status === 'Incoming Call...' ? `Incoming Call • ${number}` :
+                  status === 'Incoming Call...' ? 'Incoming Call' :
                   status === 'Connecting...' ? 'Connecting...' :
                   status === 'Calling...' || status === 'Dialing...' ? 'Calling...' :
-                  `${status} • ${number}`
+                  status
                 )}
               </span>
             </div>
           </div>
           
           {/* Apple-style Decline and Answer circular pill actions */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {status === 'Incoming Call...' ? (
               <>
                 <button 
                   onClick={handleMuteRing}
                   disabled={isMuted}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                     isMuted 
                       ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
-                      : 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-[0_4px_12px_rgba(245,158,11,0.25)]'
+                      : 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white shadow-[0_3px_8px_rgba(245,158,11,0.2)]'
                   }`}
-                  title={isMuted ? "Muted" : "Mute Ringtone"}
+                  title={isMuted ? "Muted" : "Mute"}
                 >
-                  <VolumeX size={16} strokeWidth={2.5} />
+                  <VolumeX size={15} strokeWidth={2.5} />
                 </button>
                 <button 
                   onClick={handleAnswer}
-                  className="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(16,185,129,0.25)] cursor-pointer"
-                  title="Answer"
+                  className="w-9 h-9 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(16,185,129,0.2)] cursor-pointer"
+                  title="Receive"
                 >
-                  <Phone size={16} strokeWidth={2.5} className="animate-bounce" style={{ animationDuration: '1.2s' }} />
+                  <Phone size={15} strokeWidth={2.5} className="animate-bounce" style={{ animationDuration: '1.2s' }} />
                 </button>
               </>
             ) : (
               <button 
                 onClick={handleHangup}
-                className="w-10 h-10 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(239,68,68,0.25)] cursor-pointer"
+                className="w-9 h-9 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(239,68,68,0.2)] cursor-pointer"
                 title="Hang up"
               >
-                <PhoneOff size={16} strokeWidth={2.5} />
+                <PhoneOff size={15} strokeWidth={2.5} />
               </button>
             )}
           </div>

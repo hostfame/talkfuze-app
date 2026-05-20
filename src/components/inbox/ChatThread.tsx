@@ -240,6 +240,7 @@ export default function ChatThread({
   const [incomingCall, setIncomingCall] = useState<{ offer: any } | null>(null)
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active'>('idle')
   const [isMuted, setIsMuted] = useState(false)
+  const [isRingtoneMuted, setIsRingtoneMuted] = useState(false)
   const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
   const voiceStreamRef = useRef<MediaStream | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -248,6 +249,7 @@ export default function ChatThread({
   const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const playRingtone = () => {
+    if (isRingtoneMuted) return
     try {
       const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/903/903-84.wav")
       audio.loop = true
@@ -261,6 +263,11 @@ export default function ChatThread({
       ringtoneAudioRef.current.pause()
       ringtoneAudioRef.current = null
     }
+  }
+
+  const handleMuteRingtone = () => {
+    stopRingtone()
+    setIsRingtoneMuted(true)
   }
 
   useEffect(() => {
@@ -292,6 +299,7 @@ export default function ChatThread({
   const handleAnswerVoiceCall = async () => {
     if (!conversationId || !incomingCall) return
     stopRingtone()
+    setIsRingtoneMuted(false)
     try {
       setCallStatus('active')
       setIncomingCall(null)
@@ -364,6 +372,7 @@ export default function ChatThread({
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
     stopRingtone()
+    setIsRingtoneMuted(false)
     if (voiceStreamRef.current) {
       voiceStreamRef.current.getTracks().forEach(t => t.stop())
       voiceStreamRef.current = null
@@ -1455,9 +1464,9 @@ export default function ChatThread({
       {/* Incoming Call Agent Dialog */}
       {callStatus === 'ringing' && incomingCall && (
         <div className="absolute top-[80px] left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4 animate-in slide-in-from-top-6 duration-300">
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-5 flex flex-col items-center text-center">
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800 rounded-3xl shadow-2xl p-5 flex flex-col items-center text-center">
             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-3 animate-bounce">
-              <Phone size={24} strokeWidth={2.5} />
+              <Phone size={22} strokeWidth={2.5} />
             </div>
             <h3 className="text-[15px] font-bold text-slate-800 dark:text-white">Incoming Voice Call</h3>
             <p className="text-[12px] text-slate-500 mt-1 leading-normal mb-5">
@@ -1465,16 +1474,21 @@ export default function ChatThread({
             </p>
             <div className="flex gap-3 w-full">
               <button 
-                onClick={handleDeclineVoiceCall}
-                className="flex-1 py-2.5 text-[12.5px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 rounded-xl transition-all"
+                onClick={handleMuteRingtone}
+                disabled={isRingtoneMuted}
+                className={`flex-1 py-2.5 text-[12.5px] font-semibold rounded-xl transition-all ${
+                  isRingtoneMuted 
+                    ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:bg-slate-800/40 dark:text-slate-500'
+                    : 'text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:text-amber-400 cursor-pointer active:scale-95'
+                }`}
               >
-                Decline
+                {isRingtoneMuted ? 'Muted' : 'Mute'}
               </button>
               <button 
                 onClick={handleAnswerVoiceCall}
-                className="flex-1 py-2.5 text-[12.5px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-xl shadow-sm transition-all active:scale-95"
+                className="flex-1 py-2.5 text-[12.5px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
               >
-                Answer
+                Receive
               </button>
             </div>
           </div>

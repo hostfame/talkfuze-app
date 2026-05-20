@@ -806,7 +806,7 @@ export default function WidgetPage() {
             if (activeConversationId === 'new') {
               await startNewConversation(org_id, deviceId)
             }
-            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url }, activeConversationId === 'new' ? undefined : activeConversationId)
+            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
             if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
               setActiveConversationId(res.conversationId)
             }
@@ -937,7 +937,7 @@ export default function WidgetPage() {
               url: response.url,
               filename: file.name,
               mimetype: file.type
-            }, activeConversationId === 'new' ? undefined : activeConversationId);
+            }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId);
 
             if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
               setActiveConversationId(res.conversationId);
@@ -1039,7 +1039,7 @@ export default function WidgetPage() {
       if (activeConversationId === 'new') {
         await startNewConversation(org_id, deviceId)
       }
-      const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId === 'new' ? undefined : activeConversationId)
+      const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
       if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
         setActiveConversationId(res.conversationId)
       }
