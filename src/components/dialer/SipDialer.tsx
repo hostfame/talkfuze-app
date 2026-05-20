@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2 } from 'lucide-react'
 import { Web, SessionState } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
@@ -25,6 +25,7 @@ export default function SipDialer() {
   const [sessionState, setSessionState] = useState<SessionState>(SessionState.Initial)
   
   const [isMuted, setIsMuted] = useState(false)
+  const [canHangUp, setCanHangUp] = useState(true)
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
   const activeCallSessionRef = useRef<any>(null)
   
@@ -188,6 +189,7 @@ export default function SipDialer() {
         setActiveCallSession(null)
         setIsMuted(false)
         setIceState('new')
+        setCanHangUp(true)
         cleanupMediaTracks(session)
       } else if (newState === 'Established') {
         setStatus('Connected')
@@ -460,6 +462,7 @@ export default function SipDialer() {
   }
 
   const handleHangup = async () => {
+    if (!canHangUp) return
     if (!userAgent) return
     
     // Instant Optimistic Reset to ensure perfect real-time feedback
@@ -470,6 +473,7 @@ export default function SipDialer() {
     setActiveCallSession(null)
     setIsMuted(false)
     setIceState('new')
+    setCanHangUp(true)
     
     try {
       await userAgent.hangup()
@@ -480,6 +484,11 @@ export default function SipDialer() {
 
   const handleAnswer = async () => {
     if (!userAgent) return
+    
+    setCanHangUp(false)
+    setTimeout(() => {
+      setCanHangUp(true)
+    }, 5000)
     
     // Instant Optimistic Connect UI change
     setStatus('Connecting...')
@@ -618,10 +627,19 @@ export default function SipDialer() {
             ) : (
               <button 
                 onClick={handleHangup}
-                className="w-9 h-9 rounded-full bg-rose-500 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(239,68,68,0.2)] cursor-pointer"
-                title="Hang up"
+                disabled={!canHangUp}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-[0_3px_8px_rgba(239,68,68,0.2)] cursor-pointer ${
+                  !canHangUp 
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-inner'
+                    : 'bg-rose-500 hover:bg-rose-600 active:scale-95 text-white'
+                }`}
+                title={!canHangUp ? "Connecting..." : "Hang up"}
               >
-                <PhoneOff size={15} strokeWidth={2.5} />
+                {!canHangUp ? (
+                  <Loader2 size={15} className="animate-spin text-slate-400" />
+                ) : (
+                  <PhoneOff size={15} strokeWidth={2.5} />
+                )}
               </button>
             )}
           </div>

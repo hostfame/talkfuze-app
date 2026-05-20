@@ -241,6 +241,7 @@ export default function ChatThread({
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active'>('idle')
   const [isMuted, setIsMuted] = useState(false)
   const [isRingtoneMuted, setIsRingtoneMuted] = useState(false)
+  const [canHangUpVoice, setCanHangUpVoice] = useState(true)
   const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
   const voiceStreamRef = useRef<MediaStream | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -298,6 +299,10 @@ export default function ChatThread({
 
   const handleAnswerVoiceCall = async () => {
     if (!conversationId || !incomingCall) return
+    setCanHangUpVoice(false)
+    setTimeout(() => {
+      setCanHangUpVoice(true)
+    }, 5000)
     stopRingtone()
     setIsRingtoneMuted(false)
     try {
@@ -371,8 +376,11 @@ export default function ChatThread({
   }
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
+    if (sendBroadcast && !canHangUpVoice) return
+    
     stopRingtone()
     setIsRingtoneMuted(false)
+    setCanHangUpVoice(true)
     if (voiceStreamRef.current) {
       voiceStreamRef.current.getTracks().forEach(t => t.stop())
       voiceStreamRef.current = null
@@ -1509,9 +1517,21 @@ export default function ChatThread({
             </button>
             <button 
               onClick={() => handleEndVoiceCall(true)}
-              className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[11px] px-3.5 py-2 rounded-xl transition-all uppercase tracking-wide shadow-sm"
+              disabled={!canHangUpVoice}
+              className={`font-bold text-[11px] px-3.5 py-2 rounded-xl transition-all uppercase tracking-wide shadow-sm flex items-center gap-1.5 ${
+                !canHangUpVoice 
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed shadow-inner'
+                  : 'bg-red-500 hover:bg-red-600 active:scale-95 text-white cursor-pointer'
+              }`}
             >
-              Hang Up
+              {!canHangUpVoice ? (
+                <>
+                  <Loader2 size={12} className="animate-spin text-slate-500" />
+                  Connecting...
+                </>
+              ) : (
+                "Hang Up"
+              )}
             </button>
           </div>
         </div>
