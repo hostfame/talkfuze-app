@@ -217,6 +217,7 @@ type ChatThreadProps = {
   teamMembers?: UserProfile[]
   isCustomerTyping?: boolean
   isCustomerOnline?: boolean
+  activeAgents?: { name: string; activity: 'viewing' | 'typing' }[]
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
 }
@@ -228,6 +229,7 @@ export default function ChatThread({
   teamMembers = [],
   isCustomerTyping = false,
   isCustomerOnline = false,
+  activeAgents = [],
   conversation = null,
   currentUser
 }: ChatThreadProps) {
@@ -1887,6 +1889,34 @@ export default function ChatThread({
           }
         })}
         
+        {activeAgents.length > 0 && (
+          <div className="flex flex-col gap-1.5 mb-4 animate-in fade-in slide-in-from-bottom-2">
+            {activeAgents.map((agent, idx) => (
+              <div key={idx} className="flex items-center gap-2 self-center bg-blue-50/80 dark:bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-800/50">
+                {agent.activity === 'typing' ? (
+                  <>
+                    <div className="flex gap-1 items-center mr-1">
+                      <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                      <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                      <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                    </div>
+                    <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
+                      {agent.name} is replying...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
+                    <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
+                      {agent.name} is viewing this conversation
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {isCustomerTyping && (
           <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-end gap-2.5">

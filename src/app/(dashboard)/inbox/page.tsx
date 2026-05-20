@@ -27,6 +27,7 @@ export default function InboxPage() {
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
 
@@ -184,20 +185,18 @@ export default function InboxPage() {
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
-        const { conversation_id, direction, is_typing } = payload.payload;
-        // Only track when the customer is typing to display in UI
+        const { conversation_id, direction, is_typing, agent_name, agent_id } = payload.payload;
+        // Track customer typing
         if (direction === 'contact') {
           setTypingState(prev => ({
             ...prev,
             [conversation_id]: is_typing
           }));
           
-          // Clear any existing timeout
           if (typingTimeoutRefs.current[conversation_id]) {
             clearTimeout(typingTimeoutRefs.current[conversation_id]);
           }
           
-          // Auto-clear typing indicator after 3 seconds of no new events
           if (is_typing) {
             typingTimeoutRefs.current[conversation_id] = setTimeout(() => {
               setTypingState(prev => ({
@@ -206,7 +205,40 @@ export default function InboxPage() {
               }));
             }, 3000);
           }
+        } else if (direction === 'agent' && agent_id && agent_id !== currentUser?.id) {
+          // Track other agents typing
+          setAgentActivity(prev => {
+            const next = { ...prev };
+            if (!next[conversation_id]) next[conversation_id] = {};
+            next[conversation_id] = {
+              ...next[conversation_id],
+              [agent_id]: {
+                name: agent_name || 'Agent',
+                activity: is_typing ? 'typing' : 'viewing', // Revert to viewing when stop typing
+                timestamp: Date.now()
+              }
+            };
+            return next;
+          });
         }
+      })
+      .on('broadcast', { event: 'agentActivity' }, (payload) => {
+        const { conversation_id, agent_name, agent_id, activity } = payload.payload;
+        if (!agent_id || agent_id === currentUser?.id) return;
+        
+        setAgentActivity(prev => {
+          const next = { ...prev };
+          if (!next[conversation_id]) next[conversation_id] = {};
+          next[conversation_id] = {
+            ...next[conversation_id],
+            [agent_id]: {
+              name: agent_name || 'Agent',
+              activity,
+              timestamp: Date.now()
+            }
+          };
+          return next;
+        });
       })
       .subscribe();
       
@@ -226,7 +258,62 @@ export default function InboxPage() {
       supabase.removeChannel(channel);
       supabase.removeChannel(presenceChannel);
     }
-  }, [ORG_ID]);
+  }, [ORG_ID, currentUser?.id]);
+
+  useEffect(() => {
+    // Periodically clean up stale agent activity (older than 10s)
+    const interval = setInterval(() => {
+      setAgentActivity(prev => {
+        const now = Date.now();
+        let changed = false;
+        const next = { ...prev };
+        for (const convId in next) {
+          const agents = { ...next[convId] };
+          for (const agentId in agents) {
+            if (now - agents[agentId].timestamp > 10000) {
+              changed = true;
+              delete agents[agentId];
+            }
+          }
+          if (Object.keys(agents).length === 0) {
+            delete next[convId];
+            changed = true;
+          } else if (changed) {
+            next[convId] = agents;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Broadcast viewing status
+  useEffect(() => {
+    if (selectedId && currentUser?.id) {
+      const channel = supabase.channel(`typing:${ORG_ID}`);
+      // Send immediately and then every 8s
+      const broadcast = () => {
+        channel.send({
+          type: 'broadcast',
+          event: 'agentActivity',
+          payload: { conversation_id: selectedId, agent_id: currentUser.id, agent_name: currentUser.name, activity: 'viewing' }
+        });
+      };
+      
+      const sub = channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcast();
+        }
+      });
+      
+      const interval = setInterval(broadcast, 8000);
+      return () => {
+        clearInterval(interval);
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [selectedId, currentUser, ORG_ID]);
 
   const handleSelectConversation = (id: string) => {
     setSelectedId(id)
@@ -258,6 +345,7 @@ export default function InboxPage() {
         orgId={ORG_ID}
         teamMembers={teamMembers}
         isCustomerTyping={selectedId ? typingState[selectedId] : false}
+        activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
         isCustomerOnline={(() => {
           if (!activeConversation) return false;
           // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object

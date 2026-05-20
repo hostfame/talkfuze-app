@@ -1,9 +1,9 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
@@ -241,6 +241,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsInvoices, setWhmcsInvoices] = useState<WhmcsInvoice[]>([])
   const [isConvertingTicket, setIsConvertingTicket] = useState(false)
   const [isSendingLink, setIsSendingLink] = useState<number | null>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
 
@@ -668,7 +669,25 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   </div>
                 </div>
                 <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{whmcsClient.email}</p>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 mb-3">{whmcsClient.email}</p>
+                <button
+                  onClick={async () => {
+                    if (isLoggingIn) return;
+                    setIsLoggingIn(true);
+                    const res = await generateWHMCSSsoToken(whmcsClient.id);
+                    setIsLoggingIn(false);
+                    if (res.success && res.redirect_url) {
+                      window.open(res.redirect_url, '_blank');
+                    } else {
+                      alert(res.error || "Failed to generate login token");
+                    }
+                  }}
+                  disabled={isLoggingIn}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-[13px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isLoggingIn ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+                  Login as Client
+                </button>
               </div>
             </div>
           ) : (

@@ -142,3 +142,15 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
     return { success: false, error: error.message || "Failed to convert ticket" }
   }
 }
+
+import { createSsoToken } from "@/lib/whmcs"
+
+export async function generateWHMCSSsoToken(clientId: number) {
+  try {
+    const result = await createSsoToken(clientId);
+    return { success: true, redirect_url: result.redirect_url }
+  } catch (error: any) {
+    console.error("Failed to generate SSO token:", error)
+    return { success: false, error: error.message || "Failed to generate token" }
+  }
+}
