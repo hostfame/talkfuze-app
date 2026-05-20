@@ -661,16 +661,25 @@ export default function WidgetPage() {
       const data = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now())
       if (data) {
         setMessages(prev => {
+          const dbMessages = data as WidgetMessage[];
+          
+          // Preserve any optimistic messages that haven't been returned by the DB yet
+          const optimisticMessages = prev.filter(m => m.id.startsWith('temp-'));
+          const pendingOptimistic = optimisticMessages.filter(optMsg => 
+            !dbMessages.some(dbMsg => dbMsg.content === optMsg.content && dbMsg.sender_type === 'contact')
+          );
+
+          const newMessages = [...dbMessages, ...pendingOptimistic];
+          
           const prevLen = prev.filter(m => !m.id.startsWith('temp-')).length;
-          const newLen = data.length;
+          const newLen = dbMessages.length;
           if (newLen > prevLen) {
-             const lastMsg = data[data.length - 1];
-             // If last message is not from the user, play receive sound
-             if (lastMsg.sender_type !== 'contact') {
+             const lastMsg = dbMessages[dbMessages.length - 1];
+             if (lastMsg && lastMsg.sender_type !== 'contact') {
                  playUISound('receive');
              }
           }
-          return data as WidgetMessage[];
+          return newMessages;
         })
       }
     } catch (e) {
