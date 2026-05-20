@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 
-export async function sendWidgetMessage(orgId: string, deviceId: string, content: string, contentType: string = 'text', metadata: Record<string, any> = {}) {
+export async function sendWidgetMessage(orgId: string, deviceId: string, content: string, contentType: string = 'text', metadata: Record<string, any> = {}, targetConversationId?: string) {
   if (!orgId || !deviceId || !content) {
     throw new Error("Missing required fields")
   }
@@ -59,19 +59,43 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     contact = newContact
   }
 
-  // 3. Get or Create Open Conversation
-  const { data: convs, error: convFetchErr } = await supabaseAdmin
-    .from("conversations")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("contact_id", contact.id)
-    .eq("status", "open")
-    .order('created_at', { ascending: false })
-    .limit(1)
+  // 3. Get or Create Conversation
+  let conversation = null;
 
-  if (convFetchErr) throw convFetchErr
+  if (targetConversationId && targetConversationId !== 'new') {
+    const { data: targetConv, error: targetErr } = await supabaseAdmin
+      .from("conversations")
+      .select("id, status")
+      .eq("id", targetConversationId)
+      .eq("contact_id", contact.id)
+      .single();
+      
+    if (targetConv) {
+      conversation = targetConv;
+      if (conversation.status === 'resolved') {
+        // Reopen the conversation if the customer replies
+        await supabaseAdmin
+          .from("conversations")
+          .update({ status: 'open' })
+          .eq("id", conversation.id);
+      }
+    }
+  }
 
-  let conversation = convs && convs.length > 0 ? convs[0] : null;
+  if (!conversation) {
+    const { data: convs, error: convFetchErr } = await supabaseAdmin
+      .from("conversations")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("contact_id", contact.id)
+      .eq("status", "open")
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (convFetchErr) throw convFetchErr
+
+    conversation = convs && convs.length > 0 ? convs[0] : null;
+  }
 
   if (!conversation) {
     const { data: newConv, error: convErr } = await supabaseAdmin

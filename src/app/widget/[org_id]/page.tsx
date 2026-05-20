@@ -367,18 +367,21 @@ export default function WidgetPage() {
         return
       }
 
-      try {
-        const permStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName })
-        if (permStatus.state === 'denied') {
-          setToastError("Microphone access is blocked by your browser. Please click the lock icon in the URL bar to allow it.")
-          return
-        }
-      } catch (e) {
-        // Ignore if permissions API isn't supported for microphone
-      }
-
       setCallStatus('calling')
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch (err: any) {
+        setCallStatus('idle')
+        if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+          setToastError("Microphone access is blocked by your browser. Please click the lock icon in the URL bar to allow it.")
+        } else {
+          setToastError("Failed to access microphone. Please check your system settings.")
+        }
+        return
+      }
+      
       voiceStreamRef.current = stream
 
       const pc = new RTCPeerConnection({
@@ -720,9 +723,20 @@ export default function WidgetPage() {
           
           // Fetch agent details for realtime incoming agent/system messages
           if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
-            const agentData = await getAgentProfile(newMsg.sender_id);
-            if (agentData) {
-              newMsg.agent = agentData;
+            let existingAgent = null;
+            setMessages(prev => {
+              const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
+              if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
+              return prev;
+            });
+
+            if (existingAgent) {
+              newMsg.agent = existingAgent;
+            } else {
+              const agentData = await getAgentProfile(newMsg.sender_id);
+              if (agentData) {
+                newMsg.agent = agentData;
+              }
             }
           }
 
@@ -792,8 +806,8 @@ export default function WidgetPage() {
             if (activeConversationId === 'new') {
               await startNewConversation(org_id, deviceId)
             }
-            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url })
-            if (res?.success && res.conversationId && activeConversationId === 'new') {
+            const res = await sendWidgetMessage(org_id, deviceId, '[Audio Voice Message]', 'audio', { url: result.url }, activeConversationId === 'new' ? undefined : activeConversationId)
+            if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
               setActiveConversationId(res.conversationId)
             }
           }
@@ -923,9 +937,9 @@ export default function WidgetPage() {
               url: response.url,
               filename: file.name,
               mimetype: file.type
-            });
+            }, activeConversationId === 'new' ? undefined : activeConversationId);
 
-            if (res?.success && res.conversationId && activeConversationId === 'new') {
+            if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
               setActiveConversationId(res.conversationId);
             }
 
@@ -1025,7 +1039,7 @@ export default function WidgetPage() {
       if (activeConversationId === 'new') {
         await startNewConversation(org_id, deviceId)
       }
-      const res = await sendWidgetMessage(org_id, deviceId, messageText)
+      const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId === 'new' ? undefined : activeConversationId)
       if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
         setActiveConversationId(res.conversationId)
       }
