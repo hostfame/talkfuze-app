@@ -2268,8 +2268,8 @@ export default function WidgetPage() {
             </div>
           </div>
 
-        {/* CHAT TAB (THREAD) - slides OVER home/messages from right, always z-40 */}
-        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col will-change-transform transition-transform duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] z-40 ${activeTab === 'chat' ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}>
+        {/* CHAT TAB (THREAD) - instant show over home/messages, z-40 */}
+        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col z-40 ${activeTab === 'chat' ? 'visible' : 'invisible pointer-events-none'}`}>
             {activeConversationId && (
               <div className="h-full flex flex-col relative z-30">
             
