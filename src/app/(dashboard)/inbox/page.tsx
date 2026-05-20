@@ -26,6 +26,10 @@ export default function InboxPage() {
     isLoaded, setCurrentUser
   } = useInboxStore()
 
+  const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
+  const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
+
   useEffect(() => {
     if (currentUser) setCurrentUser(currentUser as UserProfile)
   }, [currentUser, setCurrentUser])
@@ -88,6 +92,11 @@ export default function InboxPage() {
         // Play sound if the message is from a contact
         if (newMsg && newMsg.sender_type === 'contact') {
            playUISound('receive')
+           // Immediately clear typing state to prevent UI flicker
+           setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
+           if (typingTimeoutRefs.current[newMsg.conversation_id]) {
+             clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
+           }
         }
       })
       .subscribe()
@@ -170,9 +179,7 @@ export default function InboxPage() {
     }
   }, [selectedId])
 
-  const [typingState, setTypingState] = useState<Record<string, boolean>>({})
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
-  const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
+
 
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)

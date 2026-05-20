@@ -747,6 +747,8 @@ export default function WidgetPage() {
             // Play receive sound for incoming messages
             if (newMsg.sender_type !== 'contact') {
                 playUISound('receive');
+                // Immediately clear agent typing state to prevent UI flicker
+                setIsAgentTyping(false);
             }
             
             if (newMsg.sender_type === 'contact') {
