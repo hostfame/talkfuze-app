@@ -168,6 +168,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     }
   }, [conversation?.id])
 
+  // Safely bind coBrowseStream to video element once mounted in DOM
+  useEffect(() => {
+    if (coBrowseStatus === 'active' && coBrowseStream && videoRef.current) {
+      videoRef.current.srcObject = coBrowseStream;
+      videoRef.current.play().catch(e => console.error("Autoplay co-browse stream failed:", e));
+    }
+  }, [coBrowseStatus, coBrowseStream]);
+
   const handleRequestCoBrowse = () => {
     if (!conversation?.id) return
     setCoBrowseStatus('requested')
@@ -1012,6 +1020,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     ref={videoRef}
                     autoPlay 
                     playsInline 
+                    muted
                     className="w-full h-full object-contain bg-slate-950 flex-1 min-h-0"
                   />
                   <div className="absolute bottom-20 left-3 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-800/40 rounded-lg p-2.5 flex items-center justify-between z-10">
