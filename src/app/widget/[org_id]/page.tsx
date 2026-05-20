@@ -409,6 +409,7 @@ export default function WidgetPage() {
   const coBrowseBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const coBrowseChannelRef = useRef<any>(null)
   const urlBroadcastRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const coBrowseStartTimeRef = useRef<number>(0)
 
   // Broadcast visitor's current page URL to agent during co-browse
   useEffect(() => {
@@ -872,10 +873,22 @@ export default function WidgetPage() {
     }
   }, [activeConversationId])
 
-  // Start/stop alert sound when co-browse request popup is visible
+  // Start/stop alert sound when co-browse request popup is visible + auto-timeout
   useEffect(() => {
     if (showCoBrowseRequest) {
       playAlertLoop()
+      // Auto-decline after 30s if visitor doesn't respond
+      const timeout = setTimeout(() => {
+        stopAlertLoop()
+        setShowCoBrowseRequest(false)
+        if (coBrowseChannelRef.current) {
+          coBrowseChannelRef.current.send({
+            type: 'broadcast',
+            event: 'request_declined'
+          })
+        }
+      }, 30000)
+      return () => { stopAlertLoop(); clearTimeout(timeout) }
     } else {
       stopAlertLoop()
     }
@@ -905,6 +918,7 @@ export default function WidgetPage() {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       coBrowseStreamRef.current = stream
       setIsCoBrowsingActive(true)
+      coBrowseStartTimeRef.current = Date.now()
 
       const pc = createPeerConnection({
         onConnectionFailed: () => {
@@ -917,6 +931,10 @@ export default function WidgetPage() {
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
       stream.getVideoTracks()[0].onended = () => {
+        // Calculate session duration
+        const durationSec = Math.floor((Date.now() - coBrowseStartTimeRef.current) / 1000)
+        const durStr = `${Math.floor(durationSec / 60)}:${(durationSec % 60).toString().padStart(2, '0')}`
+
         if (coBrowseChannelRef.current) {
           coBrowseChannelRef.current.send({
             type: 'broadcast',
@@ -927,6 +945,11 @@ export default function WidgetPage() {
         coBrowseConnectionRef.current = null
         coBrowseStreamRef.current = null
         setIsCoBrowsingActive(false)
+
+        // Log session to chat
+        if (activeConversationId && activeConversationId !== 'new' && durationSec > 0) {
+          sendWidgetMessage(org_id, deviceId, `Screen share session ended`, 'system', { duration: durStr }, activeConversationId)
+        }
       }
 
       pc.onicecandidate = (event) => {
@@ -966,6 +989,10 @@ export default function WidgetPage() {
   }
 
   const handleStopCoBrowse = () => {
+    // Calculate session duration before cleanup
+    const durationSec = coBrowseStartTimeRef.current > 0 ? Math.floor((Date.now() - coBrowseStartTimeRef.current) / 1000) : 0
+    const durStr = `${Math.floor(durationSec / 60)}:${(durationSec % 60).toString().padStart(2, '0')}`
+
     coBrowseBufferedCandidatesRef.current = [];
     if (coBrowseStreamRef.current) {
       coBrowseStreamRef.current.getTracks().forEach(t => t.stop())
@@ -982,6 +1009,12 @@ export default function WidgetPage() {
       })
     }
     setIsCoBrowsingActive(false)
+
+    // Log session to chat
+    if (activeConversationId && activeConversationId !== 'new' && durationSec > 0) {
+      sendWidgetMessage(org_id, deviceId, `Screen share session ended`, 'system', { duration: durStr }, activeConversationId)
+    }
+    coBrowseStartTimeRef.current = 0
   }
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -2327,6 +2360,27 @@ export default function WidgetPage() {
                             <span className={`text-[11px] font-medium ${
                               isMissed ? 'text-red-500' : 'text-emerald-500'
                             }`}>
+                              {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Screen share session ended badge
+                  if (msg.content.includes('Screen share session') || msg.content.includes('screen share')) {
+                    return (
+                      <div key={idx} className="flex justify-center my-5">
+                        <div className="flex items-center gap-3 border px-4 py-2.5 rounded-2xl shadow-sm min-w-[200px] bg-blue-50 border-blue-100">
+                          <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center bg-blue-100">
+                            <Video size={15} className="text-blue-600" />
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[12.5px] font-bold tracking-tight text-blue-800">
+                              Screen Share Ended
+                            </span>
+                            <span className="text-[11px] font-medium text-blue-500">
                               {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
                             </span>
                           </div>
