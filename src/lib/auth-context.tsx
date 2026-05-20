@@ -9,6 +9,8 @@ export type UserContextType = {
   email: string
   role: string
   avatar_url: string | null
+  sip_extension: string | null
+  sip_password: string | null
 }
 
 const AuthContext = createContext<UserContextType | null>(null)
