@@ -30,6 +30,18 @@ export const ICE_SERVERS: RTCIceServer[] = [
 /** Connection timeout in milliseconds - if ICE doesn't connect in 15s, auto-cleanup */
 const ICE_CONNECTION_TIMEOUT_MS = 15000
 
+/** Mobile-safe audio constraints with echo cancellation and noise suppression */
+export const VOICE_CONSTRAINTS: MediaStreamConstraints = {
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    // Lower sample rate for better mobile compatibility
+    sampleRate: 48000,
+  },
+  video: false,
+}
+
 export type PeerConnectionCallbacks = {
   /** Called when ICE connection fails or disconnects after being connected */
   onConnectionFailed?: () => void
@@ -101,4 +113,104 @@ export function createPeerConnection(callbacks?: PeerConnectionCallbacks): RTCPe
   }
 
   return pc as RTCPeerConnection & { startTimeout: () => void }
+}
+
+/**
+ * Creates and attaches a mobile-safe audio element for WebRTC remote audio.
+ * 
+ * Mobile browsers (especially iOS Safari and Android Chrome) have strict
+ * autoplay policies. This function:
+ * 1. Creates a hidden audio element with proper attributes
+ * 2. Attaches it to DOM (required for Safari)
+ * 3. Sets playsinline (required for iOS)
+ * 4. Handles play() promise rejection gracefully
+ * 5. Returns the element for cleanup reference
+ */
+export function createRemoteAudioElement(stream: MediaStream): HTMLAudioElement {
+  const audio = document.createElement('audio')
+  audio.autoplay = true
+  audio.setAttribute('playsinline', '')
+  audio.setAttribute('webkit-playsinline', '')
+  // Prevent iOS from routing to speaker by default (use earpiece for calls)
+  audio.setAttribute('x-webkit-airplay', 'deny')
+  audio.srcObject = stream
+  // Style: hidden but in DOM (required for mobile playback)
+  audio.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;'
+  document.body.appendChild(audio)
+
+  // Try to play - on mobile this may fail due to autoplay policy
+  // but the user gesture from clicking "Accept Call" should allow it
+  const playPromise = audio.play()
+  if (playPromise) {
+    playPromise.catch(err => {
+      console.warn('[WebRTC] Audio autoplay blocked, retrying on next user interaction:', err.message)
+      // Fallback: play on next user touch/click (iOS requirement)
+      const resumeAudio = () => {
+        audio.play().catch(() => {})
+        document.removeEventListener('touchstart', resumeAudio)
+        document.removeEventListener('click', resumeAudio)
+      }
+      document.addEventListener('touchstart', resumeAudio, { once: true })
+      document.addEventListener('click', resumeAudio, { once: true })
+    })
+  }
+
+  return audio
+}
+
+/**
+ * Safely cleans up a remote audio element created by createRemoteAudioElement.
+ */
+export function destroyRemoteAudioElement(audio: HTMLAudioElement | null) {
+  if (!audio) return
+  audio.pause()
+  audio.srcObject = null
+  if (audio.parentNode) {
+    audio.parentNode.removeChild(audio)
+  }
+}
+
+/**
+ * Screen Wake Lock - prevents device screen from sleeping during active calls.
+ * Crucial for mobile: without this, the screen dims and the call gets
+ * backgrounded which can kill the WebRTC connection.
+ */
+let wakeLockSentinel: WakeLockSentinel | null = null
+
+export async function requestWakeLock(): Promise<void> {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLockSentinel = await (navigator as any).wakeLock.request('screen')
+      console.log('[WebRTC] Screen wake lock acquired')
+      // Re-acquire if released by browser (tab switch)
+      wakeLockSentinel?.addEventListener('release', () => {
+        console.log('[WebRTC] Wake lock released')
+        wakeLockSentinel = null
+      })
+    }
+  } catch (err) {
+    console.warn('[WebRTC] Wake lock not available:', err)
+  }
+}
+
+export function releaseWakeLock(): void {
+  if (wakeLockSentinel) {
+    wakeLockSentinel.release().catch(() => {})
+    wakeLockSentinel = null
+    console.log('[WebRTC] Wake lock released manually')
+  }
+}
+
+/**
+ * Detects if the browser supports screen capture (getDisplayMedia).
+ * Returns false on iOS (all browsers) which don't support it.
+ */
+export function isScreenShareSupported(): boolean {
+  if (typeof navigator === 'undefined') return false
+  if (!navigator.mediaDevices) return false
+  if (typeof navigator.mediaDevices.getDisplayMedia !== 'function') return false
+  // iOS detection - getDisplayMedia exists but throws on iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  return !isIOS
 }

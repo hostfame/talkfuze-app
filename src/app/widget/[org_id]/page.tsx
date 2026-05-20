@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile } from "@/actions/chat"
 import { logBrowserCall } from "@/actions/calls"
 import { supabase } from "@/lib/supabase"
-import { createPeerConnection } from "@/lib/webrtc"
+import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, isScreenShareSupported } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
 import { playUISound, playAlertLoop, stopAlertLoop } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -575,7 +575,7 @@ export default function WidgetPage() {
       
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       } catch (err: any) {
         setCallStatus('idle')
         if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
@@ -613,13 +613,12 @@ export default function WidgetPage() {
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
+      // Request wake lock to prevent screen sleep during call
+      requestWakeLock();
+
       pc.ontrack = (event) => {
-        const audio = document.createElement('audio');
-        audio.autoplay = true;
-        audio.srcObject = event.streams[0];
-        // Must attach to DOM for Safari/Chrome to play WebRTC audio streams reliably
-        document.body.appendChild(audio);
-        audio.play().catch(e => console.error("Customer Audio Play Error:", e));
+        // Use mobile-safe audio element with playsinline + autoplay fallback
+        const audio = createRemoteAudioElement(event.streams[0]);
         voiceAudioRef.current = audio;
       };
 
@@ -685,13 +684,10 @@ export default function WidgetPage() {
       voiceConnectionRef.current.close()
       voiceConnectionRef.current = null
     }
-    if (voiceAudioRef.current) {
-      voiceAudioRef.current.pause()
-      if (voiceAudioRef.current.parentNode) {
-        voiceAudioRef.current.parentNode.removeChild(voiceAudioRef.current)
-      }
-      voiceAudioRef.current = null
-    }
+    // Clean up audio element and release wake lock
+    destroyRemoteAudioElement(voiceAudioRef.current);
+    voiceAudioRef.current = null;
+    releaseWakeLock();
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current)
       callTimerRef.current = null
@@ -748,7 +744,7 @@ export default function WidgetPage() {
       setCallStatus('active')
       incomingAgentCallRef.current = null;
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       voiceStreamRef.current = stream;
 
       const pc = createPeerConnection({
@@ -762,12 +758,11 @@ export default function WidgetPage() {
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
+      // Request wake lock for active call
+      requestWakeLock();
+
       pc.ontrack = (event) => {
-        const audio = document.createElement('audio');
-        audio.autoplay = true;
-        audio.srcObject = event.streams[0];
-        document.body.appendChild(audio);
-        audio.play().catch(e => console.error("Visitor Audio Play Error:", e));
+        const audio = createRemoteAudioElement(event.streams[0]);
         voiceAudioRef.current = audio;
       };
 

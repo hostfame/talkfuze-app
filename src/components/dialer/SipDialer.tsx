@@ -308,9 +308,11 @@ export default function SipDialer() {
     channel.postMessage('dialer_claim_active')
     setIsTabConflict(false)
 
-    // Initialize SIP.js SimpleUser
+    // Initialize SIP.js SimpleUser with per-agent credentials
     const server = 'wss://sip.talkfuze.com/ws'
-    const aor = 'sip:talkfuze_agent@sip.talkfuze.com'
+    const sipExtension = currentUser?.sip_extension || 'talkfuze_agent'
+    const sipPassword = currentUser?.sip_password || 'talkfuze_secure_pass_123'
+    const aor = `sip:${sipExtension}@sip.talkfuze.com`
     
     const simpleUser = new Web.SimpleUser(server, {
       aor,
@@ -320,8 +322,8 @@ export default function SipDialer() {
         }
       },
       userAgentOptions: {
-        authorizationPassword: "talkfuze_secure_pass_123",
-        authorizationUsername: "talkfuze_agent",
+        authorizationPassword: sipPassword,
+        authorizationUsername: sipExtension,
         displayName: currentUser?.name || "TalkFuze Agent"
       }
     })

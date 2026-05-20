@@ -44,6 +44,8 @@ export interface Database {
           role: string
           avatar_url: string | null
           status: string
+          sip_extension: string | null
+          sip_password: string | null
           created_at: string
         }
         Insert: {
@@ -54,6 +56,8 @@ export interface Database {
           role?: string
           avatar_url?: string | null
           status?: string
+          sip_extension?: string | null
+          sip_password?: string | null
           created_at?: string
         }
         Update: {
@@ -64,6 +68,8 @@ export interface Database {
           role?: string
           avatar_url?: string | null
           status?: string
+          sip_extension?: string | null
+          sip_password?: string | null
           created_at?: string
         }
       }
