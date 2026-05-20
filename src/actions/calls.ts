@@ -58,3 +58,36 @@ export async function getCallLogs(orgId: string) {
     return []
   }
 }
+
+export async function logBrowserCall(params: {
+  orgId: string
+  direction: 'browser_inbound' | 'browser_outbound'
+  durationSeconds: number
+  status: 'ANSWERED' | 'NO ANSWER' | 'MISSED'
+  conversationId?: string
+  agentName?: string
+  contactName?: string
+}) {
+  try {
+    const { error } = await supabaseAdmin.from('call_logs').insert({
+      org_id: params.orgId,
+      direction: params.direction,
+      from_number: 'Browser',
+      to_number: params.contactName || 'Web Visitor',
+      duration_seconds: params.durationSeconds,
+      status: params.status,
+      recording_url: null,
+      agent_name: params.agentName || null,
+      call_type: 'browser',
+      conversation_id: params.conversationId || null
+    })
+    if (error) {
+      console.error('Failed to log browser call:', error)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err: any) {
+    console.error('logBrowserCall exception:', err)
+    return { success: false, error: err.message }
+  }
+}

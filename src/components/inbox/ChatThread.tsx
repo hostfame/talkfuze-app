@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
+import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName } from "@/actions/contacts"
 import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
@@ -558,6 +559,9 @@ export default function ChatThread({
     stopRingtone()
     setIsRingtoneMuted(false)
     setCanHangUpVoice(true)
+
+    const finalDuration = callDuration;
+
     if (voiceStreamRef.current) {
       voiceStreamRef.current.getTracks().forEach(t => t.stop())
       voiceStreamRef.current = null
@@ -583,6 +587,19 @@ export default function ChatThread({
         type: 'broadcast',
         event: 'voice_call_ended'
       })
+    }
+
+    // Log browser call to call_logs table
+    if (conversationId && orgId) {
+      logBrowserCall({
+        orgId,
+        direction: incomingCall ? 'browser_inbound' : 'browser_outbound',
+        durationSeconds: finalDuration,
+        status: finalDuration > 0 ? 'ANSWERED' : 'NO ANSWER',
+        conversationId,
+        agentName: currentUser?.name || undefined,
+        contactName: contactName || undefined
+      }).catch(err => console.error('Failed to log browser call:', err))
     }
 
     setCallStatus('idle')

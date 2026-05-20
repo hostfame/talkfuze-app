@@ -1,9 +1,10 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile } from "@/actions/chat"
+import { logBrowserCall } from "@/actions/calls"
 import { supabase } from "@/lib/supabase"
 import { createPeerConnection } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
@@ -644,6 +645,16 @@ export default function WidgetPage() {
       } else {
         sendWidgetMessage(org_id, deviceId, `Missed voice call`, 'system', {}, activeConversationId);
       }
+
+      // Log browser call to call_logs table
+      logBrowserCall({
+        orgId: org_id,
+        direction: 'browser_inbound',
+        durationSeconds: duration,
+        status: duration > 0 ? 'ANSWERED' : 'MISSED',
+        conversationId: activeConversationId,
+        contactName: 'Web Visitor'
+      }).catch(err => console.error('Failed to log browser call:', err))
     }
     
     setCallStatus('idle')
@@ -3015,38 +3026,60 @@ export default function WidgetPage() {
 
       {/* Co-Browsing Screen Share Request Alert */}
       {showCoBrowseRequest && (
-        <div className="absolute top-4 left-4 right-4 z-[100] flex items-start justify-center animate-in slide-in-from-top-4 duration-300">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-blue-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 w-full text-center flex flex-col items-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-[#0070f3]"></div>
-            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/50 text-[#0070f3] rounded-full flex items-center justify-center mb-2 shadow-sm animate-pulse shrink-0">
-              <Video size={20} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">Live Co-Browsing View</h3>
-            <p className="text-[12.5px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed px-1">
-              Our support agent wants to visually guide you. Accept to securely share your screen.
-            </p>
-            <div className="flex gap-2 w-full">
-              <button 
-                onClick={handleDeclineCoBrowse}
-                className="flex-1 py-3.5 text-[14px] flex items-center justify-center font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all cursor-pointer"
-              >
-                Decline
-              </button>
-              <button 
-                onClick={handleAcceptCoBrowse}
-                className="flex-1 py-3.5 text-[14px] flex items-center justify-center font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
-              >
-                Share Screen
-              </button>
+        <>
+          {/* Glassmorphic backdrop overlay */}
+          <div className="absolute inset-0 z-[99] bg-black/20 backdrop-blur-[2px] animate-in fade-in duration-200" />
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center p-5 animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-700/50 shadow-[0_20px_60px_rgb(0,0,0,0.15)] p-5 w-full max-w-[300px] text-center flex flex-col items-center relative overflow-hidden">
+              {/* Animated gradient top bar */}
+              <div className="absolute top-0 left-0 right-0 h-1">
+                <div className="h-full bg-gradient-to-r from-[#0070f3] via-blue-400 to-[#0070f3] bg-[length:200%_100%]" style={{ animation: 'shimmer 2s linear infinite' }} />
+              </div>
+
+              {/* Animated icon with concentric rings */}
+              <div className="relative w-16 h-16 flex items-center justify-center mt-2 mb-3">
+                <div className="absolute inset-0 rounded-full border-2 border-[#0070f3]/15" style={{ animation: 'ping 2.5s cubic-bezier(0,0,0.2,1) infinite' }} />
+                <div className="absolute inset-2 rounded-full border-2 border-[#0070f3]/25" style={{ animation: 'ping 2.5s cubic-bezier(0,0,0.2,1) infinite', animationDelay: '0.4s' }} />
+                <div className="w-10 h-10 bg-gradient-to-br from-[#0070f3] to-[#0050c8] rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <Eye size={20} strokeWidth={2} className="text-white" />
+                </div>
+              </div>
+
+              <h3 className="text-[15px] font-bold text-slate-900 dark:text-white mb-1">Screen Share Request</h3>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-1.5 leading-relaxed px-2">
+                Our agent would like to view your screen to help guide you.
+              </p>
+
+              {/* Trust badge */}
+              <div className="flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40">
+                <Shield size={11} className="text-emerald-500" />
+                <span className="text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">Secure, encrypted session</span>
+              </div>
+
+              <div className="flex gap-2.5 w-full">
+                <button 
+                  onClick={handleDeclineCoBrowse}
+                  className="flex-1 py-3 text-[13.5px] flex items-center justify-center font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all active:scale-[0.97] cursor-pointer"
+                >
+                  Decline
+                </button>
+                <button 
+                  onClick={handleAcceptCoBrowse}
+                  className="flex-1 py-3 text-[13.5px] flex items-center justify-center gap-1.5 font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30 transition-all active:scale-[0.97] cursor-pointer"
+                >
+                  <Video size={15} strokeWidth={2.2} />
+                  Share
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Co-Browsing Active Float Indicator */}
       {isCoBrowsingActive && (
         <div 
-          className="absolute left-4 right-4 z-40 bg-[#E5F1FF]/95 dark:bg-blue-950/90 backdrop-blur-md border border-blue-200 dark:border-blue-800/60 rounded-xl px-4 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-bottom-2 duration-300 cursor-move touch-none select-none"
+          className="absolute left-3 right-3 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-slate-200/80 dark:border-slate-700/60 rounded-2xl px-4 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.10)] animate-in slide-in-from-bottom-2 duration-300 cursor-move touch-none select-none"
           style={{ bottom: `${Math.max(10, 80 - bannerPosition.y)}px` }}
           onPointerDown={handleBannerPointerDown}
           onPointerMove={handleBannerPointerMove}
@@ -3054,15 +3087,20 @@ export default function WidgetPage() {
           onPointerCancel={handleBannerPointerUp}
         >
           <div className="flex items-center gap-2.5 pointer-events-none">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping animate-pulse"></div>
+            <div className="relative flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <div className="absolute w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            </div>
             <div className="flex flex-col">
-              <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200">Screen sharing active</span>
-              <span className="text-[10px] text-[#0070f3] dark:text-blue-400 font-medium">Drag to move • Agent is viewing</span>
+              <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200">Screen sharing active</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+                <Shield size={8} className="text-emerald-500" /> Secure session
+              </span>
             </div>
           </div>
           <button 
             onClick={handleStopCoBrowse}
-            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-2 rounded-lg shadow-sm transition-all uppercase tracking-wide shrink-0 cursor-pointer"
+            className="bg-red-500 hover:bg-red-600 active:scale-[0.95] text-white font-semibold text-[11px] px-3.5 py-2 rounded-xl shadow-sm transition-all uppercase tracking-wide shrink-0 cursor-pointer"
           >
             Stop
           </button>
@@ -3071,23 +3109,36 @@ export default function WidgetPage() {
 
       {/* Incoming Call from Agent - Accept/Decline */}
       {callStatus === 'ringing' && (
-        <div className="absolute top-[72px] left-3 right-3 z-[60] bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 text-center animate-in slide-in-from-top-4 duration-300">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-[#0070f3] rounded-t-2xl" />
-          <div className="w-10 h-10 mx-auto bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 rounded-full flex items-center justify-center mb-2 shadow-sm animate-pulse">
-            <Phone size={20} strokeWidth={2.5} />
+        <>
+          {/* Backdrop overlay */}
+          <div className="absolute inset-0 z-[59] bg-black/15 backdrop-blur-[1px] animate-in fade-in duration-200" />
+          <div className="absolute top-0 left-0 right-0 bottom-0 z-[60] flex items-center justify-center p-5 animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-700/50 shadow-[0_20px_60px_rgb(0,0,0,0.15)] p-5 w-full max-w-[300px] text-center flex flex-col items-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-t-2xl" />
+
+              {/* Animated phone rings */}
+              <div className="relative w-16 h-16 flex items-center justify-center mt-2 mb-3">
+                <div className="absolute inset-0 rounded-full border-2 border-emerald-400/15" style={{ animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite' }} />
+                <div className="absolute inset-2 rounded-full border-2 border-emerald-400/25" style={{ animation: 'ping 2s cubic-bezier(0,0,0.2,1) infinite', animationDelay: '0.3s' }} />
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                  <Phone size={19} strokeWidth={2.2} className="text-white" />
+                </div>
+              </div>
+
+              <h3 className="text-[15px] font-bold text-slate-900 dark:text-white mb-0.5">Incoming Voice Call</h3>
+              <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-4">Support agent wants to talk with you</p>
+              <div className="flex gap-2.5 w-full">
+                <button onClick={handleDeclineAgentCall} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[13px] rounded-xl transition-all active:scale-[0.97] cursor-pointer">
+                  Decline
+                </button>
+                <button onClick={handleAnswerAgentCall} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-[13px] rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 cursor-pointer">
+                  <Phone size={14} strokeWidth={2.5} />
+                  Accept
+                </button>
+              </div>
+            </div>
           </div>
-          <h3 className="text-[14px] font-bold text-slate-900 dark:text-white mb-0.5">Incoming Voice Call</h3>
-          <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-3">Support agent wants to talk with you</p>
-          <div className="flex gap-2">
-            <button onClick={handleDeclineAgentCall} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-[13px] rounded-xl transition-all active:scale-95">
-              Decline
-            </button>
-            <button onClick={handleAnswerAgentCall} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-[13px] rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-sm">
-              <Phone size={14} strokeWidth={2.5} />
-              Accept
-            </button>
-          </div>
-        </div>
+        </>
       )}
 
       {/* Compact Active Call Banner for Visitor */}

@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Shield, Clock, Eye } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -89,10 +89,35 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [coBrowseStream, setCoBrowseStream] = useState<MediaStream | null>(null)
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [sessionDuration, setSessionDuration] = useState(0)
+  const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const bufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
   const coBrowseChannelRef = useRef<any>(null)
+
+  // Session timer for active co-browse
+  useEffect(() => {
+    if (coBrowseStatus === 'active') {
+      setSessionDuration(0)
+      sessionTimerRef.current = setInterval(() => setSessionDuration(d => d + 1), 1000)
+    } else {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current)
+        sessionTimerRef.current = null
+      }
+      setSessionDuration(0)
+    }
+    return () => {
+      if (sessionTimerRef.current) clearInterval(sessionTimerRef.current)
+    }
+  }, [coBrowseStatus])
+
+  const formatDuration = (sec: number) => {
+    const m = Math.floor(sec / 60)
+    const s = sec % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
 
   useEffect(() => {
     if (!conversation?.id) return
@@ -1006,46 +1031,70 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           </div>
         </div>
       )}      {activeTab === 'cobrowse' && (
-        <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-900/50 p-4 space-y-4 overflow-y-auto">
+        <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-4 space-y-4 overflow-y-auto">
 
           {(isWhatsApp || isMessenger || isInstagram) ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 space-y-4">
-              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-full flex items-center justify-center">
-                <Monitor size={22} className="opacity-60" />
+            <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-sm space-y-5">
+              <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 text-slate-400 dark:text-slate-500 rounded-2xl flex items-center justify-center shadow-inner">
+                <Monitor size={26} strokeWidth={1.8} />
               </div>
-              <div className="text-center max-w-xs">
-                <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Browsing Not Available</p>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                  Browsing is only available for live website chat widget conversations.
+              <div className="text-center max-w-[220px]">
+                <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Remote Unavailable</p>
+                <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-2 leading-relaxed">
+                  Remote viewing works with website widget conversations only.
                 </p>
               </div>
             </div>
           ) : (
             <>
               {coBrowseStatus === 'idle' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 border border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50 space-y-4">
-                  <p className="text-[13px] text-slate-500 dark:text-slate-400 text-center">
-                    Browsing is inactive. Send a request to initiate screen sharing.
-                  </p>
+                <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-sm space-y-5">
+                  {/* Premium gradient icon */}
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#0070f3] to-[#0050c8] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                      <Eye size={26} strokeWidth={1.8} className="text-white" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 border-2 border-white dark:border-slate-800 rounded-full flex items-center justify-center shadow-sm">
+                      <Shield size={12} className="text-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="text-center max-w-[220px]">
+                    <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Remote View</p>
+                    <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+                      View the visitor's screen in real-time to guide them visually.
+                    </p>
+                  </div>
                   <button 
                     onClick={handleRequestCoBrowse}
-                    className="px-4 py-2.5 bg-[#0070f3] hover:bg-blue-700 active:scale-95 text-white font-semibold text-[13px] rounded-lg shadow-sm transition-all cursor-pointer"
+                    className="px-5 py-2.5 bg-[#0070f3] hover:bg-blue-600 active:scale-[0.97] text-white font-semibold text-[13px] rounded-xl shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2"
                   >
+                    <Monitor size={15} strokeWidth={2.2} />
                     Request Screen Share
                   </button>
+                  <p className="text-[10.5px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <Shield size={10} /> End-to-end encrypted session
+                  </p>
                 </div>
               )}
 
               {coBrowseStatus === 'requested' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 space-y-4">
-                  <Loader2 className="animate-spin text-[#0070f3]" size={28} />
+                <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-sm space-y-5">
+                  {/* Animated concentric rings */}
+                  <div className="relative w-20 h-20 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-2 border-[#0070f3]/20 animate-ping" style={{ animationDuration: '2s' }} />
+                    <div className="absolute inset-2 rounded-full border-2 border-[#0070f3]/30 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+                    <div className="absolute inset-4 rounded-full border-2 border-[#0070f3]/40 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.6s' }} />
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#0070f3] to-[#0050c8] rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                      <Monitor size={18} className="text-white" />
+                    </div>
+                  </div>
                   <div className="text-center">
-                    <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Waiting for user approval</p>
-                    <p className="text-[11.5px] text-slate-400 mt-0.5">A prompt has been sent to the visitor&apos;s screen.</p>
+                    <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Waiting for Approval</p>
+                    <p className="text-[11.5px] text-slate-400 dark:text-slate-500 mt-1">A prompt is showing on the visitor's screen</p>
                   </div>
                   <button 
                     onClick={handleEndCoBrowseSession}
-                    className="px-4 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                    className="px-4 py-2 text-[12px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
                   >
                     Cancel Request
                   </button>
@@ -1053,28 +1102,46 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               )}
 
               {coBrowseStatus === 'declined' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 border border-red-200/50 dark:border-red-900/40 rounded-xl bg-red-50/50 dark:bg-red-950/20 space-y-3">
-                  <X className="text-red-500" size={24} />
-                  <p className="text-[13px] font-semibold text-red-700 dark:text-red-400 text-center">Request Declined</p>
-                  <p className="text-[11.5px] text-red-500/80 text-center">The visitor declined the browsing request.</p>
+                <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 space-y-4">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                    <X className="text-red-500" size={22} strokeWidth={2.5} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[14px] font-semibold text-red-700 dark:text-red-400">Request Declined</p>
+                    <p className="text-[11.5px] text-red-400 dark:text-red-500/70 mt-1">The visitor declined screen sharing</p>
+                  </div>
                 </div>
               )}
 
               {coBrowseStatus === 'active' && (
-                <div className="flex-1 flex flex-col min-h-0 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-900 overflow-hidden relative shadow-lg">
+                <div className="flex-1 flex flex-col min-h-0 rounded-2xl bg-slate-950 overflow-hidden relative shadow-xl border border-slate-800/50">
+                  {/* Session info bar at top */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-900/95 border-b border-slate-800/60 z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <div className="absolute w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                      <Clock size={11} />
+                      {formatDuration(sessionDuration)}
+                    </div>
+                  </div>
+
+                  {/* Video stream */}
                   <video 
                     ref={videoRef}
                     autoPlay 
                     playsInline 
                     muted
-                    className="w-full h-full object-contain bg-slate-950 flex-1 min-h-0"
+                    className="w-full flex-1 min-h-0 object-contain bg-slate-950"
                   />
-                  <div className="absolute bottom-20 left-3 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-800/40 rounded-lg p-2.5 flex items-center justify-between z-10">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
-                      <span className="text-[11.5px] font-bold text-white uppercase tracking-wider">Live</span>
-                    </div>
-                    <div className="flex gap-2">
+
+                  {/* Bottom toolbar */}
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900/95 border-t border-slate-800/60 z-10">
+                    <div className="flex items-center gap-1.5">
                       <button 
                         onClick={() => {
                           if (videoRef.current) {
@@ -1085,45 +1152,49 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                             }
                           }
                         }}
-                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm cursor-pointer"
+                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer" title="Fullscreen"
                       >
-                        Fullscreen
-                      </button>
-                      <button 
-                        onClick={handleEndCoBrowseSession}
-                        className="bg-red-500 hover:bg-red-600 text-white font-bold text-[10.5px] px-3 py-1.5 rounded-md transition-all shadow-sm cursor-pointer"
-                      >
-                        End Session
+                        <Maximize2 size={15} />
                       </button>
                     </div>
+                    <button 
+                      onClick={handleEndCoBrowseSession}
+                      className="bg-red-500/90 hover:bg-red-500 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-1.5 rounded-lg transition-all shadow-sm cursor-pointer"
+                    >
+                      End Session
+                    </button>
                   </div>
                 </div>
               )}
 
               {coBrowseStatus === 'connection_lost' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 border border-amber-200/60 dark:border-amber-900/40 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 space-y-4">
-                  <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-full flex items-center justify-center">
-                    <WifiOff size={22} />
+                <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-amber-50/50 dark:bg-amber-950/15 border border-amber-200/60 dark:border-amber-800/30 space-y-5">
+                  <div className="relative">
+                    <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 rounded-2xl flex items-center justify-center">
+                      <WifiOff size={24} className="text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                      <X size={10} className="text-white" strokeWidth={3} />
+                    </div>
                   </div>
                   <div className="text-center">
-                    <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-300">Connection Lost</p>
-                    <p className="text-[11.5px] text-amber-600/80 dark:text-amber-400/70 mt-1 leading-relaxed">The screen share stream disconnected. Ask the visitor to re-accept or send a new request.</p>
+                    <p className="text-[14px] font-semibold text-amber-800 dark:text-amber-300">Connection Lost</p>
+                    <p className="text-[11.5px] text-amber-600/70 dark:text-amber-400/60 mt-1.5 leading-relaxed max-w-[200px]">Stream disconnected. Reconnect to resume viewing.</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full">
                     <button 
                       onClick={() => {
                         handleEndCoBrowseSession();
-                        // Small delay then re-request
                         setTimeout(() => handleRequestCoBrowse(), 300);
                       }}
-                      className="px-4 py-2.5 bg-[#0070f3] hover:bg-blue-700 active:scale-95 text-white font-semibold text-[12px] rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                      className="flex-1 py-2.5 bg-[#0070f3] hover:bg-blue-600 active:scale-[0.97] text-white font-semibold text-[12px] rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <RefreshCw size={13} />
                       Reconnect
                     </button>
                     <button 
                       onClick={handleEndCoBrowseSession}
-                      className="px-4 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                      className="px-4 py-2.5 text-[12px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
                     >
                       Close
                     </button>
