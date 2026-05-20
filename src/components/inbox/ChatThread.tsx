@@ -789,7 +789,7 @@ export default function ChatThread({
       })
       
       await replyToConversation(orgId, conversationId, message, false)
-      removeOptimisticMessage(conversationId, tempId)
+      markConfirmed(conversationId, tempId)
       
       // Auto-archive after sending CSAT
       await toggleConversationFlag(conversationId, 'is_archived', true)
@@ -950,6 +950,7 @@ export default function ChatThread({
     addOptimisticMessage,
     removeOptimisticMessage,
     markFailed,
+    markConfirmed,
     confirmOptimisticMessage
   } = useMessageStore()
   const optimisticMessages = conversationId ? (optimisticByConv[conversationId] || []) : []
@@ -1071,8 +1072,42 @@ export default function ChatThread({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, conversationId])
 
-  // Merge: real messages + any still-pending/failed optimistic ones
-  const allMessages = [...messages, ...(optimisticMessages as unknown as AppMessage[])]
+  // Merge: real messages + any still-pending/failed/confirmed optimistic ones
+  // Confirmed optimistic messages show as 'delivered' until real-time replaces them (no flicker)
+  const allMessages = [
+    ...messages,
+    ...(optimisticMessages
+      .filter(om => {
+        // Filter out confirmed optimistic messages that already have a real counterpart
+        if (om.status === 'confirmed') {
+          return !messages.some(m => m.content === om.content && m.sender_type === om.sender_type);
+        }
+        return true;
+      })
+      .map(om => ({
+        ...om,
+        // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
+        status: om.status === 'confirmed' ? 'sent' : om.status
+      })) as unknown as AppMessage[]
+    )
+  ]
+
+  // Safety net: auto-clean any confirmed optimistic messages older than 10s
+  // This handles edge cases where real-time subscription misses the INSERT
+  useEffect(() => {
+    if (!conversationId) return;
+    const staleThreshold = 10000; // 10s
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const currentOptimistic = useMessageStore.getState().optimisticMessages[conversationId] || [];
+      currentOptimistic.forEach(om => {
+        if (om.status === 'confirmed' && om._confirmedAt && (now - om._confirmedAt > staleThreshold)) {
+          removeOptimisticMessage(conversationId, om.id);
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [conversationId, removeOptimisticMessage])
 
   const prevMsgLength = useRef(messages.length)
 
@@ -1239,7 +1274,7 @@ export default function ChatThread({
         })
         try {
           await replyToConversation(orgId, conversationId, msgText, isInternal, 'text', replyMeta ? { reply_to: replyMeta } : undefined)
-          removeOptimisticMessage(conversationId, tempId)
+          markConfirmed(conversationId, tempId)
         } catch (e: unknown) {
           console.error(e)
           markFailed(conversationId, tempId)
@@ -1304,7 +1339,7 @@ export default function ChatThread({
               filename: meta.name,
               ...(replyMeta ? { reply_to: replyMeta } : {})
             })
-            removeOptimisticMessage(conversationId, tempId)
+            markConfirmed(conversationId, tempId)
           } catch (error) {
             console.error(error)
             markFailed(conversationId, tempId)
@@ -1407,7 +1442,7 @@ export default function ChatThread({
           mimetype: meta.type,
           filename: meta.name
         });
-        removeOptimisticMessage(conversationId, tempId)
+        removeOptimisticMessage(conversationId, tempId)  // Voice messages can remove immediately since they have unique content
       } catch (err: unknown) {
         console.error("Upload failed:", err);
         markFailed(conversationId, tempId)

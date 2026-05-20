@@ -9,8 +9,9 @@ export type OptimisticMessage = {
   content_type?: string | null;
   metadata?: Record<string, unknown> | null;
   is_internal?: boolean | null;
-  status: 'sending' | 'failed';
+  status: 'sending' | 'failed' | 'confirmed';
   created_at: string;
+  _confirmedAt?: number; // timestamp when confirmed, for stale cleanup
   [key: string]: unknown;
 }
 
@@ -18,9 +19,11 @@ type MessageStore = {
   optimisticMessages: Record<string, OptimisticMessage[]>
   addOptimisticMessage: (conversationId: string, message: OptimisticMessage) => void
   markFailed: (conversationId: string, id: string) => void
+  markConfirmed: (conversationId: string, id: string) => void
   removeOptimisticMessage: (conversationId: string, id: string) => void
   clearOptimisticMessages: (conversationId: string) => void
   confirmOptimisticMessage: (conversationId: string, content: string) => void
+  drainConfirmedForContent: (conversationId: string, content: string) => void
 }
 
 export const useMessageStore = create<MessageStore>((set) => ({
@@ -37,7 +40,17 @@ export const useMessageStore = create<MessageStore>((set) => ({
     optimisticMessages: {
       ...state.optimisticMessages,
       [conversationId]: (state.optimisticMessages[conversationId] || []).map(m =>
-        m.id === id ? { ...m, status: 'failed' } : m
+        m.id === id ? { ...m, status: 'failed' as const } : m
+      )
+    }
+  })),
+
+  // Mark as confirmed (API succeeded) but KEEP in list until real-time INSERT drains it
+  markConfirmed: (conversationId, id) => set((state) => ({
+    optimisticMessages: {
+      ...state.optimisticMessages,
+      [conversationId]: (state.optimisticMessages[conversationId] || []).map(m =>
+        m.id === id ? { ...m, status: 'confirmed' as const, _confirmedAt: Date.now() } : m
       )
     }
   })),
@@ -56,10 +69,28 @@ export const useMessageStore = create<MessageStore>((set) => ({
     }
   })),
 
-  // When a real message arrives, remove the first pending optimistic with matching content
+  // When a real message arrives via real-time, remove the first confirmed optimistic with matching content
   confirmOptimisticMessage: (conversationId, content) => set((state) => {
     const msgs = state.optimisticMessages[conversationId] || [];
-    const idx = msgs.findIndex(m => m.status === 'sending' && m.content === content);
+    // First try to drain a 'confirmed' one (preferred - API already succeeded)
+    let idx = msgs.findIndex(m => m.status === 'confirmed' && m.content === content);
+    // Fallback: drain a 'sending' one (real-time arrived before API response)
+    if (idx === -1) idx = msgs.findIndex(m => m.status === 'sending' && m.content === content);
+    if (idx === -1) return state;
+    const updated = [...msgs];
+    updated.splice(idx, 1);
+    return {
+      optimisticMessages: {
+        ...state.optimisticMessages,
+        [conversationId]: updated
+      }
+    };
+  }),
+
+  // Drain a confirmed optimistic by content match (called when real-time INSERT arrives)
+  drainConfirmedForContent: (conversationId, content) => set((state) => {
+    const msgs = state.optimisticMessages[conversationId] || [];
+    const idx = msgs.findIndex(m => (m.status === 'confirmed' || m.status === 'sending') && m.content === content);
     if (idx === -1) return state;
     const updated = [...msgs];
     updated.splice(idx, 1);
