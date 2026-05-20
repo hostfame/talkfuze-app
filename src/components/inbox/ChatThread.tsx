@@ -1796,7 +1796,7 @@ export default function ChatThread({
                     />
                   ) : (
                     <img 
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(safeMeta.participant_name || contactName)}&background=random`} 
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(safeMeta.participant_name || contactName)}&background=random&color=fff&length=1`} 
                       alt={safeMeta.participant_name || contactName}
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800"
                     />
@@ -1923,7 +1923,7 @@ export default function ChatThread({
               {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
                 <img src={contact.avatar_url} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
               ) : (
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
               )}
               <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
                 <div className="flex gap-1.5 items-center h-4">

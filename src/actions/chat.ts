@@ -53,7 +53,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
       
     const visitorNumber = (count || 0) + 1;
     const visitorName = `Website Visitor #${visitorNumber}`;
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(visitorName)}&background=random`;
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(visitorName)}&background=random&color=fff&length=1`;
 
     const { data: newContact, error: contactErr } = await supabaseAdmin
       .from("contacts")
