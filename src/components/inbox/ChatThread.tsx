@@ -35,7 +35,7 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) => {
+const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'customer' | 'internal' }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -73,8 +73,33 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Determine colors and layout configurations based on bubble type
+  const isAgent = type === 'agent';
+  const isInternal = type === 'internal';
+  const isCustomer = type === 'customer';
+
+  let containerBg = 'bg-slate-50 dark:bg-slate-800/60 border-slate-150 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-bl-sm';
+  let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2]';
+  let barBg = 'bg-slate-200 dark:bg-slate-700';
+  let barActive = 'bg-[#0070f3]';
+  let timeStyle = 'text-slate-500 dark:text-slate-400';
+
+  if (isAgent) {
+    containerBg = 'bg-[#0070f3] border-blue-600/20 text-white rounded-2xl rounded-br-sm';
+    buttonStyle = 'bg-white text-[#0070f3] hover:bg-white/95';
+    barBg = 'bg-white/30';
+    barActive = 'bg-white';
+    timeStyle = 'text-white/80';
+  } else if (isInternal) {
+    containerBg = 'bg-amber-100 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-100 rounded-2xl rounded-br-sm';
+    buttonStyle = 'bg-amber-600 text-white hover:bg-amber-700';
+    barBg = 'bg-amber-200 dark:bg-amber-800/60';
+    barActive = 'bg-amber-700 dark:bg-amber-400';
+    timeStyle = 'text-amber-800/80 dark:text-amber-300/80';
+  }
+
   return (
-    <div className={`flex items-center gap-3 p-1.5 rounded-full min-w-[220px] ${isDark ? '' : ''}`}>
+    <div className={`flex items-center gap-3 py-2 px-3 shadow-sm border transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
       <audio 
         ref={audioRef} 
         src={url} 
@@ -86,7 +111,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
       
       <button 
         onClick={togglePlay} 
-        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95 ${isDark ? 'bg-white text-[#64748b] shadow-sm' : 'bg-blue-600 text-white shadow-sm'}`}
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${buttonStyle}`}
       >
         {isPlaying ? (
            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
@@ -95,10 +120,10 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
         )}
       </button>
 
-      <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-2">
+      <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
         <div className="flex items-center gap-2 w-full">
           <div 
-            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${isDark ? 'bg-white/30' : 'bg-blue-600/20'}`}
+            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${barBg}`}
             onClick={(e) => {
                if(audioRef.current && duration) {
                  const rect = e.currentTarget.getBoundingClientRect();
@@ -109,13 +134,13 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
             }}
           >
             <div 
-              className={`h-full transition-all duration-100 ease-linear ${isDark ? 'bg-white' : 'bg-blue-600'}`} 
+              className={`h-full transition-all duration-100 ease-linear ${barActive}`} 
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
         
-        <div className={`text-[10px] font-semibold tracking-wide flex justify-between ${isDark ? 'text-white/80' : 'text-slate-500'}`}>
+        <div className={`text-[10px] font-bold tracking-wide flex justify-between ${timeStyle}`}>
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -1779,7 +1804,7 @@ export default function ChatThread({
                     </a>
                   ) : msg.content_type === 'audio' && (mediaUrl) ? (
                     <div className="flex flex-col gap-1">
-                      <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={!msg.is_internal} />
+                      <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} />
                       {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                     </div>
                   ) : msg.content_type === 'video' && (mediaUrl) ? (
@@ -1911,7 +1936,7 @@ export default function ChatThread({
                         </a>
                       ) : msg.content_type === 'audio' && (mediaUrl) ? (
                         <div className="flex flex-col gap-1">
-                          <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} isDark={false} />
+                          <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" />
                           {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                         </div>
                       ) : msg.content_type === 'video' && (mediaUrl) ? (
