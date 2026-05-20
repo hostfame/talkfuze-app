@@ -1574,7 +1574,7 @@ export default function WidgetPage() {
             <div className="flex justify-between items-center mt-4 mb-6">
               {/* Left Side: Company Logo */}
               <div className="flex items-center h-[32px]">
-                <img src={settings?.logo_url || "/team/logo.png"} className="h-[28px] w-auto object-contain" alt="Logo" />
+                <img src="/hostnin-white.png" className="h-[28px] w-auto object-contain" alt="Hostnin Logo" />
               </div>
 
               {/* Right Side: Team Avatars Stack */}
