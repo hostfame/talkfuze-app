@@ -8,7 +8,7 @@
 
   const scriptTag = document.currentScript || document.querySelector('script[src*="embed.js"]');
   const orgId = (scriptTag ? scriptTag.getAttribute('data-org-id') : null) || 'ec2f8436-05dc-4621-8a7f-57202f865b8e'; // Fallback to Hostnin
-  const baseUrl = scriptTag ? new URL(scriptTag.src).origin : 'https://www.talkfuze.com';
+  const baseUrl = scriptTag ? new URL(scriptTag.src).origin : 'https://talkfuze-app.vercel.app';
 
   if (!orgId) {
     console.error('TalkFuze: Missing data-org-id attribute on the script tag.');
