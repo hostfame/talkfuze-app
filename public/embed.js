@@ -32,7 +32,7 @@
   // Create Iframe (Hidden initially)
   const iframe = document.createElement('iframe');
   iframe.src = `${baseUrl}/widget/${orgId}`;
-  iframe.allow = 'autoplay; microphone; camera; display-capture';
+  iframe.allow = 'autoplay *; microphone *; camera *; display-capture *';
   iframe.style.cssText = `
     width: 380px;
     height: 600px;
