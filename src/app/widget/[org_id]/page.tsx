@@ -375,9 +375,9 @@ export default function WidgetPage() {
       } catch (err: any) {
         setCallStatus('idle')
         if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
-          setToastError("Microphone access is blocked by your browser. Please click the lock icon in the URL bar to allow it.")
+          setToastError("Microphone blocked. Click the lock icon in the URL bar to allow. On Mac, also check System Settings > Privacy & Security > Microphone.")
         } else {
-          setToastError("Failed to access microphone. Please check your system settings.")
+          setToastError("Failed to access microphone. Please check your system settings or device connection.")
         }
         return
       }
