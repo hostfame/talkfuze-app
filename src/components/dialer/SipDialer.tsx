@@ -153,7 +153,7 @@ export default function SipDialer() {
   const cleanupMediaTracks = (session: any) => {
     if (!session) return;
     try {
-      const pc = session.peerConnection;
+      const pc = session.sessionDescriptionHandler?.peerConnection || session.peerConnection;
       if (pc) {
         pc.getSenders().forEach((sender: any) => {
           if (sender.track) {
@@ -179,7 +179,7 @@ export default function SipDialer() {
     
     // Monitor WebRTC PeerConnection ICE state dynamically
     const monitorWebRTC = () => {
-      const pc = session.peerConnection
+      const pc = session.sessionDescriptionHandler?.peerConnection || session.peerConnection
       if (pc) {
         console.log(`[WebRTC] Initial ICE State: ${pc.iceConnectionState}`)
         setIceState(pc.iceConnectionState)
@@ -187,7 +187,7 @@ export default function SipDialer() {
           console.log(`[WebRTC] ICE Connection State Changed: ${pc.iceConnectionState}`)
           setIceState(pc.iceConnectionState)
         }
-      } else {
+      } else if (session.state !== 'Terminated' && session.state !== 'Terminating') {
         // Retry a bit later as peerConnection is created asynchronously by sip.js
         setTimeout(monitorWebRTC, 200)
       }
@@ -306,16 +306,19 @@ export default function SipDialer() {
     let reconnectTimeout: NodeJS.Timeout | null = null
     let reconnectAttempts = 0
     let isReconnecting = false
+    let isMounted = true
 
     const connectSIP = async () => {
-      if (isTabConflict) return
+      if (isTabConflict || !isMounted) return
       try {
         isReconnecting = false
         setStatus('Connecting...')
         await simpleUser.connect()
+        if (!isMounted) return
         await simpleUser.register()
         reconnectAttempts = 0
       } catch (err) {
+        if (!isMounted) return
         console.error("SIP Connection Error:", err)
         setStatus('Connection Failed')
         triggerBackoffReconnect()
@@ -323,7 +326,7 @@ export default function SipDialer() {
     }
 
     const triggerBackoffReconnect = () => {
-      if (isTabConflict) return
+      if (isTabConflict || !isMounted) return
       if (isReconnecting) return
       isReconnecting = true
       
@@ -333,6 +336,7 @@ export default function SipDialer() {
       
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
       reconnectTimeout = setTimeout(() => {
+        if (!isMounted) return
         isReconnecting = false
         connectSIP()
       }, delay)
@@ -497,6 +501,7 @@ export default function SipDialer() {
     connectSIP()
 
     return () => {
+      isMounted = false
       stopTimer()
       stopSynthesizedRing()
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
