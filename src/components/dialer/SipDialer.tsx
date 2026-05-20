@@ -58,6 +58,10 @@ export default function SipDialer() {
   const [noteSaved, setNoteSaved] = useState(false)
   const [lastCallInfo, setLastCallInfo] = useState<{ created_at: string; duration_seconds: number; direction: string; status: string } | null>(null)
   const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null)
+  const [bannerPos, setBannerPos] = useState<{ x: number; y: number } | null>(null)
+  const isDraggingRef = useRef(false)
+  const dragOffsetRef = useRef({ x: 0, y: 0 })
+  const bannerRef = useRef<HTMLDivElement>(null)
   
   const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -66,6 +70,46 @@ export default function SipDialer() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const ringOscillatorsRef = useRef<OscillatorNode[]>([])
   const ringIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Draggable banner handlers
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    // Don't drag when interacting with buttons/inputs inside
+    const target = e.target as HTMLElement
+    if (target.closest('button') || target.closest('input') || target.closest('textarea') || target.closest('a')) return
+    
+    isDraggingRef.current = true
+    const banner = bannerRef.current
+    if (!banner) return
+    
+    const rect = banner.getBoundingClientRect()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    dragOffsetRef.current = { x: clientX - rect.left, y: clientY - rect.top }
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDraggingRef.current) return
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      const x = Math.max(0, Math.min(clientX - dragOffsetRef.current.x, window.innerWidth - 310))
+      const y = Math.max(0, Math.min(clientY - dragOffsetRef.current.y, window.innerHeight - 100))
+      setBannerPos({ x, y })
+    }
+    const handleUp = () => { isDraggingRef.current = false }
+    
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleMove, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleMove)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [])
 
   const startTimer = () => {
     setCallDuration(0)
@@ -219,6 +263,7 @@ export default function SipDialer() {
         setLastCallInfo(null)
         setMatchedConversationId(null)
         setIsClientExpanded(false)
+        setBannerPos(null)
         setIsOnHold(false)
         setIsMicMuted(false)
         setShowTransferInput(false)
@@ -592,6 +637,7 @@ export default function SipDialer() {
     setLastCallInfo(null)
     setMatchedConversationId(null)
     setIsClientExpanded(false)
+    setBannerPos(null)
     setIsOnHold(false)
     setIsMicMuted(false)
     setShowTransferInput(false)
@@ -645,6 +691,7 @@ export default function SipDialer() {
     setLastCallInfo(null)
     setMatchedConversationId(null)
     setIsClientExpanded(false)
+    setBannerPos(null)
     setIsOnHold(false)
     setIsMicMuted(false)
     setShowTransferInput(false)
@@ -840,12 +887,19 @@ export default function SipDialer() {
       {/* Hidden audio element for WebRTC media stream */}
       <audio ref={remoteAudioRef} autoPlay />
 
-      {/* Premium Floating Call Banner - Vertical Card Layout */}
+      {/* Premium Floating Call Banner - Draggable Vertical Card */}
       {activeCallSession && (
-        <div className="fixed top-4 right-[12px] z-[9999] w-[300px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-3">
+        <div 
+          ref={bannerRef}
+          className={`fixed z-[9999] w-[300px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-2xl overflow-hidden transition-shadow duration-300 ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
+          style={bannerPos ? { left: bannerPos.x, top: bannerPos.y } : { top: 16, right: 12 }}>
           
-          {/* Top Section: Caller Info + Answer/Decline */}
-          <div className="px-3.5 pt-3 pb-2.5">
+          {/* Top Section: Caller Info + Answer/Decline (Drag Handle) */}
+          <div 
+            className="px-3.5 pt-3 pb-2.5 cursor-grab active:cursor-grabbing select-none"
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+          >
             <div className="flex items-start justify-between gap-2">
               {/* Caller Identity */}
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
