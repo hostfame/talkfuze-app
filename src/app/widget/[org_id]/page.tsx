@@ -319,6 +319,7 @@ export default function WidgetPage() {
   const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
   const [isAgentTyping, setIsAgentTyping] = useState(false)
+  const [isAgentRecording, setIsAgentRecording] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -920,6 +921,11 @@ export default function WidgetPage() {
           setIsAgentTyping(payload.payload.is_typing)
         }
       })
+      .on('broadcast', { event: 'recordingStatus' }, (payload) => {
+        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === activeConversationId) {
+          setIsAgentRecording(payload.payload.is_recording)
+        }
+      })
       .subscribe()
       
     const channel = supabase
@@ -956,8 +962,9 @@ export default function WidgetPage() {
             // Play receive sound for incoming messages
             if (newMsg.sender_type !== 'contact') {
                 playUISound('receive');
-                // Immediately clear agent typing state to prevent UI flicker
+                // Immediately clear agent typing/recording state to prevent UI flicker
                 setIsAgentTyping(false);
+                setIsAgentRecording(false);
             }
             
             if (newMsg.sender_type === 'contact') {
@@ -2171,6 +2178,39 @@ export default function WidgetPage() {
                  </div>
               </div>
               )}
+
+              {/* Voice Recording Indicator */}
+              {isAgentRecording && !isAgentTyping && (
+              <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300" id="tf-recording-indicator">
+                 <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
+                 </div>
+                 <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2.5 px-4 shadow-sm flex items-center gap-2.5 min-h-[40px]">
+                    <div className="relative flex items-center justify-center w-5 h-5">
+                      <div className="absolute inset-0 rounded-full bg-red-500/15 animate-ping" style={{ animationDuration: '1.5s' }} />
+                      <svg className="w-3.5 h-3.5 text-red-500 relative z-10" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                      </svg>
+                    </div>
+                    <span className="text-[12.5px] font-medium text-slate-500">Recording a voice</span>
+                    <div className="flex items-end gap-[3px] h-4 ml-0.5">
+                      <span className="w-[3px] rounded-full bg-red-400/70" style={{ animation: 'tf-soundbar 0.8s ease-in-out infinite', height: '40%' }} />
+                      <span className="w-[3px] rounded-full bg-red-400/80" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.15s infinite', height: '70%' }} />
+                      <span className="w-[3px] rounded-full bg-red-400/90" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.3s infinite', height: '100%' }} />
+                      <span className="w-[3px] rounded-full bg-red-400/80" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.45s infinite', height: '55%' }} />
+                      <span className="w-[3px] rounded-full bg-red-400/70" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.6s infinite', height: '35%' }} />
+                    </div>
+                 </div>
+              </div>
+              )}
+              <style>{`
+                @keyframes tf-soundbar {
+                  0%, 100% { transform: scaleY(0.3); }
+                  50% { transform: scaleY(1); }
+                }
+              `}</style>
+              
               <div className="hidden" id="tf-old-typing-indicator">
                  <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-4 px-4 text-[15px] text-slate-800 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>

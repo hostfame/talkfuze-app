@@ -1183,6 +1183,15 @@ export default function ChatThread({
       setIsRecording(true)
       setRecordingDuration(0)
 
+      // Broadcast recording status to visitor widget
+      if (conversationId) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'recordingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_recording: true }
+        });
+      }
+
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1)
       }, 1000)
@@ -1199,6 +1208,15 @@ export default function ChatThread({
       if (timerRef.current) clearInterval(timerRef.current)
       setIsRecording(false)
       setRecordingDuration(0)
+
+      // Clear recording status broadcast
+      if (conversationId) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'recordingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_recording: false }
+        });
+      }
     }
   }
 
