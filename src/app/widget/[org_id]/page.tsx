@@ -485,6 +485,8 @@ export default function WidgetPage() {
           const pc = voiceConnectionRef.current
           if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+            // Now that agent answered, start the ICE connection timeout
+            if ((pc as any).startTimeout) (pc as any).startTimeout();
 
             // Flush buffered candidates
             if (voiceBufferedCandidatesRef.current.length > 0) {
@@ -653,6 +655,15 @@ export default function WidgetPage() {
               });
             }
           }, 1500);
+
+          // Auto-end after 30s if agent doesn't answer
+          setTimeout(() => {
+            if (voiceConnectionRef.current === pc && pc.iceConnectionState === 'new') {
+              console.warn('[Widget] 30s ringing timeout, agent did not answer');
+              handleEndVoiceCall(true);
+              setToastError('No answer. The agent may be unavailable.');
+            }
+          }, 30000);
         }
       });
 
