@@ -613,11 +613,11 @@ export default function WidgetPage() {
     
     // Fetch Settings
     getWidgetSettings(org_id).then(data => {
-        if (data && data.widget) {
-            setSettings(data.widget)
+        if (data) {
+            setSettings(data)
             // Post message to parent to set launcher color
-            if (data.widget.color) {
-                window.parent.postMessage({ type: 'TALKFUZE_SET_COLOR', color: data.widget.color }, '*')
+            if (data.color) {
+                window.parent.postMessage({ type: 'TALKFUZE_SET_COLOR', color: data.color }, '*')
             }
         }
     })
