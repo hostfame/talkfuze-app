@@ -2,7 +2,7 @@
 
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { createPeerConnection } from "@/lib/webrtc"
+import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
 import { logBrowserCall } from "@/actions/calls"
@@ -474,7 +474,7 @@ export default function ChatThread({
       setCallStatus('active')
       setIncomingCall(null)
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       voiceStreamRef.current = stream
 
       const pc = createPeerConnection({
@@ -488,11 +488,7 @@ export default function ChatThread({
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
       pc.ontrack = (event) => {
-        const audio = document.createElement('audio');
-        audio.autoplay = true;
-        audio.srcObject = event.streams[0];
-        document.body.appendChild(audio);
-        audio.play().catch(e => console.error("Agent Audio Play Error:", e));
+        const audio = createRemoteAudioElement(event.streams[0]);
         voiceAudioRef.current = audio;
       };
 
@@ -576,13 +572,9 @@ export default function ChatThread({
       voiceConnectionRef.current.close()
       voiceConnectionRef.current = null
     }
-    if (voiceAudioRef.current) {
-      voiceAudioRef.current.pause()
-      if (voiceAudioRef.current.parentNode) {
-        voiceAudioRef.current.parentNode.removeChild(voiceAudioRef.current)
-      }
-      voiceAudioRef.current = null
-    }
+    destroyRemoteAudioElement(voiceAudioRef.current);
+    voiceAudioRef.current = null;
+    releaseWakeLock();
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current)
       callTimerRef.current = null
@@ -629,7 +621,7 @@ export default function ChatThread({
     console.log('[Agent Call] Starting call for conversation:', conversationId);
     try {
       setCallStatus('calling')
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       console.log('[Agent Call] Got mic stream');
       voiceStreamRef.current = stream
 
@@ -646,11 +638,7 @@ export default function ChatThread({
 
       pc.ontrack = (event) => {
         console.log('[Agent Call] Got remote track from visitor');
-        const audio = document.createElement('audio');
-        audio.autoplay = true;
-        audio.srcObject = event.streams[0];
-        document.body.appendChild(audio);
-        audio.play().catch(e => console.error("Agent Audio Play Error:", e));
+        const audio = createRemoteAudioElement(event.streams[0]);
         voiceAudioRef.current = audio;
       };
 
@@ -1352,7 +1340,7 @@ export default function ChatThread({
   }
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS)
       mediaRecorderRef.current = new MediaRecorder(stream)
       audioChunksRef.current = []
 

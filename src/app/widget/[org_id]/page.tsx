@@ -941,6 +941,14 @@ export default function WidgetPage() {
     }
 
     try {
+      // Check if screen sharing is supported (not on iOS)
+      if (!isScreenShareSupported()) {
+        setToastError('Screen sharing is not supported on this device. Please use a desktop browser or Android device.');
+        if (cobrowseChannel) {
+          cobrowseChannel.send({ type: 'broadcast', event: 'request_declined' });
+        }
+        return;
+      }
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       coBrowseStreamRef.current = stream
       setIsCoBrowsingActive(true)
@@ -1245,7 +1253,7 @@ export default function WidgetPage() {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS)
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
       audioChunksRef.current = []
