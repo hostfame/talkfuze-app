@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -85,7 +85,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
   
   // Co-Browsing States
-  const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined'>('idle')
+  const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined' | 'connection_lost'>('idle')
   const [coBrowseStream, setCoBrowseStream] = useState<MediaStream | null>(null)
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -122,21 +122,44 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
            setCoBrowseStatus('active')
           const pc = createPeerConnection({
             onConnectionFailed: () => {
-              console.warn('[Dashboard] Co-browse ICE failed');
-              handleEndCoBrowseSession();
+              console.warn('[Dashboard] Co-browse ICE failed, showing reconnect UI');
+              setCoBrowseStatus('connection_lost');
             }
           });
           coBrowseConnectionRef.current = pc
 
           pc.onconnectionstatechange = () => {
-            console.log("Co-browse WebRTC Connection State:", pc.connectionState);
+            const state = pc.connectionState;
+            console.log("Co-browse WebRTC Connection State:", state);
+            if (state === 'failed' || state === 'closed') {
+              setCoBrowseStatus('connection_lost');
+            }
           };
 
           pc.ontrack = (event) => {
+            const stream = event.streams[0];
             if (videoRef.current) {
-              videoRef.current.srcObject = event.streams[0];
+              videoRef.current.srcObject = stream;
             }
-            setCoBrowseStream(event.streams[0]);
+            setCoBrowseStream(stream);
+
+            // Monitor remote track ending (visitor stopped sharing without broadcast)
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack) {
+              videoTrack.onended = () => {
+                console.warn('[Dashboard] Remote screen share track ended');
+                setCoBrowseStatus('connection_lost');
+              };
+              videoTrack.onmute = () => {
+                console.warn('[Dashboard] Remote screen share track muted');
+                // Give it 3s to recover before showing lost state
+                setTimeout(() => {
+                  if (videoTrack.muted && coBrowseConnectionRef.current) {
+                    setCoBrowseStatus('connection_lost');
+                  }
+                }, 3000);
+              };
+            }
           };
 
           await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.offer));
@@ -1073,6 +1096,37 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         End Session
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {coBrowseStatus === 'connection_lost' && (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 border border-amber-200/60 dark:border-amber-900/40 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 space-y-4">
+                  <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-full flex items-center justify-center">
+                    <WifiOff size={22} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-300">Connection Lost</p>
+                    <p className="text-[11.5px] text-amber-600/80 dark:text-amber-400/70 mt-1 leading-relaxed">The screen share stream disconnected. Ask the visitor to re-accept or send a new request.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        handleEndCoBrowseSession();
+                        // Small delay then re-request
+                        setTimeout(() => handleRequestCoBrowse(), 300);
+                      }}
+                      className="px-4 py-2.5 bg-[#0070f3] hover:bg-blue-700 active:scale-95 text-white font-semibold text-[12px] rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <RefreshCw size={13} />
+                      Reconnect
+                    </button>
+                    <button 
+                      onClick={handleEndCoBrowseSession}
+                      className="px-4 py-2 text-[12px] font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               )}
