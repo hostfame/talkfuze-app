@@ -3,6 +3,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { createClient } from "@/lib/supabase/server"
 import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 
 type ConversationChannelRelation = Relation<{
   type?: string | null
@@ -685,18 +686,31 @@ export async function uploadAgentMedia(formData: FormData) {
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
   const filePath = `agent-uploads/${fileName}`;
 
-  const { error: uploadError } = await supabaseAdmin.storage
-    .from('media')
-    .upload(filePath, file);
+  try {
+    const s3Client = new S3Client({
+      region: "auto",
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+      },
+    });
 
-  if (uploadError) {
-    console.error("uploadAgentMedia error:", uploadError);
-    return { success: false, error: uploadError.message };
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: "talkfuze-media",
+        Key: filePath,
+        Body: buffer,
+        ContentType: file.type || "application/octet-stream",
+      })
+    );
+
+    const publicUrl = `${process.env.R2_PUBLIC_DOMAIN}/${filePath}`;
+    return { success: true, url: publicUrl };
+  } catch (err: any) {
+    console.error("uploadAgentMedia error:", err);
+    return { success: false, error: err.message || "Failed to upload to R2" };
   }
-
-  const { data: urlData } = supabaseAdmin.storage
-    .from('media')
-    .getPublicUrl(filePath);
-
-  return { success: true, url: urlData.publicUrl };
 }
