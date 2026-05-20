@@ -242,6 +242,34 @@ export default function WidgetPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMoreMessages, setHasMoreMessages] = useState(true)
   const [settings, setSettings] = useState<any>(null)
+
+  // Dragging logic for the Co-Browsing banner
+  const [bannerPosition, setBannerPosition] = useState({ y: 0 });
+  const isDraggingBanner = useRef(false);
+  const dragStartY = useRef(0);
+  const initialBannerY = useRef(0);
+
+  const handleBannerPointerDown = (e: React.PointerEvent) => {
+    // Only drag if clicking the banner background, not the stop button
+    if ((e.target as HTMLElement).tagName.toLowerCase() === 'button') return;
+    isDraggingBanner.current = true;
+    dragStartY.current = e.clientY;
+    initialBannerY.current = bannerPosition.y;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleBannerPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingBanner.current) return;
+    const deltaY = e.clientY - dragStartY.current;
+    let newY = initialBannerY.current + deltaY;
+    if (newY > 80) newY = 80; // Don't let it go below screen
+    setBannerPosition({ y: newY });
+  };
+
+  const handleBannerPointerUp = (e: React.PointerEvent) => {
+    isDraggingBanner.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
@@ -2577,13 +2605,13 @@ export default function WidgetPage() {
             <div className="flex gap-2 w-full">
               <button 
                 onClick={handleDeclineCoBrowse}
-                className="flex-1 py-2.5 text-[13px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all"
+                className="flex-1 py-3.5 text-[14px] flex items-center justify-center font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl transition-all cursor-pointer"
               >
                 Decline
               </button>
               <button 
                 onClick={handleAcceptCoBrowse}
-                className="flex-1 py-2.5 text-[13px] font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
+                className="flex-1 py-3.5 text-[14px] flex items-center justify-center font-semibold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 Share Screen
               </button>
@@ -2594,17 +2622,24 @@ export default function WidgetPage() {
 
       {/* Co-Browsing Active Float Indicator */}
       {isCoBrowsingActive && (
-        <div className="absolute bottom-[80px] left-4 right-4 z-40 bg-[#E5F1FF]/90 dark:bg-blue-950/80 backdrop-blur-md border border-blue-200/50 dark:border-blue-800/40 rounded-xl px-4 py-3 flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center gap-2.5">
+        <div 
+          className="absolute left-4 right-4 z-40 bg-[#E5F1FF]/95 dark:bg-blue-950/90 backdrop-blur-md border border-blue-200 dark:border-blue-800/60 rounded-xl px-4 py-3 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-bottom-2 duration-300 cursor-move touch-none select-none"
+          style={{ bottom: `${Math.max(10, 80 - bannerPosition.y)}px` }}
+          onPointerDown={handleBannerPointerDown}
+          onPointerMove={handleBannerPointerMove}
+          onPointerUp={handleBannerPointerUp}
+          onPointerCancel={handleBannerPointerUp}
+        >
+          <div className="flex items-center gap-2.5 pointer-events-none">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping animate-pulse"></div>
             <div className="flex flex-col">
               <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200">Screen sharing active</span>
-              <span className="text-[10px] text-[#0070f3] dark:text-blue-400 font-medium">Agent is viewing your window</span>
+              <span className="text-[10px] text-[#0070f3] dark:text-blue-400 font-medium">Drag to move • Agent is viewing</span>
             </div>
           </div>
           <button 
             onClick={handleStopCoBrowse}
-            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-2 rounded-lg shadow-sm transition-all uppercase tracking-wide"
+            className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-[11px] px-3.5 py-2 rounded-lg shadow-sm transition-all uppercase tracking-wide shrink-0 cursor-pointer"
           >
             Stop
           </button>
