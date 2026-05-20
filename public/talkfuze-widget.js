@@ -222,9 +222,8 @@
 
     // Listen for messages from iframe
     window.addEventListener('message', (event) => {
-        // Validate origin if needed, but since it's a widget on arbitrary sites, 
-        // we check if it matches baseUrl
-        if (event.origin !== baseUrl) return;
+        // Most secure and robust way: verify the message came from OUR iframe, regardless of its origin URL
+        if (event.source !== iframe.contentWindow) return;
 
         if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
             if (isOpen) toggleWidget();
