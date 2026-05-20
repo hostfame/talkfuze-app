@@ -99,6 +99,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       .on('broadcast', { event: 'screen_share_stopped' }, () => {
         handleEndCoBrowseSession()
       })
+      .on('broadcast', { event: 'ice_candidate' }, async (p) => {
+        const pc = coBrowseConnectionRef.current;
+        if (pc && p.payload.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(p.payload.candidate));
+        }
+      })
       .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
         try {
           setCoBrowseStatus('active')
@@ -133,14 +139,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               });
             }
           };
-
-          const candidatesChannel = supabase.channel(`cobrowse:${conversation.id}`)
-            .on('broadcast', { event: 'ice_candidate' }, async (p) => {
-              if (p.payload.candidate) {
-                await pc.addIceCandidate(new RTCIceCandidate(p.payload.candidate));
-              }
-            })
-            .subscribe()
 
         } catch (err) {
           console.error("Co-browse WebRTC establish error", err)

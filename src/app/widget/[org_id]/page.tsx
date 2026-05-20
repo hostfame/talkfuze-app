@@ -489,6 +489,18 @@ export default function WidgetPage() {
         setIsCoBrowsingActive(false)
         setShowCoBrowseRequest(false)
       })
+      .on('broadcast', { event: 'webrtc_answer' }, async (payload) => {
+        const pc = coBrowseConnectionRef.current;
+        if (pc && pc.signalingState !== 'stable') {
+          await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+        }
+      })
+      .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
+        const pc = coBrowseConnectionRef.current;
+        if (pc && payload.payload.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+        }
+      })
       .subscribe()
 
     return () => {
@@ -523,28 +535,6 @@ export default function WidgetPage() {
         setIsCoBrowsingActive(false)
       }
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      
-      await cobrowseChannel.send({
-        type: 'broadcast',
-        event: 'webrtc_offer',
-        payload: { offer }
-      })
-
-      const answerChannel = supabase.channel(`cobrowse:${activeConversationId}`)
-        .on('broadcast', { event: 'webrtc_answer' }, async (payload) => {
-          if (pc.signalingState !== 'stable') {
-            await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
-          }
-        })
-        .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
-          if (payload.payload.candidate) {
-            await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
-          }
-        })
-        .subscribe()
-
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           cobrowseChannel.send({
@@ -554,6 +544,15 @@ export default function WidgetPage() {
           })
         }
       }
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      await cobrowseChannel.send({
+        type: 'broadcast',
+        event: 'webrtc_offer',
+        payload: { offer }
+      })
 
     } catch (e) {
       console.error("Co-browse failed", e)
