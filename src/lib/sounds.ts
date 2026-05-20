@@ -1,10 +1,56 @@
+let cachedCtx: AudioContext | null = null;
+
+// Initialize or get the cached AudioContext
+export const getAudioContext = (): AudioContext | null => {
+  if (typeof window === 'undefined') return null;
+  
+  if (!cachedCtx) {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      cachedCtx = new AudioContextClass();
+    }
+  }
+  return cachedCtx;
+};
+
+// Setup automatic unlock listeners on the very first user interaction
+if (typeof window !== 'undefined') {
+  const unlock = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        // Once successfully unlocked, remove the event listeners to save CPU cycles
+        removeListeners();
+      }).catch((err) => {
+        console.warn('Failed to resume AudioContext:', err);
+      });
+    } else if (ctx && ctx.state === 'running') {
+      removeListeners();
+    }
+  };
+
+  const removeListeners = () => {
+    window.removeEventListener('click', unlock);
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+
+  window.addEventListener('click', unlock, { passive: true });
+  window.addEventListener('touchstart', unlock, { passive: true });
+  window.addEventListener('keydown', unlock, { passive: true });
+}
+
 export const playUISound = (type: 'send' | 'receive') => {
   if (typeof window === 'undefined') return;
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
+    const ctx = getAudioContext();
+    if (!ctx) return;
     
+    // If the browser suspended it again (e.g. tab went to background), try to resume
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     // Global compressor to make it completely smooth and avoid clipping
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.setValueAtTime(-30, ctx.currentTime);
