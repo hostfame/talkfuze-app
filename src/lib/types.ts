@@ -145,6 +145,7 @@ export interface Database {
           assigned_type: string
           priority: string
           subject: string | null
+          tags: string[] | null
           last_message_at: string
           snoozed_until: string | null
           is_pinned: boolean
@@ -163,6 +164,7 @@ export interface Database {
           assigned_type?: string
           priority?: string
           subject?: string | null
+          tags?: string[] | null
           last_message_at?: string
           snoozed_until?: string | null
           is_pinned?: boolean
@@ -181,6 +183,7 @@ export interface Database {
           assigned_type?: string
           priority?: string
           subject?: string | null
+          tags?: string[] | null
           last_message_at?: string
           snoozed_until?: string | null
           is_pinned?: boolean

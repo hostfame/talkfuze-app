@@ -973,6 +973,48 @@ supabaseRealtime
   });
 
 // ─────────────────────────────────────────────
+// Snooze Sweep Job (Runs every 1 minute)
+// ─────────────────────────────────────────────
+
+async function checkSnoozedConversations() {
+  try {
+    const { data: expired, error } = await supabaseRealtime
+      .from('conversations')
+      .select('id')
+      .eq('org_id', ORG_ID)
+      .eq('status', 'pending')
+      .not('snoozed_until', 'is', null)
+      .lte('snoozed_until', new Date().toISOString());
+
+    if (error) {
+      console.error('[SNOOZE-SWEEP] Error fetching expired snoozes:', error.message);
+      return;
+    }
+
+    if (expired && expired.length > 0) {
+      const ids = expired.map(c => c.id);
+      console.log(`[SNOOZE-SWEEP] Unsnoozing ${ids.length} conversations...`);
+      
+      const { error: updateError } = await supabaseRealtime
+        .from('conversations')
+        .update({ status: 'open', snoozed_until: null })
+        .in('id', ids);
+
+      if (updateError) {
+        console.error('[SNOOZE-SWEEP] Update error:', updateError.message);
+      } else {
+        console.log(`[SNOOZE-SWEEP] Successfully unsnoozed:`, ids.join(', '));
+      }
+    }
+  } catch (err) {
+    console.error('[SNOOZE-SWEEP] Sweep error:', err.message);
+  }
+}
+
+// Start the snooze sweep interval (every 1 minute)
+setInterval(checkSnoozedConversations, 60 * 1000);
+
+// ─────────────────────────────────────────────
 // Register webhook with Evolution API on startup
 // ─────────────────────────────────────────────
 

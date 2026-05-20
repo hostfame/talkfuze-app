@@ -384,13 +384,21 @@ export default function WidgetPage() {
   }, [activeConversationId])
 
   const handleStartVoiceCall = async () => {
-    if (!activeConversationId || activeConversationId === 'new') {
-      alert(`Cannot start call: activeConversationId is ${activeConversationId}`);
-      return
+    let targetConvId = activeConversationId;
+    if (!targetConvId || targetConvId === 'new') {
+      try {
+        const res = await sendWidgetMessage(org_id, deviceId, "Started a voice call", "system");
+        if (!res || !res.success || !res.conversationId) throw new Error("Creation failed");
+        targetConvId = res.conversationId;
+        setActiveConversationId(res.conversationId);
+      } catch (e) {
+        console.error("Failed to create conversation for call", e);
+        setToastError("Failed to initiate call. Please try again.");
+        return;
+      }
     }
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Microphone API unavailable. This means the iframe lacks allow='microphone' or you are not on HTTPS.");
         setToastError("Microphone API unavailable. Ensure you're on a secure context (HTTPS) and your browser supports WebRTC.")
         return
       }
@@ -428,7 +436,7 @@ export default function WidgetPage() {
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+          const callChannel = supabase.channel(`voicecall:${targetConvId}`)
           callChannel.send({
             type: 'broadcast',
             event: 'ice_candidate',
@@ -440,7 +448,7 @@ export default function WidgetPage() {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+      const callChannel = supabase.channel(`voicecall:${targetConvId}`)
       callChannel.send({
         type: 'broadcast',
         event: 'voice_call_incoming',
