@@ -53,7 +53,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
       
     const visitorNumber = (count || 0) + 1;
     const visitorName = `Website Visitor #${visitorNumber}`;
-    const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(visitorName)}&fontFamily=Inter&fontWeight=600`;
+    const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(visitorName)}`;
 
     const { data: newContact, error: contactErr } = await supabaseAdmin
       .from("contacts")
