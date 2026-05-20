@@ -45,13 +45,24 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   let contact = contacts && contacts.length > 0 ? contacts[0] : null;
 
   if (!contact) {
+    const { count } = await supabaseAdmin
+      .from("contacts")
+      .select("id", { count: 'exact', head: true })
+      .eq("org_id", orgId)
+      .eq("platform_type", "widget");
+      
+    const visitorNumber = (count || 0) + 1;
+    const visitorName = `Website Visitor #${visitorNumber}`;
+    const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${visitorNumber}`;
+
     const { data: newContact, error: contactErr } = await supabaseAdmin
       .from("contacts")
       .insert({
         org_id: orgId,
         platform_type: "widget",
         platform_id: deviceId,
-        name: "Website Visitor"
+        name: visitorName,
+        avatar_url: avatarUrl
       })
       .select("id")
       .single()

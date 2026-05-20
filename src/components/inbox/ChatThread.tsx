@@ -1789,13 +1789,15 @@ export default function ChatThread({
                     <img 
                       src={contact.avatar_url} 
                       alt={contactName}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
+                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
-                    <div className={`w-8 h-8 rounded-full ${avatarColor} text-white flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1`}>
-                      {safeMeta.participant_name ? safeMeta.participant_name.charAt(0).toUpperCase() : contactInitial}
-                    </div>
+                    <img 
+                      src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(safeMeta.participant_name || contactName)}`} 
+                      alt={safeMeta.participant_name || contactName}
+                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800"
+                    />
                   )}
                   <div className="max-w-[75%] flex flex-col items-start gap-1">
                     {/* Participant Name Banner for Group Chats */}
@@ -1888,9 +1890,11 @@ export default function ChatThread({
         {isCustomerTyping && (
           <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-end gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[12px] font-semibold shrink-0 mb-1">
-                C
-              </div>
+              {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
+                <img src={contact.avatar_url} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
+              ) : (
+                <img src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(contactName)}`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
+              )}
               <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
                 <div className="flex gap-1.5 items-center h-4">
                   <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>

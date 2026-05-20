@@ -480,13 +480,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         {/* Contact Header Block (AnyChat Style) */}
         <div className="p-5 border-b border-slate-100 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white bg-blue-600">
-            {(() => {
-              const name = contactName;
-              if (name.startsWith('+')) return name.substring(0, 2);
-              const parts = name.trim().split(" ").filter(Boolean);
-              if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-              return name.substring(0, 1).toUpperCase();
-            })()}
+            {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
+              <img src={contact.avatar_url} alt={contactName} className="w-full h-full object-cover rounded-full" />
+            ) : (
+              <img src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(contactName)}`} alt={contactName} className="w-full h-full object-cover rounded-full bg-slate-100" />
+            )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             {isEditingName ? (

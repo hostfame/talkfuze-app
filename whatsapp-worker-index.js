@@ -23,7 +23,27 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const app = express();
-app.use(express.json({ limit: '100mb' }));
+app.use(express.json({ limit: '50mb' }));
+
+// ─────────────────────────────────────────────
+// Security Middleware
+// ─────────────────────────────────────────────
+const requireAuth = (req, res, next) => {
+  // Allow health check
+  if (req.path === '/health') return next();
+  
+  // Verify token from query or headers
+  const token = req.query.token || req.headers['x-api-key'] || req.headers['apikey'];
+  if (token === EVOLUTION_API_KEY) {
+    return next();
+  }
+  
+  // Strict mode: Log unauthorized access attempt and drop it
+  console.warn(`[SECURITY] Blocked unauthorized webhook from IP: ${req.ip}`);
+  return res.status(403).json({ error: 'Forbidden. Invalid token.' });
+};
+
+app.use(requireAuth);
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -957,7 +977,7 @@ supabaseRealtime
 // ─────────────────────────────────────────────
 
 async function registerWebhook() {
-  const selfUrl = `${WEBHOOK_PUBLIC_URL.replace(/\/$/, '')}/webhook/evolution`;
+  const selfUrl = `${WEBHOOK_PUBLIC_URL.replace(/\/$/, '')}/webhook/evolution?token=${EVOLUTION_API_KEY}`;
 
   try {
     const res = await fetch(`${EVOLUTION_API_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {

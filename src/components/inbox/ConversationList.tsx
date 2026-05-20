@@ -214,7 +214,7 @@ export default function ConversationList({
               
               {/* Avatar */}
               <div className="relative">
-                {contact?.avatar_url ? (
+                {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
                   <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                     <img 
                       src={contact.avatar_url} 
@@ -224,13 +224,14 @@ export default function ConversationList({
                         e.currentTarget.style.display = 'none';
                       }} 
                     />
-                    <div className={`absolute inset-0 flex items-center justify-center font-semibold text-[14px] tracking-wide text-white ${avatarColor}`}>
-                      {getInitials(contactName)}
-                    </div>
                   </div>
                 ) : (
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white ${avatarColor}`}>
-                    {getInitials(contactName)}
+                  <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                    <img 
+                      src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(contactName)}`} 
+                      alt={contactName} 
+                      className="w-full h-full object-cover z-10 bg-slate-100" 
+                    />
                   </div>
                 )}
                 {isOnline && (

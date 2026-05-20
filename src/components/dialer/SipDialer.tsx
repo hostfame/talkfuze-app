@@ -515,6 +515,7 @@ export default function SipDialer() {
 
   const handleDial = async () => {
     if (!userAgent || !number) return
+    if (status === 'Dialing...' || status === 'Calling...' || sessionState === SessionState.Established) return
     
     // Explicit browser gesture autoplay bypass
     if (remoteAudioRef.current) {
@@ -767,16 +768,17 @@ export default function SipDialer() {
 
   // === PHASE 1: CLICK-TO-CALL ===
   useEffect(() => {
-    if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...') {
+    if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...' && status !== 'Dialing...') {
       const dialTarget = pendingDialNumber.replace(/[\s-]/g, '')
       setNumber(dialTarget)
+      setStatus('Dialing...') // Optimistic lock to prevent rapid re-entry
       clearPendingDial()
+      
       // Auto-dial after short delay to let state settle
       // Capture dialTarget in closure to avoid stale pendingDialNumber reference
       setTimeout(async () => {
         if (userAgent && isRegistered) {
           try {
-            setStatus('Dialing...')
             setActiveCallSession({ number: dialTarget, direction: 'outbound' })
             await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
             const session = (userAgent as any).session
@@ -792,7 +794,7 @@ export default function SipDialer() {
         }
       }, 200)
     }
-  }, [pendingDialNumber])
+  }, [pendingDialNumber, isRegistered, sessionState, status])
 
   return (
     <>
