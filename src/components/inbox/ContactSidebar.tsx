@@ -962,7 +962,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   <Loader2 className="animate-spin text-[#0070f3]" size={28} />
                   <div className="text-center">
                     <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200">Waiting for user approval</p>
-                    <p className="text-[11.5px] text-slate-400 mt-0.5">A prompt has been sent to the visitor's screen.</p>
+                    <p className="text-[11.5px] text-slate-400 mt-0.5">A prompt has been sent to the visitor&apos;s screen.</p>
                   </div>
                   <button 
                     onClick={handleEndCoBrowseSession}
