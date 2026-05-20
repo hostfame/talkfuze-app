@@ -1,4 +1,5 @@
 import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn } from "lucide-react"
+import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
@@ -119,24 +120,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
         try {
           setCoBrowseStatus('active')
-          const pc = new RTCPeerConnection({
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:stun2.l.google.com:19302' },
-              { urls: 'stun:stun3.l.google.com:19302' },
-              { urls: 'stun:stun4.l.google.com:19302' },
-              {
-                urls: [
-                  "turn:openrelay.metered.ca:80",
-                  "turn:openrelay.metered.ca:443",
-                  "turn:openrelay.metered.ca:443?transport=tcp"
-                ],
-                username: "openrelayproject",
-                credential: "openrelayproject"
-              }
-            ]
-          });
+          const pc = createPeerConnection();
           coBrowseConnectionRef.current = pc
 
           pc.onconnectionstatechange = () => {

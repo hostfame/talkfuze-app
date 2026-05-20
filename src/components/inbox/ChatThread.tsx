@@ -2,6 +2,7 @@
 
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import { createPeerConnection } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
 import { markMessagesAsRead } from "@/actions/chat"
@@ -432,24 +433,7 @@ export default function ChatThread({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       voiceStreamRef.current = stream
 
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          {
-            urls: [
-              "turn:openrelay.metered.ca:80",
-              "turn:openrelay.metered.ca:443",
-              "turn:openrelay.metered.ca:443?transport=tcp"
-            ],
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          }
-        ]
-      });
+      const pc = createPeerConnection();
       voiceConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));

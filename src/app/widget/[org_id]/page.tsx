@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
+import { createPeerConnection } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
 import { playUISound } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -536,24 +537,7 @@ export default function WidgetPage() {
 
       voiceStreamRef.current = stream
 
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          {
-            urls: [
-              "turn:openrelay.metered.ca:80",
-              "turn:openrelay.metered.ca:443",
-              "turn:openrelay.metered.ca:443?transport=tcp"
-            ],
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          }
-        ]
-      });
+      const pc = createPeerConnection();
       voiceConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
@@ -742,24 +726,7 @@ export default function WidgetPage() {
       coBrowseStreamRef.current = stream
       setIsCoBrowsingActive(true)
 
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          {
-            urls: [
-              "turn:openrelay.metered.ca:80",
-              "turn:openrelay.metered.ca:443",
-              "turn:openrelay.metered.ca:443?transport=tcp"
-            ],
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          }
-        ]
-      });
+      const pc = createPeerConnection();
       coBrowseConnectionRef.current = pc
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
