@@ -5,6 +5,7 @@ import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle,
 import { Web, SessionState } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
 
 const isPhoneNumber = (str: string) => {
   if (!str) return false
@@ -26,6 +27,14 @@ export default function SipDialer() {
   
   const [isMuted, setIsMuted] = useState(false)
   const [canHangUp, setCanHangUp] = useState(true)
+  const [whmcsClientInfo, setWhmcsClientInfo] = useState<{
+    id: number;
+    name: string;
+    email: string;
+    status: string;
+    services?: number;
+    unpaid?: number;
+  } | null>(null)
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
   const activeCallSessionRef = useRef<any>(null)
   
@@ -190,6 +199,7 @@ export default function SipDialer() {
         setIsMuted(false)
         setIceState('new')
         setCanHangUp(true)
+        setWhmcsClientInfo(null)
         cleanupMediaTracks(session)
       } else if (newState === 'Established') {
         setStatus('Connected')
@@ -344,6 +354,7 @@ export default function SipDialer() {
           const cleanCaller = callerId.replace(/\D/g, '')
           const last10 = cleanCaller.slice(-10) // Extract last 10 digits to resolve country-code prefixes
           
+          // First check local contacts
           supabase
             .from('contacts')
             .select('name')
@@ -357,6 +368,46 @@ export default function SipDialer() {
                 setIncomingCallerName(callerId)
               }
             })
+
+          // Query WHMCS database dynamically
+          fetchWhmcsClient(cleanCaller)
+            .then(async (client) => {
+              if (client && client.id) {
+                const name = `${client.firstname} ${client.lastname}`.trim()
+                setIncomingCallerName(name) // Prefer real WHMCS client name
+                
+                let activeServices = 0
+                let unpaidAmount = 0
+                
+                try {
+                  const servicesRes = await fetchWhmcsServices(client.id)
+                  if (servicesRes && servicesRes.products) {
+                    activeServices = servicesRes.products.filter((p: any) => p.status?.toLowerCase() === 'active').length
+                  }
+                } catch (e) {
+                  console.error("Failed to fetch active services:", e)
+                }
+
+                try {
+                  const unpaidRes = await fetchWhmcsUnpaidInvoices(client.id)
+                  if (unpaidRes) {
+                    unpaidAmount = unpaidRes.reduce((sum: number, inv: any) => sum + parseFloat(inv.total || '0'), 0)
+                  }
+                } catch (e) {
+                  console.error("Failed to fetch unpaid invoices:", e)
+                }
+                
+                setWhmcsClientInfo({
+                  id: client.id,
+                  name: name,
+                  email: (client as any).email || '',
+                  status: (client as any).status || '',
+                  services: activeServices,
+                  unpaid: unpaidAmount
+                })
+              }
+            })
+            .catch(err => console.error("WHMCS dynamic client lookup failed:", err))
         } else {
           setIncomingCallerName(callerId)
         }
@@ -457,6 +508,7 @@ export default function SipDialer() {
       setActiveCallSession(null)
       setIsMuted(false)
       setIceState('new')
+      setWhmcsClientInfo(null)
       setTimeout(() => setStatus('Registered'), 3000)
     }
   }
@@ -474,6 +526,7 @@ export default function SipDialer() {
     setIsMuted(false)
     setIceState('new')
     setCanHangUp(true)
+    setWhmcsClientInfo(null)
     
     try {
       await userAgent.hangup()
@@ -516,6 +569,7 @@ export default function SipDialer() {
     setActiveCallSession(null)
     setIsMuted(false)
     setIceState('new')
+    setWhmcsClientInfo(null)
     
     try {
       await userAgent.decline()
@@ -597,6 +651,25 @@ export default function SipDialer() {
                   status
                 )}
               </span>
+
+              {/* Premium WHMCS HUD Badge row */}
+              {whmcsClientInfo && (
+                <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                  <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+                    Client #{whmcsClientInfo.id}
+                  </span>
+                  {whmcsClientInfo.services && whmcsClientInfo.services > 0 ? (
+                    <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                      {whmcsClientInfo.services} Active
+                    </span>
+                  ) : null}
+                  {whmcsClientInfo.unpaid && whmcsClientInfo.unpaid > 0 ? (
+                    <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-955/40 text-rose-700 dark:text-rose-300">
+                      ৳{whmcsClientInfo.unpaid} Due
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
           
