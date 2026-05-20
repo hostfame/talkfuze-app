@@ -91,6 +91,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   const bufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
+  const coBrowseChannelRef = useRef<any>(null)
+
   useEffect(() => {
     if (!conversation?.id) return
 
@@ -168,15 +170,17 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
-          await cobrowseChannel.send({
-            type: 'broadcast',
-            event: 'webrtc_answer',
-            payload: { answer }
-          });
+          if (coBrowseChannelRef.current) {
+            await coBrowseChannelRef.current.send({
+              type: 'broadcast',
+              event: 'webrtc_answer',
+              payload: { answer }
+            });
+          }
 
           pc.onicecandidate = (event) => {
-            if (event.candidate) {
-              cobrowseChannel.send({
+            if (event.candidate && coBrowseChannelRef.current) {
+              coBrowseChannelRef.current.send({
                 type: 'broadcast',
                 event: 'ice_candidate',
                 payload: { candidate: event.candidate }
@@ -189,10 +193,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           setCoBrowseStatus('idle')
         }
       })
-      .subscribe()
+      
+    coBrowseChannelRef.current = cobrowseChannel;
+    cobrowseChannel.subscribe()
 
     return () => {
       supabase.removeChannel(cobrowseChannel)
+      coBrowseChannelRef.current = null
     }
   }, [conversation?.id])
 
@@ -207,11 +214,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const handleRequestCoBrowse = () => {
     if (!conversation?.id) return
     setCoBrowseStatus('requested')
-    const cobrowseChannel = supabase.channel(`cobrowse:${conversation.id}`)
-    cobrowseChannel.send({
-      type: 'broadcast',
-      event: 'request_screen_share'
-    })
+    if (coBrowseChannelRef.current) {
+      coBrowseChannelRef.current.send({
+        type: 'broadcast',
+        event: 'request_screen_share'
+      })
+    }
   }
 
   const handleEndCoBrowseSession = () => {

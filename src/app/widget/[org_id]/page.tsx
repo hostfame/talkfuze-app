@@ -404,6 +404,7 @@ export default function WidgetPage() {
   const coBrowseConnectionRef = useRef<RTCPeerConnection | null>(null)
   const coBrowseStreamRef = useRef<MediaStream | null>(null)
   const coBrowseBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const coBrowseChannelRef = useRef<any>(null)
 
   // Premium toast notification state
   const [toastError, setToastError] = useState<string | null>(null)
@@ -711,15 +712,23 @@ export default function WidgetPage() {
           coBrowseBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-      .subscribe()
+    coBrowseChannelRef.current = cobrowseChannel
+    cobrowseChannel.subscribe()
 
     return () => {
       supabase.removeChannel(cobrowseChannel)
+      coBrowseChannelRef.current = null
     }
   }, [activeConversationId])
 
   const handleAcceptCoBrowse = async () => {
     setShowCoBrowseRequest(false)
+    const cobrowseChannel = coBrowseChannelRef.current;
+    if (!cobrowseChannel) {
+      console.error("Co-browse channel not ready");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       coBrowseStreamRef.current = stream
@@ -747,13 +756,13 @@ export default function WidgetPage() {
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-      const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
-
       stream.getVideoTracks()[0].onended = () => {
-        cobrowseChannel.send({
-          type: 'broadcast',
-          event: 'screen_share_stopped'
-        })
+        if (coBrowseChannelRef.current) {
+          coBrowseChannelRef.current.send({
+            type: 'broadcast',
+            event: 'screen_share_stopped'
+          })
+        }
         pc.close()
         coBrowseConnectionRef.current = null
         coBrowseStreamRef.current = null
@@ -761,8 +770,8 @@ export default function WidgetPage() {
       }
 
       pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          cobrowseChannel.send({
+        if (event.candidate && coBrowseChannelRef.current) {
+          coBrowseChannelRef.current.send({
             type: 'broadcast',
             event: 'ice_candidate',
             payload: { candidate: event.candidate }
@@ -787,11 +796,12 @@ export default function WidgetPage() {
 
   const handleDeclineCoBrowse = () => {
     setShowCoBrowseRequest(false)
-    const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
-    cobrowseChannel.send({
-      type: 'broadcast',
-      event: 'request_declined'
-    })
+    if (coBrowseChannelRef.current) {
+      coBrowseChannelRef.current.send({
+        type: 'broadcast',
+        event: 'request_declined'
+      })
+    }
   }
 
   const handleStopCoBrowse = () => {
@@ -804,11 +814,12 @@ export default function WidgetPage() {
       coBrowseConnectionRef.current.close()
       coBrowseConnectionRef.current = null
     }
-    const cobrowseChannel = supabase.channel(`cobrowse:${activeConversationId}`)
-    cobrowseChannel.send({
-      type: 'broadcast',
-      event: 'screen_share_stopped'
-    })
+    if (coBrowseChannelRef.current) {
+      coBrowseChannelRef.current.send({
+        type: 'broadcast',
+        event: 'screen_share_stopped'
+      })
+    }
     setIsCoBrowsingActive(false)
   }
 
