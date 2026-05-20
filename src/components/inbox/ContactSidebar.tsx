@@ -110,7 +110,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         try {
           setCoBrowseStatus('active')
           const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' }
+            ]
           });
           coBrowseConnectionRef.current = pc
 
@@ -471,7 +477,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           onClick={() => setActiveTab('cobrowse')}
           className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
         >
-          Browse
+          Remote
         </button>
         <div className="flex-1"></div>
       </div>
@@ -999,7 +1005,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     playsInline 
                     className="w-full h-full object-contain bg-slate-950 flex-1 min-h-0"
                   />
-                  <div className="absolute bottom-3 left-3 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-800/40 rounded-lg p-2.5 flex items-center justify-between z-10">
+                  <div className="absolute bottom-20 left-3 right-3 bg-slate-900/80 backdrop-blur-md border border-slate-800/40 rounded-lg p-2.5 flex items-center justify-between z-10">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
                       <span className="text-[11.5px] font-bold text-white uppercase tracking-wider">Live</span>
