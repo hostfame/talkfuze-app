@@ -356,9 +356,13 @@ export default function WidgetPage() {
   }, [activeConversationId])
 
   const handleStartVoiceCall = async () => {
-    if (!activeConversationId || activeConversationId === 'new') return
+    if (!activeConversationId || activeConversationId === 'new') {
+      alert(`Cannot start call: activeConversationId is ${activeConversationId}`);
+      return
+    }
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone API unavailable. This means the iframe lacks allow='microphone' or you are not on HTTPS.");
         setToastError("Microphone API unavailable. Ensure you're on a secure context (HTTPS) and your browser supports WebRTC.")
         return
       }
@@ -412,8 +416,9 @@ export default function WidgetPage() {
         payload: { offer }
       })
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Mic access denied or WebRTC error", err)
+      alert("Voice Call Error: " + (err.message || String(err)));
       setCallStatus('idle')
       setToastError("Microphone access is required to place calls. Please click the lock icon in your address bar and toggle 'Allow'.")
     }
