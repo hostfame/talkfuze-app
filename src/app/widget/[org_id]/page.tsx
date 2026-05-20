@@ -408,6 +408,48 @@ export default function WidgetPage() {
   const coBrowseStreamRef = useRef<MediaStream | null>(null)
   const coBrowseBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const coBrowseChannelRef = useRef<any>(null)
+  const urlBroadcastRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Broadcast visitor's current page URL to agent during co-browse
+  useEffect(() => {
+    if (isCoBrowsingActive && coBrowseChannelRef.current) {
+      // Send initial URL immediately
+      const getVisitorUrl = () => {
+        try {
+          // Widget runs in iframe - get parent page URL
+          // Try window.parent.location first (same-origin), fallback to document.referrer
+          let url = document.referrer || window.location.href;
+          try { url = window.parent.location.href; } catch { /* cross-origin */ }
+          return url;
+        } catch { return ''; }
+      }
+
+      const broadcastUrl = () => {
+        const url = getVisitorUrl();
+        if (url && coBrowseChannelRef.current) {
+          coBrowseChannelRef.current.send({
+            type: 'broadcast',
+            event: 'visitor_url_update',
+            payload: { url }
+          });
+        }
+      }
+
+      broadcastUrl(); // Send immediately
+      urlBroadcastRef.current = setInterval(broadcastUrl, 3000); // Then every 3s for navigation changes
+    } else {
+      if (urlBroadcastRef.current) {
+        clearInterval(urlBroadcastRef.current);
+        urlBroadcastRef.current = null;
+      }
+    }
+    return () => {
+      if (urlBroadcastRef.current) {
+        clearInterval(urlBroadcastRef.current);
+        urlBroadcastRef.current = null;
+      }
+    }
+  }, [isCoBrowsingActive])
 
   // Premium toast notification state
   const [toastError, setToastError] = useState<string | null>(null)
@@ -2248,6 +2290,51 @@ export default function WidgetPage() {
                 const isAiOrAgent = isAgent || msg.sender_type === 'ai';
 
                 if (isSystem) {
+                  const safeMeta = typeof msg.metadata === 'string'
+                    ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
+                    : (msg.metadata || {});
+                  const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+
+                  // Hide the "Started a voice call" system message
+                  if (msg.content === 'Started a voice call') return null;
+
+                  // Voice call ended / missed badge
+                  if (msg.content.includes('voice call') || msg.content.includes('Voice call')) {
+                    const isMissed = msg.content.toLowerCase().includes('missed');
+                    return (
+                      <div key={idx} className="flex justify-center my-5">
+                        <div className={`flex items-center gap-3 border px-4 py-2.5 rounded-2xl shadow-sm min-w-[200px] ${
+                          isMissed
+                            ? 'bg-red-50 border-red-100'
+                            : 'bg-emerald-50 border-emerald-100'
+                        }`}>
+                          <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center ${
+                            isMissed
+                              ? 'bg-red-100'
+                              : 'bg-emerald-100'
+                          }`}>
+                            {isMissed
+                              ? <PhoneOff size={15} className="text-red-600" />
+                              : <Phone size={15} className="text-emerald-600" />
+                            }
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-[12.5px] font-bold tracking-tight ${
+                              isMissed ? 'text-red-800' : 'text-emerald-800'
+                            }`}>
+                              {isMissed ? 'Missed Voice Call' : 'Voice Call Ended'}
+                            </span>
+                            <span className={`text-[11px] font-medium ${
+                              isMissed ? 'text-red-500' : 'text-emerald-500'
+                            }`}>
+                              {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const isTicketCreated = msg.content === 'Your ticket is created' || msg.content.includes('ticket is created');
                   const isJoined = msg.content.includes('joined');
                   return (

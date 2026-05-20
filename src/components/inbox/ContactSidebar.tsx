@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Shield, Clock, Eye } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -91,25 +91,88 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [sessionDuration, setSessionDuration] = useState(0)
   const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [videoZoom, setVideoZoom] = useState(1)
+  const [isPiP, setIsPiP] = useState(false)
+  const [visitorUrl, setVisitorUrl] = useState<string | null>(null)
+  const [connectionQuality, setConnectionQuality] = useState<{ resolution: string; fps: number } | null>(null)
+  const statsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [autoReconnectCountdown, setAutoReconnectCountdown] = useState(0)
+  const autoReconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const bufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
   const coBrowseChannelRef = useRef<any>(null)
 
-  // Session timer for active co-browse
+  // Session timer + stats polling for active co-browse
   useEffect(() => {
     if (coBrowseStatus === 'active') {
       setSessionDuration(0)
+      setVideoZoom(1)
       sessionTimerRef.current = setInterval(() => setSessionDuration(d => d + 1), 1000)
+
+      // Poll WebRTC stats for resolution + FPS
+      statsIntervalRef.current = setInterval(async () => {
+        const pc = coBrowseConnectionRef.current;
+        if (!pc) return;
+        try {
+          const stats = await pc.getStats();
+          stats.forEach((report: any) => {
+            if (report.type === 'inbound-rtp' && report.kind === 'video') {
+              const w = report.frameWidth;
+              const h = report.frameHeight;
+              const fps = report.framesPerSecond || 0;
+              if (w && h) {
+                setConnectionQuality({ resolution: `${w}x${h}`, fps: Math.round(fps) });
+              }
+            }
+          });
+        } catch (e) { /* stats unavailable */ }
+      }, 2000)
     } else {
       if (sessionTimerRef.current) {
         clearInterval(sessionTimerRef.current)
         sessionTimerRef.current = null
       }
+      if (statsIntervalRef.current) {
+        clearInterval(statsIntervalRef.current)
+        statsIntervalRef.current = null
+      }
       setSessionDuration(0)
+      setConnectionQuality(null)
+      setVisitorUrl(null)
     }
     return () => {
       if (sessionTimerRef.current) clearInterval(sessionTimerRef.current)
+      if (statsIntervalRef.current) clearInterval(statsIntervalRef.current)
+    }
+  }, [coBrowseStatus])
+
+  // Auto-reconnect countdown when connection lost
+  useEffect(() => {
+    if (coBrowseStatus === 'connection_lost') {
+      setAutoReconnectCountdown(10)
+      autoReconnectTimerRef.current = setInterval(() => {
+        setAutoReconnectCountdown(prev => {
+          if (prev <= 1) {
+            // Time's up, auto-reconnect
+            clearInterval(autoReconnectTimerRef.current!);
+            autoReconnectTimerRef.current = null;
+            handleEndCoBrowseSession();
+            setTimeout(() => handleRequestCoBrowse(), 300);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (autoReconnectTimerRef.current) {
+        clearInterval(autoReconnectTimerRef.current)
+        autoReconnectTimerRef.current = null
+      }
+      setAutoReconnectCountdown(0)
+    }
+    return () => {
+      if (autoReconnectTimerRef.current) clearInterval(autoReconnectTimerRef.current)
     }
   }, [coBrowseStatus])
 
@@ -117,6 +180,49 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     const m = Math.floor(sec / 60)
     const s = sec % 60
     return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const handleScreenshot = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || video.clientWidth;
+    canvas.height = video.videoHeight || video.clientHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+      } catch {
+        // Fallback: download the image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `screenshot-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }, 'image/png');
+  }
+
+  const handleTogglePiP = async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        setIsPiP(false);
+      } else {
+        await videoRef.current.requestPictureInPicture();
+        setIsPiP(true);
+        videoRef.current.addEventListener('leavepictureinpicture', () => setIsPiP(false), { once: true });
+      }
+    } catch (e) {
+      console.error('PiP not supported:', e);
+    }
   }
 
   useEffect(() => {
@@ -129,6 +235,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       })
       .on('broadcast', { event: 'screen_share_stopped' }, () => {
         handleEndCoBrowseSession()
+      })
+      .on('broadcast', { event: 'visitor_url_update' }, (p) => {
+        if (p.payload?.url) setVisitorUrl(p.payload.url);
       })
       .on('broadcast', { event: 'ice_candidate' }, async (p) => {
         const pc = coBrowseConnectionRef.current;
@@ -1124,37 +1233,99 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                       </div>
                       <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
-                      <Clock size={11} />
-                      {formatDuration(sessionDuration)}
+                    <div className="flex items-center gap-3">
+                      {connectionQuality && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono" title="Stream quality">
+                          <Wifi size={10} className={connectionQuality.fps >= 15 ? 'text-emerald-400' : connectionQuality.fps >= 5 ? 'text-amber-400' : 'text-red-400'} />
+                          {connectionQuality.resolution} {connectionQuality.fps}fps
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono">
+                        <Clock size={11} />
+                        {formatDuration(sessionDuration)}
+                      </div>
                     </div>
                   </div>
 
+                  {/* Visitor URL bar */}
+                  {visitorUrl && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/80 border-b border-slate-800/40">
+                      <Globe size={11} className="text-slate-500 shrink-0" />
+                      <span className="text-[10.5px] text-slate-400 truncate font-mono flex-1" title={visitorUrl}>
+                        {visitorUrl.replace(/^https?:\/\//, '')}
+                      </span>
+                      <a href={visitorUrl} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-400 transition-colors shrink-0">
+                        <ExternalLink size={11} />
+                      </a>
+                    </div>
+                  )}
+
                   {/* Video stream */}
-                  <video 
-                    ref={videoRef}
-                    autoPlay 
-                    playsInline 
-                    muted
-                    className="w-full flex-1 min-h-0 object-contain bg-slate-950"
-                  />
+                  <div className="flex-1 min-h-0 overflow-hidden relative">
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline 
+                      muted
+                      className="w-full h-full bg-slate-950 transition-transform duration-200"
+                      style={{ 
+                        objectFit: videoZoom > 1 ? 'cover' : 'contain',
+                        transform: `scale(${videoZoom})`,
+                        transformOrigin: 'center center'
+                      }}
+                    />
+                    {/* Zoom indicator */}
+                    {videoZoom > 1 && (
+                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-mono px-2 py-0.5 rounded-md">
+                        {videoZoom.toFixed(1)}x
+                      </div>
+                    )}
+                  </div>
 
                   {/* Bottom toolbar */}
-                  <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900/95 border-t border-slate-800/60 z-10">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between px-2 py-2 bg-slate-900/95 border-t border-slate-800/60 z-10">
+                    <div className="flex items-center gap-0.5">
                       <button 
                         onClick={() => {
-                          if (videoRef.current) {
-                            if (videoRef.current.requestFullscreen) {
-                              videoRef.current.requestFullscreen();
-                            } else if ((videoRef.current as any).webkitRequestFullscreen) {
-                              (videoRef.current as any).webkitRequestFullscreen();
+                          const container = videoRef.current?.parentElement;
+                          if (container) {
+                            if (container.requestFullscreen) {
+                              container.requestFullscreen();
+                            } else if ((container as any).webkitRequestFullscreen) {
+                              (container as any).webkitRequestFullscreen();
                             }
                           }
                         }}
                         className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer" title="Fullscreen"
                       >
-                        <Maximize2 size={15} />
+                        <Maximize2 size={14} />
+                      </button>
+                      <button 
+                        onClick={handleScreenshot}
+                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer" title="Screenshot to clipboard"
+                      >
+                        <Camera size={14} />
+                      </button>
+                      <button 
+                        onClick={handleTogglePiP}
+                        className={`p-1.5 hover:bg-slate-800 rounded-lg transition-all cursor-pointer ${isPiP ? 'text-blue-400' : 'text-slate-400 hover:text-white'}`} title="Picture-in-Picture"
+                      >
+                        <PictureInPicture2 size={14} />
+                      </button>
+                      <div className="w-px h-4 bg-slate-800 mx-1" />
+                      <button 
+                        onClick={() => setVideoZoom(z => Math.max(1, z - 0.25))}
+                        disabled={videoZoom <= 1}
+                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-default" title="Zoom out"
+                      >
+                        <ZoomOut size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setVideoZoom(z => Math.min(3, z + 0.25))}
+                        disabled={videoZoom >= 3}
+                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer disabled:opacity-30 disabled:cursor-default" title="Zoom in"
+                      >
+                        <ZoomIn size={14} />
                       </button>
                     </div>
                     <button 
@@ -1179,21 +1350,39 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   </div>
                   <div className="text-center">
                     <p className="text-[14px] font-semibold text-amber-800 dark:text-amber-300">Connection Lost</p>
-                    <p className="text-[11.5px] text-amber-600/70 dark:text-amber-400/60 mt-1.5 leading-relaxed max-w-[200px]">Stream disconnected. Reconnect to resume viewing.</p>
+                    <p className="text-[11.5px] text-amber-600/70 dark:text-amber-400/60 mt-1.5 leading-relaxed max-w-[200px]">Auto-reconnecting in {autoReconnectCountdown}s...</p>
+                  </div>
+                  {/* Countdown progress ring */}
+                  <div className="relative w-12 h-12">
+                    <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3" className="text-amber-200 dark:text-amber-900/50" />
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3" className="text-[#0070f3]" strokeDasharray={`${(autoReconnectCountdown / 10) * 125.6} 125.6`} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s linear' }} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[13px] font-bold text-amber-700 dark:text-amber-300">{autoReconnectCountdown}</span>
                   </div>
                   <div className="flex gap-2 w-full">
                     <button 
                       onClick={() => {
+                        if (autoReconnectTimerRef.current) {
+                          clearInterval(autoReconnectTimerRef.current);
+                          autoReconnectTimerRef.current = null;
+                        }
                         handleEndCoBrowseSession();
                         setTimeout(() => handleRequestCoBrowse(), 300);
                       }}
                       className="flex-1 py-2.5 bg-[#0070f3] hover:bg-blue-600 active:scale-[0.97] text-white font-semibold text-[12px] rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <RefreshCw size={13} />
-                      Reconnect
+                      Reconnect Now
                     </button>
                     <button 
-                      onClick={handleEndCoBrowseSession}
+                      onClick={() => {
+                        if (autoReconnectTimerRef.current) {
+                          clearInterval(autoReconnectTimerRef.current);
+                          autoReconnectTimerRef.current = null;
+                        }
+                        handleEndCoBrowseSession();
+                      }}
                       className="px-4 py-2.5 text-[12px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
                     >
                       Close
