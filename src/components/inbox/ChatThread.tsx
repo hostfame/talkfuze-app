@@ -41,6 +41,7 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -54,7 +55,7 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   };
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isDragging) {
       setCurrentTime(audioRef.current.currentTime);
       setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
     }
@@ -71,6 +72,49 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
     const m = Math.floor(time / 60);
     const s = Math.floor(time % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Real-time seek drag/scrub mechanics
+  const handleScrub = (clientX: number, currentTarget: HTMLDivElement) => {
+    if (!audioRef.current || !duration) return;
+    const rect = currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const percentage = x / rect.width;
+    audioRef.current.currentTime = percentage * duration;
+    setProgress(percentage * 100);
+    setCurrentTime(percentage * duration);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleScrub(e.clientX, e.currentTarget);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    handleScrub(e.clientX, e.currentTarget);
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    if (e.touches.length > 0) {
+      handleScrub(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    if (e.touches.length > 0) {
+      handleScrub(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
   };
 
   // Determine colors and layout configurations based on bubble type
@@ -97,8 +141,6 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
     activeWaveColor = '#b45309';
     inactiveWaveColor = 'rgba(180,83,9,0.2)';
   } else if (isCustomer) {
-    // Customer voice notes in dashboard sit inside a slate-100 gray bubble.
-    // Let's use clean slate colors!
     activeWaveColor = '#475569'; // Slate 600
     inactiveWaveColor = 'rgba(71,85,105,0.25)'; // Slate 600 at 25%
   }
@@ -131,15 +173,14 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
       <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
         <div className="flex items-center gap-2 w-full">
           <div 
-            className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none"
-            onClick={(e) => {
-               if (audioRef.current && duration) {
-                 const rect = e.currentTarget.getBoundingClientRect();
-                 const x = e.clientX - rect.left;
-                 const percentage = x / rect.width;
-                 audioRef.current.currentTime = percentage * duration;
-               }
-            }}
+            className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none group/wave relative py-1"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             {waveHeights.map((barHeight, i, arr) => {
               const barProgress = (i / arr.length) * 100;
@@ -147,14 +188,26 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
               return (
                 <div 
                   key={i} 
-                  className="w-[3px] rounded-full transition-all duration-150"
+                  className="w-[3px] rounded-full transition-all duration-75 origin-bottom"
                   style={{ 
                     height: `${barHeight}px`,
-                    backgroundColor: isActive ? activeWaveColor : inactiveWaveColor
+                    backgroundColor: isActive ? activeWaveColor : inactiveWaveColor,
+                    transform: isDragging && isActive ? 'scaleY(1.15)' : undefined
                   }}
                 />
               );
             })}
+            
+            {/* Smooth Floating Scrubbing Playhead */}
+            <div 
+              className={`absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-3 rounded-full pointer-events-none transition-opacity duration-200 z-30 shadow-[0_1px_4px_rgba(0,0,0,0.3)] ${
+                isDragging ? 'opacity-100 scale-125' : 'opacity-0 group-hover/wave:opacity-100'
+              }`}
+              style={{ 
+                left: `${progress}%`,
+                backgroundColor: isAgent ? '#ffffff' : isInternal ? '#b45309' : '#0070f3'
+              }}
+            />
           </div>
         </div>
         
@@ -304,6 +357,7 @@ export default function ChatThread({
   const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
   const voiceStreamRef = useRef<MediaStream | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
+  const voiceBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const [callDuration, setCallDuration] = useState(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -343,8 +397,15 @@ export default function ChatThread({
         handleEndVoiceCall(false)
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
-        if (payload.payload.candidate && voiceConnectionRef.current) {
-          await voiceConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+        const pc = voiceConnectionRef.current;
+        if (pc && pc.remoteDescription && payload.payload.candidate) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+          } catch (e) {
+            console.error("Error adding ice candidate:", e);
+          }
+        } else if (payload.payload.candidate) {
+          voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
       .subscribe()
@@ -413,6 +474,19 @@ export default function ChatThread({
       };
 
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+
+      // Flush buffered candidates
+      if (voiceBufferedCandidatesRef.current.length > 0) {
+        for (const candidate of voiceBufferedCandidatesRef.current) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error("Error adding buffered candidate:", e);
+          }
+        }
+        voiceBufferedCandidatesRef.current = [];
+      }
+
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
@@ -438,6 +512,7 @@ export default function ChatThread({
   }
 
   const handleDeclineVoiceCall = () => {
+    voiceBufferedCandidatesRef.current = [];
     stopRingtone()
     setIncomingCall(null)
     setCallStatus('idle')
@@ -451,6 +526,7 @@ export default function ChatThread({
   }
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
+    voiceBufferedCandidatesRef.current = [];
     if (sendBroadcast && !canHangUpVoice) return
     
     stopRingtone()

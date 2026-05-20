@@ -369,6 +369,7 @@ export default function WidgetPage() {
   const voiceConnectionRef = useRef<RTCPeerConnection | null>(null)
   const voiceStreamRef = useRef<MediaStream | null>(null)
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null)
+  const voiceBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const [callDuration, setCallDuration] = useState(0)
   const callDurationRef = useRef(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -383,6 +384,18 @@ export default function WidgetPage() {
           const pc = voiceConnectionRef.current
           if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+
+            // Flush buffered candidates
+            if (voiceBufferedCandidatesRef.current.length > 0) {
+              for (const candidate of voiceBufferedCandidatesRef.current) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) {
+                  console.error("Error adding buffered candidate:", e);
+                }
+              }
+              voiceBufferedCandidatesRef.current = [];
+            }
           }
           setCallDuration(0)
           callDurationRef.current = 0
@@ -404,8 +417,15 @@ export default function WidgetPage() {
         handleEndVoiceCall(false)
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
-        if (payload.payload.candidate && voiceConnectionRef.current) {
-          await voiceConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+        const pc = voiceConnectionRef.current;
+        if (pc && pc.remoteDescription && payload.payload.candidate) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate));
+          } catch (e) {
+            console.error("Error adding ice candidate:", e);
+          }
+        } else if (payload.payload.candidate) {
+          voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
       .subscribe()
@@ -514,6 +534,7 @@ export default function WidgetPage() {
   }
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
+    voiceBufferedCandidatesRef.current = [];
     if (voiceStreamRef.current) {
       voiceStreamRef.current.getTracks().forEach(t => t.stop())
       voiceStreamRef.current = null
