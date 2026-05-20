@@ -9,6 +9,29 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
   return Array.isArray(relation) ? relation[0] : relation
 }
 
+const avatarHexColors = [
+  '0070f3', // Brand blue
+  '10b981', // Emerald green
+  '8b5cf6', // Violet
+  'ec4899', // Pink
+  'f59e0b', // Amber
+  '06b6d4', // Cyan
+  'd946ef', // Fuchsia
+  'f43f5e', // Rose
+  '14b8a6', // Teal
+  '6366f1', // Indigo
+];
+
+const getConversationAvatarUrl = (convId: string, name: string) => {
+  let hash = 0;
+  for (let i = 0; i < convId.length; i++) {
+    hash = convId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarHexColors.length;
+  const colorHex = avatarHexColors[index];
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${colorHex}&color=fff&length=1`;
+};
+
 export default function ConversationList({ 
   conversations, 
   selectedId, 
@@ -221,7 +244,7 @@ export default function ConversationList({
               
               {/* Avatar */}
               <div className="relative">
-                {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
+                {contact?.avatar_url && !contact.avatar_url.includes('ui-avatars.com') && !(contact?.platform_id?.endsWith('@g.us')) ? (
                   <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                     <img 
                       src={contact.avatar_url} 
@@ -235,7 +258,7 @@ export default function ConversationList({
                 ) : (
                   <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                     <img 
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} 
+                      src={getConversationAvatarUrl(conv.id, contactName)} 
                       alt={contactName} 
                       className="w-full h-full object-cover z-10 bg-slate-100" 
                     />
@@ -254,6 +277,11 @@ export default function ConversationList({
                     <span className={`text-[14.5px] truncate ${isSelected ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'}`}>
                       {contactName}
                     </span>
+                    {conv.status === 'resolved' && (
+                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide border border-slate-200/50 shrink-0">
+                        Resolved
+                      </span>
+                    )}
                     {assigneeName && (
                       <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0">
                         {assigneeName}
