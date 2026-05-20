@@ -110,19 +110,16 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
   };
 
   // Determine styles and colors based on bubble alignment
-  let containerBg = 'bg-[#f3f4f6] dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] rounded-bl-[4px] shadow-sm';
+  let containerBg = 'bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] shadow-sm';
   let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2] shadow-sm';
-  let timeStyle = 'text-slate-500 dark:text-slate-400';
+  let timeStyle = 'text-slate-400 dark:text-slate-500';
   let activeWaveColor = '#0070f3';
   let inactiveWaveColor = 'rgba(0, 112, 243, 0.15)';
+  let playheadColor = '#0070f3';
 
   if (isDark) {
-    // Visitor message (on the right)
-    containerBg = 'bg-gradient-to-br from-[#0070f3] to-blue-700 text-white shadow-md border border-blue-600/20 rounded-[18px] rounded-br-[4px]';
-    buttonStyle = 'bg-white text-[#0070f3] hover:bg-white/95 shadow-sm';
-    timeStyle = 'text-white/85';
-    activeWaveColor = '#ffffff';
-    inactiveWaveColor = 'rgba(255, 255, 255, 0.25)';
+    // Visitor message (on the right) - give it a slightly cleaner rounded border configuration
+    containerBg = 'bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] rounded-br-[4px] shadow-sm';
   }
 
   // Wave bar heights (22 bars)
@@ -185,7 +182,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
               }`}
               style={{ 
                 left: `${progress}%`,
-                backgroundColor: isDark ? '#ffffff' : '#0070f3'
+                backgroundColor: playheadColor
               }}
             />
           </div>

@@ -122,27 +122,23 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   const isInternal = type === 'internal';
   const isCustomer = type === 'customer';
 
-  let containerBg = 'bg-transparent border-none shadow-none p-0';
+  // Standard premium minimalist audio card design (default for Agent/Customer)
+  let containerBg = 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-2xl rounded-br-sm p-3 shadow-sm';
   let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2]';
-  let timeStyle = 'text-slate-500 dark:text-slate-400';
+  let timeStyle = 'text-slate-400 dark:text-slate-500';
   let activeWaveColor = '#0070f3';
   let inactiveWaveColor = 'rgba(0,112,243,0.15)';
+  let playheadColor = '#0070f3';
 
-  if (isAgent) {
-    containerBg = 'bg-gradient-to-br from-[#0070f3] to-blue-700 text-white rounded-2xl rounded-br-sm p-3 shadow-sm border border-blue-600/20';
-    buttonStyle = 'bg-white text-[#0070f3] hover:bg-white/95';
-    timeStyle = 'text-white/85';
-    activeWaveColor = '#ffffff';
-    inactiveWaveColor = 'rgba(255,255,255,0.25)';
+  if (isCustomer) {
+    containerBg = 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-2xl rounded-bl-sm p-3 shadow-sm';
   } else if (isInternal) {
-    containerBg = 'bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-100 rounded-2xl rounded-br-sm p-3 shadow-sm';
+    containerBg = 'bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl rounded-br-sm p-3 shadow-sm';
     buttonStyle = 'bg-amber-600 text-white hover:bg-amber-700';
-    timeStyle = 'text-amber-800/80 dark:text-amber-300/80';
-    activeWaveColor = '#b45309';
-    inactiveWaveColor = 'rgba(180,83,9,0.2)';
-  } else if (isCustomer) {
-    activeWaveColor = '#475569'; // Slate 600
-    inactiveWaveColor = 'rgba(71,85,105,0.25)'; // Slate 600 at 25%
+    timeStyle = 'text-amber-650/80 dark:text-amber-400/80';
+    activeWaveColor = '#d97706'; // Amber 600
+    inactiveWaveColor = 'rgba(217,119,6,0.15)';
+    playheadColor = '#d97706';
   }
 
   // Wave bar heights (22 bars)
@@ -205,7 +201,7 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
               }`}
               style={{ 
                 left: `${progress}%`,
-                backgroundColor: isAgent ? '#ffffff' : isInternal ? '#b45309' : '#0070f3'
+                backgroundColor: playheadColor
               }}
             />
           </div>
@@ -1864,7 +1860,13 @@ export default function ChatThread({
                     <CornerUpLeft size={15} strokeWidth={2.5} />
                   </button>
 
-                  <div className={`${msg.is_internal ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50' : 'bg-[#0070f3] text-white'} rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
+                  <div className={`${
+                    msg.is_internal 
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5' 
+                      : msg.content_type === 'audio' 
+                        ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none' 
+                        : 'bg-[#0070f3] text-white px-4 py-2.5'
+                  } rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                     {/* Render Reply Preview if present */}
                     {(() => {
                       const replyTo = safeMeta.reply_to;
@@ -1996,7 +1998,11 @@ export default function ChatThread({
                     {safeMeta.participant_name && (
                       <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
-                    <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] text-slate-900 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words font-normal">
+                    <div className={`${
+                      msg.content_type === 'audio' 
+                        ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none' 
+                        : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200'
+                    } rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
                       {/* Render Reply Preview if present */}
                       {(() => {
                         const replyTo = safeMeta.reply_to;
