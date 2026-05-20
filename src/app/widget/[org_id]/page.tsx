@@ -750,9 +750,6 @@ export default function WidgetPage() {
             
             return [...prev, newMsg as WidgetMessage];
           });
-        } else if (activeConversationId === 'new') {
-          // Edge case if we were on 'new' and someone replied to our first message fast
-          fetchMsgs();
         }
       })
       .subscribe()
