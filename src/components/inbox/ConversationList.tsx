@@ -92,6 +92,13 @@ export default function ConversationList({
     if (activeFilter === 'archived') return conv.is_archived;
     if (conv.is_archived) return false;
 
+    // Filter out snoozed conversations
+    // @ts-ignore
+    const snoozedUntil = conv.snoozed_until;
+    if (snoozedUntil && new Date(snoozedUntil).getTime() > Date.now()) {
+      return false; // Hide snoozed conversations
+    }
+
     if (activeFilter === 'all') return true;
     
     const assignee = firstRelation(conv.assignee);

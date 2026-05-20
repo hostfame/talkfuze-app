@@ -6,6 +6,7 @@ import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversatio
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
+import SnoozeButton from "./SnoozeButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
 
 interface WhmcsClient {
@@ -569,8 +570,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         </div>
 
         {/* Core Attributes */}
-        <div className="py-4 px-5 border-b border-slate-100 space-y-4">
+        <div className="py-4 px-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
           <AssignButton conversation={conversation} orgId={orgId} />
+          <SnoozeButton conversation={conversation} orgId={orgId} />
           <div className="flex justify-between items-center">
             <span className="text-[13px] text-slate-500">Team Inbox</span>
             <div className="flex items-center gap-2 text-[13px] text-slate-900 font-medium hover:text-blue-600 cursor-pointer transition-colors">

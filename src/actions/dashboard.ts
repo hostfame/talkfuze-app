@@ -90,6 +90,9 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     query = query.eq("is_archived", true);
   } else {
     query = query.eq("is_archived", false);
+    // Hide snoozed conversations unless snooze time has passed
+    query = query.or(`snoozed_until.is.null,snoozed_until.lte.${new Date().toISOString()}`);
+    
     if (filter === 'unassigned') {
       query = query.is("assigned_to", null);
     } else if (filter === 'assigned' && agentId) {
@@ -113,8 +116,8 @@ export async function assignConversation(orgId: string, conversationId: string, 
     .eq("id", conversationId)
     .eq("org_id", orgId);
 
-  if (error) throw error;
-  return true;
+  if (error) throw new Error(error.message);
+  return { success: true };
 }
 
 export async function getMessages(conversationId: string, limit: number = 50, beforeTimestamp?: string) {
@@ -552,10 +555,17 @@ export async function reopenConversation(conversationId: string) {
   return { success: true }
 }
 
-export async function snoozeConversation(conversationId: string, until: Date) {
+export async function snoozeConversation(conversationId: string, until: Date | null) {
+  const updateData: any = { snoozed_until: until ? until.toISOString() : null };
+  if (until) {
+    updateData.status = 'pending';
+  } else {
+    updateData.status = 'open';
+  }
+
   const { error } = await supabaseAdmin
     .from('conversations')
-    .update({ status: 'pending', snoozed_until: until.toISOString() })
+    .update(updateData)
     .eq('id', conversationId)
 
   if (error) throw new Error(error.message)
