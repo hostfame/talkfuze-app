@@ -281,13 +281,13 @@ export default function ConversationList({
                           <>
                             {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
                             {lastMessage.content_type === 'image' ? (
-                              <><ImageIcon size={14} className="text-blue-500 shrink-0" /> Photo</>
+                              <><ImageIcon size={14} className="text-blue-500 shrink-0" /> shared a photo</>
                             ) : lastMessage.content_type === 'video' ? (
-                              <><Video size={14} className="text-blue-500 shrink-0" /> Video</>
+                              <><Video size={14} className="text-blue-500 shrink-0" /> shared a video</>
                             ) : lastMessage.content_type === 'audio' ? (
-                              <><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</>
+                              <><Mic size={14} className="text-blue-500 shrink-0" /> shared a voice message</>
                             ) : lastMessage.content_type === 'file' || lastMessage.content === '[Attachment]' ? (
-                              <><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</>
+                              <><Paperclip size={14} className="text-blue-500 shrink-0" /> shared an attachment</>
                             ) : (
                               lastMessage.content
                             )}

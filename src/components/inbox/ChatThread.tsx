@@ -128,16 +128,16 @@ function renderTextWithLinks(text: string, isAgent: boolean) {
   if (!text) return text;
   
   if (text === '[Audio Voice Message]') {
-    return <span className="flex items-center gap-1"><Mic size={14} className="text-blue-500 shrink-0" /> Voice message</span>;
+    return <span className="flex items-center gap-1"><Mic size={14} className="text-blue-500 shrink-0" /> shared a voice message</span>;
   }
   if (text === '[Image]') {
-    return <span className="flex items-center gap-1"><ImageIcon size={14} className="text-blue-500 shrink-0" /> Photo</span>;
+    return <span className="flex items-center gap-1"><ImageIcon size={14} className="text-blue-500 shrink-0" /> shared a photo</span>;
   }
   if (text === '[Video]') {
-    return <span className="flex items-center gap-1"><Video size={14} className="text-blue-500 shrink-0" /> Video</span>;
+    return <span className="flex items-center gap-1"><Video size={14} className="text-blue-500 shrink-0" /> shared a video</span>;
   }
   if (text === '[Attachment]') {
-    return <span className="flex items-center gap-1"><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</span>;
+    return <span className="flex items-center gap-1"><Paperclip size={14} className="text-blue-500 shrink-0" /> shared an attachment</span>;
   }
 
   const urlRegex = /((?:https?:\/\/|www\.)[^\s]+)/gi;
