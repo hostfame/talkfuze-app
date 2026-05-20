@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff } from 'lucide-react'
-import { Web, SessionState } from 'sip.js'
+import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
@@ -446,6 +446,11 @@ export default function SipDialer() {
         setActiveCallSession(null)
         setIsMuted(false)
         setIceState('new')
+        setIsOnHold(false)
+        setIsMicMuted(false)
+        setShowTransferInput(false)
+        setTransferNumber('')
+        setShowInCallKeypad(false)
       },
       onRegistered: () => {
         setStatus('Registered')
@@ -459,6 +464,10 @@ export default function SipDialer() {
         stopTimer()
         setActiveCallSession(null)
         setIsMuted(false)
+        setIsOnHold(false)
+        setIsMicMuted(false)
+        setShowTransferInput(false)
+        setShowInCallKeypad(false)
         triggerBackoffReconnect()
       },
       onServerDisconnect: () => {
@@ -468,6 +477,10 @@ export default function SipDialer() {
         stopTimer()
         setActiveCallSession(null)
         setIsMuted(false)
+        setIsOnHold(false)
+        setIsMicMuted(false)
+        setShowTransferInput(false)
+        setShowInCallKeypad(false)
         triggerBackoffReconnect()
       }
     }
@@ -539,6 +552,11 @@ export default function SipDialer() {
     setIceState('new')
     setCanHangUp(true)
     setWhmcsClientInfo(null)
+    setIsOnHold(false)
+    setIsMicMuted(false)
+    setShowTransferInput(false)
+    setTransferNumber('')
+    setShowInCallKeypad(false)
     
     try {
       await userAgent.hangup()
@@ -582,6 +600,11 @@ export default function SipDialer() {
     setIsMuted(false)
     setIceState('new')
     setWhmcsClientInfo(null)
+    setIsOnHold(false)
+    setIsMicMuted(false)
+    setShowTransferInput(false)
+    setTransferNumber('')
+    setShowInCallKeypad(false)
     
     try {
       await userAgent.decline()
@@ -625,48 +648,31 @@ export default function SipDialer() {
   // === PHASE 1: HOLD / RESUME ===
   const handleHold = async () => {
     if (!userAgent) return
+    const session = (userAgent as any).session
+    if (!session) return
+    
+    // Use direct track muting approach - most reliable with SimpleUser + Asterisk
+    // Re-INVITE SDP modifiers are unreliable with SimpleUser wrapper
     try {
-      const session = (userAgent as any).session
-      if (!session) return
-      
-      if (isOnHold) {
-        // Resume: send re-INVITE with sendrecv
-        await session.invite({
-          sessionDescriptionHandlerModifiers: [
-            (sdp: any) => {
-              sdp.body = sdp.body?.replace(/a=sendonly/g, 'a=sendrecv').replace(/a=inactive/g, 'a=sendrecv')
-            }
-          ]
+      const pc = session?.sessionDescriptionHandler?.peerConnection
+      if (pc) {
+        const newHoldState = !isOnHold
+        pc.getSenders().forEach((sender: any) => {
+          if (sender.track && sender.track.kind === 'audio') {
+            sender.track.enabled = !newHoldState // disable track when holding
+          }
         })
-        setIsOnHold(false)
-      } else {
-        // Hold: send re-INVITE with sendonly
-        await session.invite({
-          sessionDescriptionHandlerModifiers: [
-            (sdp: any) => {
-              sdp.body = sdp.body?.replace(/a=sendrecv/g, 'a=sendonly')
-            }
-          ]
+        // Also mute incoming audio when on hold (local experience)
+        pc.getReceivers().forEach((receiver: any) => {
+          if (receiver.track && receiver.track.kind === 'audio') {
+            receiver.track.enabled = !newHoldState
+          }
         })
-        setIsOnHold(true)
+        setIsOnHold(newHoldState)
+        console.log(`[SIP] Call ${newHoldState ? 'held' : 'resumed'} via track muting`)
       }
     } catch (e) {
       console.error('[SIP] Hold/Resume failed:', e)
-      // Fallback: just mute local audio tracks
-      try {
-        const session = (userAgent as any).session
-        const pc = session?.sessionDescriptionHandler?.peerConnection
-        if (pc) {
-          pc.getSenders().forEach((sender: any) => {
-            if (sender.track && sender.track.kind === 'audio') {
-              sender.track.enabled = isOnHold
-            }
-          })
-          setIsOnHold(!isOnHold)
-        }
-      } catch (fallbackErr) {
-        console.error('[SIP] Hold fallback failed:', fallbackErr)
-      }
     }
   }
 
@@ -720,12 +726,20 @@ export default function SipDialer() {
       const session = (userAgent as any).session
       if (!session) return
       
-      const targetURI = `sip:${transferNumber.trim()}@sip.talkfuze.com`
+      const cleanTarget = transferNumber.trim().replace(/[\s-]/g, '')
+      
+      // SIP.js session.refer() accepts a URI string or a UserAgent.makeURI
+      // For external numbers via trunk, route through Asterisk dialplan context
+      const targetURI = UserAgent.makeURI(`sip:${cleanTarget}@sip.talkfuze.com`)
+      if (!targetURI) {
+        console.error('[SIP] Invalid transfer target URI')
+        return
+      }
       await session.refer(targetURI)
       
-      console.log(`[SIP] Blind transfer to ${transferNumber} initiated`)
+      console.log(`[SIP] Blind transfer to ${cleanTarget} initiated`)
       
-      // Reset UI state
+      // Reset UI state after brief "Transferred" status display
       setShowTransferInput(false)
       setTransferNumber('')
       setStatus('Transferred')
@@ -738,6 +752,7 @@ export default function SipDialer() {
         setIsOnHold(false)
         setIceState('new')
         setWhmcsClientInfo(null)
+        setShowInCallKeypad(false)
         stopTimer()
       }, 2000)
     } catch (e) {
@@ -748,15 +763,17 @@ export default function SipDialer() {
   // === PHASE 1: CLICK-TO-CALL ===
   useEffect(() => {
     if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...') {
-      setNumber(pendingDialNumber)
+      const dialTarget = pendingDialNumber.replace(/[\s-]/g, '')
+      setNumber(dialTarget)
       clearPendingDial()
       // Auto-dial after short delay to let state settle
+      // Capture dialTarget in closure to avoid stale pendingDialNumber reference
       setTimeout(async () => {
         if (userAgent && isRegistered) {
           try {
             setStatus('Dialing...')
-            await userAgent.call(`sip:${pendingDialNumber.replace(/[\s-]/g, '')}@sip.talkfuze.com`)
-            setActiveCallSession({ number: pendingDialNumber.replace(/[\s-]/g, ''), direction: 'outbound' })
+            setActiveCallSession({ number: dialTarget, direction: 'outbound' })
+            await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
             const session = (userAgent as any).session
             if (session) {
               bindSessionEvents(session)
@@ -764,6 +781,7 @@ export default function SipDialer() {
           } catch (e) {
             console.error('Click-to-call dial failed:', e)
             setStatus('Call Failed')
+            setActiveCallSession(null)
             setTimeout(() => setStatus('Registered'), 3000)
           }
         }
