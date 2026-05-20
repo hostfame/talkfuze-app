@@ -78,28 +78,36 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   const isInternal = type === 'internal';
   const isCustomer = type === 'customer';
 
-  let containerBg = 'bg-slate-50 dark:bg-slate-800/60 border-slate-150 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-bl-sm';
+  let containerBg = 'bg-transparent border-none shadow-none p-0';
   let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2]';
-  let barBg = 'bg-slate-200 dark:bg-slate-700';
-  let barActive = 'bg-[#0070f3]';
   let timeStyle = 'text-slate-500 dark:text-slate-400';
+  let activeWaveColor = '#0070f3';
+  let inactiveWaveColor = 'rgba(0,112,243,0.15)';
 
   if (isAgent) {
-    containerBg = 'bg-[#0070f3] border-blue-600/20 text-white rounded-2xl rounded-br-sm';
+    containerBg = 'bg-gradient-to-br from-[#0070f3] to-blue-700 text-white rounded-2xl rounded-br-sm p-3 shadow-sm border border-blue-600/20';
     buttonStyle = 'bg-white text-[#0070f3] hover:bg-white/95';
-    barBg = 'bg-white/30';
-    barActive = 'bg-white';
-    timeStyle = 'text-white/80';
+    timeStyle = 'text-white/85';
+    activeWaveColor = '#ffffff';
+    inactiveWaveColor = 'rgba(255,255,255,0.25)';
   } else if (isInternal) {
-    containerBg = 'bg-amber-100 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-100 rounded-2xl rounded-br-sm';
+    containerBg = 'bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-100 rounded-2xl rounded-br-sm p-3 shadow-sm';
     buttonStyle = 'bg-amber-600 text-white hover:bg-amber-700';
-    barBg = 'bg-amber-200 dark:bg-amber-800/60';
-    barActive = 'bg-amber-700 dark:bg-amber-400';
     timeStyle = 'text-amber-800/80 dark:text-amber-300/80';
+    activeWaveColor = '#b45309';
+    inactiveWaveColor = 'rgba(180,83,9,0.2)';
+  } else if (isCustomer) {
+    // Customer voice notes in dashboard sit inside a slate-100 gray bubble.
+    // Let's use clean slate colors!
+    activeWaveColor = '#475569'; // Slate 600
+    inactiveWaveColor = 'rgba(71,85,105,0.25)'; // Slate 600 at 25%
   }
 
+  // Wave bar heights (22 bars)
+  const waveHeights = [8, 14, 10, 18, 12, 22, 16, 24, 18, 26, 20, 24, 16, 20, 12, 16, 10, 14, 8, 12, 6, 10];
+
   return (
-    <div className={`flex items-center gap-3 py-2 px-3 shadow-sm border transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
+    <div className={`flex items-center gap-3 transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
       <audio 
         ref={audioRef} 
         src={url} 
@@ -123,9 +131,9 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
       <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
         <div className="flex items-center gap-2 w-full">
           <div 
-            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${barBg}`}
+            className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none"
             onClick={(e) => {
-               if(audioRef.current && duration) {
+               if (audioRef.current && duration) {
                  const rect = e.currentTarget.getBoundingClientRect();
                  const x = e.clientX - rect.left;
                  const percentage = x / rect.width;
@@ -133,10 +141,20 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
                }
             }}
           >
-            <div 
-              className={`h-full transition-all duration-100 ease-linear ${barActive}`} 
-              style={{ width: `${progress}%` }}
-            />
+            {waveHeights.map((barHeight, i, arr) => {
+              const barProgress = (i / arr.length) * 100;
+              const isActive = progress >= barProgress;
+              return (
+                <div 
+                  key={i} 
+                  className="w-[3px] rounded-full transition-all duration-150"
+                  style={{ 
+                    height: `${barHeight}px`,
+                    backgroundColor: isActive ? activeWaveColor : inactiveWaveColor
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
         

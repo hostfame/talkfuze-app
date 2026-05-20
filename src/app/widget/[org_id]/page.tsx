@@ -65,12 +65,27 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // Determine styles and colors based on bubble alignment
+  let containerBg = 'bg-[#f3f4f6] dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] rounded-bl-[4px] shadow-sm';
+  let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2] shadow-sm';
+  let timeStyle = 'text-slate-500 dark:text-slate-400';
+  let activeWaveColor = '#0070f3';
+  let inactiveWaveColor = 'rgba(0, 112, 243, 0.15)';
+
+  if (isDark) {
+    // Visitor message (on the right)
+    containerBg = 'bg-gradient-to-br from-[#0070f3] to-blue-700 text-white shadow-md border border-blue-600/20 rounded-[18px] rounded-br-[4px]';
+    buttonStyle = 'bg-white text-[#0070f3] hover:bg-white/95 shadow-sm';
+    timeStyle = 'text-white/85';
+    activeWaveColor = '#ffffff';
+    inactiveWaveColor = 'rgba(255, 255, 255, 0.25)';
+  }
+
+  // Wave bar heights (22 bars)
+  const waveHeights = [8, 14, 10, 18, 12, 22, 16, 24, 18, 26, 20, 24, 16, 20, 12, 16, 10, 14, 8, 12, 6, 10];
+
   return (
-    <div className={`flex items-center gap-3 py-2.5 px-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border transition-all duration-300 ${
-      isDark 
-        ? 'bg-[#64748b] border-slate-600/20 text-white rounded-[18px] rounded-br-[4px]' 
-        : 'bg-[#f3f4f6] border-slate-200/40 text-slate-800 rounded-[18px] rounded-bl-[4px]'
-    } min-w-[230px] max-w-[280px]`}>
+    <div className={`flex items-center gap-3 py-2.5 px-3.5 transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
       <audio 
         ref={audioRef} 
         src={url} 
@@ -82,11 +97,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
       
       <button 
         onClick={togglePlay} 
-        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 ${
-          isDark 
-            ? 'bg-white text-[#64748b] hover:bg-white/95 shadow-sm' 
-            : 'bg-[#0070f3] text-white hover:bg-[#0062d2] shadow-sm'
-        }`}
+        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 ${buttonStyle}`}
       >
         {isPlaying ? (
            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
@@ -98,11 +109,9 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
       <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
         <div className="flex items-center gap-2 w-full">
           <div 
-            className={`h-[4px] flex-1 rounded-full overflow-hidden cursor-pointer relative ${
-              isDark ? 'bg-white/30' : 'bg-slate-300'
-            }`}
+            className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none"
             onClick={(e) => {
-               if(audioRef.current && duration) {
+               if (audioRef.current && duration) {
                  const rect = e.currentTarget.getBoundingClientRect();
                  const x = e.clientX - rect.left;
                  const percentage = x / rect.width;
@@ -110,18 +119,24 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
                }
             }}
           >
-            <div 
-              className={`h-full transition-all duration-100 ease-linear ${
-                isDark ? 'bg-white' : 'bg-[#0070f3]'
-              }`} 
-              style={{ width: `${progress}%` }}
-            />
+            {waveHeights.map((barHeight, i, arr) => {
+              const barProgress = (i / arr.length) * 100;
+              const isActive = progress >= barProgress;
+              return (
+                <div 
+                  key={i} 
+                  className="w-[3px] rounded-full transition-all duration-150"
+                  style={{ 
+                    height: `${barHeight}px`,
+                    backgroundColor: isActive ? activeWaveColor : inactiveWaveColor
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
         
-        <div className={`text-[10px] font-bold tracking-wide flex justify-between ${
-          isDark ? 'text-white/85' : 'text-slate-500'
-        }`}>
+        <div className={`text-[10px] font-bold tracking-wide flex justify-between ${timeStyle}`}>
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
