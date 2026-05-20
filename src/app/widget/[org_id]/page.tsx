@@ -3,7 +3,7 @@
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
-import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead } from "@/actions/chat"
+import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile } from "@/actions/chat"
 import { supabase } from "@/lib/supabase"
 import type { AppMessage } from "@/lib/types"
 import { playUISound } from "@/lib/sounds"
@@ -720,11 +720,7 @@ export default function WidgetPage() {
           
           // Fetch agent details for realtime incoming agent/system messages
           if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
-            const { data: agentData } = await supabase
-              .from('users')
-              .select('id, name, avatar_url')
-              .eq('id', newMsg.sender_id)
-              .single();
+            const agentData = await getAgentProfile(newMsg.sender_id);
             if (agentData) {
               newMsg.agent = agentData;
             }

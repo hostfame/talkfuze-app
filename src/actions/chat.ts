@@ -202,6 +202,22 @@ export async function getWidgetMessages(orgId: string, deviceId: string, convers
   }
 }
 
+export async function getAgentProfile(agentId: string) {
+  noStore();
+  if (!agentId) return null;
+  try {
+    const { data: agent } = await supabaseAdmin
+      .from('users')
+      .select('id, name, avatar_url')
+      .eq('id', agentId)
+      .single();
+    return agent || null;
+  } catch (e) {
+    console.error("getAgentProfile error:", e);
+    return null;
+  }
+}
+
 export async function getWidgetSettings(orgId: string) {
   noStore();
   if (!orgId) return null;
