@@ -35,23 +35,43 @@ export type PeerConnectionCallbacks = {
   onConnectionFailed?: () => void
   /** Called when connection successfully establishes */
   onConnected?: () => void
+  /** 
+   * When true, the ICE timeout won't start until startTimeout() is called.
+   * Use for agent-initiated calls where the visitor hasn't accepted yet.
+   */
+  deferTimeout?: boolean
 }
 
 /**
  * Creates a monitored RTCPeerConnection with auto-timeout and connection
  * state tracking. Automatically cleans up if ICE never connects.
+ * 
+ * When deferTimeout is true, the ICE timeout won't begin until pc.startTimeout()
+ * is called. Use this for outgoing calls where the remote party hasn't accepted yet.
  */
-export function createPeerConnection(callbacks?: PeerConnectionCallbacks): RTCPeerConnection {
+export function createPeerConnection(callbacks?: PeerConnectionCallbacks): RTCPeerConnection & { startTimeout: () => void } {
   const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
 
-  // ICE connection timeout - auto-close if stuck in "checking" for too long
-  let iceTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-    if (pc.iceConnectionState === 'checking' || pc.iceConnectionState === 'new') {
-      console.warn('[WebRTC] ICE connection timeout after 15s, closing')
-      callbacks?.onConnectionFailed?.()
-    }
-    iceTimeout = null
-  }, ICE_CONNECTION_TIMEOUT_MS)
+  let iceTimeout: ReturnType<typeof setTimeout> | null = null
+
+  const startTimeout = () => {
+    if (iceTimeout) return // Already started
+    iceTimeout = setTimeout(() => {
+      if (pc.iceConnectionState === 'checking' || pc.iceConnectionState === 'new') {
+        console.warn('[WebRTC] ICE connection timeout after 15s, closing')
+        callbacks?.onConnectionFailed?.()
+      }
+      iceTimeout = null
+    }, ICE_CONNECTION_TIMEOUT_MS)
+  }
+
+  // Start timeout immediately unless deferred
+  if (!callbacks?.deferTimeout) {
+    startTimeout()
+  }
+
+  // Attach startTimeout to the pc object for easy access
+  ;(pc as any).startTimeout = startTimeout
 
   pc.oniceconnectionstatechange = () => {
     const state = pc.iceConnectionState
@@ -80,5 +100,5 @@ export function createPeerConnection(callbacks?: PeerConnectionCallbacks): RTCPe
     }
   }
 
-  return pc
+  return pc as RTCPeerConnection & { startTimeout: () => void }
 }

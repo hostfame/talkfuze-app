@@ -405,6 +405,8 @@ export default function ChatThread({
           const pc = voiceConnectionRef.current;
           if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+            // Now that remote description is set, start ICE timeout
+            if ((pc as any).startTimeout) (pc as any).startTimeout();
             // Flush buffered candidates
             if (voiceBufferedCandidatesRef.current.length > 0) {
               for (const candidate of voiceBufferedCandidatesRef.current) {
@@ -635,7 +637,8 @@ export default function ChatThread({
         onConnectionFailed: () => {
           console.warn('[Agent] Agent-initiated call ICE failed, auto-ending');
           handleEndVoiceCall(true);
-        }
+        },
+        deferTimeout: true // Don't start ICE timeout until visitor accepts
       });
       voiceConnectionRef.current = pc
 
@@ -684,6 +687,14 @@ export default function ChatThread({
           payload: { offer }
         })
         console.log('[Agent Call] Offer sent successfully');
+
+        // Auto-end after 30s if visitor doesn't answer (ringing timeout)
+        setTimeout(() => {
+          if (voiceConnectionRef.current === pc && pc.iceConnectionState === 'new') {
+            console.warn('[Agent Call] 30s ringing timeout, visitor did not answer');
+            handleEndVoiceCall(true);
+          }
+        }, 30000);
       } else {
         console.error('[Agent Call] Voice channel not ready after 3s, cannot send offer');
         handleEndVoiceCall(false);
