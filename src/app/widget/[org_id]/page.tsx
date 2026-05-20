@@ -604,7 +604,8 @@ export default function WidgetPage() {
           console.warn('[Widget] Voice call ICE failed, auto-ending');
           handleEndVoiceCall(true);
           setToastError('Call connection failed. Please try again.');
-        }
+        },
+        deferTimeout: true // Don't start timeout until agent answers
       });
       voiceConnectionRef.current = pc
 
@@ -2108,7 +2109,7 @@ export default function WidgetPage() {
       <div className="flex-1 relative z-10 overflow-hidden bg-transparent">
         
         {/* HOME TAB */}
-        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-transparent transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-30' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-transparent transition-all duration-200 ease-out ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-30' : '-translate-x-full opacity-0 z-10 pointer-events-none'}`}>
           <div className="px-5 pt-12 pb-6 flex flex-col gap-5">
             
             {/* Header Graphics (Ahrefs Style) */}
@@ -2193,7 +2194,7 @@ export default function WidgetPage() {
         </div>
 
         {/* CONVERSATIONS LIST TAB */}
-        <div className={`absolute inset-0 overflow-y-auto bg-[#f9fafb] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-[20%] opacity-0 z-10 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto bg-[#f9fafb] flex flex-col transition-all duration-200 ease-out ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-30' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : '-translate-x-full opacity-0 z-10 pointer-events-none'}`}>
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-1.5">
                  <button onClick={() => setActiveTab('home')} className="p-1 -ml-2 hover:bg-slate-50 transition-colors rounded-full text-slate-400">
@@ -2254,7 +2255,7 @@ export default function WidgetPage() {
           </div>
 
         {/* CHAT TAB (THREAD) */}
-        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'chat' ? 'translate-x-0 opacity-100 z-30' : 'translate-x-full opacity-0 z-10 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col transition-transform duration-200 ease-out ${activeTab === 'chat' ? 'translate-x-0 z-30' : 'translate-x-full z-10 pointer-events-none'}`}>
             {activeConversationId && (
               <div className="h-full flex flex-col relative z-30">
             
