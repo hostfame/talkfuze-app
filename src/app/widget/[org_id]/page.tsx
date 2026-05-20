@@ -7,7 +7,7 @@ import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMe
 import { supabase } from "@/lib/supabase"
 import { createPeerConnection } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
-import { playUISound } from "@/lib/sounds"
+import { playUISound, playAlertLoop, stopAlertLoop } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
 type WidgetMessage = AppMessage & {
@@ -813,12 +813,34 @@ export default function WidgetPage() {
     cobrowseChannel.subscribe()
 
     return () => {
+      stopAlertLoop()
       supabase.removeChannel(cobrowseChannel)
       coBrowseChannelRef.current = null
     }
   }, [activeConversationId])
 
+  // Start/stop alert sound when co-browse request popup is visible
+  useEffect(() => {
+    if (showCoBrowseRequest) {
+      playAlertLoop()
+    } else {
+      stopAlertLoop()
+    }
+    return () => { stopAlertLoop() }
+  }, [showCoBrowseRequest])
+
+  // Start/stop alert sound when incoming call is ringing
+  useEffect(() => {
+    if (callStatus === 'ringing') {
+      playAlertLoop()
+    } else {
+      stopAlertLoop()
+    }
+    return () => { stopAlertLoop() }
+  }, [callStatus])
+
   const handleAcceptCoBrowse = async () => {
+    stopAlertLoop()
     setShowCoBrowseRequest(false)
     const cobrowseChannel = coBrowseChannelRef.current;
     if (!cobrowseChannel) {
@@ -880,6 +902,7 @@ export default function WidgetPage() {
   }
 
   const handleDeclineCoBrowse = () => {
+    stopAlertLoop()
     setShowCoBrowseRequest(false)
     if (coBrowseChannelRef.current) {
       coBrowseChannelRef.current.send({

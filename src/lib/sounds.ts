@@ -123,3 +123,79 @@ export const playUISound = (type: 'send' | 'receive') => {
     console.error('Audio play error:', err);
   }
 };
+
+// ---- Persistent alert loop for incoming requests (co-browse, remote view) ----
+// Plays a cute but loud "ding-ding...ding-ding" pattern every 1.5s until stopped.
+
+let alertIntervalId: ReturnType<typeof setInterval> | null = null;
+
+const playAlertChime = () => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const t = ctx.currentTime;
+
+    // Compressor to keep it punchy but safe
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-24, t);
+    comp.knee.setValueAtTime(30, t);
+    comp.ratio.setValueAtTime(8, t);
+    comp.attack.setValueAtTime(0.003, t);
+    comp.release.setValueAtTime(0.15, t);
+    comp.connect(ctx.destination);
+
+    // Helper: create a single chime tone
+    const chime = (freq: number, start: number, dur: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(2200, t);
+
+      osc.connect(filt);
+      filt.connect(gain);
+      gain.connect(comp);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + start);
+
+      gain.gain.setValueAtTime(0, t + start);
+      gain.gain.linearRampToValueAtTime(vol, t + start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+
+      osc.start(t + start);
+      osc.stop(t + start + dur + 0.05);
+    };
+
+    // Pattern: two quick "ding-ding" tones with a short gap, like a doorbell
+    // Tone 1: E6 (1318 Hz) - bright and clear
+    chime(1318, 0, 0.18, 0.35);
+    // Tone 2: G6 (1568 Hz) - slightly higher, cute interval
+    chime(1568, 0.15, 0.22, 0.30);
+    // Tone 3: quick echo of tone 1 at lower volume
+    chime(1318, 0.35, 0.12, 0.15);
+  } catch (err) {
+    console.error('Alert chime error:', err);
+  }
+};
+
+export const playAlertLoop = (): void => {
+  if (typeof window === 'undefined') return;
+  // Don't stack multiple loops
+  if (alertIntervalId !== null) return;
+
+  // Play immediately, then repeat every 1.5s
+  playAlertChime();
+  alertIntervalId = setInterval(playAlertChime, 1500);
+};
+
+export const stopAlertLoop = (): void => {
+  if (alertIntervalId !== null) {
+    clearInterval(alertIntervalId);
+    alertIntervalId = null;
+  }
+};
