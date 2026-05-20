@@ -235,7 +235,7 @@ export default function ConversationList({
                 ) : (
                   <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                     <img 
-                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(contactName)}`} 
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random`} 
                       alt={contactName} 
                       className="w-full h-full object-cover z-10 bg-slate-100" 
                     />

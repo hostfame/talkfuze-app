@@ -485,7 +485,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
               <img src={contact.avatar_url} alt={contactName} className="w-full h-full object-cover rounded-full" />
             ) : (
-              <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(contactName)}`} alt={contactName} className="w-full h-full object-cover rounded-full bg-slate-100" />
+              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random`} alt={contactName} className="w-full h-full object-cover rounded-full bg-slate-100" />
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
