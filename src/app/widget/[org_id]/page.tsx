@@ -519,6 +519,7 @@ export default function WidgetPage() {
       })
       .on('broadcast', { event: 'voice_call_from_agent' }, (payload) => {
         // Agent is calling the visitor
+        console.log('[Widget Call] Received voice_call_from_agent, offer present:', !!payload.payload?.offer);
         incomingAgentCallRef.current = { offer: payload.payload.offer }
         setCallStatus('ringing')
       })
@@ -535,6 +536,7 @@ export default function WidgetPage() {
         }
       })
     callChannel.subscribe((status) => {
+      console.log(`[Widget VoiceChannel] Subscribe status: ${status} for conv: ${activeConversationId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
       }
@@ -728,6 +730,7 @@ export default function WidgetPage() {
   // Visitor answers an agent-initiated call
   const handleAnswerAgentCall = async () => {
     const incoming = incomingAgentCallRef.current;
+    console.log('[Widget Call] handleAnswerAgentCall - incoming:', !!incoming, 'activeConv:', activeConversationId, 'channelRef:', !!voiceChannelRef.current);
     if (!incoming || !activeConversationId) return;
     try {
       setCallStatus('active')
@@ -784,11 +787,14 @@ export default function WidgetPage() {
       await pc.setLocalDescription(answer);
 
       if (voiceChannelRef.current) {
+        console.log('[Widget Call] Sending voice_call_answered_by_visitor on channel:', voiceChannelRef.current.topic);
         voiceChannelRef.current.send({
           type: 'broadcast',
           event: 'voice_call_answered_by_visitor',
           payload: { answer }
         })
+      } else {
+        console.error('[Widget Call] Cannot send answer - voiceChannelRef.current is null!');
       }
 
       setCallDuration(0)
@@ -807,6 +813,7 @@ export default function WidgetPage() {
 
   // Visitor declines an agent-initiated call
   const handleDeclineAgentCall = () => {
+    console.log('[Widget Call] Declining agent call, channelRef:', !!voiceChannelRef.current);
     incomingAgentCallRef.current = null;
     setCallStatus('idle')
     if (voiceChannelRef.current) {

@@ -446,6 +446,7 @@ export default function ChatThread({
       })
       
     callChannel.subscribe((status) => {
+      console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${conversationId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
       }
@@ -623,9 +624,11 @@ export default function ChatThread({
   // Agent-initiated voice call
   const handleStartVoiceCallFromAgent = async () => {
     if (!conversationId || callStatus !== 'idle') return
+    console.log('[Agent Call] Starting call for conversation:', conversationId);
     try {
       setCallStatus('calling')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      console.log('[Agent Call] Got mic stream');
       voiceStreamRef.current = stream
 
       const pc = createPeerConnection({
@@ -639,6 +642,7 @@ export default function ChatThread({
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
       pc.ontrack = (event) => {
+        console.log('[Agent Call] Got remote track from visitor');
         const audio = document.createElement('audio');
         audio.autoplay = true;
         audio.srcObject = event.streams[0];
@@ -659,10 +663,12 @@ export default function ChatThread({
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      console.log('[Agent Call] Created offer, checking channel...');
 
       // Wait for channel to be subscribed (up to 3s)
       let ch = voiceChannelRef.current;
       if (!ch) {
+        console.log('[Agent Call] Channel ref is null, polling...');
         for (let i = 0; i < 30; i++) {
           await new Promise(r => setTimeout(r, 100));
           ch = voiceChannelRef.current;
@@ -671,17 +677,19 @@ export default function ChatThread({
       }
 
       if (ch) {
+        console.log('[Agent Call] Sending voice_call_from_agent on channel:', ch.topic);
         ch.send({
           type: 'broadcast',
           event: 'voice_call_from_agent',
           payload: { offer }
         })
+        console.log('[Agent Call] Offer sent successfully');
       } else {
-        console.error("Voice channel not ready after 3s, cannot send offer");
+        console.error('[Agent Call] Voice channel not ready after 3s, cannot send offer');
         handleEndVoiceCall(false);
       }
     } catch (err) {
-      console.error("Agent call initiation failed", err)
+      console.error('[Agent Call] Initiation failed:', err)
       setCallStatus('idle')
       alert("Microphone permission is required to place calls.")
     }
