@@ -4,9 +4,12 @@ import { useState, useEffect } from "react"
 import { assignConversation } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { Check, ChevronDown, User } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/lib/auth-context"
 import type { ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function AssignButton({ conversation, orgId }: { conversation: ConversationWithDetails | null | undefined, orgId: string }) {
+  const currentUser = useAuth()
   const [isAssigning, setIsAssigning] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [teammates, setTeammates] = useState<UserProfile[]>([])
@@ -26,6 +29,34 @@ export default function AssignButton({ conversation, orgId }: { conversation: Co
     setIsOpen(false)
     try {
       await assignConversation(orgId, conversation.id, userId)
+      
+      // If we assigned it to another teammate, broadcast a real-time event!
+      if (userId && userId !== currentUser.id) {
+        const targetTeammate = teammates.find(t => t.id === userId);
+        const channel = supabase.channel(`typing:${orgId}`)
+        
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'conversationAssigned',
+              payload: {
+                conversation_id: conversation.id,
+                assigned_to: userId,
+                assigned_to_name: targetTeammate?.name || 'Agent',
+                assigned_by_name: currentUser.name,
+                assigned_by_id: currentUser.id,
+                contact_name: Array.isArray(conversation.contact) ? conversation.contact[0]?.name : conversation.contact?.name || 'Customer'
+              }
+            }).then(() => {
+              // Clean up channel after sending
+              setTimeout(() => {
+                supabase.removeChannel(channel)
+              }, 1000)
+            })
+          }
+        })
+      }
     } catch (e) {
       console.error(e)
     } finally {

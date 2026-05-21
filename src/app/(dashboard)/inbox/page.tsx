@@ -6,6 +6,7 @@ import ContactSidebar from "@/components/inbox/ContactSidebar"
 import CallsPage from "@/components/inbox/CallsPage"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore } from "@/lib/store"
+import { Bell } from "lucide-react"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
@@ -31,6 +32,28 @@ export default function InboxPage() {
   const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
+
+  const [assignedNotification, setAssignedNotification] = useState<{
+    conversationId: string
+    senderName: string
+    contactName: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (assignedNotification) {
+      const timer = setTimeout(() => {
+        setAssignedNotification(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [assignedNotification]);
+
+  const handleOpenAssigned = (conversationId: string) => {
+    setSelectedId(conversationId);
+    useInboxStore.getState().setActiveFilter('all');
+    setMobileView('chat');
+    setAssignedNotification(null);
+  }
 
   useEffect(() => {
     if (currentUser) setCurrentUser(currentUser as UserProfile)
@@ -259,6 +282,17 @@ export default function InboxPage() {
           return next;
         });
       })
+      .on('broadcast', { event: 'conversationAssigned' }, (payload) => {
+        const { conversation_id, assigned_to, assigned_by_name, contact_name } = payload.payload;
+        if (assigned_to === currentUser?.id) {
+          playUISound('receive');
+          setAssignedNotification({
+            conversationId: conversation_id,
+            senderName: assigned_by_name,
+            contactName: contact_name
+          });
+        }
+      })
       .subscribe();
       
     const presenceChannel = supabase.channel(`presence:${ORG_ID}`)
@@ -354,7 +388,39 @@ export default function InboxPage() {
   }
 
   return (
-    <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">
+    <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900 relative">
+      {/* Beautiful Floating Assignment Notification Banner */}
+      {assignedNotification && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-blue-500/35 dark:border-blue-500/25 px-4 py-3 rounded-2xl shadow-xl shadow-blue-500/10 max-w-sm sm:max-w-md">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold animate-pulse">
+              <Bell size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                Forwarded to you!
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                <strong className="text-slate-800 dark:text-slate-200">{assignedNotification.senderName}</strong> assigned chat of <strong className="text-slate-800 dark:text-slate-200">{assignedNotification.contactName}</strong>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => handleOpenAssigned(assignedNotification.conversationId)}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition-all active:scale-95 shadow-sm shadow-blue-600/20"
+              >
+                Open
+              </button>
+              <button 
+                onClick={() => setAssignedNotification(null)}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ConversationList: visible on desktop always, on mobile only when mobileView is 'list' */}
       <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[320px] shrink-0`}>
         <ConversationList 
