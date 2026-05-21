@@ -2,6 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+// In-memory cache for approved examples and recent corrections to make AI draft generation super fast
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const approvedExamplesCache: Record<string, CacheEntry<{ bengali: string[]; english: string[] }>> = {};
+const recentCorrectionsCache: Record<string, CacheEntry<string[]>> = {};
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
+
 /**
  * Log an AI draft for a conversation. Called right after AI generates a draft.
  * Returns the log ID so we can update it later when the agent sends.
@@ -107,7 +116,7 @@ export async function completeAiDraftLog(
     // First get the original draft to compare
     const { data: log } = await supabase
       .from("ai_draft_logs")
-      .select("ai_draft")
+      .select("ai_draft, org_id")
       .eq("id", logId)
       .single();
 
@@ -130,6 +139,12 @@ export async function completeAiDraftLog(
         correction_feedback: correctionFeedback
       })
       .eq("id", logId);
+
+    // Invalidate cache since database was updated
+    if (log.org_id) {
+      delete approvedExamplesCache[log.org_id];
+      delete recentCorrectionsCache[log.org_id];
+    }
   } catch (e) {
     console.error("completeAiDraftLog error:", e);
   }
@@ -144,6 +159,12 @@ export async function getApprovedExamples(
   orgId: string
 ): Promise<{ bengali: string[]; english: string[] }> {
   try {
+    const now = Date.now();
+    const cached = approvedExamplesCache[orgId];
+    if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+      return cached.data;
+    }
+
     const supabase = await createClient();
 
     // Get recent unedited drafts (agent approved as-is)
@@ -174,7 +195,9 @@ export async function getApprovedExamples(
       if (bengali.length >= 4 && english.length >= 4) break;
     }
 
-    return { bengali, english };
+    const result = { bengali, english };
+    approvedExamplesCache[orgId] = { data: result, timestamp: now };
+    return result;
   } catch (e) {
     console.error("getApprovedExamples error:", e);
     return { bengali: [], english: [] };
@@ -186,6 +209,12 @@ export async function getApprovedExamples(
  */
 export async function getRecentCorrections(orgId: string): Promise<string[]> {
   try {
+    const now = Date.now();
+    const cached = recentCorrectionsCache[orgId];
+    if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+      return cached.data;
+    }
+
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("ai_draft_logs")
@@ -197,7 +226,9 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
       .limit(6);
 
     if (error || !data) return [];
-    return data.map(row => row.correction_feedback).filter((c): c is string => !!c);
+    const corrections = data.map(row => row.correction_feedback).filter((c): c is string => !!c);
+    recentCorrectionsCache[orgId] = { data: corrections, timestamp: now };
+    return corrections;
   } catch (e) {
     console.error("getRecentCorrections error:", e);
     return [];

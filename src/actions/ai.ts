@@ -14,7 +14,11 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     let mistakesBlock = '';
     if (orgId) {
       try {
-        const examples = await getApprovedExamples(orgId);
+        const [examples, corrections] = await Promise.all([
+          getApprovedExamples(orgId),
+          getRecentCorrections(orgId)
+        ]);
+
         const allExamples = [
           ...examples.english.map(e => `[English example] ${e}`),
           ...examples.bengali.map(e => `[Bengali example] ${e}`)
@@ -23,8 +27,6 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
           fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (your team approved these as perfect replies, learn from their tone and style):\n${allExamples.join('\n---\n')}`;
         }
         
-        // Fetch recent correction feedback (mistakes to avoid)
-        const corrections = await getRecentCorrections(orgId);
         if (corrections.length > 0) {
           mistakesBlock = `\n\nCRITICAL: PAST MISTAKES TO AVOID (Human agents corrected your drafts for these reasons. Learn from these and DO NOT repeat them):\n${corrections.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
         }
@@ -36,16 +38,16 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     // Comprehensive Benglish words list to avoid misclassification
     const BENGLISH_WORDS = new Set([
       'ami', 'tumi', 'apni', 'amader', 'apnar', 'tomar', 'koto', 'bhai', 'apuni', 'apuo',
-      'hobe', 'ase', 'aseh', 'tai', 'karone', 'ekhon', 'korte', 'na', 'to', 'toh', 'sathe',
-      'keno', 'shudhu', 'dorkar', 'nai', 'kichhu', 'kichu', 'pore', 'korbo', 'sob', 'verify',
-      'tarpor', 'chaile', 'parbo', 'parbona', 'karon', 'theke', 'sathe', 'diye', 'hoye', 'hoy',
-      'kotha', 'bolen', 'bolo', 'bolun', 'ki', 'ke', 'keno', 'kothay', 'kemon', 'valobashi',
+      'hobe', 'ase', 'aseh', 'tai', 'karone', 'ekhon', 'korte', 'toh', 'sathe',
+      'keno', 'shudhu', 'dorkar', 'nai', 'kichhu', 'kichu', 'pore', 'korbo', 'sob',
+      'tarpor', 'chaile', 'parbo', 'parbona', 'karon', 'theke', 'diye', 'hoye', 'hoy',
+      'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi',
       'ache', 'dhonnobad', 'shundor', 'sundor', 'khub', 'valo', 'bhalo', 'kharap',
-      'din', 'niben', 'nibo', 'taka', 'lakh', 'bdt', 'vai', 'vaia', 'apu', 'boltesi', 'chi', 'cai',
-      'chaitechi', 'lagbe', 'nilam', 'dekhun', 'den', 'koren', 'korun', 'hbe', 'nki', 'naki',
-      'ki', 'r', 'aar', 'ar', 'tai', 'hoile', 'hole', 'hoise', 'hoyese', 'bujhlam', 'bujhte',
-      'kora', 'korar', 'amar', 'tomar', 'tar', 'unader', 'oder', 'eder', 'ki', 'kno', 'o',
-      'ebong', 'aar', 'kintu'
+      'niben', 'nibo', 'taka', 'lakh', 'bdt', 'vai', 'vaia', 'apu', 'boltesi', 'cai',
+      'chaitechi', 'lagbe', 'nilam', 'dekhun', 'koren', 'korun', 'hbe', 'nki', 'naki',
+      'hoile', 'hole', 'hoise', 'hoyese', 'bujhlam', 'bujhte',
+      'kora', 'korar', 'amar', 'tomar', 'tar', 'unader', 'oder', 'eder', 'kno',
+      'ebong', 'kintu'
     ]);
 
     // Extract the customer's last 4 messages to determine the language
@@ -150,6 +152,7 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
     }
 
     const data = await response.json();
+    console.log("Anthropic Response Usage:", data.usage);
     const draftText = data.content?.[0]?.text;
 
     if (!draftText) {
