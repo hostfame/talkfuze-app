@@ -2,25 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { assignConversation } from "@/actions/dashboard"
-import { getTeammates } from "@/actions/team"
 import { Check, ChevronDown, User } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import { useInboxStore } from "@/lib/store"
 import type { ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function AssignButton({ conversation, orgId }: { conversation: ConversationWithDetails | null | undefined, orgId: string }) {
   const currentUser = useAuth()
+  const { teamMembers: teammates } = useInboxStore()
   const [isAssigning, setIsAssigning] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [teammates, setTeammates] = useState<UserProfile[]>([])
 
   const assignee = Array.isArray(conversation?.assignee) ? conversation?.assignee[0] : conversation?.assignee
-
-  useEffect(() => {
-    if (isOpen && teammates.length === 0) {
-      getTeammates().then(setTeammates)
-    }
-  }, [isOpen, teammates.length])
 
   if (!conversation) return null
 

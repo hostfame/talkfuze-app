@@ -491,35 +491,41 @@ export default function SipDialer() {
                 const name = `${client.firstname} ${client.lastname}`.trim()
                 setIncomingCallerName(name) // Prefer real WHMCS client name
                 
-                let activeServices = 0
-                let unpaidAmount = 0
-                
-                try {
-                  const servicesRes = await fetchWhmcsServices(client.id)
-                  if (servicesRes && servicesRes.products) {
-                    activeServices = servicesRes.products.filter((p: any) => p.status?.toLowerCase() === 'active').length
-                  }
-                } catch (e) {
-                  console.error("Failed to fetch active services:", e)
-                }
-
-                try {
-                  const unpaidRes = await fetchWhmcsUnpaidInvoices(client.id)
-                  if (unpaidRes) {
-                    unpaidAmount = unpaidRes.reduce((sum: number, inv: any) => sum + parseFloat(inv.total || '0'), 0)
-                  }
-                } catch (e) {
-                  console.error("Failed to fetch unpaid invoices:", e)
-                }
-                
+                // Set base info IMMEDIATELY so UI doesn't delay
                 setWhmcsClientInfo({
                   id: client.id,
                   name: name,
                   email: (client as any).email || '',
                   status: (client as any).status || '',
-                  services: activeServices,
-                  unpaid: unpaidAmount
+                  services: 0,
+                  unpaid: 0
                 })
+
+                // Fetch details concurrently
+                try {
+                  const [servicesRes, unpaidRes] = await Promise.all([
+                    fetchWhmcsServices(client.id).catch(() => null),
+                    fetchWhmcsUnpaidInvoices(client.id).catch(() => null)
+                  ])
+
+                  let activeServices = 0
+                  let unpaidAmount = 0
+
+                  if (servicesRes && servicesRes.products) {
+                    activeServices = servicesRes.products.filter((p: any) => p.status?.toLowerCase() === 'active').length
+                  }
+                  if (unpaidRes) {
+                    unpaidAmount = unpaidRes.reduce((sum: number, inv: any) => sum + parseFloat(inv.total || '0'), 0)
+                  }
+
+                  setWhmcsClientInfo(prev => prev ? {
+                    ...prev,
+                    services: activeServices,
+                    unpaid: unpaidAmount
+                  } : prev)
+                } catch (e) {
+                  console.error("Failed to fetch WHMCS details:", e)
+                }
               }
             })
             .catch(err => console.error("WHMCS dynamic client lookup failed:", err))
@@ -1120,10 +1126,10 @@ export default function SipDialer() {
               <button 
                 onClick={handleHangup}
                 disabled={!canHangUp}
-                className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(255,59,48,0.3)] cursor-pointer border ${
+                className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
                   !canHangUp 
-                    ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed'
-                    : 'bg-[#ff3b30] hover:bg-[#ff453a] border border-[#ff3b30]/10 text-white active:scale-95'
+                    ? 'bg-white/5 border-white/10 text-white/50 cursor-not-allowed shadow-none'
+                    : 'bg-[#ff3b30] hover:bg-[#ff453a] border border-[#ff3b30]/10 text-white active:scale-95 shadow-[0_4px_12px_rgba(255,59,48,0.3)]'
                 }`}
                 title={!canHangUp ? "Connecting..." : "Hang up"}
               >
@@ -1180,12 +1186,7 @@ export default function SipDialer() {
               {/* WHMCS Profile details */}
               {whmcsClientInfo && (
                 <div className="space-y-2 text-[12px]">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <span className="text-white/60 font-medium">WHMCS Client</span>
-                    <span className="px-2.5 py-0.5 bg-[#34c759]/10 border border-[#34c759]/20 text-[#34c759] font-mono text-[10px] font-bold rounded-full">
-                      #{whmcsClientInfo.id}
-                    </span>
-                  </div>
+
                   <div className="flex justify-between">
                     <span className="text-white/60 font-medium">Name</span>
                     <span className="text-white font-bold">{whmcsClientInfo.name}</span>
@@ -1197,15 +1198,15 @@ export default function SipDialer() {
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 pt-1">
-                    {whmcsClientInfo.services && whmcsClientInfo.services > 0 ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#34c759]/10 border border-[#34c759]/20 text-[#34c759] flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-[#34c759]"></span>
+                    {whmcsClientInfo.services !== undefined && whmcsClientInfo.services > 0 ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black flex items-center gap-1.5 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#34c759]"></span>
                         {whmcsClientInfo.services} Active
                       </span>
                     ) : null}
-                    {whmcsClientInfo.unpaid && whmcsClientInfo.unpaid > 0 ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-rose-500"></span>
+                    {whmcsClientInfo.unpaid !== undefined && whmcsClientInfo.unpaid > 0 ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black flex items-center gap-1.5 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                         ৳{whmcsClientInfo.unpaid.toLocaleString()} Unpaid
                       </span>
                     ) : null}

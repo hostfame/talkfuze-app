@@ -2,24 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { assignConversation } from "@/actions/dashboard"
-import { getTeammates } from "@/actions/team"
-import { ChevronDown, Forward, Check } from "lucide-react"
+import { ChevronDown, Check } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
+import { useInboxStore } from "@/lib/store"
 import type { ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function ForwardButton({ conversation, orgId }: { conversation: ConversationWithDetails | null | undefined, orgId: string }) {
   const currentUser = useAuth()
+  const { teamMembers: teammates } = useInboxStore()
   const [isForwarding, setIsForwarding] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [teammates, setTeammates] = useState<UserProfile[]>([])
   const [forwardedTo, setForwardedTo] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (isOpen && teammates.length === 0) {
-      getTeammates().then(setTeammates)
-    }
-  }, [isOpen, teammates.length])
 
   // Auto-clear confirmation after 3s
   useEffect(() => {
@@ -86,8 +80,7 @@ export default function ForwardButton({ conversation, orgId }: { conversation: C
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-1.5 text-[13px] font-medium cursor-pointer transition-colors px-2 py-1 -mr-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 ${isForwarding ? "opacity-50 pointer-events-none" : ""}`}
         >
-          <Forward size={13} className="text-slate-400" />
-          Forward to...
+          <span className="font-medium">Forward to...</span>
           <ChevronDown size={13} className="text-slate-400" />
         </div>
       )}

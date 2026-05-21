@@ -185,6 +185,7 @@ export async function getWidgetMessages(orgId: string, deviceId: string, convers
       .from("messages")
       .select("*")
       .eq("conversation_id", targetConvId)
+      .eq("is_internal", false)
       
     if (beforeTimestamp) {
       msgQuery = msgQuery.lt("created_at", beforeTimestamp)
