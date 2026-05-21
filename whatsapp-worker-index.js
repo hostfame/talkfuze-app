@@ -930,7 +930,7 @@ async function processOutboundMessage(msg) {
         console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
       }
     } else if (msg.sender_type === 'ai') {
-      agentName = 'AI Assistant';
+      agentName = 'Nina';
     }
 
     let formattedContent = msg.content || '';
