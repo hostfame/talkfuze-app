@@ -532,15 +532,40 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [participants, setParticipants] = useState<any[]>([])
   useEffect(() => {
     let active = true
-    if (conversation?.id) {
-      getParticipants(conversation.id).then(data => {
+    const conversationId = conversation?.id
+
+    if (conversationId) {
+      getParticipants(conversationId).then(data => {
         if (active) setParticipants(data)
       })
+
+      const channel = supabase
+        .channel(`participants_sidebar:${conversationId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversation_participants',
+            filter: `conversation_id=eq.${conversationId}`
+          },
+          () => {
+            getParticipants(conversationId).then(data => {
+              if (active) setParticipants(data)
+            })
+          }
+        )
+        .subscribe()
+
+      return () => {
+        active = false
+        supabase.removeChannel(channel)
+      }
     } else {
       setParticipants([])
-    }
-    return () => {
-      active = false
+      return () => {
+        active = false
+      }
     }
   }, [conversation?.id])
 

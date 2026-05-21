@@ -1259,10 +1259,39 @@ export default function ChatThread({
 
     if (!conversationId) return
     setIsLoadingParticipants(true)
+    let active = true
+
     getParticipants(conversationId).then(data => {
-      setParticipants(data as unknown as ConversationParticipant[])
-      setIsLoadingParticipants(false)
+      if (active) {
+        setParticipants(data as unknown as ConversationParticipant[])
+        setIsLoadingParticipants(false)
+      }
     })
+
+    const channel = supabase
+      .channel(`participants_thread:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversation_participants',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        () => {
+          getParticipants(conversationId).then(data => {
+            if (active) {
+              setParticipants(data as unknown as ConversationParticipant[])
+            }
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      active = false
+      supabase.removeChannel(channel)
+    }
   }, [conversationId])
 
   // Keep ref of staged attachments to revoke on unmount only, avoiding premature destruction
