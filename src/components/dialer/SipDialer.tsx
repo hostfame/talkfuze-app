@@ -164,42 +164,50 @@ export default function SipDialer() {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
       if (!AudioCtx) return
       
+      // Stop any existing ring first to prevent leaks
+      stopSynthesizedRing()
+      
       const triggerRingCycle = () => {
-        const ctx = new AudioCtx()
-        audioContextRef.current = ctx
-        
-        const osc1 = ctx.createOscillator()
-        const osc2 = ctx.createOscillator()
-        const gain = ctx.createGain()
-        
-        osc1.type = 'sine'
-        osc1.frequency.value = 440
-        
-        osc2.type = 'sine'
-        osc2.frequency.value = 480
-        
-        gain.gain.setValueAtTime(0, ctx.currentTime)
-        const now = ctx.currentTime
-        gain.gain.linearRampToValueAtTime(0.12, now + 0.1)
-        gain.gain.setValueAtTime(0.12, now + 2)
-        gain.gain.linearRampToValueAtTime(0, now + 2.1)
-        
-        osc1.connect(gain)
-        osc2.connect(gain)
-        gain.connect(ctx.destination)
-        
-        osc1.start()
-        osc2.start()
-        
-        ringOscillatorsRef.current = [osc1, osc2]
-        
-        setTimeout(() => {
-          try {
-            osc1.stop()
-            osc2.stop()
-            ctx.close()
-          } catch(e) {}
-        }, 2200)
+        try {
+          const ctx = new AudioCtx()
+          audioContextRef.current = ctx
+          
+          const osc1 = ctx.createOscillator()
+          const osc2 = ctx.createOscillator()
+          const gain = ctx.createGain()
+          
+          osc1.type = 'sine'
+          osc1.frequency.value = 440
+          
+          osc2.type = 'sine'
+          osc2.frequency.value = 480
+          
+          gain.gain.setValueAtTime(0, ctx.currentTime)
+          const now = ctx.currentTime
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.1)
+          gain.gain.setValueAtTime(0.12, now + 2)
+          gain.gain.linearRampToValueAtTime(0, now + 2.1)
+          
+          osc1.connect(gain)
+          osc2.connect(gain)
+          gain.connect(ctx.destination)
+          
+          osc1.start()
+          osc2.start()
+          
+          ringOscillatorsRef.current = [osc1, osc2]
+          
+          setTimeout(() => {
+            try {
+              osc1.stop()
+              osc2.stop()
+              // Only close if still open (stopSynthesizedRing may have already closed it)
+              if (ctx.state !== 'closed') {
+                ctx.close().catch(() => {})
+              }
+            } catch(e) {}
+          }, 2200)
+        } catch(e) {}
       };
 
       // Ring immediately, then repeat every 6 seconds (cadence: 2s ring, 4s silent)
@@ -221,8 +229,9 @@ export default function SipDialer() {
       })
       ringOscillatorsRef.current = []
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close()
+        audioContextRef.current.close().catch(() => {})
       }
+      audioContextRef.current = null
     } catch (e) {}
   }
 
@@ -360,8 +369,10 @@ export default function SipDialer() {
         authorizationUsername: sipExtension,
         displayName: sipUser?.name || "TalkFuze Agent",
         sessionDescriptionHandlerFactoryOptions: {
+          iceGatheringTimeout: 1500, // Send 200 OK fast - don't wait 5s for all TURN candidates
           peerConnectionConfiguration: {
-            iceServers: ICE_SERVERS
+            iceServers: ICE_SERVERS,
+            iceCandidatePoolSize: 1 // Pre-warm ICE agent to reduce gathering delay
           }
         }
       }
@@ -757,7 +768,8 @@ export default function SipDialer() {
       console.log('[SIP] Calling session.accept() directly...')
       await session.accept({
         sessionDescriptionHandlerOptions: {
-          constraints: { audio: true, video: false }
+          constraints: { audio: true, video: false },
+          iceGatheringTimeout: 1500 // Fast answer - don't wait for slow TURN relay candidates
         }
       })
       console.log('[SIP] session.accept() resolved successfully - call should be establishing')

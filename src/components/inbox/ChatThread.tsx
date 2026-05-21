@@ -1,10 +1,10 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
-import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
+import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName } from "@/actions/contacts"
