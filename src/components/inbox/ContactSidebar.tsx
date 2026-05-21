@@ -83,10 +83,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     : (displayPlatformId.startsWith('+') ? displayPlatformId : `+${displayPlatformId}`)
 
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
+  const contactEmail = contact?.email
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
   const effectivePhoneId = contactPhone || displayPlatformId
-  const isEmail = effectivePhoneId && typeof effectivePhoneId === 'string' && effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
-  const cleanPhone = effectivePhoneId ? (isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)) : ""
+  const effectiveSearchQuery = contactEmail || contactPhone || displayPlatformId
+  const isEmail = effectiveSearchQuery && typeof effectiveSearchQuery === 'string' && effectiveSearchQuery.includes('@') && !effectiveSearchQuery.endsWith('@lid')
+  const cleanPhone = effectiveSearchQuery ? (isEmail ? effectiveSearchQuery : (effectiveSearchQuery.startsWith('+') ? effectiveSearchQuery : `+${effectiveSearchQuery}`)) : ""
 
   const isPhone = (text: string) => {
     if (!text) return false
@@ -623,6 +625,25 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     }
   }
 
+  const handleRefreshCrm = async () => {
+    if (!whmcsClient?.id) return;
+    setIsCrmLoading(true);
+    try {
+      const [services, tickets, invoices] = await Promise.all([
+        fetchWhmcsServices(whmcsClient.id),
+        fetchWhmcsTickets(whmcsClient.id),
+        fetchWhmcsUnpaidInvoices(whmcsClient.id)
+      ]);
+      setWhmcsServices(services);
+      setWhmcsTickets(tickets);
+      setWhmcsInvoices(invoices);
+    } catch (e) {
+      console.error("Failed to refresh CRM details:", e);
+    } finally {
+      setIsCrmLoading(false);
+    }
+  }
+
   const handleConvertToTicket = async () => {
     if (!conversation?.id || !whmcsClient?.id) return;
     setIsConvertingTicket(true);
@@ -707,6 +728,18 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             if (mounted) {
               setWhmcsClient(whmcsClientResult)
             }
+            
+            // Auto-bind in DB if contact has no email linked yet
+            if (contact?.id && !contact?.email && whmcsClientResult.email) {
+              updateContactEmail(contact.id, whmcsClientResult.email);
+              if (!contact?.phone && whmcsClientResult.phonenumber && !whmcsClientResult.phonenumber.includes('@')) {
+                const cleanNum = whmcsClientResult.phonenumber.replace(/\D/g, '');
+                if (cleanNum.length >= 9) {
+                  updateContactPhone(contact.id, cleanNum);
+                }
+              }
+            }
+
             const [services, tickets, invoices] = await Promise.all([
               fetchWhmcsServices(whmcsClientResult.id),
               fetchWhmcsTickets(whmcsClientResult.id),
@@ -1002,7 +1035,15 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               <div className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[12px] font-mono text-slate-400">#{whmcsClient.id}</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <button 
+                      onClick={handleRefreshCrm} 
+                      disabled={isCrmLoading}
+                      className="text-slate-400 hover:text-blue-500 transition-colors disabled:opacity-50" 
+                      title="Refresh CRM Data"
+                    >
+                      <RefreshCw size={13} className={isCrmLoading ? "animate-spin text-blue-500" : ""} />
+                    </button>
                     <button onClick={handleUnlink} className="text-slate-400 hover:text-red-500 transition-colors" title="Unlink Client Profile">
                       <X size={14} />
                     </button>
@@ -1038,7 +1079,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               <p className="text-[13px] text-slate-500 dark:text-slate-400">
                 {lastSearchedQuery
                   ? `No matching account found for ${lastSearchedQuery}.`
-                  : `No CRM profile linked. Search by email or name to link.`}
+                  : `No CRM profile linked. Search to link.`}
               </p>
             </div>
           )}

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { createClient } from "@/lib/supabase/server"
 import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+import { fetchWhmcsClient } from "@/actions/whmcs"
 
 type ConversationChannelRelation = Relation<{
   type?: string | null
@@ -11,7 +12,10 @@ type ConversationChannelRelation = Relation<{
 }>
 
 type ConversationContactRelation = Relation<{
+  id?: string | null
   platform_id?: string | null
+  email?: string | null
+  phone?: string | null
 }>
 
 function firstRelation<T>(relation: Relation<T> | undefined) {
@@ -167,7 +171,8 @@ export async function replyToConversation(
     .from("conversations")
     .select(`
       id,
-      contact:contacts(platform_id),
+      contact_id,
+      contact:contacts(id, platform_id, email, phone),
       channel:channels(type, config)
     `)
     .eq("id", conversationId)
@@ -204,6 +209,30 @@ export async function replyToConversation(
   const channelData = firstRelation(conv.channel as ConversationChannelRelation);
   const channelType = channelData?.type;
   const channelConfig = channelData?.config;
+  const contactData = firstRelation(conv.contact as ConversationContactRelation);
+  const recipientId = contactData?.platform_id;
+
+  // Auto-bind WHMCS if it's WhatsApp and contact has no email linked yet
+  if (channelType === 'whatsapp' && contactData?.id && !contactData?.email && recipientId) {
+    const rawNum = recipientId.includes('@') ? recipientId.split('@')[0] : recipientId;
+    const cleanNum = rawNum.replace(/\D/g, '');
+    if (cleanNum.length >= 8) {
+      try {
+        const whmcsClient = (await fetchWhmcsClient(cleanNum)) as any;
+        if (whmcsClient && whmcsClient.email) {
+          await supabaseAdmin.from('contacts').update({ email: whmcsClient.email }).eq('id', contactData.id);
+          if (!contactData.phone && whmcsClient.phonenumber && !whmcsClient.phonenumber.includes('@')) {
+            const cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
+            if (cleanPhoneNum.length >= 9) {
+              await supabaseAdmin.from('contacts').update({ phone: cleanPhoneNum }).eq('id', contactData.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Auto-binding in replyToConversation failed:", e);
+      }
+    }
+  }
 
   // Do not send to external platforms if it's an internal note
   if (isInternal) {
