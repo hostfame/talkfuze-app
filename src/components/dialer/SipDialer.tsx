@@ -275,6 +275,12 @@ export default function SipDialer() {
     session.stateChange.addListener((newState: any) => {
       console.log(`[SIP] Direct Session State Change: ${newState}`)
       if (newState === 'Terminating' || newState === 'Terminated') {
+        // Diagnostic: log stack trace to identify WHO caused the termination
+        console.warn(`[SIP] Session terminated/terminating. Stack trace:`, new Error().stack)
+        const pc = session.sessionDescriptionHandler?.peerConnection
+        if (pc) {
+          console.log(`[SIP] PeerConnection state at termination: ICE=${pc.iceConnectionState}, Connection=${pc.connectionState}, Signaling=${pc.signalingState}`)
+        }
         setStatus('Registered')
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
@@ -543,12 +549,14 @@ export default function SipDialer() {
         setActiveCallSession(prev => prev || { number: number.replace(/[\s-]/g, ''), direction: 'outbound' })
       },
       onCallAnswered: () => {
+        console.log('[SIP] onCallAnswered delegate fired - call is established')
         setStatus('Connected')
         setSessionState(SessionState.Established)
         stopSynthesizedRing()
         startTimer()
       },
       onCallHangup: () => {
+        console.warn('[SIP] onCallHangup delegate fired - call ended. Stack:', new Error().stack)
         setStatus('Registered')
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
@@ -704,31 +712,35 @@ export default function SipDialer() {
   const handleAnswer = async () => {
     if (!userAgent) return
     
+    console.log('[SIP] handleAnswer() called. Current session state:', (userAgent as any).session?.state)
+    
     setCanHangUp(false)
     setTimeout(() => {
       setCanHangUp(true)
     }, 5000)
     
-    // Instant Optimistic Connect UI change
-    setStatus('Connecting...')
+    // Stop ring tone immediately (frees AudioContext before getUserMedia)
     stopSynthesizedRing()
     
-    // Explicit browser gesture autoplay bypass + unmute if ring was muted
-    // Pre-unlock the HTMLAudioElement safely without triggering an play-on-empty error state
+    // Instant Optimistic Connect UI change
+    setStatus('Connecting...')
+    
+    // Unmute remote audio element if ring was muted (do NOT call .load() or .play() - SIP.js handles srcObject)
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false
-      try {
-        remoteAudioRef.current.load()
-      } catch (e) {}
     }
     
-    // Let the browser fully release the ring AudioContext resources before requesting microphone stream
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
     try {
+      console.log('[SIP] Calling userAgent.answer()...')
       await userAgent.answer()
-    } catch (e) {
-      console.error("Answer failed", e)
+      console.log('[SIP] userAgent.answer() resolved successfully')
+    } catch (e: any) {
+      console.error('[SIP] Answer failed:', e?.message || e)
+      // If answer failed, reset UI
+      setStatus('Registered')
+      setSessionState(SessionState.Terminated)
+      setActiveCallSession(null)
+      setCanHangUp(true)
     }
   }
 
@@ -1125,7 +1137,7 @@ export default function SipDialer() {
           </div>
 
           {/* Bottom Expandable Details Tray */}
-          {isClientExpanded && (whmcsClientInfo || matchedConversationId || lastCallInfo) && (
+          {isClientExpanded && (whmcsClientInfo || lastCallInfo) && (
             <div className="border-t border-white/10 bg-black/40 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               
               {/* Transfer Input Overlay inside tray */}
@@ -1171,7 +1183,7 @@ export default function SipDialer() {
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <span className="text-white/60 font-medium">WHMCS Client</span>
                     <span className="px-2.5 py-0.5 bg-[#34c759]/10 border border-[#34c759]/20 text-[#34c759] font-mono text-[10px] font-bold rounded-full">
-                      #{whmcsClientInfo.id} ({whmcsClientInfo.status})
+                      #{whmcsClientInfo.id}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1229,44 +1241,7 @@ export default function SipDialer() {
                 </div>
               )}
 
-              {/* Call Note */}
-              {matchedConversationId && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] text-white/50 font-bold uppercase tracking-wider">Call Note</span>
-                  <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden focus-within:border-emerald-500/40 transition-colors">
-                    <textarea
-                      value={callNote}
-                      onChange={(e) => { setCallNote(e.target.value); setNoteSaved(false) }}
-                      placeholder="Type brief note here..."
-                      className="w-full px-3 py-2 text-[11px] bg-transparent outline-none text-white placeholder-white/30 resize-none"
-                      rows={2}
-                    />
-                    {callNote.trim() && (
-                      <div className="flex items-center justify-end px-3 pb-2 gap-1.5">
-                        {noteSaved && (
-                          <span className="text-[10px] text-[#34c759] font-medium">Saved</span>
-                        )}
-                        <button
-                          onClick={async () => {
-                            if (!callNote.trim() || !currentUser?.org_id || !currentUser?.id) return
-                            setIsSavingNote(true)
-                            const res = await saveCallNote(currentUser.org_id, matchedConversationId, callNote.trim(), currentUser.id)
-                            setIsSavingNote(false)
-                            if (res.success) {
-                              setNoteSaved(true)
-                              setCallNote('')
-                            }
-                          }}
-                          disabled={isSavingNote || noteSaved}
-                          className="text-[10px] font-bold px-3 py-1 rounded bg-[#34c759] hover:bg-[#30b351] active:scale-95 text-white transition-all cursor-pointer"
-                        >
-                          {isSavingNote ? 'Saving...' : 'Save'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+
             </div>
           )}
         </div>
