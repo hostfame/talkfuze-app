@@ -2380,13 +2380,7 @@ export default function WidgetPage() {
 
         {/* Top Header - Secure Branding */}
         <div className="w-full flex items-center justify-center pt-8 px-6 z-10">
-          <div className="flex flex-col items-center gap-1.5">
-            <img src="/hostnin-white.png" className="h-[24px] w-auto object-contain opacity-90" alt="Hostnin Logo" />
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] uppercase font-bold tracking-widest leading-none">
-              <Shield size={10} className="text-blue-400" />
-              Secure WebRTC Audio Call
-            </div>
-          </div>
+          <img src="/hostnin-white.png" className="h-[24px] w-auto object-contain opacity-90" alt="Hostnin Logo" />
         </div>
 
         {/* Mid Container - Caller Identity & Pulse Animation */}
@@ -2438,9 +2432,7 @@ export default function WidgetPage() {
                 </>
               ) : isDeclined ? (
                 "Call Declined"
-              ) : (
-                "Secure Audio Channel"
-              )}
+              ) : null}
             </div>
           </div>
         </div>
