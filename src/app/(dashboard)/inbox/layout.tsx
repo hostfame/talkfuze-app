@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin, Phone, Bell } from "lucide-react"
+import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin, Phone, Bell, Send } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
 import { useInboxStore } from "@/lib/store"
@@ -95,7 +95,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'alerts' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Bell size={15} strokeWidth={2} /> Alerts</div>
+            <div className="flex items-center gap-2"><Send size={14} className="-rotate-45 transform" strokeWidth={2.5} /> Outbound</div>
             <span className="text-[12px] font-medium">{alertChats}</span>
           </div>
 
