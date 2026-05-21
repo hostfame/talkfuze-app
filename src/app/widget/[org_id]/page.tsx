@@ -2092,7 +2092,7 @@ export default function WidgetPage() {
       {/* Background Gradient for Home/Tickets/About */}
       {activeTab !== 'messages' && activeTab !== 'chat' && !isFullScreenTicketView && (
         <div 
-          className={`absolute top-0 left-0 right-0 h-[45%] ${!isCustomColor ? 'bg-gradient-to-b from-slate-600 to-slate-400' : ''} z-0`}
+          className={`absolute top-0 left-0 right-0 h-[45%] ${!isCustomColor ? 'bg-gradient-to-b from-[#1a2744] via-[#1e3a5f] to-[#2d5a8a]' : ''} z-0`}
           style={isCustomColor ? { background: `linear-gradient(to bottom, ${settings.color}, ${settings.color}ee)` } : {}}
         />
       )}
