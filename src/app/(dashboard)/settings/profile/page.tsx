@@ -4,7 +4,8 @@ import { useState, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { updateProfile, uploadAvatar } from "@/actions/team"
 import { getErrorMessage } from "@/lib/utils"
-import { User, Camera, Mail, Loader2 } from "lucide-react"
+import { User, Camera, Mail, Loader2, Volume2, Play, Check } from "lucide-react"
+import { SOUND_PRESETS, getSelectedSound, setSelectedSound, getSoundVolume, setSoundVolume, previewSound, type SoundPreset } from "@/lib/sounds"
 
 export default function ProfileSettingsPage() {
   const currentUser = useAuth()
@@ -16,6 +17,11 @@ export default function ProfileSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Sound settings (localStorage-based, no server needed)
+  const [soundPreset, setSoundPresetState] = useState<SoundPreset>(() => getSelectedSound())
+  const [volume, setVolumeState] = useState<number>(() => getSoundVolume())
+  const [playingPreset, setPlayingPreset] = useState<SoundPreset | null>(null)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -84,6 +90,26 @@ export default function ProfileSettingsPage() {
         fileInputRef.current.value = ""
       }
     }
+  }
+
+  const handlePresetChange = (preset: SoundPreset) => {
+    setSoundPresetState(preset)
+    setSelectedSound(preset)
+    // Auto-preview on selection
+    setPlayingPreset(preset)
+    previewSound(preset)
+    setTimeout(() => setPlayingPreset(null), 600)
+  }
+
+  const handleVolumeChange = (newVol: number) => {
+    setVolumeState(newVol)
+    setSoundVolume(newVol)
+  }
+
+  const handlePreviewClick = (preset: SoundPreset) => {
+    setPlayingPreset(preset)
+    previewSound(preset)
+    setTimeout(() => setPlayingPreset(null), 600)
   }
 
   return (
@@ -181,6 +207,96 @@ export default function ProfileSettingsPage() {
             {isSaving && <Loader2 size={16} className="animate-spin" />}
             Save Changes
           </button>
+        </div>
+      </div>
+
+      {/* ─── Notification Sound Settings ─── */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mb-6">
+        <div className="p-6 md:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+              <Volume2 size={20} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white">Notification Sound</h3>
+              <p className="text-[13px] text-slate-500">Choose a sound and volume for incoming messages.</p>
+            </div>
+          </div>
+
+          {/* Volume Slider */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-medium text-slate-700 dark:text-slate-300">Volume</label>
+              <span className="text-[12px] font-mono text-slate-400">{Math.round(volume * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-blue-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer"
+            />
+          </div>
+
+          {/* Sound Preset Grid */}
+          <div className="space-y-2">
+            {SOUND_PRESETS.map((preset) => {
+              const isSelected = soundPreset === preset.id
+              const isPlaying = playingPreset === preset.id
+              return (
+                <div
+                  key={preset.id}
+                  onClick={() => handlePresetChange(preset.id)}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all duration-150 border ${
+                    isSelected 
+                      ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 ring-1 ring-blue-500/20' 
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+                  }`}
+                >
+                  {/* Selection indicator */}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                    isSelected 
+                      ? 'border-blue-600 bg-blue-600' 
+                      : 'border-slate-300 dark:border-slate-600'
+                  }`}>
+                    {isSelected && <Check size={12} className="text-white" strokeWidth={3} />}
+                  </div>
+
+                  {/* Label */}
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[13.5px] font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                      {preset.name}
+                    </div>
+                    <div className="text-[12px] text-slate-500 dark:text-slate-400">
+                      {preset.description}
+                    </div>
+                  </div>
+
+                  {/* Preview button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePreviewClick(preset.id)
+                    }}
+                    className={`p-2 rounded-lg shrink-0 transition-all ${
+                      isPlaying 
+                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 scale-110' 
+                        : 'hover:bg-slate-200/70 dark:hover:bg-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                    }`}
+                    title={`Preview ${preset.name}`}
+                  >
+                    <Play size={14} className={isPlaying ? 'animate-pulse' : ''} fill={isPlaying ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          <p className="text-[11.5px] text-slate-400 dark:text-slate-500 mt-4">
+            Sound preference is saved locally on this device. If you are missing messages, try "Loud Ping" or increase the volume.
+          </p>
         </div>
       </div>
     </div>

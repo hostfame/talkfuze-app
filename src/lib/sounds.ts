@@ -40,6 +40,45 @@ if (typeof window !== 'undefined') {
   window.addEventListener('keydown', unlock, { passive: true });
 }
 
+// ─────────────────────────────────────────────
+// Sound Presets System
+// ─────────────────────────────────────────────
+
+export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud';
+
+export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string }[] = [
+  { id: 'default', name: 'Default', description: 'Subtle pop sound' },
+  { id: 'chime', name: 'Chime', description: 'Two-tone rising chime' },
+  { id: 'bell', name: 'Bell', description: 'Clear bell ring' },
+  { id: 'alert', name: 'Alert', description: 'Urgent double-beep' },
+  { id: 'loud', name: 'Loud Ping', description: 'Loud triple ping for noisy environments' },
+];
+
+export const getSelectedSound = (): SoundPreset => {
+  if (typeof window === 'undefined') return 'default';
+  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'default';
+};
+
+export const setSelectedSound = (preset: SoundPreset): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('talkfuze_sound_preset', preset);
+};
+
+export const getSoundVolume = (): number => {
+  if (typeof window === 'undefined') return 0.7;
+  const stored = localStorage.getItem('talkfuze_sound_volume');
+  return stored ? parseFloat(stored) : 0.7;
+};
+
+export const setSoundVolume = (vol: number): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('talkfuze_sound_volume', String(Math.max(0, Math.min(1, vol))));
+};
+
+// ─────────────────────────────────────────────
+// Synthesized Sound Engine (fallback when mp3 blocked)
+// ─────────────────────────────────────────────
+
 const playSynthesizedSound = (type: 'send' | 'receive') => {
   try {
     const ctx = getAudioContext();
@@ -117,28 +156,138 @@ const playSynthesizedSound = (type: 'send' | 'receive') => {
   }
 };
 
+// ─────────────────────────────────────────────
+// Preset Sound Synthesizers (WebAudio - works everywhere)
+// ─────────────────────────────────────────────
+
+const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    const t = ctx.currentTime;
+    const vol = volumeMultiplier;
+
+    // Master compressor
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-20, t);
+    comp.knee.setValueAtTime(30, t);
+    comp.ratio.setValueAtTime(8, t);
+    comp.attack.setValueAtTime(0.003, t);
+    comp.release.setValueAtTime(0.15, t);
+    comp.connect(ctx.destination);
+
+    // Helper to make a tone
+    const tone = (freq: number, start: number, dur: number, gain: number, waveType: OscillatorType = 'sine', filterFreq: number = 2000) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(filterFreq, t);
+      osc.connect(filt);
+      filt.connect(g);
+      g.connect(comp);
+      osc.type = waveType;
+      osc.frequency.setValueAtTime(freq, t + start);
+      g.gain.setValueAtTime(0, t + start);
+      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+      osc.start(t + start);
+      osc.stop(t + start + dur + 0.05);
+    };
+
+    switch (preset) {
+      case 'chime':
+        // Two-tone rising chime - brighter and louder than default
+        tone(880, 0, 0.25, 0.35);       // A5
+        tone(1175, 0.12, 0.3, 0.30);    // D6
+        break;
+
+      case 'bell':
+        // Clear bell ring - a single bright hit with harmonics
+        tone(1047, 0, 0.4, 0.40, 'sine', 3000);  // C6
+        tone(2093, 0, 0.25, 0.15, 'sine', 4000);  // C7 harmonic
+        tone(1568, 0.05, 0.2, 0.10, 'sine', 3000); // G6 shimmer
+        break;
+
+      case 'alert':
+        // Urgent double-beep - attention-grabbing
+        tone(1200, 0, 0.12, 0.45, 'square', 1800);
+        tone(1200, 0.18, 0.12, 0.45, 'square', 1800);
+        break;
+
+      case 'loud':
+        // Loud triple ping - impossible to miss
+        tone(1318, 0, 0.18, 0.55, 'sine', 2500);     // E6
+        tone(1568, 0.15, 0.18, 0.50, 'sine', 2500);   // G6
+        tone(1976, 0.30, 0.25, 0.55, 'sine', 3000);   // B6
+        // Extra low rumble for vibration feel
+        tone(220, 0, 0.15, 0.20, 'sine', 500);
+        break;
+
+      default:
+        // 'default' - same as original pop.mp3 vibe
+        tone(880, 0, 0.2, 0.25);
+        tone(1100, 0.08, 0.15, 0.18);
+        break;
+    }
+  } catch (err) {
+    console.error('Preset sound play error:', err);
+  }
+};
+
+// Play preview of a specific preset (for settings page)
+export const previewSound = (preset: SoundPreset): void => {
+  const vol = getSoundVolume();
+  playSynthPreset(preset, vol);
+};
+
+// ─────────────────────────────────────────────
+// Main Public API
+// ─────────────────────────────────────────────
+
 export const playUISound = (type: 'send' | 'receive') => {
   if (typeof window === 'undefined') return;
   
-  // Try high-permissiveness HTML5 Audio first (perfect for background tabs)
-  try {
-    const audioPath = type === 'send' ? '/swoosh.mp3' : '/pop.mp3';
-    const audio = new Audio(audioPath);
-    audio.volume = type === 'send' ? 0.35 : 0.5; // Premium balanced volumes
-    
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        // Successfully played pre-recorded MP3
-        return;
-      }).catch((err) => {
-        console.warn('[AUDIO] HTML5 blocked or failed, using synthesizer:', err.message);
-        playSynthesizedSound(type);
-      });
+  const preset = getSelectedSound();
+  const volume = getSoundVolume();
+
+  // Send sound always uses the subtle swoosh (no customization needed)
+  if (type === 'send') {
+    try {
+      const audio = new Audio('/swoosh.mp3');
+      audio.volume = Math.min(0.35 * (volume / 0.7), 1.0);
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          playSynthesizedSound(type);
+        });
+      }
+    } catch {
+      playSynthesizedSound(type);
     }
-  } catch (err: any) {
-    console.warn('[AUDIO] HTML5 init failed, using synthesizer:', err.message);
-    playSynthesizedSound(type);
+    return;
+  }
+
+  // Receive sound uses the selected preset
+  if (preset === 'default') {
+    // Original behavior: try mp3 first, fallback to synth
+    try {
+      const audio = new Audio('/pop.mp3');
+      audio.volume = Math.min(volume, 1.0);
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {}).catch(() => {
+          playSynthesizedSound(type);
+        });
+      }
+    } catch {
+      playSynthesizedSound(type);
+    }
+  } else {
+    // Custom presets always use WebAudio synth (no mp3 dependency, works everywhere)
+    playSynthPreset(preset, volume);
   }
 };
 
