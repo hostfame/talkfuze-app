@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook, User, Volume2 } from "lucide-react"
+import { Paintbrush, Globe, Sparkles, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Webhook, User, Volume2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
@@ -51,17 +51,10 @@ export default async function SettingsLayout({ children }: { children: React.Rea
               <NavLink href="/settings/brand" icon={<Paintbrush size={18} />} label="Brand" />
               <NavLink href="/settings/channels" icon={<Globe size={18} />} label="Integrations" />
               <NavLink href="/settings/ai" icon={<Sparkles size={18} />} label="AI providers" />
-              <NavLink href="/settings/ai-assistants" icon={<Bot size={18} />} label="AI assistants" />
-              <NavLink href="/settings/forms" icon={<FileText size={18} />} label="Forms" />
-              <NavLink href="/settings/email" icon={<Mail size={18} />} label="Email settings" />
-              <NavLink href="/settings/email-templates" icon={<LayoutTemplate size={18} />} label="Email templates" />
-              <NavLink href="/settings/tags" icon={<Tag size={18} />} label="Tags" />
-              <NavLink href="/settings/live-chat" icon={<MessageSquare size={18} />} label="Live chat integrations" />
               <NavLink href="/settings/quick-replies" icon={<Zap size={18} />} label="Live chat quick replies" />
               <NavLink href="/settings/webhooks" icon={<Webhook size={18} />} label="CRM Webhooks" />
               <NavLink href="/settings/whatsapp-transactions" icon={<MessageCircle size={18} />} label="WhatsApp Transactions" />
               <NavLink href="/settings/automation" icon={<Zap size={18} />} label="Automation & Triggers" />
-              <NavLink href="/settings/conversations" icon={<MessageCircle size={18} />} label="Conversations settings" />
               <NavLink href="/settings/widget" icon={<MessageSquare size={18} />} label="Web Widget" />
               <NavLink href="/settings/knowledge-base" icon={<BookOpen size={18} />} label="Knowledge base" />
               <NavLink href="/settings/tickets" icon={<Ticket size={18} />} label="Tickets" />
@@ -74,8 +67,6 @@ export default async function SettingsLayout({ children }: { children: React.Rea
 
             <div className="px-2 pb-6 space-y-0.5">
               <NavLink href="/settings/team" icon={<Users size={18} />} label="Members" />
-              <NavLink href="/settings/departments" icon={<Building2 size={18} />} label="Departments" />
-              <NavLink href="/settings/notifications" icon={<Bell size={18} />} label="Notification settings" />
             </div>
           </>
         )}
