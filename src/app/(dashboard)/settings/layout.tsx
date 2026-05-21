@@ -32,6 +32,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           <NavLink href="/settings/live-chat" icon={<MessageSquare size={18} />} label="Live chat integrations" />
           <NavLink href="/settings/quick-replies" icon={<Zap size={18} />} label="Live chat quick replies" />
           <NavLink href="/settings/webhooks" icon={<Webhook size={18} />} label="CRM Webhooks" />
+          <NavLink href="/settings/whatsapp-transactions" icon={<MessageCircle size={18} />} label="WhatsApp Transactions" />
           <NavLink href="/settings/conversations" icon={<MessageCircle size={18} />} label="Conversations settings" />
           <NavLink href="/settings/widget" icon={<MessageSquare size={18} />} label="Web Widget" />
           <NavLink href="/settings/appearance" icon={<Monitor size={18} />} label="Appearance settings" />
