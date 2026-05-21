@@ -103,7 +103,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Geo-block non-BD IPs for login and dashboard routes
-  const country = request.geo?.country || 'XX'
+  const country = request.headers.get('x-vercel-ip-country') || 'XX'
   if (!ALLOWED_COUNTRIES.includes(country)) {
     // For API routes, return JSON error
     if (pathname.startsWith('/api/')) {
