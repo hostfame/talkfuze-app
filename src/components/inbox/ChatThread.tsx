@@ -1194,6 +1194,18 @@ export default function ChatThread({
     })
   }
 
+  const triggerEditMessage = (msg: any) => {
+    setEditingMessage(msg);
+    setEditInput(msg.content);
+    setContextMenu(null);
+    setTimeout(() => {
+      const element = document.getElementById(`msg-${msg.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }
+
   useEffect(() => {
     getQuickRepliesFromTable(orgId).then(data => {
       if (data) setQuickReplies(data as QuickReplyItem[])
@@ -2968,11 +2980,7 @@ export default function ChatThread({
             {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
               <>
                 <button 
-                  onClick={() => {
-                    setEditingMessage(contextMenu.message);
-                    setEditInput(contextMenu.message.content);
-                    setContextMenu(null);
-                  }}
+                  onClick={() => triggerEditMessage(contextMenu.message)}
                   className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
                 >
                   <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
