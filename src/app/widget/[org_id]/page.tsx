@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -2842,8 +2842,10 @@ export default function WidgetPage() {
                       onClick={() => handleSend("What are the pricing plans for Web Hosting?")}
                       className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[16px] group-hover:scale-110 transition-transform">🌐</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full border border-slate-100 bg-slate-50/55 flex items-center justify-center text-slate-400 group-hover:text-[#0070f3] group-hover:border-[#0070f3]/15 group-hover:bg-[#0070f3]/5 transition-all duration-200 shrink-0">
+                          <Globe size={15} strokeWidth={2} />
+                        </div>
                         <div className="flex flex-col">
                           <span className="text-[13px] font-bold text-slate-800">Check Web Hosting Pricing</span>
                           <span className="text-[11px] text-slate-400">View premium cPanel packages</span>
@@ -2856,8 +2858,10 @@ export default function WidgetPage() {
                       onClick={() => handleSend("I have a pre-sales question about site migration.")}
                       className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[16px] group-hover:scale-110 transition-transform">💬</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full border border-slate-100 bg-slate-50/55 flex items-center justify-center text-slate-400 group-hover:text-[#0070f3] group-hover:border-[#0070f3]/15 group-hover:bg-[#0070f3]/5 transition-all duration-200 shrink-0">
+                          <MessageSquare size={15} strokeWidth={2} />
+                        </div>
                         <div className="flex flex-col">
                           <span className="text-[13px] font-bold text-slate-800">Pre-Sales Inquiry</span>
                           <span className="text-[11px] text-slate-400">Migrating site to Hostnin</span>
@@ -2870,8 +2874,10 @@ export default function WidgetPage() {
                       onClick={() => handleSend("I need help with my domain nameservers.")}
                       className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[16px] group-hover:scale-110 transition-transform">🛠️</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full border border-slate-100 bg-slate-50/55 flex items-center justify-center text-slate-400 group-hover:text-[#0070f3] group-hover:border-[#0070f3]/15 group-hover:bg-[#0070f3]/5 transition-all duration-200 shrink-0">
+                          <Wrench size={15} strokeWidth={2} />
+                        </div>
                         <div className="flex flex-col">
                           <span className="text-[13px] font-bold text-slate-800">Domain & DNS Help</span>
                           <span className="text-[11px] text-slate-400">Pointing nameservers to Hostnin</span>

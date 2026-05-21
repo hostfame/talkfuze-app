@@ -14,3 +14,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **WhatsApp Worker**: The TalkFuze-WhatsApp-Worker is NOT on Vercel or GitHub. It runs persistently via PM2 on the `strack` VPS.
 - **Worker Deployment**: Whenever I modify the local worker files (e.g. `index.js`, `queue.js`), I MUST autonomously deploy them using `scp` to `strack:/root/Talkfuze-WhatsApp-Worker/` and restart the worker using `ssh strack "pm2 restart talkfuze-wa-worker"`. I will NOT ask Imran to do this manually.
 <!-- END:talkfuze-workflow-rules -->
+
+<!-- BEGIN:talkfuze-ui-rules -->
+# UI, UX & Branding Design Rules
+- **No Emojis for Core UI Elements**: NEVER use raw emojis (e.g. 🌐, 💬, 🛠️) for core UI items, tabs, or quick starter questions. Emojis look generic and childish.
+- **Premium Minimalistic Icons**: ALWAYS use clean, high-fidelity, line-art or SVG icons from `lucide-react` (e.g. Globe, MessageSquare, Wrench) wrapped in a beautiful, circular light border.
+- **Muted Slate/Gray Colors**: Follow Apple-style premium minimalism. Icons and accents should be styled with clean gray/slate tones (e.g., `text-slate-400`, `bg-slate-50/50`) that blend seamlessly into Hostnin's `#0070f3` branding without looking loud or over-engineered.
+- **Consistent Parity**: Always enforce this standard across all chat widgets and dashboard modifications.
+<!-- END:talkfuze-ui-rules -->
