@@ -124,15 +124,17 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   }
 
   // 4. Insert the Message
+  // contentType can be 'text'|'image'|'file'|'system' - if system, sender_type must be 'system'
+  const isSystemMsg = contentType === 'system';
   const { error: msgErr } = await supabaseAdmin
     .from("messages")
     .insert({
       org_id: orgId,
       conversation_id: conversation.id,
-      sender_type: "contact",
-      sender_id: contact.id,
+      sender_type: isSystemMsg ? "system" : "contact",
+      sender_id: isSystemMsg ? null : contact.id,
       content: content,
-      content_type: contentType,
+      content_type: isSystemMsg ? "text" : contentType,
       metadata: Object.keys(metadata).length > 0 ? metadata : null
     })
 
