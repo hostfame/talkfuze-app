@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -19,6 +19,7 @@ interface WhmcsClient {
   email: string;
   phonenumber?: string;
   status?: string;
+  credit?: string;
 }
 
 interface WhmcsProduct {
@@ -1106,8 +1107,20 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     </a>
                   </div>
                 </div>
-                <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 mb-3">{whmcsClient.email}</p>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="min-w-0 pr-3">
+                    <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 truncate">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
+                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{whmcsClient.email}</p>
+                  </div>
+                  {whmcsClient.credit !== undefined && (
+                    <div className="shrink-0 flex flex-col items-end justify-center bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                      <span className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Credit Balance</span>
+                      <span className="text-[12.5px] font-bold text-slate-700 dark:text-slate-300">
+                        {whmcsClient.credit}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={async () => {
                     if (isLoggingIn) return;
@@ -1299,10 +1312,22 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                         <div key={invoice.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group">
                           <div className="flex justify-between items-start gap-2 mb-2">
                             <div>
-                              <a href={`https://my.hostnin.com/viewinvoice.php?id=${invoice.id}`} target="_blank" rel="noreferrer" className="text-[12px] font-medium text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-1.5">
-                                Invoice #{invoice.id}
-                                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
-                              </a>
+                              <div className="flex items-center gap-1.5">
+                                <a href={`https://my.hostnin.com/viewinvoice.php?id=${invoice.id}`} target="_blank" rel="noreferrer" className="text-[12px] font-medium text-slate-800 dark:text-slate-200 hover:text-blue-600 flex items-center gap-1.5">
+                                  Invoice #{invoice.id}
+                                  <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
+                                </a>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`https://my.hostnin.com/viewinvoice.php?id=${invoice.id}`);
+                                    alert("Invoice link copied to clipboard!");
+                                  }}
+                                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded transition-colors"
+                                  title="Copy Invoice Link"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
                               <p className="text-[11px] text-slate-500 mt-0.5">Due: {invoice.duedate}</p>
                             </div>
                             <div className="text-right">

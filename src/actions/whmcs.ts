@@ -1,6 +1,6 @@
 "use server"
 
-import { getClientByPhone, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast, getInvoices } from "@/lib/whmcs"
+import { getClientByPhone, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast, getInvoices, getClientDetails } from "@/lib/whmcs"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function fetchWhmcsClient(phoneOrEmail: string) {
@@ -40,7 +40,18 @@ export async function fetchWhmcsClient(phoneOrEmail: string) {
         return false
       })
 
-      return exactMatch || phoneResult.clients[0]
+      const matchedClient = exactMatch || phoneResult.clients[0]
+      if (matchedClient && matchedClient.id) {
+        try {
+          const fullClient = await getClientDetails(matchedClient.id)
+          if (fullClient && fullClient.result === 'success') {
+            return fullClient
+          }
+        } catch (e) {
+          console.error("Failed to fetch full client details by id:", e)
+        }
+      }
+      return matchedClient
     }
     return null
   } catch (error) {

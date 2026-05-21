@@ -380,9 +380,11 @@ export async function getClientDetailsByEmailFast(email: string) {
             firstname: string;
             lastname: string;
             email: string;
+            credit?: string;
             [key: string]: unknown;
         }>('GetClientsDetails', {
             email: email,
+            stats: 1,
         }, 8000, 1); // 8s timeout, 1 retry (max ~16s vs ~120s)
         return result;
     } catch {
