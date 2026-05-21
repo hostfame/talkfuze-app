@@ -2584,7 +2584,7 @@ export default function WidgetPage() {
                 const isAgent = msg.sender_type === 'agent';
                 const isAiOrAgent = isAgent || msg.sender_type === 'ai';
 
-                if (isSystem) {
+                 if (isSystem) {
                   const safeMeta = typeof msg.metadata === 'string'
                     ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
                     : (msg.metadata || {});
@@ -2592,6 +2592,56 @@ export default function WidgetPage() {
 
                   // Hide the "Started a voice call" system message
                   if (msg.content === 'Started a voice call') return null;
+
+                  // 1. Premium pill representation for agent joining the chat
+                  if (msg.content.includes('joined')) {
+                    const agentName = msg.agent?.name || msg.content.split(' joined')[0] || 'Agent';
+                    const avatarUrl = msg.agent?.avatar_url;
+                    return (
+                      <div key={idx} className="flex justify-center my-4 select-none animate-in fade-in duration-300">
+                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-3 py-1.5 rounded-full shadow-sm">
+                          <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
+                            {agentName} joined the chat
+                          </span>
+                          {msgTime && (
+                            <span className="text-[10.5px] text-slate-400 dark:text-slate-500 ml-1 font-normal">{msgTime}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // 2. Premium pill representation for agent leaving the chat
+                  if (msg.content.includes('left')) {
+                    const agentName = msg.agent?.name || msg.content.split(' left')[0] || 'Agent';
+                    const avatarUrl = msg.agent?.avatar_url;
+                    return (
+                      <div key={idx} className="flex justify-center my-4 select-none animate-in fade-in duration-300 opacity-80">
+                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-3 py-1.5 rounded-full shadow-sm">
+                          <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center opacity-80">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="" className="w-full h-full object-cover grayscale-[30%]" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-550 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-slate-600 dark:text-slate-450 font-medium">
+                            {agentName} left the chat
+                          </span>
+                          {msgTime && (
+                            <span className="text-[10.5px] text-slate-400 dark:text-slate-500 ml-1 font-normal">{msgTime}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
 
                   // Sleek, centered system messages with thin horizontal lines to match the admin panel styling perfectly
                   let displayContent = msg.content;
