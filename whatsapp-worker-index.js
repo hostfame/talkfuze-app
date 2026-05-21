@@ -3,6 +3,7 @@ global.WebSocket = require('ws');
 
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const { uploadToR2 } = require('./r2.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -23,27 +24,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
-
-// ─────────────────────────────────────────────
-// Security Middleware
-// ─────────────────────────────────────────────
-const requireAuth = (req, res, next) => {
-  // Allow health check
-  if (req.path === '/health') return next();
-  
-  // Verify token from query or headers
-  const token = req.query.token || req.headers['x-api-key'] || req.headers['apikey'];
-  if (token === EVOLUTION_API_KEY) {
-    return next();
-  }
-  
-  // Strict mode: Log unauthorized access attempt and drop it
-  console.warn(`[SECURITY] Blocked unauthorized webhook from IP: ${req.ip}`);
-  return res.status(403).json({ error: 'Forbidden. Invalid token.' });
-};
-
-app.use(requireAuth);
+app.use(express.json({ limit: '100mb' }));
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -123,6 +104,13 @@ function getConversationJid(msg) {
 
 function resolveName(msg) {
   return msg.pushName || msg.key?.participant?.split('@')[0] || '';
+}
+
+function extractMentions(msg) {
+  const m = unwrapMessage(msg);
+  if (!m) return [];
+  const contextInfo = m.extendedTextMessage?.contextInfo || m.imageMessage?.contextInfo || m.videoMessage?.contextInfo || m.documentMessage?.contextInfo || m.audioMessage?.contextInfo;
+  return contextInfo?.mentionedJid || [];
 }
 
 function mediaPlaceholder(contentType) {
@@ -498,17 +486,14 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
 
     console.log(`[MEDIA] Uploading filename: ${fileName}, mimeType: ${mimeType}, size: ${buffer.length} bytes`);
 
-    const { error } = await supabase.storage
-      .from('media')
-      .upload(fileName, buffer, { contentType: mimeType, upsert: false });
+    const r2Url = await uploadToR2(buffer, fileName, mimeType);
 
-    if (error) {
-      console.error('[MEDIA] Supabase upload failed:', error.message, error);
+    if (!r2Url) {
+      console.error('[MEDIA] R2 upload failed');
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
-    return { url: urlData.publicUrl, mimeType, fileName };
+    return { url: r2Url, mimeType, fileName };
   } catch (err) {
     console.error('Media download error:', err.message);
     return null;
@@ -591,6 +576,44 @@ async function processMessage(msg) {
       participant_jid: isGroup ? senderJid : null,
       participant_name: isGroup ? senderName : null,
     };
+
+    // Handle mentions
+    const mentions = extractMentions(msg);
+    if (mentions.length > 0) {
+      const mentionsMap = {};
+      for (const jid of mentions) {
+        const lidNumber = jid.split('@')[0];
+        let resolvedPhone = await resolveLidToPhone(jid);
+        const searchPhone = resolvedPhone || lidNumber.replace(/\D/g, '');
+
+        // Default: just the number
+        mentionsMap[searchPhone] = '+' + searchPhone;
+
+        // Try to look up contact in DB
+        try {
+          const { data: contactMatch } = await supabase
+            .from('contacts')
+            .select('name')
+            .eq('org_id', ORG_ID)
+            .eq('platform_type', 'whatsapp')
+            .filter('phone', 'eq', searchPhone)
+            .limit(1)
+            .maybeSingle();
+
+          if (contactMatch && contactMatch.name) {
+            mentionsMap[searchPhone] = contactMatch.name;
+          }
+        } catch (err) {
+          console.error('[MENTION] DB lookup failed:', err.message);
+        }
+        
+        // Also map the original LID number if different, so frontend can match it
+        if (lidNumber !== searchPhone) {
+          mentionsMap[lidNumber] = mentionsMap[searchPhone];
+        }
+      }
+      metadata.mentions = mentionsMap;
+    }
 
     // Handle media
     if (contentType !== 'text') {
@@ -891,18 +914,45 @@ async function processOutboundMessage(msg) {
       console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
     }
 
+    // Fetch agent name dynamically for prepending
+    let agentName = null;
+    if (msg.sender_type === 'agent' && msg.sender_id) {
+      try {
+        const { data: agentUser } = await supabaseRealtime
+          .from('users')
+          .select('name')
+          .eq('id', msg.sender_id)
+          .maybeSingle();
+        if (agentUser && agentUser.name) {
+          agentName = agentUser.name;
+        }
+      } catch (agentErr) {
+        console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
+      }
+    } else if (msg.sender_type === 'ai') {
+      agentName = 'AI Assistant';
+    }
+
+    let formattedContent = msg.content || '';
+    if (agentName) {
+      formattedContent = `*${agentName}*\n${formattedContent}`;
+    }
+
     let sentResult;
     if (msg.metadata?.media_url) {
+      const captionText = msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]'
+        ? formattedContent
+        : (agentName ? `*${agentName}*` : '');
       sentResult = await sendMediaMessage(
         jid,
         msg.metadata.media_url,
-        msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]' ? msg.content : '',
+        captionText,
         msg.metadata.mimetype,
         msg.metadata?.filename,
         quoted
       );
     } else {
-      sentResult = await sendTextMessage(jid, msg.content, quoted);
+      sentResult = await sendTextMessage(jid, formattedContent, quoted);
     }
 
     // Save platform message id for dedup
@@ -973,53 +1023,11 @@ supabaseRealtime
   });
 
 // ─────────────────────────────────────────────
-// Snooze Sweep Job (Runs every 1 minute)
-// ─────────────────────────────────────────────
-
-async function checkSnoozedConversations() {
-  try {
-    const { data: expired, error } = await supabaseRealtime
-      .from('conversations')
-      .select('id')
-      .eq('org_id', ORG_ID)
-      .eq('status', 'pending')
-      .not('snoozed_until', 'is', null)
-      .lte('snoozed_until', new Date().toISOString());
-
-    if (error) {
-      console.error('[SNOOZE-SWEEP] Error fetching expired snoozes:', error.message);
-      return;
-    }
-
-    if (expired && expired.length > 0) {
-      const ids = expired.map(c => c.id);
-      console.log(`[SNOOZE-SWEEP] Unsnoozing ${ids.length} conversations...`);
-      
-      const { error: updateError } = await supabaseRealtime
-        .from('conversations')
-        .update({ status: 'open', snoozed_until: null })
-        .in('id', ids);
-
-      if (updateError) {
-        console.error('[SNOOZE-SWEEP] Update error:', updateError.message);
-      } else {
-        console.log(`[SNOOZE-SWEEP] Successfully unsnoozed:`, ids.join(', '));
-      }
-    }
-  } catch (err) {
-    console.error('[SNOOZE-SWEEP] Sweep error:', err.message);
-  }
-}
-
-// Start the snooze sweep interval (every 1 minute)
-setInterval(checkSnoozedConversations, 60 * 1000);
-
-// ─────────────────────────────────────────────
 // Register webhook with Evolution API on startup
 // ─────────────────────────────────────────────
 
 async function registerWebhook() {
-  const selfUrl = `${WEBHOOK_PUBLIC_URL.replace(/\/$/, '')}/webhook/evolution?token=${EVOLUTION_API_KEY}`;
+  const selfUrl = `${WEBHOOK_PUBLIC_URL.replace(/\/$/, '')}/webhook/evolution`;
 
   try {
     const res = await fetch(`${EVOLUTION_API_URL}/webhook/set/${EVOLUTION_INSTANCE}`, {

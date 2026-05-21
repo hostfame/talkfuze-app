@@ -3,6 +3,7 @@ global.WebSocket = require('ws');
 
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
+const { uploadToR2 } = require('./r2.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -23,14 +24,51 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
 
+function unwrapMessage(msg) {
+  if (!msg) return null;
+  let m = msg.message;
+  if (!m) return null;
+
+  // Ignore system, protocol, reactions and distribution messages
+  if (
+    m.senderKeyDistributionMessage ||
+    m.protocolMessage ||
+    m.reactionMessage
+  ) {
+    return null;
+  }
+
+  // Recursively unwrap standard Baileys wrappers (like ephemeral, disappearing, or view-once messages)
+  while (m) {
+    if (m.ephemeralMessage?.message) {
+      m = m.ephemeralMessage.message;
+    } else if (m.viewOnceMessage?.message) {
+      m = m.viewOnceMessage.message;
+    } else if (m.viewOnceMessageV2?.message) {
+      m = m.viewOnceMessageV2.message;
+    } else if (m.documentWithCaptionMessage?.message) {
+      m = m.documentWithCaptionMessage.message;
+    } else {
+      break;
+    }
+  }
+
+  // Verify that unwrapped result isn't an ignored type
+  if (m && (m.senderKeyDistributionMessage || m.protocolMessage || m.reactionMessage)) {
+    return null;
+  }
+
+  return m;
+}
+
 function extractText(msg) {
-  const m = msg.message;
+  const m = unwrapMessage(msg);
   if (!m) return '';
   return m.conversation
     || m.extendedTextMessage?.text
@@ -41,7 +79,7 @@ function extractText(msg) {
 }
 
 function getContentType(msg) {
-  const m = msg.message;
+  const m = unwrapMessage(msg);
   if (!m) return 'text';
   if (m.imageMessage) return 'image';
   if (m.audioMessage || m.pttMessage) return 'audio';
@@ -56,20 +94,23 @@ function isFromMe(msg) {
 }
 
 function getSender(msg) {
-  const isGroup = msg.key?.remoteJid?.endsWith('@g.us');
-  if (isGroup) {
-    return msg.key?.participantAlt || msg.key?.participant || '';
-  }
-  return msg.key?.remoteJidAlt || msg.key?.remoteJid || '';
+  const jid = msg.key?.participant || msg.key?.remoteJid || '';
+  return jid;
 }
 
 function getConversationJid(msg) {
-  return msg.key?.remoteJidAlt || msg.key?.remoteJid || '';
+  return msg.key?.remoteJid || '';
 }
 
 function resolveName(msg) {
-  const sender = getSender(msg);
-  return msg.pushName || sender.split('@')[0] || '';
+  return msg.pushName || msg.key?.participant?.split('@')[0] || '';
+}
+
+function extractMentions(msg) {
+  const m = unwrapMessage(msg);
+  if (!m) return [];
+  const contextInfo = m.extendedTextMessage?.contextInfo || m.imageMessage?.contextInfo || m.videoMessage?.contextInfo || m.documentMessage?.contextInfo || m.audioMessage?.contextInfo;
+  return contextInfo?.mentionedJid || [];
 }
 
 function mediaPlaceholder(contentType) {
@@ -93,13 +134,108 @@ function extractSentMessageId(result) {
 }
 
 // ─────────────────────────────────────────────
+// LID-to-Phone resolution (in-memory cache)
+// WhatsApp LID numbers are NOT phone numbers.
+// e.g. 186771535069352@lid != 8801889877754
+// We must resolve LID -> real phone via Evolution API.
+// ─────────────────────────────────────────────
+
+const lidToPhoneCache = new Map();
+
+async function resolveLidToPhone(lidJid) {
+  // Only resolve @lid JIDs
+  const rawLid = lidJid.endsWith('@lid') ? lidJid : lidJid.replace('@s.whatsapp.net', '@lid');
+  const lidNumber = rawLid.split('@')[0];
+
+  // Check cache first
+  if (lidToPhoneCache.has(lidNumber)) {
+    return lidToPhoneCache.get(lidNumber);
+  }
+
+  try {
+    // Try to find contacts in Evolution that match this LID
+    // The findContacts endpoint returns all contacts; we look for matching LID
+    const res = await fetch(`${EVOLUTION_API_URL}/chat/findContacts/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ where: { id: rawLid } })
+    });
+
+    if (res.ok) {
+      const contacts = await res.json();
+      const match = Array.isArray(contacts)
+        ? contacts.find(c => c.remoteJid === rawLid)
+        : null;
+
+      // If the contact has a pushName and we can find them by phone
+      // Evolution stores separate entries for phone and LID
+      if (match) {
+        // Search all contacts for one with same pushName but phone-based JID
+        const allRes = await fetch(`${EVOLUTION_API_URL}/chat/findContacts/${EVOLUTION_INSTANCE}`, {
+          method: 'POST',
+          headers: { 'apikey': EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        if (allRes.ok) {
+          const allContacts = await allRes.json();
+          // Find a phone-based contact with matching pushName
+          const phoneContact = allContacts.find(c =>
+            c.remoteJid &&
+            c.remoteJid.endsWith('@s.whatsapp.net') &&
+            !c.remoteJid.endsWith('@g.us') &&
+            c.pushName &&
+            match.pushName &&
+            c.pushName === match.pushName
+          );
+
+          if (phoneContact) {
+            const phone = phoneContact.remoteJid.split('@')[0];
+            lidToPhoneCache.set(lidNumber, phone);
+            console.log(`[LID-RESOLVE] Resolved ${rawLid} -> ${phone} via pushName match`);
+            return phone;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[LID-RESOLVE] Error resolving ${rawLid}:`, err.message);
+  }
+
+  // Try checking our own DB for contacts that have this LID stored in metadata
+  try {
+    const { data: dbContacts } = await supabase
+      .from('contacts')
+      .select('phone, metadata, platform_id')
+      .eq('org_id', ORG_ID)
+      .eq('platform_type', 'whatsapp');
+
+    if (dbContacts) {
+      const match = dbContacts.find(c =>
+        c.metadata?.lid === lidNumber ||
+        c.metadata?.lid === rawLid
+      );
+      if (match && match.phone) {
+        lidToPhoneCache.set(lidNumber, match.phone);
+        console.log(`[LID-RESOLVE] Resolved ${rawLid} -> ${match.phone} via DB metadata.lid`);
+        return match.phone;
+      }
+    }
+  } catch (err) {
+    console.error(`[LID-RESOLVE] DB fallback error:`, err.message);
+  }
+
+  console.log(`[LID-RESOLVE] Could not resolve ${rawLid} to phone number`);
+  return null;
+}
+
+// ─────────────────────────────────────────────
 // Channel bootstrap
 // ─────────────────────────────────────────────
 
 let whatsappChannelId = null;
 
 async function getOrCreateChannel() {
-  if (whatsappChannelId) return whatsappChannelId;
   const { data: existing } = await supabase
     .from('channels')
     .select('id')
@@ -109,18 +245,16 @@ async function getOrCreateChannel() {
     .maybeSingle();
 
   if (existing) {
-    whatsappChannelId = existing.id;
     return existing.id;
   }
 
   const { data: created } = await supabase.from('channels').insert({
     org_id: ORG_ID,
     type: 'whatsapp',
-    config: { status: 'connected' },
+    config: { status: 'pending' },
     is_active: true
   }).select('id').single();
 
-  whatsappChannelId = created.id;
   return created.id;
 }
 
@@ -129,30 +263,131 @@ async function getOrCreateChannel() {
 // ─────────────────────────────────────────────
 
 async function upsertContact(jid, name) {
-  const { data: existing } = await supabase
+  const isGroup = jid.endsWith('@g.us');
+  const isLid = jid.endsWith('@lid') || /^\d{12,}@s\.whatsapp\.net$/.test(jid);
+  
+  let canonicalJid = jid;
+  let lidNumber = null;
+  let resolvedPhone = null;
+
+  // ── Step 1: If this is a LID, resolve to real phone number ──
+  if (!isGroup && isLid) {
+    lidNumber = jid.split('@')[0];
+    resolvedPhone = await resolveLidToPhone(jid);
+    
+    if (resolvedPhone) {
+      canonicalJid = `${resolvedPhone}@s.whatsapp.net`;
+      console.log(`[UPSERT-CONTACT] LID ${jid} resolved to canonical ${canonicalJid}`);
+    } else {
+      // Can't resolve - use the LID as-is but normalized
+      canonicalJid = jid.endsWith('@lid') ? jid.replace('@lid', '@s.whatsapp.net') : jid;
+      console.log(`[UPSERT-CONTACT] LID ${jid} unresolved, using ${canonicalJid}`);
+    }
+  }
+
+  // ── Step 2: Look up existing contact by canonical JID ──
+  let { data: existing } = await supabase
     .from('contacts')
-    .select('id, name')
+    .select('id, name, platform_id, metadata, phone')
     .eq('org_id', ORG_ID)
     .eq('platform_type', 'whatsapp')
-    .eq('platform_id', jid)
+    .eq('platform_id', canonicalJid)
     .maybeSingle();
 
-  if (existing) {
-    // Update name if we got a better one
-    if (name && name !== existing.name && !jid.endsWith('@g.us')) {
-      await supabase.from('contacts').update({ name }).eq('id', existing.id);
+  // ── Step 3: Fallback - search by phone, real_phone, or LID in metadata ──
+  if (!existing && !isGroup) {
+    const searchPhone = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+
+    if (searchPhone.length >= 9) {
+      const { data: allContacts } = await supabase
+        .from('contacts')
+        .select('id, name, platform_id, metadata, phone')
+        .eq('org_id', ORG_ID)
+        .eq('platform_type', 'whatsapp');
+
+      if (allContacts && allContacts.length > 0) {
+        existing = allContacts.find(c => {
+          const cPhone = c.phone ? c.phone.replace(/\D/g, '') : null;
+          const cRealPhone = c.metadata?.real_phone ? String(c.metadata.real_phone).replace(/\D/g, '') : null;
+          const cPlatformNumber = c.platform_id ? c.platform_id.split('@')[0].replace(/\D/g, '') : null;
+          const cLid = c.metadata?.lid || null;
+
+          // Match by phone number
+          if (cPhone && cPhone === searchPhone) return true;
+          if (cRealPhone && cRealPhone === searchPhone) return true;
+          if (cPlatformNumber && cPlatformNumber === searchPhone) return true;
+          // Match by stored LID
+          if (lidNumber && cLid && cLid === lidNumber) return true;
+          return false;
+        });
+
+        if (existing) {
+          console.log(`[UPSERT-CONTACT] Fallback matched ${jid} to contact ${existing.id} (${existing.name})`);
+        }
+      }
     }
+  }
+
+  // ── Step 4: Update existing or create new ──
+  if (existing) {
+    const updates = {};
+    const metaUpdates = { ...(existing.metadata || {}) };
+    let needsMetaUpdate = false;
+
+    // Store LID mapping in metadata
+    if (lidNumber && !metaUpdates.lid) {
+      metaUpdates.lid = lidNumber;
+      needsMetaUpdate = true;
+    }
+
+    // Store real phone if resolved and not already stored
+    if (resolvedPhone && !metaUpdates.real_phone) {
+      metaUpdates.real_phone = resolvedPhone;
+      needsMetaUpdate = true;
+    }
+
+    // If we resolved a phone and the stored platform_id is a LID-based fake JID, upgrade it
+    if (resolvedPhone && existing.platform_id !== canonicalJid) {
+      updates.platform_id = canonicalJid;
+      console.log(`[UPSERT-CONTACT] Upgrading platform_id from ${existing.platform_id} to ${canonicalJid}`);
+    }
+
+    // Update phone field if missing
+    if (resolvedPhone && !existing.phone) {
+      updates.phone = resolvedPhone;
+    }
+
+    if (needsMetaUpdate) updates.metadata = metaUpdates;
+    if (name && name !== existing.name && !isGroup) updates.name = name;
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('contacts').update(updates).eq('id', existing.id);
+    }
+
     return existing.id;
   }
 
-  const displayName = name || jid.split('@')[0].replace(/\D/g, '').slice(-10);
+  // ── Step 5: Create new contact ──
+  const phoneNumber = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+  const displayName = name || phoneNumber.slice(-10);
+  const metadata = {};
+  if (phoneNumber.length >= 9 && !isGroup) {
+    metadata.real_phone = phoneNumber;
+  }
+  if (lidNumber) {
+    metadata.lid = lidNumber;
+  }
+
   const { data: created } = await supabase.from('contacts').insert({
     org_id: ORG_ID,
-    platform_id: jid,
+    platform_id: canonicalJid,
     platform_type: 'whatsapp',
     name: displayName,
+    phone: phoneNumber.length >= 9 ? phoneNumber : null,
+    metadata
   }).select('id').single();
 
+  console.log(`[UPSERT-CONTACT] Created new contact ${created.id} for ${canonicalJid} (${displayName})`);
   return created.id;
 }
 
@@ -163,14 +398,24 @@ async function upsertContact(jid, name) {
 async function upsertConversation(contactId, channelId) {
   const { data: existing } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id, status')
     .eq('org_id', ORG_ID)
     .eq('contact_id', contactId)
     .eq('channel_id', channelId)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing.id;
+  if (existing) {
+    if (existing.status !== 'open') {
+      // Reopen the conversation if it was closed
+      await supabase
+        .from('conversations')
+        .update({ status: 'open', last_message_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    }
+    return existing.id;
+  }
 
   const { data: created } = await supabase.from('conversations').insert({
     org_id: ORG_ID,
@@ -186,7 +431,8 @@ async function upsertConversation(contactId, channelId) {
 // Download media via Evolution API
 // ─────────────────────────────────────────────
 
-async function downloadAndUploadMedia(msgId, contentType, conversationJid) {
+async function downloadAndUploadMedia(msg, contentType, conversationJid) {
+  const msgId = msg.key?.id;
   try {
     const res = await fetch(`${EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/${EVOLUTION_INSTANCE}`, {
       method: 'POST',
@@ -194,53 +440,118 @@ async function downloadAndUploadMedia(msgId, contentType, conversationJid) {
         'apikey': EVOLUTION_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ message: { key: { id: msgId } }, convertToMp4: false })
+      body: JSON.stringify({ message: msg, convertToMp4: false })
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Evolution base64 fetch failed: ${res.status} ${res.statusText}`);
+      return null;
+    }
     const data = await res.json();
-    if (!data.base64 || !data.mediaType) return null;
-
-    const buffer = Buffer.from(data.base64, 'base64');
-    const ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
-    const fileName = `${conversationJid.replace('@', '_')}/${Date.now()}.${ext}`;
-    const mimeType = data.mediaType;
-
-    const { error } = await supabase.storage
-      .from('media')
-      .upload(fileName, buffer, { contentType: mimeType, upsert: false });
-
-    if (error) {
-      console.error('Storage upload error:', error.message);
+    if (!data.base64 || !data.mediaType) {
+      console.error('[MEDIA] Missing base64 or mediaType in response');
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('media').getPublicUrl(fileName);
-    return { url: urlData.publicUrl, mimeType, fileName };
+    const buffer = Buffer.from(data.base64, 'base64');
+    
+    // Parse and sanitize mimetype and extension
+    let mimeType = data.mediaType.split(';')[0].trim();
+    if (mimeType.startsWith('data:')) {
+      mimeType = mimeType.substring(5);
+    }
+    let ext = data.mediaType.split('/')[1]?.split(';')[0] || 'bin';
+    ext = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+    // Safe fallbacks for malformed or missing mimeTypes (like Baileys internal types "imageMessage", "audioMessage")
+    const mimeRegex = /^[a-zA-Z0-9\-]+\/[a-zA-Z0-9\-\.\+\*]+$/;
+    if (!mimeType || !mimeRegex.test(mimeType) || mimeType.endsWith('Message')) {
+      console.log(`[MEDIA-WARNING] Invalid mimeType "${mimeType}", using fallback for contentType "${contentType}"`);
+      if (contentType === 'image') {
+        mimeType = 'image/jpeg';
+        ext = 'jpg';
+      } else if (contentType === 'audio') {
+        mimeType = 'audio/ogg';
+        ext = 'ogg';
+      } else if (contentType === 'video') {
+        mimeType = 'video/mp4';
+        ext = 'mp4';
+      } else {
+        mimeType = 'application/octet-stream';
+        ext = 'bin';
+      }
+    }
+
+    const fileName = `${conversationJid.replace('@', '_')}/${Date.now()}.${ext}`;
+
+    console.log(`[MEDIA] Uploading filename: ${fileName}, mimeType: ${mimeType}, size: ${buffer.length} bytes`);
+
+    const r2Url = await uploadToR2(buffer, fileName, mimeType);
+
+    if (!r2Url) {
+      console.error('[MEDIA] R2 upload failed');
+      return null;
+    }
+
+    return { url: r2Url, mimeType, fileName };
   } catch (err) {
     console.error('Media download error:', err.message);
     return null;
   }
 }
 
-// ─────────────────────────────────────────────
-// Process inbound message
-// ─────────────────────────────────────────────
+// In-memory concurrency locks to prevent race conditions on parallel message processing for the same user
+const locks = new Map();
+
+async function acquireLock(key) {
+  while (locks.has(key)) {
+    await locks.get(key);
+  }
+  let resolveLock;
+  const lockPromise = new Promise(resolve => {
+    resolveLock = resolve;
+  });
+  locks.set(key, lockPromise);
+  return () => {
+    locks.delete(key);
+    resolveLock();
+  };
+}
 
 async function processMessage(msg) {
+  // Skip protocol, distribution, and reaction messages
+  const unwrapped = unwrapMessage(msg);
+  if (!unwrapped) return;
+
   // Skip status messages
-  const conversationJid = getConversationJid(msg);
+  let conversationJid = getConversationJid(msg);
   if (conversationJid === 'status@broadcast') return;
 
-  const isGroup = conversationJid.endsWith('@g.us');
-  const senderJid = getSender(msg);
-  const senderName = resolveName(msg);
-  const text = extractText(msg);
-  const contentType = getContentType(msg);
-  const msgId = msg.key?.id;
-  const fromMe = isFromMe(msg);
+  if (conversationJid && conversationJid.endsWith('@lid')) {
+    conversationJid = conversationJid.replace('@lid', '@s.whatsapp.net');
+  }
+
+  const release = await acquireLock(conversationJid);
 
   try {
+    const isGroup = conversationJid.endsWith('@g.us');
+    let senderJid = getSender(msg);
+    if (senderJid && senderJid.endsWith('@lid')) {
+      senderJid = senderJid.replace('@lid', '@s.whatsapp.net');
+    }
+
+    const senderName = resolveName(msg);
+    const text = extractText(msg);
+    const contentType = getContentType(msg);
+    const msgId = msg.key?.id;
+    const fromMe = isFromMe(msg);
+
+    // Drop incoming text messages with empty or blank content (junk, reaction stub noise)
+    if (contentType === 'text' && !text.trim()) {
+      console.log(`[MSG] Skipping empty text message: ${msgId}`);
+      return;
+    }
+
     if (msgId) {
       const { data: existingMessage } = await supabase
         .from('messages')
@@ -266,9 +577,47 @@ async function processMessage(msg) {
       participant_name: isGroup ? senderName : null,
     };
 
+    // Handle mentions
+    const mentions = extractMentions(msg);
+    if (mentions.length > 0) {
+      const mentionsMap = {};
+      for (const jid of mentions) {
+        const lidNumber = jid.split('@')[0];
+        let resolvedPhone = await resolveLidToPhone(jid);
+        const searchPhone = resolvedPhone || lidNumber.replace(/\D/g, '');
+
+        // Default: just the number
+        mentionsMap[searchPhone] = '+' + searchPhone;
+
+        // Try to look up contact in DB
+        try {
+          const { data: contactMatch } = await supabase
+            .from('contacts')
+            .select('name')
+            .eq('org_id', ORG_ID)
+            .eq('platform_type', 'whatsapp')
+            .filter('phone', 'eq', searchPhone)
+            .limit(1)
+            .maybeSingle();
+
+          if (contactMatch && contactMatch.name) {
+            mentionsMap[searchPhone] = contactMatch.name;
+          }
+        } catch (err) {
+          console.error('[MENTION] DB lookup failed:', err.message);
+        }
+        
+        // Also map the original LID number if different, so frontend can match it
+        if (lidNumber !== searchPhone) {
+          mentionsMap[lidNumber] = mentionsMap[searchPhone];
+        }
+      }
+      metadata.mentions = mentionsMap;
+    }
+
     // Handle media
     if (contentType !== 'text') {
-      const media = await downloadAndUploadMedia(msgId, contentType, conversationJid);
+      const media = await downloadAndUploadMedia(msg, contentType, conversationJid);
       if (media) {
         metadata.media_url = media.url;
         metadata.mimetype = media.mimeType;
@@ -294,29 +643,11 @@ async function processMessage(msg) {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    // Trigger AI Auto-Tagging
-    if (!fromMe && text) {
-      fetch(`${SUPABASE_URL}/functions/v1/auto-tag`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({
-          type: 'INSERT',
-          table: 'messages',
-          record: {
-            conversation_id: conversationId,
-            content: text,
-            sender_type: 'contact'
-          }
-        })
-      }).catch(err => console.error('[AUTO-TAG] Trigger error:', err.message));
-    }
-
-    console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${senderName || senderJid}: "${text.slice(0, 60)}"`);
+    console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${fromMe ? 'Agent (Me)' : (senderName || senderJid)}: "${text.slice(0, 60)}"`);
   } catch (err) {
     console.error('[processMessage] Error:', err.message);
+  } finally {
+    release();
   }
 }
 
@@ -342,20 +673,43 @@ app.post('/webhook/evolution', async (req, res) => {
   } else if (event === 'connection.update') {
     const state = body.data?.state;
     console.log(`[CONNECTION] Status: ${state}`);
+
+    // Fetch existing channel config to preserve QR and pairing codes
+    const { data: channel } = await supabase.from('channels')
+      .select('config')
+      .eq('org_id', ORG_ID)
+      .eq('type', 'whatsapp')
+      .maybeSingle();
+
+    const currentConfig = channel?.config || {};
+    const qrCode = currentConfig.qr_code || null;
+    const pairingCode = currentConfig.pairing_code || null;
+
     if (state === 'open') {
-      // Update channel config
+      // Device linked, QR no longer needed
       await supabase.from('channels')
-        .update({ config: { status: 'connected', qr_code: null }, is_active: true })
+        .update({ 
+          config: { status: 'connected', qr_code: null, pairing_code: null }, 
+          is_active: true 
+        })
         .eq('org_id', ORG_ID)
         .eq('type', 'whatsapp');
     } else if (state === 'close') {
+      // Disconnected but keep the QR/pairing code so user can scan/reconnect
       await supabase.from('channels')
-        .update({ config: { status: 'disconnected', qr_code: null }, is_active: false })
+        .update({ 
+          config: { status: 'disconnected', qr_code: qrCode, pairing_code: pairingCode }, 
+          is_active: true 
+        })
         .eq('org_id', ORG_ID)
         .eq('type', 'whatsapp');
     } else if (state === 'connecting') {
+      // Connecting / starting up: preserve QR code so UI doesn't buffer infinitely
       await supabase.from('channels')
-        .update({ config: { status: 'pending', qr_code: null }, is_active: true })
+        .update({ 
+          config: { status: 'pending', qr_code: qrCode, pairing_code: pairingCode }, 
+          is_active: true 
+        })
         .eq('org_id', ORG_ID)
         .eq('type', 'whatsapp');
     }
@@ -385,14 +739,17 @@ app.post('/webhook/evolution', async (req, res) => {
 // Used by the Supabase Realtime listener below
 // ─────────────────────────────────────────────
 
-async function sendTextMessage(jid, text) {
+async function sendTextMessage(jid, text, quoted) {
+  const payload = { number: jid, text };
+  if (quoted) payload.quoted = quoted;
+
   const res = await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
     method: 'POST',
     headers: {
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ number: jid, text })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const err = await res.text();
@@ -401,32 +758,75 @@ async function sendTextMessage(jid, text) {
   return res.json();
 }
 
-async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
+async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileName, quoted) {
   const mediaType = mimetype?.startsWith('image/') ? 'image'
     : mimetype?.startsWith('audio/') ? 'audio'
     : mimetype?.startsWith('video/') ? 'video'
     : 'document';
 
-  const endpoint = mediaType === 'image' ? 'sendMedia'
-    : mediaType === 'audio' ? 'sendWhatsAppAudio'
-    : mediaType === 'video' ? 'sendMedia'
-    : 'sendMedia';
+  // Audio: download webm -> send raw base64 to Evolution with encoding:true
+  // Evolution's internal ffmpeg converts to ogg/opus and Baileys uploads to WhatsApp
+  // This exact approach was confirmed working via manual curl test (12:39 AM messages)
+  if (mediaType === 'audio') {
+    try {
+      // Download audio from Supabase
+      const audioRes = await fetch(mediaUrl);
+      if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
+      const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+      const base64Audio = audioBuffer.toString('base64');
+      const phoneNumber = jid.replace('@s.whatsapp.net', '');
 
-  const res = await fetch(`${EVOLUTION_API_URL}/message/${endpoint}/${EVOLUTION_INSTANCE}`, {
+      console.log(`[AUDIO] Sending ${audioBuffer.length}B webm as base64 (${base64Audio.length} chars) to ${phoneNumber}`);
+
+      const payload = {
+        number: phoneNumber,
+        audio: base64Audio,
+        encoding: true
+      };
+      if (quoted) payload.quoted = quoted;
+
+      const res = await fetch(`${EVOLUTION_API_URL}/message/sendWhatsAppAudio/${EVOLUTION_INSTANCE}`, {
+        method: 'POST',
+        headers: {
+          'apikey': EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resBody = await res.text();
+      if (!res.ok) {
+        throw new Error(`Evolution sendWhatsAppAudio failed: ${resBody}`);
+      }
+
+      const result = JSON.parse(resBody);
+      const am = result?.message?.audioMessage || {};
+      console.log(`[AUDIO] Evolution response: ptt=${am.ptt} fileLength=${am.fileLength} seconds=${am.seconds}`);
+      return result;
+    } catch (err) {
+      console.error(`[AUDIO] Error: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // Non-audio media (image, video, document)
+  const payload = {
+    number: jid,
+    mediatype: mediaType,
+    media: mediaUrl,
+    caption: caption || '',
+    mimetype,
+    fileName: originalFileName || (mediaType === 'video' ? 'video.mp4' : mediaType === 'image' ? 'image.jpg' : 'document.pdf')
+  };
+  if (quoted) payload.quoted = quoted;
+
+  const res = await fetch(`${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`, {
     method: 'POST',
     headers: {
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      number: jid,
-      mediatype: mediaType,
-      media: mediaUrl,
-      audio: mediaUrl, // Required by sendWhatsAppAudio
-      pTT: mediaType === 'audio', // Sends as dynamic voice message waveform
-      caption: caption || '',
-      mimetype
-    })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const err = await res.text();
@@ -439,11 +839,174 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype) {
 // Supabase Realtime: watch for agent messages
 // ─────────────────────────────────────────────
 
-const WebSocket = require('ws');
 const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
   realtime: { transport: WebSocket }
 });
+
+// Outbound message processor
+async function processOutboundMessage(msg) {
+  if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
+  if (msg.is_internal) return;
+  if (msg.platform_message_id) return; // already sent
+
+  try {
+    const { data: conv } = await supabaseRealtime
+      .from('conversations')
+      .select('contact_id, channels!inner(type)')
+      .eq('id', msg.conversation_id)
+      .single();
+
+    if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+    const { data: contact } = await supabaseRealtime
+      .from('contacts')
+      .select('platform_id, phone, metadata')
+      .eq('id', conv.contact_id)
+      .single();
+
+    if (!contact) return;
+
+    let jid = contact.platform_id.includes('@')
+      ? contact.platform_id
+      : `${contact.platform_id}@s.whatsapp.net`;
+
+    if (jid.endsWith('@lid')) {
+      jid = jid.replace('@lid', '@s.whatsapp.net');
+    }
+
+    // Resolve LID to PN (Phone Number) JID if real phone is available in metadata or phone
+    const realPhone = contact.metadata?.real_phone || contact.phone;
+    if (realPhone) {
+      const cleanPhone = realPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length >= 9 && !realPhone.includes('@')) {
+        const phoneJid = `${cleanPhone}@s.whatsapp.net`;
+        console.log(`[OUTBOUND] Resolving JID from LID ${jid} to verified Phone JID ${phoneJid}`);
+        jid = phoneJid;
+      }
+    }
+
+    let quoted = null;
+    try {
+      const parentMessageId = msg.metadata?.reply_to?.message_id;
+      if (parentMessageId) {
+        const { data: parentMsg } = await supabaseRealtime
+          .from('messages')
+          .select('platform_message_id, sender_type, content')
+          .eq('id', parentMessageId)
+          .single();
+
+        if (parentMsg && parentMsg.platform_message_id) {
+          quoted = {
+            key: {
+              id: parentMsg.platform_message_id,
+              fromMe: parentMsg.sender_type === 'agent' || parentMsg.sender_type === 'ai',
+              remoteJid: jid
+            },
+            message: {
+              conversation: parentMsg.content || ''
+            }
+          };
+          console.log(`[OUTBOUND] Replying to parent WhatsApp message: ${parentMsg.platform_message_id}`);
+        }
+      }
+    } catch (parentErr) {
+      console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
+    }
+
+    // Fetch agent name dynamically for prepending
+    let agentName = null;
+    if (msg.sender_type === 'agent' && msg.sender_id) {
+      try {
+        const { data: agentUser } = await supabaseRealtime
+          .from('users')
+          .select('name')
+          .eq('id', msg.sender_id)
+          .maybeSingle();
+        if (agentUser && agentUser.name) {
+          agentName = agentUser.name;
+        }
+      } catch (agentErr) {
+        console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
+      }
+    } else if (msg.sender_type === 'ai') {
+      agentName = 'AI Assistant';
+    }
+
+    let formattedContent = msg.content || '';
+    if (agentName) {
+      formattedContent = `*${agentName}*\n${formattedContent}`;
+    }
+
+    let sentResult;
+    if (msg.metadata?.media_url) {
+      const captionText = msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]'
+        ? formattedContent
+        : (agentName ? `*${agentName}*` : '');
+      sentResult = await sendMediaMessage(
+        jid,
+        msg.metadata.media_url,
+        captionText,
+        msg.metadata.mimetype,
+        msg.metadata?.filename,
+        quoted
+      );
+    } else {
+      sentResult = await sendTextMessage(jid, formattedContent, quoted);
+    }
+
+    // Save platform message id for dedup
+    const platformMessageId = extractSentMessageId(sentResult);
+    if (platformMessageId) {
+      await supabaseRealtime.from('messages')
+        .update({ platform_message_id: platformMessageId, status: 'delivered' })
+        .eq('id', msg.id);
+    }
+
+    console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
+  } catch (err) {
+    console.error('[OUTBOUND] Error:', err.message);
+    await supabaseRealtime.from('messages')
+      .update({
+        status: 'failed',
+        metadata: {
+          ...(msg.metadata || {}),
+          delivery_error: err.message,
+          delivery_failed_at: new Date().toISOString()
+        }
+      })
+      .eq('id', msg.id);
+  }
+}
+
+// Self-healing sweep for pending outbound messages sent while worker was restarting/offline
+async function sendPendingOutboundMessages() {
+  try {
+    const { data: pending, error } = await supabaseRealtime
+      .from('messages')
+      .select('*')
+      .eq('status', 'sent')
+      .in('sender_type', ['agent', 'ai'])
+      .is('platform_message_id', null)
+      .is('is_internal', false);
+
+    if (error) {
+      console.error('[SELF-HEAL] Failed to fetch pending messages:', error.message);
+      return;
+    }
+
+    if (pending && pending.length > 0) {
+      console.log(`[SELF-HEAL] Found ${pending.length} pending outbound messages. Processing...`);
+      for (const msg of pending) {
+        await processOutboundMessage(msg);
+      }
+    }
+  } catch (err) {
+    console.error('[SELF-HEAL] Sweep error:', err.message);
+  }
+}
+
+
 
 supabaseRealtime
   .channel('outbound_messages')
@@ -453,99 +1016,7 @@ supabaseRealtime
     table: 'messages',
     filter: `org_id=eq.${ORG_ID}`
   }, async (payload) => {
-    const msg = payload.new;
-    if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
-    if (msg.is_internal) return;
-    if (msg.platform_message_id) return; // already sent
-
-    try {
-      const { data: conv } = await supabaseRealtime
-        .from('conversations')
-        .select('contact_id, channels!inner(type)')
-        .eq('id', msg.conversation_id)
-        .single();
-
-      if (!conv || conv.channels?.type !== 'whatsapp') return;
-
-      const { data: contact } = await supabaseRealtime
-        .from('contacts')
-        .select('platform_id')
-        .eq('id', conv.contact_id)
-        .single();
-
-      if (!contact) return;
-
-      let jid = contact.platform_id.includes('@')
-        ? contact.platform_id
-        : `${contact.platform_id}@s.whatsapp.net`;
-
-      let sentResult;
-      try {
-        if (msg.metadata?.media_url) {
-          sentResult = await sendMediaMessage(
-            jid,
-            msg.metadata.media_url,
-            msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
-            msg.metadata.mimetype
-          );
-        } else {
-          sentResult = await sendTextMessage(jid, msg.content);
-        }
-      } catch (err) {
-        // LID Fallback: If JID starts with 2 and has 15 digits, it is a WhatsApp LID (Line Identifier)
-        const digits = jid.split('@')[0].replace(/\D/g, '');
-        const isLid = digits.startsWith('2') && digits.length === 15;
-        
-        if (isLid && jid.endsWith('@s.whatsapp.net')) {
-          const fallbackJid = `${digits}@lid`;
-          console.log(`[OUTBOUND] Message failed to @s.whatsapp.net for LID JID. Attempting fallback to: ${fallbackJid}`);
-          try {
-            if (msg.metadata?.media_url) {
-              sentResult = await sendMediaMessage(
-                fallbackJid,
-                msg.metadata.media_url,
-                msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' ? msg.content : '',
-                msg.metadata.mimetype
-              );
-            } else {
-              sentResult = await sendTextMessage(fallbackJid, msg.content);
-            }
-            // Auto-heal: update contact's platform_id to @lid in Supabase so subsequent messages are routed directly to @lid
-            jid = fallbackJid;
-            await supabaseRealtime.from('contacts')
-              .update({ platform_id: fallbackJid })
-              .eq('id', conv.contact_id);
-            console.log(`[OUTBOUND] Fallback successful! Healed contact platform_id to ${fallbackJid}`);
-          } catch (fallbackErr) {
-            throw new Error(`Outbound failed on both @s.whatsapp.net and @lid formats. Main: ${err.message}. Fallback: ${fallbackErr.message}`);
-          }
-        } else {
-          throw err;
-        }
-      }
-
-      // Save platform message id for dedup
-      const platformMessageId = extractSentMessageId(sentResult);
-      if (platformMessageId) {
-        await supabaseRealtime.from('messages')
-          .update({ platform_message_id: platformMessageId, status: 'delivered' })
-          .eq('id', msg.id);
-      }
-
-      console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
-    } catch (err) {
-      console.error('[OUTBOUND] Error:', err.message);
-      await supabaseRealtime.from('messages')
-        .update({
-          status: 'failed',
-          metadata: {
-            ...(msg.metadata || {}),
-            delivery_error: err.message,
-            delivery_failed_at: new Date().toISOString()
-          }
-        })
-        .eq('id', msg.id);
-    }
+    await processOutboundMessage(payload.new);
   })
   .subscribe((status) => {
     console.log('[REALTIME] Status:', status);
@@ -601,6 +1072,9 @@ app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
   await registerWebhook();
   
   console.log('[READY] Listening for WhatsApp events...');
+
+  // Sweep for and send any outbound messages created while worker was offline
+  await sendPendingOutboundMessages();
   
   // Signal PM2 that the application is ready (for wait_ready zero-downtime reloads)
   if (process.send) {

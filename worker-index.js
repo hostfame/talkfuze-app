@@ -106,6 +106,13 @@ function resolveName(msg) {
   return msg.pushName || msg.key?.participant?.split('@')[0] || '';
 }
 
+function extractMentions(msg) {
+  const m = unwrapMessage(msg);
+  if (!m) return [];
+  const contextInfo = m.extendedTextMessage?.contextInfo || m.imageMessage?.contextInfo || m.videoMessage?.contextInfo || m.documentMessage?.contextInfo || m.audioMessage?.contextInfo;
+  return contextInfo?.mentionedJid || [];
+}
+
 function mediaPlaceholder(contentType) {
   if (contentType === 'image') return '[Image]';
   if (contentType === 'audio') return '[Audio Voice Message]';
@@ -570,6 +577,44 @@ async function processMessage(msg) {
       participant_name: isGroup ? senderName : null,
     };
 
+    // Handle mentions
+    const mentions = extractMentions(msg);
+    if (mentions.length > 0) {
+      const mentionsMap = {};
+      for (const jid of mentions) {
+        const lidNumber = jid.split('@')[0];
+        let resolvedPhone = await resolveLidToPhone(jid);
+        const searchPhone = resolvedPhone || lidNumber.replace(/\D/g, '');
+
+        // Default: just the number
+        mentionsMap[searchPhone] = '+' + searchPhone;
+
+        // Try to look up contact in DB
+        try {
+          const { data: contactMatch } = await supabase
+            .from('contacts')
+            .select('name')
+            .eq('org_id', ORG_ID)
+            .eq('platform_type', 'whatsapp')
+            .filter('phone', 'eq', searchPhone)
+            .limit(1)
+            .maybeSingle();
+
+          if (contactMatch && contactMatch.name) {
+            mentionsMap[searchPhone] = contactMatch.name;
+          }
+        } catch (err) {
+          console.error('[MENTION] DB lookup failed:', err.message);
+        }
+        
+        // Also map the original LID number if different, so frontend can match it
+        if (lidNumber !== searchPhone) {
+          mentionsMap[lidNumber] = mentionsMap[searchPhone];
+        }
+      }
+      metadata.mentions = mentionsMap;
+    }
+
     // Handle media
     if (contentType !== 'text') {
       const media = await downloadAndUploadMedia(msg, contentType, conversationJid);
@@ -869,18 +914,45 @@ async function processOutboundMessage(msg) {
       console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
     }
 
+    // Fetch agent name dynamically for prepending
+    let agentName = null;
+    if (msg.sender_type === 'agent' && msg.sender_id) {
+      try {
+        const { data: agentUser } = await supabaseRealtime
+          .from('users')
+          .select('name')
+          .eq('id', msg.sender_id)
+          .maybeSingle();
+        if (agentUser && agentUser.name) {
+          agentName = agentUser.name;
+        }
+      } catch (agentErr) {
+        console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
+      }
+    } else if (msg.sender_type === 'ai') {
+      agentName = 'AI Assistant';
+    }
+
+    let formattedContent = msg.content || '';
+    if (agentName) {
+      formattedContent = `*${agentName}*\n${formattedContent}`;
+    }
+
     let sentResult;
     if (msg.metadata?.media_url) {
+      const captionText = msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]'
+        ? formattedContent
+        : (agentName ? `*${agentName}*` : '');
       sentResult = await sendMediaMessage(
         jid,
         msg.metadata.media_url,
-        msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]' ? msg.content : '',
+        captionText,
         msg.metadata.mimetype,
         msg.metadata?.filename,
         quoted
       );
     } else {
-      sentResult = await sendTextMessage(jid, msg.content, quoted);
+      sentResult = await sendTextMessage(jid, formattedContent, quoted);
     }
 
     // Save platform message id for dedup
