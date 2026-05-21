@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile } from "@/actions/chat"
 import { logBrowserCall } from "@/actions/calls"
 import { supabase } from "@/lib/supabase"
-import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, isScreenShareSupported } from "@/lib/webrtc"
+import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, isScreenShareSupported, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
 import { playUISound, playAlertLoop, stopAlertLoop, playRingbackLoop, stopRingbackLoop } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -555,6 +555,9 @@ export default function WidgetPage() {
   }, [activeConversationId])
 
   const handleStartVoiceCall = async () => {
+    // Warm up/unlock the mobile browser audio context synchronously inside the user click event
+    const unlockedAudio = unlockAudioContext();
+
     let targetConvId = activeConversationId;
     if (!targetConvId || targetConvId === 'new') {
       try {
@@ -620,9 +623,9 @@ export default function WidgetPage() {
       requestWakeLock();
 
       pc.ontrack = (event) => {
-        // Use mobile-safe audio element with playsinline + autoplay fallback
-        const audio = createRemoteAudioElement(event.streams[0]);
-        voiceAudioRef.current = audio;
+        // Use pre-unlocked mobile-safe audio element
+        bindRemoteAudioStream(unlockedAudio, event.streams[0]);
+        voiceAudioRef.current = unlockedAudio;
       };
 
       pc.onicecandidate = (event) => {
@@ -743,6 +746,10 @@ export default function WidgetPage() {
     const incoming = incomingAgentCallRef.current;
     console.log('[Widget Call] handleAnswerAgentCall - incoming:', !!incoming, 'activeConv:', activeConversationId, 'channelRef:', !!voiceChannelRef.current);
     if (!incoming || !activeConversationId) return;
+
+    // Warm up/unlock the mobile browser audio context synchronously inside the "Accept" click event
+    const unlockedAudio = unlockAudioContext();
+
     try {
       setCallStatus('active')
       incomingAgentCallRef.current = null;
@@ -765,8 +772,8 @@ export default function WidgetPage() {
       requestWakeLock();
 
       pc.ontrack = (event) => {
-        const audio = createRemoteAudioElement(event.streams[0]);
-        voiceAudioRef.current = audio;
+        bindRemoteAudioStream(unlockedAudio, event.streams[0]);
+        voiceAudioRef.current = unlockedAudio;
       };
 
       pc.onicecandidate = (event) => {

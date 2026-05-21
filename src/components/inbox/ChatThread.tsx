@@ -2,7 +2,7 @@
 
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock } from "@/lib/webrtc"
+import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia } from "@/actions/dashboard"
 import { logBrowserCall } from "@/actions/calls"
@@ -503,6 +503,10 @@ export default function ChatThread({
 
   const handleAnswerVoiceCall = async () => {
     if (!activeCallId || !incomingCall) return
+    
+    // Warm up/unlock the browser audio context synchronously inside the user click handler
+    const unlockedAudio = unlockAudioContext();
+
     setCanHangUpVoice(false)
     setTimeout(() => {
       setCanHangUpVoice(true)
@@ -527,8 +531,8 @@ export default function ChatThread({
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
       pc.ontrack = (event) => {
-        const audio = createRemoteAudioElement(event.streams[0]);
-        voiceAudioRef.current = audio;
+        bindRemoteAudioStream(unlockedAudio, event.streams[0]);
+        voiceAudioRef.current = unlockedAudio;
       };
 
       pc.onicecandidate = (event) => {
@@ -661,6 +665,10 @@ export default function ChatThread({
   const handleStartVoiceCallFromAgent = async () => {
     if (!conversationId || callStatus !== 'idle') return
     console.log('[Agent Call] Starting call for conversation:', conversationId);
+    
+    // Warm up/unlock the browser audio context synchronously inside the "Call" click handler
+    const unlockedAudio = unlockAudioContext();
+
     try {
       setCallStatus('calling')
       setCallConversationId(conversationId)
@@ -682,8 +690,8 @@ export default function ChatThread({
 
       pc.ontrack = (event) => {
         console.log('[Agent Call] Got remote track from visitor');
-        const audio = createRemoteAudioElement(event.streams[0]);
-        voiceAudioRef.current = audio;
+        bindRemoteAudioStream(unlockedAudio, event.streams[0]);
+        voiceAudioRef.current = unlockedAudio;
       };
 
       pc.onicecandidate = (event) => {

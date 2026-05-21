@@ -159,6 +159,36 @@ export function createRemoteAudioElement(stream: MediaStream): HTMLAudioElement 
 }
 
 /**
+ * Creates a blank audio element synchronously inside a user gesture event
+ * (like clicking 'Accept') to unlock mobile browser audio autoplay.
+ * This should be invoked synchronously at the start of click handlers
+ * before any async await statements.
+ */
+export function unlockAudioContext(): HTMLAudioElement {
+  const audio = document.createElement('audio')
+  audio.autoplay = true
+  audio.setAttribute('playsinline', '')
+  audio.setAttribute('webkit-playsinline', '')
+  audio.setAttribute('x-webkit-airplay', 'deny')
+  audio.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;'
+  document.body.appendChild(audio)
+  
+  // Warm up / play blank element immediately to register user gesture interaction
+  audio.play().catch(() => {})
+  return audio
+}
+
+/**
+ * Binds the remote stream to the pre-unlocked mobile audio element.
+ */
+export function bindRemoteAudioStream(audio: HTMLAudioElement, stream: MediaStream) {
+  audio.srcObject = stream
+  audio.play().catch(err => {
+    console.warn('[WebRTC] Failed to play bound remote stream:', err)
+  })
+}
+
+/**
  * Safely cleans up a remote audio element created by createRemoteAudioElement.
  */
 export function destroyRemoteAudioElement(audio: HTMLAudioElement | null) {
