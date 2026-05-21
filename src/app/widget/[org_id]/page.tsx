@@ -400,6 +400,7 @@ export default function WidgetPage() {
   
   const [conversations, setConversations] = useState<any[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | 'new' | null>(null)
+  const subscribedConvIdsRef = useRef<Set<string>>(new Set())
   
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
@@ -549,7 +550,13 @@ export default function WidgetPage() {
       })
       .on('broadcast', { event: 'voice_call_from_agent' }, (payload) => {
         // Agent is calling the visitor
-        console.log('[Widget Call] Received voice_call_from_agent, offer present:', !!payload.payload?.offer);
+        console.log('[Widget Call] Received voice_call_from_agent on conv:', convId, 'offer present:', !!payload.payload?.offer);
+        
+        // CRITICAL: Point the active call reference and voice channel to the one that received the call!
+        voiceChannelRef.current = callChannel;
+        setActiveConversationId(convId);
+        setActiveTab('chat');
+        
         incomingAgentCallRef.current = { offer: payload.payload.offer }
         setCallStatus('ringing')
         
@@ -584,22 +591,38 @@ export default function WidgetPage() {
   }
 
   useEffect(() => {
-    const mainConvId = activeConversationId && activeConversationId !== 'new' 
-      ? activeConversationId 
-      : conversations[0]?.id;
-
-    if (!mainConvId) return;
-
-    console.log('[Widget VoiceCall] Automatically subscribing to voice channel:', mainConvId);
-    const callChannel = subscribeToVoiceCall(mainConvId);
-
-    return () => {
-      console.log('[Widget VoiceCall] Unsubscribing from voice channel:', mainConvId);
-      supabase.removeChannel(callChannel)
-      voiceChannelRef.current = null
-      if (callTimerRef.current) clearInterval(callTimerRef.current)
+    const idsToSubscribe = new Set<string>();
+    
+    if (activeConversationId && activeConversationId !== 'new') {
+      idsToSubscribe.add(activeConversationId);
     }
-  }, [activeConversationId, conversations[0]?.id])
+    
+    conversations.forEach(c => {
+      if (c.id) idsToSubscribe.add(c.id);
+    });
+
+    idsToSubscribe.forEach(id => {
+      if (!subscribedConvIdsRef.current.has(id)) {
+        console.log('[Widget VoiceCall] Stable subscribing to voice channel:', id);
+        subscribeToVoiceCall(id);
+        subscribedConvIdsRef.current.add(id);
+      }
+    });
+  }, [activeConversationId, conversations])
+
+  useEffect(() => {
+    return () => {
+      console.log('[Widget VoiceCall] Cleaning up all stable voice channels on unmount');
+      subscribedConvIdsRef.current.forEach(id => {
+        const oldCh = supabase.getChannels().find(c => c.topic === `realtime:voicecall:${id}`);
+        if (oldCh) {
+          supabase.removeChannel(oldCh);
+        }
+      });
+      subscribedConvIdsRef.current.clear();
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    }
+  }, [])
 
   const handleStartVoiceCall = async () => {
     // Warm up/unlock the mobile browser audio context synchronously inside the user click event
