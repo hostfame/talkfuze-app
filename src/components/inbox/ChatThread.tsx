@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -2828,9 +2828,36 @@ export default function ChatThread({
         >
           <div 
             style={{ top: contextMenu.y, left: contextMenu.x }}
-            className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[170px] animate-in fade-in zoom-in-95 duration-100"
+            className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[175px] animate-in fade-in zoom-in-95 duration-100"
           >
-            {/* Add to Quick Replies - ALWAYS available for text messages */}
+            {/* Reply - ALWAYS available for text messages */}
+            <button 
+              onClick={() => {
+                setReplyToMessage(contextMenu.message);
+                setContextMenu(null);
+                setTimeout(() => {
+                  textareaRef.current?.focus();
+                }, 50);
+              }}
+              className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
+            >
+              <CornerUpLeft size={14} className="text-slate-400 dark:text-slate-500" />
+              Reply
+            </button>
+
+            {/* Copy - ALWAYS available for text messages */}
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(contextMenu.message.content).catch(() => {});
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
+            >
+              <Copy size={14} className="text-slate-400 dark:text-slate-500" />
+              Copy
+            </button>
+
+            {/* Add shortcut - ALWAYS available for text messages */}
             <button 
               onClick={() => {
                 setQuickReplyContent(contextMenu.message.content);
@@ -2841,8 +2868,8 @@ export default function ChatThread({
               }}
               className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
             >
-              <Zap size={14} className="text-blue-500 dark:text-blue-400" />
-              Add to Quick Replies
+              <Plus size={14} className="text-slate-400 dark:text-slate-500" />
+              Add shortcut
             </button>
 
             {/* Edit and Recall - Only for current agent's messages */}
