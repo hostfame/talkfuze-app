@@ -2648,7 +2648,7 @@ export default function ChatThread({
                 onClick={handleAiDraft}
                 disabled={isSending || isAiDrafting || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all flex items-center gap-1 disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
               >
                 {isAiDrafting ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -2657,9 +2657,6 @@ export default function ChatThread({
                 ) : (
                   <Bot size={16} strokeWidth={2} />
                 )}
-                <span className="text-[12px] font-medium hidden sm:inline-block pr-1">
-                  {aiDraftFailed ? 'Failed' : 'AI Draft'}
-                </span>
               </button>
             </div>
             <div className="flex items-center gap-3">

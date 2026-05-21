@@ -44,9 +44,11 @@ export default function SipDialer() {
   } | null>(null)
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
   const activeCallSessionRef = useRef<any>(null)
+  const currentUserRef = useRef<any>(null)
   
   // Sync the ref on every render to bypass stale closures in event listeners
   activeCallSessionRef.current = activeCallSession
+  currentUserRef.current = currentUser
   
   const [isTabConflict, setIsTabConflict] = useState(false)
   const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null)
@@ -101,13 +103,16 @@ export default function SipDialer() {
       const banner = bannerRef.current
       if (!banner) return
 
-      const x = Math.max(0, Math.min(clientX - dragOffsetRef.current.x, window.innerWidth - 350))
+      const x = Math.max(0, Math.min(clientX - dragOffsetRef.current.x, window.innerWidth - 370))
       const y = Math.max(0, Math.min(clientY - dragOffsetRef.current.y, window.innerHeight - 100))
       
-      // Directly manipulate DOM for 60fps buttery-smooth dragging
+      // Directly manipulate DOM styles for buttery-smooth instant response
       banner.style.left = `${x}px`
       banner.style.top = `${y}px`
-      banner.style.right = 'auto' // override default right position
+      banner.style.right = 'auto'
+      
+      // Sync immediately with state to prevent React state timer ticks from overriding the dragged position
+      setBannerPos({ x, y })
     }
 
     const handleUp = () => {
@@ -453,7 +458,8 @@ export default function SipDialer() {
         playSynthesizedRing()
 
         // Lookup caller name dynamically from contacts using smart last 10 digits matching
-        if (callerId !== 'Unknown' && currentUser?.org_id) {
+        const currentActiveUser = currentUserRef.current
+        if (callerId !== 'Unknown' && currentActiveUser?.org_id) {
           const cleanCaller = callerId.replace(/\D/g, '')
           const last10 = cleanCaller.slice(-10) // Extract last 10 digits to resolve country-code prefixes
           
@@ -461,7 +467,7 @@ export default function SipDialer() {
           supabase
             .from('contacts')
             .select('name')
-            .eq('org_id', currentUser.org_id)
+            .eq('org_id', currentActiveUser.org_id)
             .or(`phone.eq.${cleanCaller},phone.like.%${last10},platform_id.like.%${cleanCaller}%`)
             .maybeSingle()
             .then(({ data }) => {
@@ -513,13 +519,13 @@ export default function SipDialer() {
             .catch(err => console.error("WHMCS dynamic client lookup failed:", err))
 
           // Fetch last call history for this number
-          if (currentUser?.org_id) {
-            getLastCallForNumber(currentUser.org_id, cleanCaller)
+          if (currentActiveUser?.org_id) {
+            getLastCallForNumber(currentActiveUser.org_id, cleanCaller)
               .then(lastCall => { if (lastCall) setLastCallInfo(lastCall) })
               .catch(() => {})
 
             // Auto-find conversation for this caller
-            findConversationByPhone(currentUser.org_id, cleanCaller)
+            findConversationByPhone(currentActiveUser.org_id, cleanCaller)
               .then(convId => {
                 if (convId) {
                   setMatchedConversationId(convId)
@@ -629,7 +635,7 @@ export default function SipDialer() {
       channel.close()
       simpleUser.disconnect()
     }
-  }, [currentUser])
+  }, [sipUser?.sip_extension, sipUser?.sip_password])
 
   const handleDial = async () => {
     if (!userAgent || !number) return
@@ -708,10 +714,16 @@ export default function SipDialer() {
     stopSynthesizedRing()
     
     // Explicit browser gesture autoplay bypass + unmute if ring was muted
+    // Pre-unlock the HTMLAudioElement safely without triggering an play-on-empty error state
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false
-      remoteAudioRef.current.play().catch(e => console.warn('[WebRTC] Autoplay bypass failed on answer:', e))
+      try {
+        remoteAudioRef.current.load()
+      } catch (e) {}
     }
+    
+    // Let the browser fully release the ring AudioContext resources before requesting microphone stream
+    await new Promise(resolve => setTimeout(resolve, 150))
     
     try {
       await userAgent.answer()
@@ -941,8 +953,14 @@ export default function SipDialer() {
       {activeCallSession && (
         <div 
           ref={bannerRef}
-          className={`fixed z-[9999] w-[370px] bg-[#2d2d30]/90 backdrop-blur-2xl border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-[1.8rem] text-white overflow-hidden ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
-          style={bannerPos ? { left: bannerPos.x, top: bannerPos.y } : { top: 16, right: 12 }}>
+          className={`fixed z-[9999] w-[370px] bg-[#1d1d1f]/85 backdrop-blur-2xl border border-white/[0.08] shadow-[0_24px_50px_rgba(0,0,0,0.7)] hover:border-white/15 transition-all duration-300 rounded-[2rem] text-white overflow-hidden ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
+          style={{
+            left: bannerPos?.x ?? 'auto',
+            top: bannerPos?.y ?? 16,
+            right: bannerPos ? 'auto' : 12
+          }}>
+          
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           
           <style>{`
             @keyframes appleWaveform {
@@ -961,14 +979,14 @@ export default function SipDialer() {
             onTouchStart={handleDragStart}
             className="w-full h-5 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors absolute top-0 left-0 z-10"
           >
-            <div className="w-8 h-1 rounded-full bg-white/20" />
+            <div className="w-8 h-1 rounded-full bg-white/15" />
           </div>
 
           {/* Main FaceTime Banner Capsule */}
           <div className="flex items-center justify-between gap-3 px-5 pb-3.5 pt-5 relative">
             <div className="flex items-center gap-3 min-w-0">
               {/* Profile Avatar with absolute overlay badge */}
-              <div className="w-11 h-11 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shrink-0 relative shadow-inner">
+              <div className="w-11 h-11 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0 relative shadow-inner">
                 <User size={20} strokeWidth={2.5} className="text-white/80" />
                 <div className="absolute -bottom-1 -right-1 bg-black border border-white/20 rounded-full p-[2px] shadow-md flex items-center justify-center">
                   <Smartphone size={8} className="text-white" />
@@ -981,7 +999,7 @@ export default function SipDialer() {
                   {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
                 </span>
                 <span className="text-[11px] text-white/60 font-medium leading-none mt-1">
-                  {status === 'Connected' ? `from your iPhone — ${formatTime(callDuration)}` :
+                  {status === 'Connected' ? `from your iPhone - ${formatTime(callDuration)}` :
                    status === 'Incoming Call...' ? 'Incoming Call...' :
                    status === 'Connecting...' ? 'Connecting...' :
                    status === 'Calling...' || status === 'Dialing...' ? 'Calling...' : status}
