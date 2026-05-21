@@ -2317,9 +2317,10 @@ export default function ChatThread({
         
         {allMessages.length === 0 && !isCustomerTyping && (
           isFetching ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 animate-pulse opacity-70 mt-10">
-              <Loader2 size={32} className="text-blue-500/60 mb-4 animate-spin" />
-              <p className="text-slate-500 font-medium text-[14px]">Loading messages...</p>
+            <div className="flex-1 flex flex-col gap-3 p-6 mt-4 animate-pulse">
+              <div className="flex justify-start"><div className="h-8 w-48 bg-slate-100 dark:bg-slate-800 rounded-2xl" /></div>
+              <div className="flex justify-end"><div className="h-8 w-36 bg-blue-50 dark:bg-blue-900/20 rounded-2xl" /></div>
+              <div className="flex justify-start"><div className="h-8 w-56 bg-slate-100 dark:bg-slate-800 rounded-2xl" /></div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-70 mt-10">
