@@ -718,7 +718,22 @@ export default function SipDialer() {
   const handleAnswer = async () => {
     if (!userAgent) return
     
-    console.log('[SIP] handleAnswer() called. Current session state:', (userAgent as any).session?.state)
+    const session = (userAgent as any).session
+    console.log('[SIP] handleAnswer() called.')
+    console.log('[SIP] Session exists:', !!session)
+    console.log('[SIP] Session state:', session?.state)
+    console.log('[SIP] Session id:', session?.id)
+    
+    if (!session) {
+      console.error('[SIP] No session found on SimpleUser - cannot answer')
+      return
+    }
+    
+    // Pre-flight: Check session is in the correct state for acceptance
+    if (session.state !== 'Initial') {
+      console.error(`[SIP] Session state is "${session.state}" but must be "Initial" to accept. Aborting.`)
+      return
+    }
     
     setCanHangUp(false)
     setTimeout(() => {
@@ -731,18 +746,26 @@ export default function SipDialer() {
     // Instant Optimistic Connect UI change
     setStatus('Connecting...')
     
-    // Unmute remote audio element if ring was muted (do NOT call .load() or .play() - SIP.js handles srcObject)
+    // Unmute remote audio element if ring was muted
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false
     }
     
     try {
-      console.log('[SIP] Calling userAgent.answer()...')
-      await userAgent.answer()
-      console.log('[SIP] userAgent.answer() resolved successfully')
+      // Directly call session.accept() bypassing SimpleUser/SessionManager wrappers
+      // This avoids any potential sessionExists() check failures or middleware issues
+      console.log('[SIP] Calling session.accept() directly...')
+      await session.accept({
+        sessionDescriptionHandlerOptions: {
+          constraints: { audio: true, video: false }
+        }
+      })
+      console.log('[SIP] session.accept() resolved successfully - call should be establishing')
     } catch (e: any) {
-      console.error('[SIP] Answer failed:', e?.message || e)
-      // If answer failed, reset UI
+      console.error('[SIP] Accept failed:', e?.message || e)
+      console.error('[SIP] Accept error stack:', e?.stack)
+      console.error('[SIP] Session state after failure:', session?.state)
+      // If accept failed, reset UI
       setStatus('Registered')
       setSessionState(SessionState.Terminated)
       setActiveCallSession(null)
