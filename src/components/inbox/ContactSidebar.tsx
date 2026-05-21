@@ -697,12 +697,53 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         }
       }
       fetchLegacyCrm()
+
+      // Automatically fetch WHMCS client if number/email is valid, or it is a WhatsApp contact
+      const isRealEmail = cleanPhone.includes('@') && !cleanPhone.endsWith('@lid')
+      const digitsOnly = cleanPhone.replace(/\D/g, '')
+      const isValidPhone = digitsOnly.length >= 8
+      const isWhatsApp = contact?.platform_type === 'whatsapp'
+
+      if (isWhatsApp || isRealEmail || isValidPhone) {
+        const autoFetchWhmcs = async () => {
+          setIsCrmLoading(true)
+          try {
+            setLastSearchedQuery(cleanPhone.trim())
+            const client = (await fetchWhmcsClient(cleanPhone.trim())) as any
+            if (client && mounted) {
+              setWhmcsClient(client)
+              const [services, tickets, invoices] = await Promise.all([
+                fetchWhmcsServices(client.id),
+                fetchWhmcsTickets(client.id),
+                fetchWhmcsUnpaidInvoices(client.id)
+              ])
+              if (mounted) {
+                setWhmcsServices(services)
+                setWhmcsTickets(tickets)
+                setWhmcsInvoices(invoices)
+              }
+            } else if (mounted) {
+              setWhmcsClient(null)
+              setWhmcsServices(null)
+              setWhmcsTickets([])
+              setWhmcsInvoices([])
+            }
+          } catch (err) {
+            console.error("Auto fetch WHMCS failed:", err)
+          } finally {
+            if (mounted) {
+              setIsCrmLoading(false)
+            }
+          }
+        }
+        autoFetchWhmcs()
+      }
     } else {
       setCrmSearchQuery("")
     }
     
     return () => { mounted = false }
-  }, [conversation?.id, platformId, orgId])
+  }, [conversation?.id, platformId, orgId, contactPhone, displayPlatformId, metadataPhone, isLid, isMessenger, contact])
 
   const handleSummarize = async () => {
     if (!conversation?.id) return
@@ -1040,20 +1081,35 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               {portalTab === 'services' && (
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
                   <div className="space-y-3">
-                    {whmcsServices?.products?.map((product: WhmcsProduct) => (
-                      <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
-                          <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
-                            <ExternalLink size={13} />
-                          </a>
+                    {isCrmLoading ? (
+                      <div className="space-y-4 animate-pulse">
+                        <div className="pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
+                          <div className="h-4 bg-slate-200 dark:bg-slate-750 rounded w-2/3 mb-2"></div>
+                          <div className="h-3 bg-slate-100 dark:bg-slate-700/40 rounded w-1/2"></div>
                         </div>
-                        {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
-                        <span className={`inline-block text-[12px] font-semibold mt-1.5 px-2.5 py-0.5 rounded-full ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{product.status}</span>
+                        <div className="pb-3">
+                          <div className="h-4 bg-slate-200 dark:bg-slate-750 rounded w-1/2 mb-2"></div>
+                          <div className="h-3 bg-slate-100 dark:bg-slate-700/40 rounded w-1/3"></div>
+                        </div>
                       </div>
-                    ))}
-                    {!whmcsServices?.products?.length && (
-                       <p className="text-[12px] text-slate-500 text-center py-4">No services found.</p>
+                    ) : (
+                      <>
+                        {whmcsServices?.products?.map((product: WhmcsProduct) => (
+                          <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
+                              <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
+                                <ExternalLink size={13} />
+                              </a>
+                            </div>
+                            {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
+                            <span className={`inline-block text-[12px] font-semibold mt-1.5 px-2.5 py-0.5 rounded-full ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{product.status}</span>
+                          </div>
+                        ))}
+                        {!whmcsServices?.products?.length && (
+                           <p className="text-[12px] text-slate-500 text-center py-4">No services found.</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1062,22 +1118,33 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               {portalTab === 'domains' && (
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200">
                   <div className="space-y-3">
-                    {whmcsServices?.domains?.map((domain: WhmcsDomain) => (
-                      <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
-                          <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
-                            <ExternalLink size={13} />
-                          </a>
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className={`inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${domain.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : domain.status === 'Expired' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{domain.status}</span>
-                          <p className="text-[11px] text-slate-400">Exp: {domain.expirydate}</p>
+                    {isCrmLoading ? (
+                      <div className="space-y-4 animate-pulse">
+                        <div className="pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
+                          <div className="h-4 bg-slate-200 dark:bg-slate-750 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-slate-100 dark:bg-slate-700/40 rounded w-1/3"></div>
                         </div>
                       </div>
-                    ))}
-                    {!whmcsServices?.domains?.length && (
-                       <p className="text-[12px] text-slate-500 text-center py-4">No domains found.</p>
+                    ) : (
+                      <>
+                        {whmcsServices?.domains?.map((domain: WhmcsDomain) => (
+                          <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
+                              <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
+                                <ExternalLink size={13} />
+                              </a>
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className={`inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${domain.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : domain.status === 'Expired' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{domain.status}</span>
+                              <p className="text-[11px] text-slate-400">Exp: {domain.expirydate}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {!whmcsServices?.domains?.length && (
+                           <p className="text-[12px] text-slate-500 text-center py-4">No domains found.</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1096,7 +1163,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                       </button>
                     </div>
                   </div>
-                  {whmcsTickets?.length > 0 ? (
+                  {isCrmLoading ? (
+                    <div className="space-y-3 animate-pulse">
+                      <div className="h-14 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg"></div>
+                      <div className="h-14 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg"></div>
+                    </div>
+                  ) : whmcsTickets?.length > 0 ? (
                     <div className="space-y-3">
                       {whmcsTickets.map((ticket: WhmcsTicket) => (
                         <a 
@@ -1128,7 +1200,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">Unpaid Invoices</h3>
                   </div>
-                  {whmcsInvoices?.length > 0 ? (
+                  {isCrmLoading ? (
+                    <div className="space-y-3 animate-pulse">
+                      <div className="h-24 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg"></div>
+                    </div>
+                  ) : whmcsInvoices?.length > 0 ? (
                     <div className="space-y-3">
                       {whmcsInvoices.map((invoice: WhmcsInvoice) => (
                         <div key={invoice.id} className="p-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 rounded-lg group">
