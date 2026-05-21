@@ -39,8 +39,63 @@ export async function logAiDraft(
 }
 
 /**
+ * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
+ */
+async function generateCorrectionFeedback(aiDraft: string, agentSent: string): Promise<string | null> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return null;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 150,
+        messages: [
+          {
+            role: "user",
+            content: `You are an AI learning coordinator. Compare the following AI-generated support draft with the human agent's corrected message. 
+Identify exactly why the human agent edited the draft. 
+Write a concise, 1-sentence, highly actionable rule/insight (in English) describing the correction, to help the AI avoid repeating this mistake next time.
+
+Format example:
+"Avoid formal textbook words like 'অনুগ্রহপূর্বক'; the agent prefers casual terms like 'প্লিজ' or omitting them."
+"The agent corrected the suspension status to active; verify account status before claiming it is suspended."
+
+AI Draft:
+"${aiDraft}"
+
+Agent's Message:
+"${agentSent}"
+
+Output ONLY the 1-sentence actionable rule/insight. No labels, no prefixes.`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("Correction feedback API error:", err);
+      return null;
+    }
+    
+    const data = await response.json();
+    return data.content?.[0]?.text?.trim() || null;
+  } catch (e) {
+    console.error("generateCorrectionFeedback error:", e);
+    return null;
+  }
+}
+
+/**
  * When an agent sends a message after using AI draft, update the log
- * with what they actually sent so we can compare.
+ * with what they actually sent so we can compare and learn.
  */
 export async function completeAiDraftLog(
   logId: string,
@@ -60,12 +115,19 @@ export async function completeAiDraftLog(
 
     // Determine if agent edited the draft
     const wasEdited = log.ai_draft.trim() !== agentSent.trim();
+    let correctionFeedback: string | null = null;
+
+    if (wasEdited) {
+      // Generate self-correction insight in background/context
+      correctionFeedback = await generateCorrectionFeedback(log.ai_draft, agentSent);
+    }
 
     await supabase
       .from("ai_draft_logs")
       .update({
         agent_sent: agentSent,
         was_edited: wasEdited,
+        correction_feedback: correctionFeedback
       })
       .eq("id", logId);
   } catch (e) {
@@ -116,5 +178,28 @@ export async function getApprovedExamples(
   } catch (e) {
     console.error("getApprovedExamples error:", e);
     return { bengali: [], english: [] };
+  }
+}
+
+/**
+ * Fetch the latest 5-8 correction insights where the agent edited the draft.
+ */
+export async function getRecentCorrections(orgId: string): Promise<string[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("ai_draft_logs")
+      .select("correction_feedback")
+      .eq("org_id", orgId)
+      .eq("was_edited", true)
+      .not("correction_feedback", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    if (error || !data) return [];
+    return data.map(row => row.correction_feedback).filter((c): c is string => !!c);
+  } catch (e) {
+    console.error("getRecentCorrections error:", e);
+    return [];
   }
 }

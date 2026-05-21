@@ -1,6 +1,6 @@
 "use server";
 import knowledge from './hostnin-knowledge.json';
-import { getApprovedExamples } from './ai-learning';
+import { getApprovedExamples, getRecentCorrections } from './ai-learning';
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
   try {
@@ -11,6 +11,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
 
     // Fetch approved examples for few-shot learning
     let fewShotBlock = '';
+    let mistakesBlock = '';
     if (orgId) {
       try {
         const examples = await getApprovedExamples(orgId);
@@ -21,8 +22,14 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
         if (allExamples.length > 0) {
           fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (your team approved these as perfect replies, learn from their tone and style):\n${allExamples.join('\n---\n')}`;
         }
+        
+        // Fetch recent correction feedback (mistakes to avoid)
+        const corrections = await getRecentCorrections(orgId);
+        if (corrections.length > 0) {
+          mistakesBlock = `\n\nCRITICAL: PAST MISTAKES TO AVOID (Human agents corrected your drafts for these reasons. Learn from these and DO NOT repeat them):\n${corrections.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
+        }
       } catch (e) {
-        // Silently fail, few-shot is optional enhancement
+        // Silently fail, few-shot/corrections are optional enhancements
       }
     }
 
@@ -105,7 +112,7 @@ BEING SMART:
 Hostnin Knowledge Base:
 ${JSON.stringify(knowledge)}
 
-Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.${fewShotBlock}`;
+Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.${fewShotBlock}${mistakesBlock}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
