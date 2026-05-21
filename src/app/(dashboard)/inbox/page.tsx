@@ -177,20 +177,19 @@ export default function InboxPage() {
         setIsFetchingMessages(selectedId, true)
       }
 
-      // Direct client-side fetch (~50ms with proper RLS)
+      // Use security definer function - bypasses RLS, ~50ms direct
       const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', selectedId)
-        .order('created_at', { ascending: false })
-        .limit(50)
+        .rpc('get_conversation_messages', {
+          conv_id: selectedId,
+          msg_limit: 50
+        })
 
       if (!isActive) return
 
       if (data && data.length > 0) {
-        setMessages(selectedId, data.reverse() as AppMessage[])
+        setMessages(selectedId, (data as AppMessage[]).reverse())
       } else if (!hasCached) {
-        // Only use server action fallback on first load if client returns empty
+        // Server action fallback only on first load if rpc returns empty
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
         setMessages(selectedId, (fallbackData || []) as AppMessage[])
