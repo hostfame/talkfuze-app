@@ -2177,15 +2177,17 @@ export default function ChatThread({
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       className={`${
-                        (msg.status === 'recalled' || msg.status === 'deleted')
-                          ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none'
-                          : msg.is_internal 
-                            ? msg.sender_id === currentUser?.id
-                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
-                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
-                            : msg.content_type === 'audio' 
-                              ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
-                              : 'bg-[#0070f3] text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                        editingMessage?.id === msg.id
+                          ? 'w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-slate-900 dark:text-slate-100 min-w-[280px]'
+                          : (msg.status === 'recalled' || msg.status === 'deleted')
+                            ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none'
+                            : msg.is_internal 
+                              ? msg.sender_id === currentUser?.id
+                                ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
+                                : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                              : msg.content_type === 'audio' 
+                                ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
+                                : 'bg-[#0070f3] text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -2194,18 +2196,18 @@ export default function ChatThread({
                           <span>This message was recalled</span>
                         </>
                       ) : editingMessage?.id === msg.id ? (
-                        <div className="flex flex-col gap-2 min-w-[200px]" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col gap-2.5 min-w-[240px]" onClick={e => e.stopPropagation()}>
                           <textarea
                             value={editInput}
                             onChange={(e) => setEditInput(e.target.value)}
-                            className="w-full p-2 text-[13.5px] rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#0070f3] resize-none"
-                            rows={2}
+                            className="w-full p-2.5 text-[14px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] resize-none shadow-sm"
+                            rows={3}
                             autoFocus
                           />
-                          <div className="flex justify-end gap-1.5">
+                          <div className="flex justify-end gap-2">
                             <button 
                               onClick={() => setEditingMessage(null)}
-                              className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+                              className="px-3.5 py-1.5 text-[12px] font-semibold text-slate-650 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -2218,7 +2220,7 @@ export default function ChatThread({
                                   alert('Failed to edit: ' + err.message);
                                 }
                               }}
-                              className="px-2.5 py-1 text-[11px] font-bold text-white bg-blue-600 rounded hover:bg-blue-700"
+                              className="px-4 py-1.5 text-[12px] font-bold text-white bg-[#0070f3] hover:bg-blue-600 rounded-lg shadow-sm transition active:scale-95 cursor-pointer"
                             >
                               Save
                             </button>
