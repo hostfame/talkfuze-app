@@ -248,39 +248,32 @@ export default function InboxPage() {
             }, 3000);
           }
         } else if (direction === 'agent' && agent_id && agent_id !== currentUser?.id) {
-          // Track other agents typing
+          // Track other agents typing - completely remove them when typing stops
           setAgentActivity(prev => {
             const next = { ...prev };
             if (!next[conversation_id]) next[conversation_id] = {};
-            next[conversation_id] = {
-              ...next[conversation_id],
-              [agent_id]: {
-                name: agent_name || 'Agent',
-                activity: is_typing ? 'typing' : 'viewing', // Revert to viewing when stop typing
-                timestamp: Date.now()
+            
+            if (is_typing) {
+              next[conversation_id] = {
+                ...next[conversation_id],
+                [agent_id]: {
+                  name: agent_name || 'Agent',
+                  activity: 'typing',
+                  timestamp: Date.now()
+                }
+              };
+            } else {
+              const agents = { ...next[conversation_id] };
+              delete agents[agent_id];
+              if (Object.keys(agents).length === 0) {
+                delete next[conversation_id];
+              } else {
+                next[conversation_id] = agents;
               }
-            };
+            }
             return next;
           });
         }
-      })
-      .on('broadcast', { event: 'agentActivity' }, (payload) => {
-        const { conversation_id, agent_name, agent_id, activity } = payload.payload;
-        if (!agent_id || agent_id === currentUser?.id) return;
-        
-        setAgentActivity(prev => {
-          const next = { ...prev };
-          if (!next[conversation_id]) next[conversation_id] = {};
-          next[conversation_id] = {
-            ...next[conversation_id],
-            [agent_id]: {
-              name: agent_name || 'Agent',
-              activity,
-              timestamp: Date.now()
-            }
-          };
-          return next;
-        });
       })
       .on('broadcast', { event: 'conversationAssigned' }, (payload) => {
         const { conversation_id, assigned_to, assigned_by_name, contact_name } = payload.payload;
@@ -341,32 +334,7 @@ export default function InboxPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Broadcast viewing status
-  useEffect(() => {
-    if (selectedId && currentUser?.id) {
-      const channel = supabase.channel(`typing:${ORG_ID}`);
-      // Send immediately and then every 8s
-      const broadcast = () => {
-        channel.send({
-          type: 'broadcast',
-          event: 'agentActivity',
-          payload: { conversation_id: selectedId, agent_id: currentUser.id, agent_name: currentUser.name, activity: 'viewing' }
-        });
-      };
-      
-      const sub = channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          broadcast();
-        }
-      });
-      
-      const interval = setInterval(broadcast, 8000);
-      return () => {
-        clearInterval(interval);
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [selectedId, currentUser, ORG_ID]);
+
 
   const handleSelectConversation = (id: string) => {
     setSelectedId(id)
