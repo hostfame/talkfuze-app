@@ -812,10 +812,10 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 {showCallButton && (
                   <button 
                     onClick={() => triggerDial(effectivePhoneId)}
-                    className="text-slate-400 hover:text-blue-600 transition-colors flex items-center justify-center shrink-0 cursor-pointer p-0.5"
+                    className="text-slate-500 hover:text-blue-600 transition-colors flex items-center justify-center shrink-0 cursor-pointer ml-1"
                     title="Call via Dialer"
                   >
-                    <PhoneCall size={13} strokeWidth={2} />
+                    <Phone size={14} strokeWidth={2} />
                   </button>
                 )}
                 <button 

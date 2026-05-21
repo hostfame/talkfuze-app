@@ -1083,8 +1083,24 @@ export default function ChatThread({
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
   const [replyToMessage, setReplyToMessage] = useState<any | null>(null)
+  
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null)
+  const [editingMessage, setEditingMessage] = useState<any | null>(null)
+  const [editInput, setEditInput] = useState("")
+
+  const handleContextMenu = (e: React.MouseEvent, message: any) => {
+    if (message.sender_type !== 'agent' && message.sender_type !== 'ai') return
+    if (message.content_type !== 'text') return
+    if (message.status === 'recalled' || message.status === 'deleted') return
+    e.preventDefault()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      message
+    })
+  }
+
   useEffect(() => {
     getQuickRepliesFromTable(orgId).then(data => {
       if (data) setQuickReplies(data as QuickReplyItem[])
