@@ -218,6 +218,22 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   );
 };
 
+function formatWhatsAppMarkdown(text: string) {
+  if (!text) return text;
+  const regex = /(\*[^*]+\*|_[^_]+_)/g;
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
+    }
+    if (part.startsWith('_') && part.endsWith('_')) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserProfile[] = [], metadataMentions?: Record<string, string>) {
   if (!text) return text;
   
@@ -257,7 +273,7 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
     
     // Check for mentions in non-URL parts
     const mentionParts = part.split(mentionRegex);
-    if (mentionParts.length === 1) return part;
+    if (mentionParts.length === 1) return formatWhatsAppMarkdown(part);
     
     return mentionParts.map((mPart, j) => {
       if (mPart.match(mentionRegex)) {
@@ -301,7 +317,7 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
           </span>
         );
       }
-      return mPart;
+      return formatWhatsAppMarkdown(mPart);
     });
   });
 }
