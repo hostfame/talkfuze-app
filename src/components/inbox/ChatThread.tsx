@@ -373,48 +373,16 @@ export default function ChatThread({
   const voiceChannelRef = useRef<any>(null)
   const voiceChannelSubscribedRef = useRef<boolean>(false)
 
-  // Resolve pending WebRTC call from global alert
-  useEffect(() => {
-    if (pendingIncomingCall && pendingIncomingCall.conversationId === activeCallId) {
-      console.log('[Agent Call] Consuming pending incoming WebRTC call for conversation:', activeCallId);
-      setCallConversationId(pendingIncomingCall.conversationId)
-      setCallerName(pendingIncomingCall.callerName || contactName)
-      setIncomingCall({ offer: pendingIncomingCall.offer })
-      setCallStatus('ringing')
-      playRingtone()
-      setPendingIncomingCall(null)
+  const subscribeToVoiceCall = (convId: string) => {
+    // Force remove existing channel to guarantee a clean WebRTC state
+    const existingCh = supabase.getChannels().find(c => c.topic === `realtime:voicecall:${convId}`);
+    if (existingCh) {
+      supabase.removeChannel(existingCh);
     }
-  }, [pendingIncomingCall, activeCallId, contactName])
 
-
-  const playRingtone = () => {
-    if (isRingtoneMuted) return
-    try {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/903/903-84.wav")
-      audio.loop = true
-      ringtoneAudioRef.current = audio
-      audio.play().catch(e => console.log("Ringtone play barred by browser autoplay restrictions", e))
-    } catch (err) {}
-  }
-
-  const stopRingtone = () => {
-    if (ringtoneAudioRef.current) {
-      ringtoneAudioRef.current.pause()
-      ringtoneAudioRef.current = null
-    }
-  }
-
-  const handleMuteRingtone = () => {
-    stopRingtone()
-    setIsRingtoneMuted(true)
-  }
-
-  useEffect(() => {
-    if (!activeCallId) return
-
-    const callChannel = supabase.channel(`voicecall:${activeCallId}`)
+    const callChannel = supabase.channel(`voicecall:${convId}`)
       .on('broadcast', { event: 'voice_call_incoming' }, (payload) => {
-        setCallConversationId(conversationId)
+        setCallConversationId(convId)
         setCallerName(contactName)
         setIncomingCall({ offer: payload.payload.offer })
         setCallStatus('ringing')
@@ -488,7 +456,7 @@ export default function ChatThread({
     voiceChannelRef.current = callChannel
       
     callChannel.subscribe((status) => {
-      console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${activeCallId}`);
+      console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${convId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
         voiceChannelSubscribedRef.current = true
@@ -496,6 +464,54 @@ export default function ChatThread({
         voiceChannelSubscribedRef.current = false
       }
     })
+
+    return callChannel;
+  }
+
+  // Resolve pending WebRTC call from global alert
+  useEffect(() => {
+    if (pendingIncomingCall && pendingIncomingCall.conversationId === activeCallId) {
+      console.log('[Agent Call] Consuming pending incoming WebRTC call for conversation:', activeCallId);
+      
+      // Force recreate channel to guarantee clean state
+      subscribeToVoiceCall(activeCallId);
+      
+      setCallConversationId(pendingIncomingCall.conversationId)
+      setCallerName(pendingIncomingCall.callerName || contactName)
+      setIncomingCall({ offer: pendingIncomingCall.offer })
+      setCallStatus('ringing')
+      playRingtone()
+      setPendingIncomingCall(null)
+    }
+  }, [pendingIncomingCall, activeCallId, contactName])
+
+
+  const playRingtone = () => {
+    if (isRingtoneMuted) return
+    try {
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/903/903-84.wav")
+      audio.loop = true
+      ringtoneAudioRef.current = audio
+      audio.play().catch(e => console.log("Ringtone play barred by browser autoplay restrictions", e))
+    } catch (err) {}
+  }
+
+  const stopRingtone = () => {
+    if (ringtoneAudioRef.current) {
+      ringtoneAudioRef.current.pause()
+      ringtoneAudioRef.current = null
+    }
+  }
+
+  const handleMuteRingtone = () => {
+    stopRingtone()
+    setIsRingtoneMuted(true)
+  }
+
+  useEffect(() => {
+    if (!activeCallId) return
+
+    const callChannel = subscribeToVoiceCall(activeCallId);
 
     return () => {
       supabase.removeChannel(callChannel)
@@ -636,6 +652,18 @@ export default function ChatThread({
       })
     }
 
+    // Force remove existing channels to guarantee clean state
+    if (voiceChannelRef.current) {
+      supabase.removeChannel(voiceChannelRef.current)
+      voiceChannelRef.current = null
+      voiceChannelSubscribedRef.current = false
+    }
+
+    // Resubscribe to a fresh, clean conversation voice channel to listen for subsequent incoming calls
+    if (activeCallId) {
+      subscribeToVoiceCall(activeCallId);
+    }
+
     // Log browser call to call_logs table
     if (activeCallId && orgId) {
       logBrowserCall({
@@ -678,6 +706,10 @@ export default function ChatThread({
       setCallStatus('calling')
       setCallConversationId(conversationId)
       setCallerName(contactName)
+      
+      // Force recreate channel to guarantee fresh subscription
+      subscribeToVoiceCall(conversationId);
+      
       const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       console.log('[Agent Call] Got mic stream');
       voiceStreamRef.current = stream

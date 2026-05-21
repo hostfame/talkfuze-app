@@ -475,10 +475,14 @@ export default function WidgetPage() {
   const voiceChannelRef = useRef<any>(null)
   const incomingAgentCallRef = useRef<{ offer: any } | null>(null)
 
-  useEffect(() => {
-    if (!activeConversationId || activeConversationId === 'new') return
+  const subscribeToVoiceCall = (convId: string) => {
+    // Force remove existing call channel first to prevent duplicate channels
+    const oldCh = supabase.getChannels().find(c => c.topic === `realtime:voicecall:${convId}`);
+    if (oldCh) {
+      supabase.removeChannel(oldCh);
+    }
 
-    const callChannel = supabase.channel(`voicecall:${activeConversationId}`)
+    const callChannel = supabase.channel(`voicecall:${convId}`)
       .on('broadcast', { event: 'voice_call_answered' }, async (payload) => {
         try {
           setCallStatus('active')
@@ -537,15 +541,21 @@ export default function WidgetPage() {
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
-    // Assign channel reference immediately to guarantee availability during active accept races
-    voiceChannelRef.current = callChannel
 
     callChannel.subscribe((status) => {
-      console.log(`[Widget VoiceChannel] Subscribe status: ${status} for conv: ${activeConversationId}`);
+      console.log(`[Widget VoiceChannel] Subscribe status: ${status} for conv: ${convId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
       }
     })
+
+    return callChannel;
+  }
+
+  useEffect(() => {
+    if (!activeConversationId || activeConversationId === 'new') return
+
+    const callChannel = subscribeToVoiceCall(activeConversationId);
 
     return () => {
       supabase.removeChannel(callChannel)
@@ -592,17 +602,12 @@ export default function WidgetPage() {
         return
       }
       
-      let callChannel = voiceChannelRef.current;
-      if (!callChannel || callChannel.topic !== `realtime:voicecall:${targetConvId}`) {
-        callChannel = supabase.channel(`voicecall:${targetConvId}`);
-        voiceChannelRef.current = callChannel;
-        await new Promise<void>((resolve) => {
-          callChannel.subscribe((status: string) => {
-            if (status === 'SUBSCRIBED') {
-              resolve();
-            }
-          });
-        });
+      // Re-initialize a clean call channel specifically for this outgoing call
+      const callChannel = subscribeToVoiceCall(targetConvId as string);
+      // Wait up to 3s for channel to subscribe
+      for (let i = 0; i < 30; i++) {
+        if (voiceChannelRef.current === callChannel) break;
+        await new Promise(r => setTimeout(r, 100));
       }
 
       voiceStreamRef.current = stream
@@ -641,6 +646,12 @@ export default function WidgetPage() {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
+      // Force remove any old global channel first to guarantee clean subscription
+      const oldGlobal = supabase.getChannels().find(c => c.topic === `realtime:voicecall_global:${org_id}`);
+      if (oldGlobal) {
+        await supabase.removeChannel(oldGlobal);
+      }
+
       const globalChannel = supabase.channel(`voicecall_global:${org_id}`);
       globalChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
@@ -652,6 +663,9 @@ export default function WidgetPage() {
               offer: offer,
               callerName: 'Visitor'
             }
+          }).then(() => {
+            // Clean up global channel right after broadcast is sent to prevent duplicate sub conflicts
+            supabase.removeChannel(globalChannel);
           });
           
           // Delay the actual offer broadcast by 1.5s as fallback for active channels
@@ -710,6 +724,16 @@ export default function WidgetPage() {
       })
     }
 
+    // Force remove existing channels to guarantee clean state
+    if (voiceChannelRef.current) {
+      supabase.removeChannel(voiceChannelRef.current)
+      voiceChannelRef.current = null
+    }
+    const globalChannel = supabase.getChannels().find(c => c.topic === `realtime:voicecall_global:${org_id}`);
+    if (globalChannel) {
+      supabase.removeChannel(globalChannel);
+    }
+
     if (activeConversationId && activeConversationId !== 'new') {
       const duration = callDurationRef.current;
       if (duration > 0) {
@@ -733,6 +757,11 @@ export default function WidgetPage() {
     setCallDuration(0)
     callDurationRef.current = 0
     setIsCallMuted(false)
+
+    // Resubscribe to a fresh, clean conversation voice channel to listen for future agent-initiated calls
+    if (activeConversationId && activeConversationId !== 'new') {
+      subscribeToVoiceCall(activeConversationId);
+    }
   }
 
   const toggleMuteVoiceCall = () => {
@@ -2351,6 +2380,47 @@ export default function WidgetPage() {
               </div>
             </div>
 
+            {/* Compact Active Call Banner for Visitor */}
+            {(callStatus === 'calling' || callStatus === 'active' || callStatus === 'declined') && (
+              <div className="z-20 shrink-0 animate-in slide-in-from-top duration-200">
+                <div className={`mx-0 px-4 py-2.5 flex items-center justify-between ${callStatus === 'declined' ? 'bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50' : 'bg-slate-900 text-white border-b border-slate-800'}`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {callStatus === 'active' ? (
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    ) : callStatus === 'calling' ? (
+                      <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
+                    ) : null}
+                    <span className={`text-[12px] font-semibold truncate ${callStatus === 'declined' ? 'text-red-600 dark:text-red-400' : ''}`}>
+                      {callStatus === 'calling' ? 'Ringing...' : callStatus === 'active' ? `${formatCallDuration(callDuration)}` : 'Call declined'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {callStatus === 'active' && (
+                      <button 
+                        onClick={toggleMuteVoiceCall}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isCallMuted ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      >
+                        {isCallMuted ? (
+                          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
+                        ) : (
+                          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
+                        )}
+                      </button>
+                    )}
+                    {callStatus !== 'declined' && (
+                      <button 
+                        onClick={() => handleEndVoiceCall(true)}
+                        className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all uppercase tracking-wide flex items-center gap-1"
+                      >
+                        <PhoneOff size={11} strokeWidth={2.5} />
+                        End
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
               {/* Persistent Welcome Greeting */}
               <div className="flex flex-col gap-1 items-start mb-1 mt-2">
@@ -3340,46 +3410,7 @@ export default function WidgetPage() {
         </>
       )}
 
-      {/* Compact Active Call Banner for Visitor */}
-      {(callStatus === 'calling' || callStatus === 'active' || callStatus === 'declined') && (
-        <div className="absolute top-[72px] left-0 right-0 z-[60] animate-in slide-in-from-top duration-200">
-          <div className={`mx-0 px-4 py-2 flex items-center justify-between ${callStatus === 'declined' ? 'bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50' : 'bg-slate-900 text-white border-b border-slate-800'}`}>
-            <div className="flex items-center gap-2.5 min-w-0">
-              {callStatus === 'active' ? (
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              ) : callStatus === 'calling' ? (
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
-              ) : null}
-              <span className={`text-[12px] font-semibold truncate ${callStatus === 'declined' ? 'text-red-600 dark:text-red-400' : ''}`}>
-                {callStatus === 'calling' ? 'Ringing...' : callStatus === 'active' ? `${formatCallDuration(callDuration)}` : 'Call declined'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {callStatus === 'active' && (
-                <button 
-                  onClick={toggleMuteVoiceCall}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${isCallMuted ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                >
-                  {isCallMuted ? (
-                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l6.02 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.34 3 3 3 .74 0 1.43-.16 2.05-.43l2.67 2.67c-1.18.9-2.67 1.43-4.32 1.43-3.66 0-6.62-2.96-6.62-6.62H4c0 4.08 3.05 7.47 7 7.93V22h2v-3.07c1.7-.2 3.28-.85 4.6-1.85L19.73 21 21 19.73 4.27 3z"/></svg>
-                  ) : (
-                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3h-1.8c0 2.27-1.84 4.1-4.11 4.1S7.89 13.27 7.89 11H6.09c0 2.93 2.3 5.37 5.21 5.8v2.9c0 .17.14.3.31.3h.8c.17 0 .31-.13.31-.3v-2.9c2.91-.43 5.21-2.87 5.21-5.8z"/></svg>
-                  )}
-                </button>
-              )}
-              {callStatus !== 'declined' && (
-                <button 
-                  onClick={() => handleEndVoiceCall(true)}
-                  className="bg-red-500 hover:bg-red-600 active:scale-95 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-lg transition-all uppercase tracking-wide flex items-center gap-1"
-                >
-                  <PhoneOff size={11} strokeWidth={2.5} />
-                  End
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
       {/* Premium Branded Toast Error Notification */}
       {toastError && (
         <div className="absolute top-[82px] left-4 right-4 z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between text-slate-800 dark:text-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] animate-in slide-in-from-top-6 duration-300">
