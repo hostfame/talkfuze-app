@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -1806,6 +1806,35 @@ export default function WidgetPage() {
     }
   };
 
+  // WhatsApp Hand-Off — Option C: context-aware redirect with conversation tagging
+  const handleWhatsAppHandoff = async () => {
+    const waNumber = settings?.whatsapp_number || '8801896660960';
+    const convId = activeConversationId && activeConversationId !== 'new' ? activeConversationId : null;
+
+    // Build a context-rich pre-filled message for the visitor
+    const contextLine = convId
+      ? `Hi Hostnin! I was just chatting on your website. My conversation ref: ${convId.slice(0, 8).toUpperCase()}`
+      : 'Hi Hostnin! I was just chatting on your website and need help.';
+
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(contextLine)}`;
+
+    // Fire a system message so agents see the hand-off in the inbox
+    if (convId && deviceId) {
+      try {
+        await sendWidgetMessage(
+          org_id,
+          deviceId,
+          'Visitor continued conversation on WhatsApp',
+          'system',
+          { handoff: 'whatsapp', wa_number: waNumber },
+          convId
+        );
+      } catch (_) { /* non-critical */ }
+    }
+
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleSend = async (forcedText?: string) => {
     const textToSubmit = forcedText || input;
     if (!textToSubmit.trim() || isSending || !deviceId) return
@@ -3160,6 +3189,21 @@ export default function WidgetPage() {
                           <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-colors rounded-full ${showEmojiPicker ? 'text-blue-600 bg-blue-50' : 'hover:text-slate-600 hover:bg-slate-50'}`}>
                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                           </button>
+                           {/* WhatsApp Hand-Off: premium minimal slate icon, consistent with other toolbar icons */}
+                           <button
+                             onClick={handleWhatsAppHandoff}
+                             title="Continue on WhatsApp"
+                             className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50 relative group"
+                           >
+                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+                               <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+                               <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1Zm0 0a5 5 0 0 0 5 5m0 0h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1Z" />
+                             </svg>
+                             {/* Tooltip */}
+                             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-[10px] font-medium text-white bg-slate-700 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                               Continue on WhatsApp
+                             </span>
+                           </button>
                        </div>
                        <button 
                           onClick={() => handleSend()}
