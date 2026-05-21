@@ -2123,7 +2123,7 @@ export default function WidgetPage() {
       <div className="flex-1 relative z-10 overflow-hidden bg-transparent">
         
         {/* HOME TAB - stays in place when chat opens (chat slides over it) */}
-        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-transparent will-change-transform transition-[transform,opacity] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-20' : activeTab === 'messages' ? '-translate-x-[30%] opacity-0 z-10 pointer-events-none' : 'translate-x-0 opacity-100 z-20 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto pb-[80px] scrollbar-hide bg-transparent will-change-transform transition-[transform,opacity] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'home' ? 'translate-x-0 opacity-100 z-20' : activeTab === 'messages' ? '-translate-x-[30%] opacity-0 z-10 pointer-events-none' : activeTab === 'chat' ? 'translate-x-0 opacity-100 z-20 pointer-events-none' : 'opacity-0 z-10 pointer-events-none'}`}>
           <div className="px-5 pt-12 pb-6 flex flex-col gap-5">
             
             {/* Header Graphics (Ahrefs Style) */}
@@ -2208,7 +2208,7 @@ export default function WidgetPage() {
         </div>
 
         {/* CONVERSATIONS LIST TAB - stays in place when chat opens (chat slides over it) */}
-        <div className={`absolute inset-0 overflow-y-auto bg-[#f9fafb] flex flex-col will-change-transform transition-[transform,opacity] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-20' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : 'translate-x-0 opacity-100 z-20 pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-y-auto bg-[#f9fafb] flex flex-col will-change-transform transition-[transform,opacity] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeTab === 'messages' ? 'translate-x-0 opacity-100 z-20' : activeTab === 'home' ? 'translate-x-full opacity-0 z-10 pointer-events-none' : activeTab === 'chat' ? 'translate-x-0 opacity-100 z-20 pointer-events-none' : 'opacity-0 z-10 pointer-events-none'}`}>
             <div className="bg-white px-6 py-4 flex justify-between items-center shrink-0 border-b border-slate-100 relative z-30">
                <div className="flex items-center gap-1.5">
                  <button onClick={() => setActiveTab('home')} className="p-1 -ml-2 hover:bg-slate-50 transition-colors rounded-full text-slate-400">
