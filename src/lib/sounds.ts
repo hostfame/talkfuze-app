@@ -44,9 +44,10 @@ if (typeof window !== 'undefined') {
 // Sound Presets System
 // ─────────────────────────────────────────────
 
-export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud' | 'custom';
+export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud' | 'custom' | 'intercom';
 
 export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string }[] = [
+  { id: 'intercom', name: 'Intercom (Cute)', description: 'Beautiful soft intercom-style pop' },
   { id: 'default', name: 'Default', description: 'Subtle pop sound' },
   { id: 'chime', name: 'Chime', description: 'Two-tone rising chime' },
   { id: 'bell', name: 'Bell', description: 'Clear bell ring' },
@@ -56,8 +57,8 @@ export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string
 ];
 
 export const getSelectedSound = (): SoundPreset => {
-  if (typeof window === 'undefined') return 'loud';
-  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'loud';
+  if (typeof window === 'undefined') return 'intercom';
+  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'intercom';
 };
 
 export const setSelectedSound = (preset: SoundPreset): void => {
@@ -295,6 +296,44 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
     };
 
     switch (preset) {
+      case 'intercom': {
+        // Premium Intercom-style cute soft sliding pop
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const filt = ctx.createBiquadFilter();
+        filt.type = 'lowpass';
+        filt.frequency.setValueAtTime(1400, t);
+        
+        osc.connect(filt);
+        filt.connect(g);
+        g.connect(comp);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, t); // start at A4
+        osc.frequency.exponentialRampToValueAtTime(784, t + 0.08); // slide up to G5
+        
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.35 * vol, t + 0.015); // soft attack
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); // smooth decay
+        
+        osc.start(t);
+        osc.stop(t + 0.25);
+
+        // A tiny high-frequency accent chime overlay for premium texture
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.connect(g2);
+        g2.connect(comp);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1568, t + 0.02); // G6 chime
+        g2.gain.setValueAtTime(0, t + 0.02);
+        g2.gain.linearRampToValueAtTime(0.06 * vol, t + 0.03);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc2.start(t + 0.02);
+        osc2.stop(t + 0.18);
+        break;
+      }
+
       case 'chime':
         // Two-tone rising chime - bright and clear
         tone(880, 0, 0.3, 0.70);       // A5
