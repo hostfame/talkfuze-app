@@ -568,7 +568,7 @@ async function processMessage(msg) {
     }
 
     const channelId = await getOrCreateChannel();
-    const contactId = await upsertContact(conversationJid, isGroup ? null : senderName);
+    const contactId = await upsertContact(conversationJid, (isGroup || fromMe) ? null : senderName);
     const conversationId = await upsertConversation(contactId, channelId);
 
     // Build metadata
@@ -1179,7 +1179,8 @@ async function sendWhatsAppPresence(jid, presence) {
       },
       body: JSON.stringify({
         number: jid,
-        presence: presence
+        presence: presence,
+        delay: 1200
       })
     });
     if (!res.ok) {
@@ -1202,7 +1203,7 @@ async function markWhatsAppMessageAsRead(jid) {
       },
       body: JSON.stringify({
         number: jid,
-        read: true
+        readMessages: true
       })
     });
     if (!res.ok) {
@@ -1355,13 +1356,16 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
       console.log(`[EDIT] Editing message ${platformMessageId} to: "${editedText.slice(0, 40)}"`);
 
       const payload = {
-        number: jid,
-        text: editedText,
-        status: "EDITED",
-        messageId: platformMessageId
+        number: jid.split('@')[0],
+        key: {
+          remoteJid: jid,
+          fromMe: true,
+          id: platformMessageId
+        },
+        text: editedText
       };
 
-      const res = await fetch(`${EVOLUTION_API_URL}/message/updateMessageText/${EVOLUTION_INSTANCE}`, {
+      const res = await fetch(`${EVOLUTION_API_URL}/chat/updateMessage/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
         headers: {
           'apikey': EVOLUTION_API_KEY,
@@ -1369,10 +1373,10 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
         },
         body: JSON.stringify(payload)
       });
-
+      
       if (!res.ok) {
         const err = await res.text();
-        throw new Error(`Evolution updateMessageText failed: ${err}`);
+        throw new Error(`Evolution updateMessage failed: ${err}`);
       }
 
       console.log(`[EDIT] Message ${platformMessageId} successfully updated on WhatsApp`);
