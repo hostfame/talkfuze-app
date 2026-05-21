@@ -537,6 +537,9 @@ export default function WidgetPage() {
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
+    // Assign channel reference immediately to guarantee availability during active accept races
+    voiceChannelRef.current = callChannel
+
     callChannel.subscribe((status) => {
       console.log(`[Widget VoiceChannel] Subscribe status: ${status} for conv: ${activeConversationId}`);
       if (status === 'SUBSCRIBED') {
@@ -589,10 +592,10 @@ export default function WidgetPage() {
       let callChannel = voiceChannelRef.current;
       if (!callChannel || callChannel.topic !== `realtime:voicecall:${targetConvId}`) {
         callChannel = supabase.channel(`voicecall:${targetConvId}`);
+        voiceChannelRef.current = callChannel;
         await new Promise<void>((resolve) => {
           callChannel.subscribe((status: string) => {
             if (status === 'SUBSCRIBED') {
-              voiceChannelRef.current = callChannel;
               resolve();
             }
           });

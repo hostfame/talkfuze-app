@@ -351,6 +351,9 @@ export default function ChatThread({
   const isWebWidget = channelObj?.type === 'widget'
 
   // Voice Call Agent-Side States
+  const pendingIncomingCall = useInboxStore(state => state.pendingIncomingCall)
+  const setPendingIncomingCall = useInboxStore(state => state.setPendingIncomingCall)
+
   const [callConversationId, setCallConversationId] = useState<string | null>(null)
   const [callerName, setCallerName] = useState<string>('')
   const activeCallId = callConversationId || conversationId
@@ -368,6 +371,20 @@ export default function ChatThread({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
   const voiceChannelRef = useRef<any>(null)
+
+  // Resolve pending WebRTC call from global alert
+  useEffect(() => {
+    if (pendingIncomingCall && pendingIncomingCall.conversationId === activeCallId) {
+      console.log('[Agent Call] Consuming pending incoming WebRTC call for conversation:', activeCallId);
+      setCallConversationId(pendingIncomingCall.conversationId)
+      setCallerName(pendingIncomingCall.callerName || contactName)
+      setIncomingCall({ offer: pendingIncomingCall.offer })
+      setCallStatus('ringing')
+      playRingtone()
+      setPendingIncomingCall(null)
+    }
+  }, [pendingIncomingCall, activeCallId, contactName])
+
 
   const playRingtone = () => {
     if (isRingtoneMuted) return
@@ -465,6 +482,9 @@ export default function ChatThread({
           voiceBufferedCandidatesRef.current.push(payload.payload.candidate);
         }
       })
+
+    // Assign channel reference immediately to guarantee availability during active accept races
+    voiceChannelRef.current = callChannel
       
     callChannel.subscribe((status) => {
       console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${activeCallId}`);
@@ -574,6 +594,7 @@ export default function ChatThread({
   }
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
+    setPendingIncomingCall(null)
     voiceBufferedCandidatesRef.current = [];
     if (sendBroadcast && !canHangUpVoice) return
     
