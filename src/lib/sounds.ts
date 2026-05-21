@@ -65,9 +65,9 @@ export const setSelectedSound = (preset: SoundPreset): void => {
 };
 
 export const getSoundVolume = (): number => {
-  if (typeof window === 'undefined') return 0.7;
+  if (typeof window === 'undefined') return 0.9;
   const stored = localStorage.getItem('talkfuze_sound_volume');
-  return stored ? parseFloat(stored) : 0.7;
+  return stored ? parseFloat(stored) : 0.9;
 };
 
 export const setSoundVolume = (vol: number): void => {
@@ -169,17 +169,17 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
     const t = ctx.currentTime;
     const vol = volumeMultiplier;
 
-    // Master compressor
+    // Master limiter - high threshold so sounds stay loud and punchy
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.setValueAtTime(-20, t);
-    comp.knee.setValueAtTime(30, t);
-    comp.ratio.setValueAtTime(8, t);
+    comp.threshold.setValueAtTime(-6, t);
+    comp.knee.setValueAtTime(10, t);
+    comp.ratio.setValueAtTime(4, t);
     comp.attack.setValueAtTime(0.003, t);
-    comp.release.setValueAtTime(0.15, t);
+    comp.release.setValueAtTime(0.1, t);
     comp.connect(ctx.destination);
 
     // Helper to make a tone
-    const tone = (freq: number, start: number, dur: number, gain: number, waveType: OscillatorType = 'sine', filterFreq: number = 2000) => {
+    const tone = (freq: number, start: number, dur: number, gain: number, waveType: OscillatorType = 'sine', filterFreq: number = 3000) => {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       const filt = ctx.createBiquadFilter();
@@ -191,7 +191,8 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
       osc.type = waveType;
       osc.frequency.setValueAtTime(freq, t + start);
       g.gain.setValueAtTime(0, t + start);
-      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.012);
+      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.008);
+      g.gain.setValueAtTime(gain * vol, t + start + dur * 0.6);
       g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
       osc.start(t + start);
       osc.stop(t + start + dur + 0.05);
@@ -199,37 +200,43 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
 
     switch (preset) {
       case 'chime':
-        // Two-tone rising chime - brighter and louder than default
-        tone(880, 0, 0.25, 0.35);       // A5
-        tone(1175, 0.12, 0.3, 0.30);    // D6
+        // Two-tone rising chime - bright and clear
+        tone(880, 0, 0.3, 0.60);       // A5
+        tone(1175, 0.15, 0.35, 0.55);  // D6
         break;
 
       case 'bell':
-        // Clear bell ring - a single bright hit with harmonics
-        tone(1047, 0, 0.4, 0.40, 'sine', 3000);  // C6
-        tone(2093, 0, 0.25, 0.15, 'sine', 4000);  // C7 harmonic
-        tone(1568, 0.05, 0.2, 0.10, 'sine', 3000); // G6 shimmer
+        // Clear bell ring - bright hit with harmonics
+        tone(1047, 0, 0.45, 0.65, 'sine', 4000);  // C6
+        tone(2093, 0, 0.3, 0.30, 'sine', 5000);   // C7 harmonic
+        tone(1568, 0.05, 0.25, 0.20, 'sine', 4000); // G6 shimmer
         break;
 
       case 'alert':
-        // Urgent double-beep - attention-grabbing
-        tone(1200, 0, 0.12, 0.45, 'square', 1800);
-        tone(1200, 0.18, 0.12, 0.45, 'square', 1800);
+        // Urgent double-beep - hard square wave hits
+        tone(1200, 0, 0.15, 0.75, 'square', 2500);
+        tone(1200, 0.22, 0.15, 0.75, 'square', 2500);
         break;
 
       case 'loud':
-        // Loud triple ping - impossible to miss
-        tone(1318, 0, 0.18, 0.55, 'sine', 2500);     // E6
-        tone(1568, 0.15, 0.18, 0.50, 'sine', 2500);   // G6
-        tone(1976, 0.30, 0.25, 0.55, 'sine', 3000);   // B6
-        // Extra low rumble for vibration feel
-        tone(220, 0, 0.15, 0.20, 'sine', 500);
+        // LOUD double-hit siren pattern - impossible to miss
+        // Hit 1: aggressive ascending triple
+        tone(1318, 0, 0.2, 0.85, 'square', 3500);     // E6 square
+        tone(1568, 0.12, 0.2, 0.80, 'square', 3500);   // G6
+        tone(1976, 0.24, 0.25, 0.90, 'square', 4000);   // B6
+        // Hit 2: repeat after short pause for urgency
+        tone(1318, 0.55, 0.2, 0.85, 'square', 3500);
+        tone(1568, 0.67, 0.2, 0.80, 'square', 3500);
+        tone(1976, 0.79, 0.25, 0.90, 'square', 4000);
+        // Sub-bass punch on both hits for physical feel
+        tone(110, 0, 0.2, 0.40, 'sine', 300);
+        tone(110, 0.55, 0.2, 0.40, 'sine', 300);
         break;
 
       default:
-        // 'default' - same as original pop.mp3 vibe
-        tone(880, 0, 0.2, 0.25);
-        tone(1100, 0.08, 0.15, 0.18);
+        // 'default' - balanced pop
+        tone(880, 0, 0.22, 0.45);
+        tone(1100, 0.1, 0.18, 0.35);
         break;
     }
   } catch (err) {
