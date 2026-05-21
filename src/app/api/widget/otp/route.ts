@@ -6,6 +6,34 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
+const WHMCS_TOKEN = process.env.WHMCS_BRIDGE_SECRET || ''
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.talkfuze.com'
+
+async function sendOTPWhatsApp(phone: string, code: string, firstname: string): Promise<boolean> {
+  try {
+    const cleanPhone = phone.replace(/[^0-9]/g, '')
+    if (cleanPhone.length < 9) return false
+
+    const res = await fetch(`${APP_URL}/api/v1/whatsapp/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${WHMCS_TOKEN}`
+      },
+      body: JSON.stringify({
+        to: cleanPhone,
+        message: `*Verify your Hostnin login*\n\nHello ${firstname},\n\nYour one-time login code is: *${code}*\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, please ignore.`
+      })
+    })
+
+    const data = await res.json()
+    return data.success === true
+  } catch (err) {
+    console.error('[OTP] WhatsApp send error:', err)
+    return false
+  }
+}
+
 // POST /api/widget/otp
 // action: "send" | "verify"
 export async function POST(req: NextRequest) {
@@ -39,7 +67,7 @@ export async function POST(req: NextRequest) {
           platform_type: 'otp',
           platform_id: email.toLowerCase(),
           name: client.firstname,
-          metadata: { code, expires, clientId: client.id, conversationId }
+          metadata: { code, expires, clientId: client.id, conversationId, phone: (client as any).phonenumber || '' }
         }, { onConflict: 'org_id, platform_type, platform_id' })
 
       if (upsertErr) {
@@ -71,6 +99,12 @@ If you did not request this, you can safely ignore this email.
         customsubject: subject,
         custommessage: message,
       }, 15000, 1, true)
+
+      // Send WhatsApp OTP in background
+      const phone = (client as any).phonenumber as string | undefined
+      if (phone) {
+        sendOTPWhatsApp(phone, code, client.firstname).catch(e => console.error('[OTP] WA bg error:', e))
+      }
 
       return NextResponse.json({ success: true, name: client.firstname })
     }
@@ -110,6 +144,12 @@ If you did not request this, you can safely ignore this email.
         customsubject: subject,
         custommessage: message,
       }, 15000, 1, true)
+
+      // Send WhatsApp OTP in background
+      const phone = record.phone || (client as any).phonenumber as string | undefined
+      if (phone) {
+        sendOTPWhatsApp(phone, record.code, client.firstname).catch(e => console.error('[OTP] WA bg error:', e))
+      }
 
       return NextResponse.json({ success: true })
     }
