@@ -337,7 +337,7 @@ export async function searchConversations(orgId: string, query: string) {
   // 2. Find matching messages
   const { data: messages } = await supabaseAdmin
     .from("messages")
-    .select("conversation_id")
+    .select("conversation_id, content, sender_type, content_type")
     .eq("org_id", orgId)
     .ilike("content", `%${cleanQuery}%`)
     .limit(50);
@@ -354,7 +354,7 @@ export async function searchConversations(orgId: string, query: string) {
       contact:contacts(*),
       assignee:users!assigned_to(*),
       channels(type),
-      messages(content, sender_type)
+      messages(content, sender_type, content_type)
     `)
     .eq("org_id", orgId)
     .order("created_at", { foreignTable: "messages", ascending: false })
@@ -376,7 +376,17 @@ export async function searchConversations(orgId: string, query: string) {
     console.error(error);
     return [];
   }
-  return data;
+  
+  // Inject the matched message if it exists so the UI can show the highlighted snippet
+  const enrichedData = data?.map(conv => {
+    const matchedMsg = messages?.find(m => m.conversation_id === conv.id);
+    if (matchedMsg) {
+      return { ...conv, matched_message: matchedMsg };
+    }
+    return conv;
+  });
+
+  return enrichedData;
 }
 
 export async function createConversation(orgId: string, phone: string) {

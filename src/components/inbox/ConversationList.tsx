@@ -71,7 +71,7 @@ export default function ConversationList({
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery)
-    }, 300)
+    }, 150)
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -240,7 +240,7 @@ export default function ConversationList({
           const assigneeName = assignee?.name
           const isTyping = typingState[conv.id]
           const isOnline = contact ? onlineUsers.has(contact.id) : false
-          const lastMessage = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null
+          const lastMessage = (conv as any).matched_message || (conv.messages && conv.messages.length > 0 ? conv.messages[0] : null)
 
           const getInitials = (name: string) => {
             if (name.startsWith('+')) return name.substring(0, 2)
