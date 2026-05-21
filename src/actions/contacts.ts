@@ -92,3 +92,21 @@ export async function updateContactPhone(contactId: string, newPhone: string) {
   
   return { success: true }
 }
+
+export async function updateContactEmail(contactId: string, newEmail: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const { error } = await supabaseAdmin
+    .from('contacts')
+    .update({ email: newEmail || null }) // null if empty
+    .eq('id', contactId)
+    
+  if (error) {
+    console.error('Error updating contact email:', error)
+    return { success: false, error: error.message }
+  }
+  
+  return { success: true }
+}

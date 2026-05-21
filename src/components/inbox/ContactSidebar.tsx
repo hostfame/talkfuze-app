@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
-import { updateContactName, updateContactPhone } from "@/actions/contacts"
+import { updateContactName, updateContactPhone, updateContactEmail } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import ForwardButton from "./ForwardButton"
 import SnoozeButton from "./SnoozeButton"
@@ -17,6 +17,7 @@ interface WhmcsClient {
   firstname: string;
   lastname: string;
   email: string;
+  phonenumber?: string;
   status?: string;
 }
 
@@ -581,7 +582,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setLastSearchedQuery(query.trim());
     setIsCrmLoading(true);
     try {
-      const client = await fetchWhmcsClient(query.trim());
+      const client = (await fetchWhmcsClient(query.trim())) as any;
       if (client) {
         setWhmcsClient(client);
         const [services, tickets, invoices] = await Promise.all([
@@ -595,12 +596,17 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
         // Bind to user so we don't need to search again next time
         if (contact?.id) {
-          const bindValue = client.email || query.trim();
-          await updateContactPhone(contact.id, bindValue);
-          setContactPhoneOverrides((current) => ({
-            ...current,
-            [contact.id]: bindValue,
-          }));
+          await updateContactEmail(contact.id, client.email);
+          if (!contact.phone && client.phonenumber && !client.phonenumber.includes('@')) {
+            const cleanPhone = client.phonenumber.replace(/\D/g, '');
+            if (cleanPhone.length >= 9) {
+              await updateContactPhone(contact.id, cleanPhone);
+              setContactPhoneOverrides((current) => ({
+                ...current,
+                [contact.id]: cleanPhone,
+              }));
+            }
+          }
         }
       } else {
         setWhmcsClient(null);
