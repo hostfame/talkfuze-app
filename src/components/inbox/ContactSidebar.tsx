@@ -677,67 +677,62 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         setCrmSearchQuery("")
       }
 
-      const fetchLegacyCrm = async () => {
+      const loadAllCrmData = async () => {
         setIsCrmLoading(true)
         try {
-          // Fetch legacy CRM data (if any)
-          const data = await getCrmData(orgId, cleanPhone)
+          const isRealEmail = cleanPhone.includes('@') && !cleanPhone.endsWith('@lid')
+          const digitsOnly = cleanPhone.replace(/\D/g, '')
+          const isValidPhone = digitsOnly.length >= 8
+          const isWhatsApp = contact?.platform_type === 'whatsapp'
+
+          const promises: Promise<any>[] = [
+            getCrmData(orgId, cleanPhone)
+          ]
+
+          const shouldFetchWhmcs = isWhatsApp || isRealEmail || isValidPhone
+          if (shouldFetchWhmcs) {
+            setLastSearchedQuery(cleanPhone.trim())
+            promises.push(fetchWhmcsClient(cleanPhone.trim()))
+          }
+
+          const [legacyData, whmcsClientResult] = await Promise.all(promises)
+
           if (mounted) {
-            if (data) setCrmData(data)
+            if (legacyData) setCrmData(legacyData)
             if (contact?.status) {
               setIsBanned(contact.status === 'banned')
             }
           }
+
+          if (shouldFetchWhmcs && whmcsClientResult) {
+            if (mounted) {
+              setWhmcsClient(whmcsClientResult)
+            }
+            const [services, tickets, invoices] = await Promise.all([
+              fetchWhmcsServices(whmcsClientResult.id),
+              fetchWhmcsTickets(whmcsClientResult.id),
+              fetchWhmcsUnpaidInvoices(whmcsClientResult.id)
+            ])
+            if (mounted) {
+              setWhmcsServices(services)
+              setWhmcsTickets(tickets)
+              setWhmcsInvoices(invoices)
+            }
+          } else if (mounted) {
+            setWhmcsClient(null)
+            setWhmcsServices(null)
+            setWhmcsTickets([])
+            setWhmcsInvoices([])
+          }
         } catch (error) {
-          console.error("Error fetching legacy CRM data:", error)
+          console.error("Error loading CRM/WHMCS data:", error)
         } finally {
           if (mounted) {
             setIsCrmLoading(false)
           }
         }
       }
-      fetchLegacyCrm()
-
-      // Automatically fetch WHMCS client if number/email is valid, or it is a WhatsApp contact
-      const isRealEmail = cleanPhone.includes('@') && !cleanPhone.endsWith('@lid')
-      const digitsOnly = cleanPhone.replace(/\D/g, '')
-      const isValidPhone = digitsOnly.length >= 8
-      const isWhatsApp = contact?.platform_type === 'whatsapp'
-
-      if (isWhatsApp || isRealEmail || isValidPhone) {
-        const autoFetchWhmcs = async () => {
-          setIsCrmLoading(true)
-          try {
-            setLastSearchedQuery(cleanPhone.trim())
-            const client = (await fetchWhmcsClient(cleanPhone.trim())) as any
-            if (client && mounted) {
-              setWhmcsClient(client)
-              const [services, tickets, invoices] = await Promise.all([
-                fetchWhmcsServices(client.id),
-                fetchWhmcsTickets(client.id),
-                fetchWhmcsUnpaidInvoices(client.id)
-              ])
-              if (mounted) {
-                setWhmcsServices(services)
-                setWhmcsTickets(tickets)
-                setWhmcsInvoices(invoices)
-              }
-            } else if (mounted) {
-              setWhmcsClient(null)
-              setWhmcsServices(null)
-              setWhmcsTickets([])
-              setWhmcsInvoices([])
-            }
-          } catch (err) {
-            console.error("Auto fetch WHMCS failed:", err)
-          } finally {
-            if (mounted) {
-              setIsCrmLoading(false)
-            }
-          }
-        }
-        autoFetchWhmcs()
-      }
+      loadAllCrmData()
     } else {
       setCrmSearchQuery("")
     }
