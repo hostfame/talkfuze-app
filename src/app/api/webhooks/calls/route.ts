@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
+const WEBHOOK_SECRET = process.env.WHMCS_BRIDGE_SECRET || ''
+
 export async function POST(req: NextRequest) {
   try {
+    // Verify webhook secret to prevent unauthorized call log injection
+    const secret = req.headers.get('x-webhook-secret')
+    if (!WEBHOOK_SECRET || secret !== WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const body = await req.json()
     const { org_id, direction, from, to, duration, status, recording, agent_name } = body
 

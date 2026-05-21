@@ -19,10 +19,10 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  // Fetch full profile from public.users
+  // Fetch full profile from public.users - explicitly select columns to avoid leaking sip_password to browser
   const { data: profile } = await supabaseAdmin
     .from("users")
-    .select("*")
+    .select("id, org_id, email, name, role, avatar_url, sip_extension, sip_password")
     .eq("id", user.id)
     .single()
 
