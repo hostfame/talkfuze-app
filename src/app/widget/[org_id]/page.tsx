@@ -1106,6 +1106,7 @@ export default function WidgetPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const ticketEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     // Check for existing WHMCS session in localStorage
@@ -1609,6 +1610,10 @@ export default function WidgetPage() {
     setInput("")
     playUISound('send')
     
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 10)
+    
     const optimisticId = `temp-${Date.now()}`
     
     // Optimistic UI update
@@ -1641,6 +1646,9 @@ export default function WidgetPage() {
       setMessages(prev => prev.filter(m => m.id !== optimisticId))
     } finally {
       setIsSending(false)
+      setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 10)
     }
   }
 
@@ -2605,6 +2613,7 @@ export default function WidgetPage() {
                     </div>
                   ) : (
                     <textarea 
+                      ref={textareaRef}
                       value={input}
                       onChange={(e) => {
                         setInput(e.target.value)
@@ -2634,7 +2643,6 @@ export default function WidgetPage() {
                       placeholder="Message..."
                       className="w-full bg-transparent border-none focus:ring-0 resize-none text-[15px] text-slate-800 placeholder:text-slate-400 p-4 pb-0 min-h-[52px] max-h-[120px] outline-none"
                       rows={1}
-                      disabled={isSending}
                     ></textarea>
                   )}
                   
