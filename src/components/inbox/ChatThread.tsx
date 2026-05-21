@@ -1080,19 +1080,35 @@ export default function ChatThread({
 
           const client = await fetchWhmcsClient(cleanPhone)
           if (!client) {
-            alert(`No matching WHMCS client profile found for ${cleanPhone}. Please link a client profile in the Portal tab first.`)
+            setCustomAlert({
+              title: "Client Profile Missing",
+              message: `No matching WHMCS client profile found for ${cleanPhone}. Please link a client profile in the Portal tab first.`,
+              type: "error"
+            })
             setIsConverting(false)
             return
           }
 
           const result = await convertChatToTicket(conversationId, client.id, 1, currentUser?.id)
           if (result.success) {
-            alert(`Chat successfully converted to ticket #${result.ticket?.tid || ''}!`)
+            setCustomAlert({
+              title: "Ticket Created Successfully",
+              message: `Chat successfully converted to ticket #${result.ticket?.tid || ''}!`,
+              type: "success"
+            })
           } else {
-            alert("Error: " + result.error)
+            setCustomAlert({
+              title: "Conversion Failed",
+              message: result.error || "An unknown error occurred while converting the chat.",
+              type: "error"
+            })
           }
         } catch (e: any) {
-          alert("Failed to convert chat: " + (e?.message || e))
+          setCustomAlert({
+            title: "Conversion Error",
+            message: e?.message || e || "Failed to convert chat.",
+            type: "error"
+          })
         } finally {
           setIsConverting(false)
         }
@@ -1172,6 +1188,7 @@ export default function ChatThread({
 
 
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+  const [customAlert, setCustomAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'info' } | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
@@ -3191,6 +3208,51 @@ export default function ChatThread({
               </div>
 
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Beautiful Custom Alert Modal */}
+      {customAlert && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div 
+            className="bg-white dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Banner based on type */}
+            <div className="p-6 flex flex-col items-center text-center border-b border-slate-100 dark:border-slate-800/40">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3.5 ${
+                customAlert.type === 'error' 
+                  ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400' 
+                  : customAlert.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : 'bg-blue-50 text-[#0070f3] dark:bg-blue-500/10 dark:text-blue-400'
+              }`}>
+                {customAlert.type === 'error' && <Ban size={22} />}
+                {customAlert.type === 'success' && <CheckCheck size={22} />}
+                {customAlert.type === 'info' && <MessageSquare size={22} />}
+              </div>
+              
+              <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100">
+                {customAlert.title}
+              </h3>
+              
+              <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                {customAlert.message}
+              </p>
+            </div>
+            
+            {/* Actions */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/30 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCustomAlert(null)}
+                className="px-4 py-2 text-[12px] font-bold text-white bg-[#0070f3] hover:bg-blue-650 rounded-xl transition active:scale-95 shadow-sm hover:shadow cursor-pointer"
+              >
+                Okay
+              </button>
+            </div>
           </div>
         </div>,
         document.body
