@@ -351,6 +351,10 @@ export default function ChatThread({
   const isWebWidget = channelObj?.type === 'widget'
 
   // Voice Call Agent-Side States
+  const [callConversationId, setCallConversationId] = useState<string | null>(null)
+  const [callerName, setCallerName] = useState<string>('')
+  const activeCallId = callConversationId || conversationId
+
   const [incomingCall, setIncomingCall] = useState<{ offer: any } | null>(null)
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'active' | 'calling'>('idle')
   const [isMuted, setIsMuted] = useState(false)
@@ -388,10 +392,12 @@ export default function ChatThread({
   }
 
   useEffect(() => {
-    if (!conversationId) return
+    if (!activeCallId) return
 
-    const callChannel = supabase.channel(`voicecall:${conversationId}`)
+    const callChannel = supabase.channel(`voicecall:${activeCallId}`)
       .on('broadcast', { event: 'voice_call_incoming' }, (payload) => {
+        setCallConversationId(conversationId)
+        setCallerName(contactName)
         setIncomingCall({ offer: payload.payload.offer })
         setCallStatus('ringing')
         playRingtone()
@@ -448,7 +454,7 @@ export default function ChatThread({
       })
       
     callChannel.subscribe((status) => {
-      console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${conversationId}`);
+      console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${activeCallId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
       }
@@ -460,10 +466,10 @@ export default function ChatThread({
       stopRingtone()
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
-  }, [conversationId])
+  }, [activeCallId])
 
   const handleAnswerVoiceCall = async () => {
-    if (!conversationId || !incomingCall) return
+    if (!activeCallId || !incomingCall) return
     setCanHangUpVoice(false)
     setTimeout(() => {
       setCanHangUpVoice(true)
@@ -588,21 +594,23 @@ export default function ChatThread({
     }
 
     // Log browser call to call_logs table
-    if (conversationId && orgId) {
+    if (activeCallId && orgId) {
       logBrowserCall({
         orgId,
         direction: incomingCall ? 'browser_inbound' : 'browser_outbound',
         durationSeconds: finalDuration,
         status: finalDuration > 0 ? 'ANSWERED' : 'NO ANSWER',
-        conversationId,
+        conversationId: activeCallId,
         agentName: currentUser?.name || undefined,
-        contactName: contactName || undefined
+        contactName: callerName || contactName || undefined
       }).catch(err => console.error('Failed to log browser call:', err))
     }
 
     setCallStatus('idle')
     setIncomingCall(null)
     setIsMuted(false)
+    setCallConversationId(null)
+    setCallerName('')
   }
 
   const toggleMuteVoiceCall = () => {
@@ -621,6 +629,8 @@ export default function ChatThread({
     console.log('[Agent Call] Starting call for conversation:', conversationId);
     try {
       setCallStatus('calling')
+      setCallConversationId(conversationId)
+      setCallerName(contactName)
       const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS);
       console.log('[Agent Call] Got mic stream');
       voiceStreamRef.current = stream
@@ -1812,7 +1822,7 @@ export default function ChatThread({
             </div>
             <h3 className="text-[15px] font-bold text-slate-800 dark:text-white">Incoming Voice Call</h3>
             <p className="text-[12px] text-slate-500 mt-1 leading-normal mb-5">
-              Visitor <span className="font-semibold text-[#0070f3]">{contactName}</span> is calling...
+              Visitor <span className="font-semibold text-[#0070f3]">{callerName || contactName}</span> is calling...
             </p>
             <div className="flex gap-3 w-full">
               <button 
@@ -1848,7 +1858,7 @@ export default function ChatThread({
             )}
             <div className="flex flex-col">
               <span className="text-[12.5px] font-bold text-white tracking-tight">
-                {callStatus === 'calling' ? `Calling ${contactName}...` : `Active Voice Call with ${contactName}`}
+                {callStatus === 'calling' ? `Calling ${callerName || contactName}...` : `Active Voice Call with ${callerName || contactName}`}
               </span>
               <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                 {callStatus === 'calling' ? 'Ringing' : formatCallDuration(callDuration)}
