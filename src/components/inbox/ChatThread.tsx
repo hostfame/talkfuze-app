@@ -1561,16 +1561,21 @@ export default function ChatThread({
     
     if (editingMessage) {
       setInput("");
+      const editMsgId = editingMessage.id;
+      setEditingMessage(null);
+
+      // Optimistic update
+      const updatedMessages = messages.map(m => 
+        m.id === editMsgId ? { ...m, content: msgText } : m
+      );
+      useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+
       try {
-         await editMessage(editingMessage.id, msgText);
-         const updatedMessages = messages.map(m => 
-           m.id === editingMessage.id ? { ...m, content: msgText } : m
-         );
-         useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+         await editMessage(editMsgId, msgText);
       } catch (err: any) {
          console.error('Failed to edit: ' + err.message);
-      } finally {
-         setEditingMessage(null);
+         // Revert on failure
+         useInboxStore.getState().setMessages(conversationId, messages);
       }
       return;
     }
@@ -3138,6 +3143,17 @@ export default function ChatThread({
               Copy
             </button>
 
+            {/* Edit - Available for all agent/AI messages */}
+            {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
+              <button 
+                onClick={() => triggerEditMessage(contextMenu.message)}
+                className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
+              >
+                <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
+                Edit message
+              </button>
+            )}
+
             {/* Add shortcut - ALWAYS available for text messages */}
             <button 
               onClick={() => {
@@ -3153,34 +3169,25 @@ export default function ChatThread({
               Add shortcut
             </button>
 
-            {/* Edit and Recall - Available for all agent/AI messages */}
+            {/* Recall - Available for all agent/AI messages */}
             {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
-              <>
-                <button 
-                  onClick={() => triggerEditMessage(contextMenu.message)}
-                  className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
-                >
-                  <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
-                  Edit message
-                </button>
-                <button 
-                  onClick={async () => {
-                    const msgId = contextMenu.message.id;
-                    setContextMenu(null);
-                    if (confirm('Recall this message? It will delete it for everyone.')) {
-                      try {
-                        await recallMessage(msgId);
-                      } catch (err: any) {
-                        alert('Failed to recall: ' + err.message);
-                      }
+              <button 
+                onClick={async () => {
+                  const msgId = contextMenu.message.id;
+                  setContextMenu(null);
+                  if (confirm('Recall this message? It will delete it for everyone.')) {
+                    try {
+                      await recallMessage(msgId);
+                    } catch (err: any) {
+                      alert('Failed to recall: ' + err.message);
                     }
-                  }}
-                  className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
-                >
-                  <Trash2 size={14} className="text-red-400 dark:text-red-500" />
-                  Recall message
-                </button>
-              </>
+                  }
+                }}
+                className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
+              >
+                <Trash2 size={14} className="text-red-400 dark:text-red-500" />
+                Recall message
+              </button>
             )}
           </div>
         </div>,
