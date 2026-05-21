@@ -31,6 +31,8 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
+  const isAgent = profile.role === "agent"
+
   return (
     <AuthProvider user={profile}>
       <div className="flex h-screen overflow-hidden bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-sm font-sans">
@@ -47,9 +49,11 @@ export default async function DashboardLayout({
             <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Users size={22} strokeWidth={2} />
             </Link>
-            <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
-              <BarChart3 size={22} strokeWidth={2} />
-            </Link>
+            {!isAgent && (
+              <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
+                <BarChart3 size={22} strokeWidth={2} />
+              </Link>
+            )}
           </div>
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">
             {profile.avatar_url ? (
