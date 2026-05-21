@@ -14,6 +14,7 @@ import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 import { generateAiDraft } from "@/actions/ai"
+import { logAiDraft, completeAiDraftLog } from "@/actions/ai-learning"
 import { playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 
 interface StagedAttachment {
@@ -1073,6 +1074,7 @@ export default function ChatThread({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
+  const aiDraftLogIdRef = useRef<string | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
@@ -1298,6 +1300,7 @@ export default function ChatThread({
   const handleAiDraft = async () => {
     if (!conversationId) return
     setIsAiDrafting(true)
+    aiDraftLogIdRef.current = null
     
     // Format context messages
     const contextMessages = allMessages.slice(-20).map(m => {
@@ -1307,12 +1310,18 @@ export default function ChatThread({
     }).join('\n')
 
     try {
-      const response = await generateAiDraft(contextMessages, contactName)
+      const response = await generateAiDraft(contextMessages, contactName, orgId)
       if (response.success && response.text) {
         setInput(response.text)
         setIsInternal(false)
         if (textareaRef.current) {
           textareaRef.current.focus()
+        }
+        // Log the AI draft for learning (fire and forget)
+        if (currentUser?.id) {
+          logAiDraft(orgId, conversationId, currentUser.id, response.text, response.language || 'en')
+            .then(logId => { aiDraftLogIdRef.current = logId })
+            .catch(() => {})
         }
       } else {
         setAiDraftFailed(true)
@@ -1349,6 +1358,12 @@ export default function ChatThread({
     setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
     setIsSending(true)
+
+    // Complete AI draft log if this message came from an AI draft
+    if (aiDraftLogIdRef.current && msgText) {
+      completeAiDraftLog(aiDraftLogIdRef.current, msgText).catch(() => {})
+      aiDraftLogIdRef.current = null
+    }
 
     // Auto-join if not joined and sending a public reply
     if (!isJoined && !isInternal) {

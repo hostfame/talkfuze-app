@@ -1,12 +1,34 @@
 "use server";
 import knowledge from './hostnin-knowledge.json';
+import { getApprovedExamples } from './ai-learning';
 
-export async function generateAiDraft(contextMessages: string, contactName: string = "Customer"): Promise<{ success: boolean; text?: string; error?: string }> {
+export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return { success: false, error: "Anthropic API key is not configured." };
     }
+
+    // Fetch approved examples for few-shot learning
+    let fewShotBlock = '';
+    if (orgId) {
+      try {
+        const examples = await getApprovedExamples(orgId);
+        const allExamples = [
+          ...examples.english.map(e => `[English example] ${e}`),
+          ...examples.bengali.map(e => `[Bengali example] ${e}`)
+        ];
+        if (allExamples.length > 0) {
+          fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (your team approved these as perfect replies, learn from their tone and style):\n${allExamples.join('\n---\n')}`;
+        }
+      } catch (e) {
+        // Silently fail, few-shot is optional enhancement
+      }
+    }
+
+    // Quick language detection for the return value
+    const hasBengali = /[\u0980-\u09FF]/.test(contextMessages.split('\n').filter(l => !l.startsWith('[Agent]')).slice(-5).join(' '));
+    const detectedLanguage = hasBengali ? 'bn' : 'en';
 
     const systemPromptText = `You are a sharp, experienced customer support agent at Hostnin (a premium web hosting company in Bangladesh). You've been doing this for years. You know your product inside-out. You genuinely care about helping customers succeed.
 
@@ -93,7 +115,7 @@ BEING SMART (both languages):
 Hostnin Knowledge Base:
 ${JSON.stringify(knowledge)}
 
-Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
+Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.${fewShotBlock}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -135,7 +157,7 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
       return { success: false, error: "AI returned an empty response." };
     }
 
-    return { success: true, text: draftText.trim() };
+    return { success: true, text: draftText.trim(), language: detectedLanguage };
   } catch (error: any) {
     console.error("AI Generation failed:", error);
     return { success: false, error: error.message || "An unexpected error occurred." };
