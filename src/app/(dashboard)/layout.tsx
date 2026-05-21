@@ -46,9 +46,11 @@ export default async function DashboardLayout({
             <Link href="/inbox" prefetch={true} className="w-11 h-11 flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-800/50 transition-all duration-200 active:scale-95">
               <Inbox size={22} strokeWidth={2.5} />
             </Link>
-            <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
-              <Users size={22} strokeWidth={2} />
-            </Link>
+            {!isAgent && (
+              <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
+                <Users size={22} strokeWidth={2} />
+              </Link>
+            )}
             {!isAgent && (
               <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
                 <BarChart3 size={22} strokeWidth={2} />
@@ -56,21 +58,19 @@ export default async function DashboardLayout({
             )}
           </div>
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">
-            {profile.avatar_url ? (
-              <img 
-                src={profile.avatar_url} 
-                alt={profile.name} 
-                className="w-8 h-8 rounded-full object-cover border border-blue-100 dark:border-blue-900/50 mb-1 select-none shrink-0" 
-                title={profile.name}
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-xs font-bold shrink-0 mb-1 select-none" title={profile.name}>
-                {profile.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <button className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
-              <Bell size={22} strokeWidth={2} />
-            </button>
+            <div className="w-11 h-11 flex items-center justify-center active:scale-95 transition-all" title={profile.name}>
+              {profile.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile.name} 
+                  className="w-8 h-8 rounded-full object-cover border border-blue-100 dark:border-blue-900/50 select-none shrink-0" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                  {profile.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
             <Link href="/settings/brand" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-slate-800 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 active:scale-95">
               <Settings size={22} strokeWidth={2} />
             </Link>
