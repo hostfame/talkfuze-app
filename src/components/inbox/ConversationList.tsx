@@ -168,18 +168,18 @@ export default function ConversationList({
   });
 
   return (
-    <div className="flex flex-col h-full w-full shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 relative">
+    <div className="flex flex-col h-full w-full shrink-0 bg-white dark:bg-[#111b21] border-r border-slate-200 dark:border-[#222e35] z-10 relative">
       
       {/* Header & Search */}
-      <div className="px-5 pt-5 pb-3 flex items-center gap-3 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800/80">
+      <div className="px-5 pt-5 pb-3 flex items-center gap-3 shrink-0 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222e35]">
         {/* Search Bar */}
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            {isSearching ? <Loader2 size={14} className="text-blue-500 animate-spin" /> : <Search size={14} className="text-slate-400 dark:text-slate-500" />}
+            {isSearching ? <Loader2 size={14} className="text-blue-500 animate-spin" /> : <Search size={14} className="text-slate-400 dark:text-[#8696a0]" />}
           </div>
           <input
             type="text"
-            className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg text-[13px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 dark:bg-slate-950 transition-all"
+            className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#2a3942] rounded-lg text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 dark:placeholder-[#8696a0] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-slate-50 dark:bg-[#202c33] transition-all"
             placeholder="Search contact or keyword..."
             value={searchQuery}
             onChange={(e) => {
@@ -192,7 +192,7 @@ export default function ConversationList({
         </div>
         <button 
            onClick={() => setShowNewChatModal(true)}
-           className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-2 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-lg transition-colors bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-900 shrink-0"
+           className="text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] p-2 border border-slate-200 dark:border-[#2a3942] hover:border-slate-300 dark:hover:border-[#222e35] rounded-lg transition-colors bg-slate-50 dark:bg-[#202c33] hover:bg-slate-100 dark:hover:bg-[#2a3942] shrink-0"
            title="New Chat"
         >
            <Plus size={18} strokeWidth={2} />
@@ -200,7 +200,7 @@ export default function ConversationList({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-900">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111b21]">
         {!isLoaded ? (
           <div className="px-3 py-4 space-y-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -250,10 +250,10 @@ export default function ConversationList({
             <div 
               key={conv.id}
               onClick={() => onSelect(conv.id)}
-              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 dark:border-slate-800/50 transition-all duration-200 ease-in-out ${
+              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 dark:border-[#222e35]/40 transition-all duration-200 ease-in-out ${
                 isSelected 
-                  ? 'bg-[#E5F1FF]/50 dark:bg-blue-950/20 relative' 
-                  : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850/50'
+                  ? 'bg-[#E5F1FF]/50 dark:bg-[#2a3942] relative' 
+                  : 'bg-white dark:bg-[#111b21] hover:bg-slate-50 dark:hover:bg-[#202c33]'
               }`}
             >
               {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600"></div>}
@@ -290,11 +290,11 @@ export default function ConversationList({
                 {/* Line 1: Name and Time */}
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2 truncate">
-                    <span className={`text-[14.5px] truncate ${isSelected ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-800 dark:text-slate-200'}`}>
+                    <span className={`text-[14.5px] truncate ${isSelected ? 'font-semibold text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-800 dark:text-[#d1d7db]'}`}>
                       {contactName}
                     </span>
                     {conv.status === 'resolved' && (
-                      <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide border border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                      <span className="bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide border border-slate-200/50 dark:border-[#222e35]/50 shrink-0">
                         Resolved
                       </span>
                     )}
@@ -304,7 +304,7 @@ export default function ConversationList({
                       </span>
                     )}
                   </div>
-                  <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 dark:text-slate-400 font-medium' : 'text-slate-400 dark:text-slate-550'}`}>
+                  <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 dark:text-[#8696a0] font-medium' : 'text-slate-400 dark:text-[#8696a0]'}`}>
                     {time}
                   </span>
                 </div>
@@ -328,7 +328,7 @@ export default function ConversationList({
                         typing...
                       </p>
                     ) : (
-                      <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300 font-medium'}`}>
+                      <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400 dark:text-[#8696a0]' : 'text-slate-600 dark:text-[#8696a0] font-medium'}`}>
                         {lastMessage ? (
                           <>
                             {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
@@ -351,7 +351,7 @@ export default function ConversationList({
                     )}
                   </div>
                   {lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read' && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 shadow-[0_0_6px_rgba(59,130,246,0.5)]"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 dark:bg-[#00a884] shrink-0 shadow-[0_0_6px_rgba(0,168,132,0.4)]"></div>
                   )}
                 </div>
               </div>
@@ -362,10 +362,10 @@ export default function ConversationList({
 
       {showNewChatModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg w-full max-w-[400px] overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-[#111b21] rounded-xl shadow-lg w-full max-w-[400px] overflow-hidden border border-slate-200 dark:border-[#222e35] animate-in fade-in zoom-in-95 duration-200">
             <div className="p-4 flex flex-col items-center">
               <div className="w-full flex justify-between items-center mb-6">
-                <span className="text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">WhatsApp number *</span>
+                <span className="text-[13px] font-semibold text-slate-500 dark:text-[#8696a0] uppercase tracking-wide">WhatsApp number *</span>
                 <button 
                   onClick={() => {
                     setShowNewChatModal(false);
@@ -384,7 +384,7 @@ export default function ConversationList({
                   </div>
                   <input 
                     type="text" 
-                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg text-[14px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 dark:bg-slate-950"
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-[#2a3942] rounded-lg text-[14px] text-slate-900 dark:text-[#d1d7db] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 dark:bg-[#202c33]"
                     placeholder="+1234567890"
                     value={newChatNumber}
                     onChange={(e) => {
