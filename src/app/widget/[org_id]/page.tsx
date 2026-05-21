@@ -459,6 +459,7 @@ export default function WidgetPage() {
 
   // Premium toast notification state
   const [toastError, setToastError] = useState<string | null>(null)
+  const [showMicPermissionGuide, setShowMicPermissionGuide] = useState(false)
 
   useEffect(() => {
     if (toastError) {
@@ -601,8 +602,10 @@ export default function WidgetPage() {
         setCallStatus('idle')
         if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
           setToastError("Microphone blocked. Click the lock icon in the URL bar to allow. On Mac, also check System Settings > Privacy & Security > Microphone.")
+          setShowMicPermissionGuide(true)
         } else {
           setToastError("Failed to access microphone. Please check your system settings or device connection.")
+          setShowMicPermissionGuide(true)
         }
         return
       }
@@ -1429,6 +1432,7 @@ export default function WidgetPage() {
     } catch (e: any) {
       console.error("Microphone access denied or error:", e)
       setToastError("Microphone blocked or not available. Please allow access via your browser address bar settings.")
+      setShowMicPermissionGuide(true)
     }
   }
 
@@ -3491,6 +3495,73 @@ export default function WidgetPage() {
           >
             <X size={16} strokeWidth={2.5} />
           </button>
+        </div>
+      )}
+
+      {/* Visual Microphone Permission Guide Modal */}
+      {showMicPermissionGuide && (
+        <div className="absolute inset-0 z-[10000] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-[340px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 text-slate-850 dark:text-slate-100 flex flex-col items-center">
+            
+            {/* Pulsing mic warning icon */}
+            <div className="relative w-14 h-14 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+            </div>
+
+            <h3 className="text-[15px] font-bold text-slate-900 dark:text-white text-center mb-1 leading-snug">
+              Allow Microphone Access
+            </h3>
+            
+            <p className="text-[11.5px] text-slate-500 dark:text-slate-400 text-center leading-relaxed mb-4 px-2">
+              TalkFuze needs microphone access to record voice messages and make live audio calls.
+            </p>
+
+            {/* Steps layout */}
+            <div className="w-full flex flex-col gap-3.5 mb-5 text-left bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40">
+              <div className="flex gap-3 items-start">
+                <span className="w-5 h-5 rounded-full bg-[#0070f3] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <div className="flex-1">
+                  <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 leading-snug">Click lock icon</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-normal">Look at the browser address bar above and click the <b>🔒 (Lock)</b> icon next to the URL.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start border-t border-slate-100 dark:border-slate-800/60 pt-3">
+                <span className="w-5 h-5 rounded-full bg-[#0070f3] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <div className="flex-1">
+                  <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 leading-snug">Toggle Mic to 'Allow'</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-normal">Switch the <b>Microphone</b> slider to enabled or choose <b>Allow</b>.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start border-t border-slate-100 dark:border-slate-800/60 pt-3">
+                <span className="w-5 h-5 rounded-full bg-[#0070f3] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                <div className="flex-1">
+                  <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 leading-snug">Reload the page</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-normal">Refresh your browser page to apply the microphone permissions.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2.5 w-full">
+              <button 
+                onClick={() => setShowMicPermissionGuide(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[13px] rounded-xl transition-all active:scale-[0.98] cursor-pointer"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="flex-1 py-2.5 bg-[#0070f3] hover:bg-[#0060d3] text-white font-bold text-[13px] rounded-xl transition-all active:scale-[0.98] shadow-md shadow-[#0070f3]/20 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+                Reload
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

@@ -23,7 +23,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('talkfuze-theme') || 'system';
+                  var theme = localStorage.getItem('talkfuze-theme') || 'light';
                   var root = document.documentElement;
                   root.classList.remove('light', 'dark');
                   if (theme === 'system') {
