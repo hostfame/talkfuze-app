@@ -2361,6 +2361,170 @@ export default function WidgetPage() {
 
   const isFullScreenTicketView = activeTab === 'tickets' && (ticketView === 'detail' || ticketView === 'new');
 
+  if (isStandaloneCall) {
+    const isRinging = callStatus === 'ringing'
+    const isCalling = callStatus === 'calling'
+    const isActive = callStatus === 'active'
+    const isDeclined = callStatus === 'declined'
+
+    // Retrieve agent profile details
+    const agentName = settings?.agent_name || "Hostnin Agent"
+    const agentTitle = settings?.agent_title || "Technical Support"
+    const agentAvatar = settings?.agent_avatar || "/team/1.avif"
+
+    return (
+      <div className="h-full w-full min-h-screen flex flex-col items-center justify-between bg-slate-950 text-white font-sans relative overflow-hidden select-none">
+        {/* Decorative Blurred Glowing Circles */}
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-[#0070f3]/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none" />
+
+        {/* Top Header - Secure Branding */}
+        <div className="w-full flex items-center justify-center pt-8 px-6 z-10">
+          <div className="flex flex-col items-center gap-1.5">
+            <img src="/hostnin-white.png" className="h-[24px] w-auto object-contain opacity-90" alt="Hostnin Logo" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[10px] uppercase font-bold tracking-widest leading-none">
+              <Shield size={10} className="text-blue-400" />
+              Secure WebRTC Audio Call
+            </div>
+          </div>
+        </div>
+
+        {/* Mid Container - Caller Identity & Pulse Animation */}
+        <div className="flex flex-col items-center justify-center flex-1 w-full px-6 z-10">
+          {/* Pulsing Outer Rings */}
+          <div className="relative flex items-center justify-center w-[180px] h-[180px] mb-8">
+            {/* Pulsing ring 1 */}
+            {(isRinging || isCalling || isActive) && (
+              <div className={`absolute inset-0 rounded-full border-2 ${isActive ? 'border-emerald-500/20 animate-ping [animation-duration:2.5s]' : 'border-blue-500/20 animate-ping [animation-duration:2s]'} pointer-events-none`} />
+            )}
+            {/* Pulsing ring 2 */}
+            {(isRinging || isCalling || isActive) && (
+              <div className={`absolute inset-4 rounded-full border ${isActive ? 'border-emerald-500/10 animate-pulse' : 'border-blue-500/10 animate-pulse'} pointer-events-none`} />
+            )}
+
+            {/* Glowing Avatar Frame */}
+            <div className={`w-[120px] h-[120px] rounded-full p-[3px] bg-gradient-to-tr ${isActive ? 'from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/20' : isRinging ? 'from-amber-500 to-red-500 shadow-lg shadow-amber-500/20' : 'from-[#0070f3] to-blue-400 shadow-lg shadow-blue-500/20'} relative z-20`}>
+              <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                <img src={agentAvatar} className="w-full h-full object-cover" alt={agentName} />
+              </div>
+              {/* Pulse status indicator dot */}
+              <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-slate-950 flex items-center justify-center ${isActive ? 'bg-emerald-500' : isRinging ? 'bg-amber-500' : isCalling ? 'bg-blue-500' : 'bg-slate-500'}`}>
+                {isActive && <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Identity Information */}
+          <div className="text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">{agentName}</h2>
+            <p className="text-sm font-medium text-slate-400 mb-4">{agentTitle}</p>
+            
+            {/* Status Description Badge */}
+            <div className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : isRinging ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse' : isCalling ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-400'} text-xs font-semibold tracking-wide`}>
+              {isActive ? (
+                <>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  Connected • {formatCallDuration(callDuration)}
+                </>
+              ) : isRinging ? (
+                <>
+                  <Phone size={12} className="animate-bounce" />
+                  Incoming Support Call...
+                </>
+              ) : isCalling ? (
+                <>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+                  Connecting secure channel...
+                </>
+              ) : isDeclined ? (
+                "Call Declined"
+              ) : (
+                "Secure Audio Channel"
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Actions - Large Control Buttons */}
+        <div className="w-full flex flex-col items-center gap-6 pb-12 px-6 z-10">
+          <div className="flex items-center justify-center gap-6">
+            {/* Mute Button */}
+            {(isActive || isCalling) && (
+              <button 
+                onClick={toggleMuteVoiceCall}
+                className={`w-14 h-14 rounded-full flex items-center justify-center border transition-all active:scale-[0.93] cursor-pointer ${isCallMuted ? 'bg-red-500/15 border-red-500/30 text-red-400' : 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-300'}`}
+                title={isCallMuted ? "Unmute Microphone" : "Mute Microphone"}
+              >
+                {isCallMuted ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                )}
+              </button>
+            )}
+
+            {/* Main Action Button (Accept / Answer / Hang Up) */}
+            {isRinging ? (
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    handleEndVoiceCall(true)
+                    window.close()
+                  }} 
+                  className="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg shadow-rose-600/30 transition-all active:scale-[0.93] cursor-pointer"
+                >
+                  <PhoneOff size={24} strokeWidth={2.5} />
+                </button>
+                <button 
+                  onClick={handleAnswerAgentCall} 
+                  className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.93] cursor-pointer animate-bounce"
+                >
+                  <Phone size={24} strokeWidth={2.5} />
+                </button>
+              </div>
+            ) : (isCalling || isActive) ? (
+              <button 
+                onClick={() => handleEndVoiceCall(true)} 
+                className="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-lg shadow-rose-600/30 transition-all active:scale-[0.93] cursor-pointer"
+              >
+                <PhoneOff size={24} strokeWidth={2.5} />
+              </button>
+            ) : isDeclined ? (
+              <button 
+                onClick={() => window.close()} 
+                className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all active:scale-[0.93] cursor-pointer"
+              >
+                Close Window
+              </button>
+            ) : (
+              // Outbound connection ready state
+              <button 
+                onClick={handleStartVoiceCall} 
+                className="w-16 h-16 rounded-full bg-[#0070f3] hover:bg-[#0060df] text-white flex items-center justify-center shadow-lg shadow-[#0070f3]/30 transition-all active:scale-[0.93] cursor-pointer animate-pulse"
+              >
+                <Phone size={24} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+
+          {/* End-to-End Encryption Brand Seal */}
+          <div className="flex items-center gap-1.5 text-slate-600 text-[11px] font-medium tracking-wide">
+            <Lock size={10} />
+            Peer-to-Peer Encrypted • Powered by TalkFuze
+          </div>
+        </div>
+
+        {/* Global Toast / Notification Overlays */}
+        {toastError && (
+          <div className="absolute top-6 left-6 right-6 p-4 rounded-2xl bg-rose-500/15 border border-rose-500/25 text-rose-200 text-xs font-semibold flex items-start gap-2.5 shadow-lg shadow-black/40 z-50">
+            <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center text-white font-bold shrink-0">!</div>
+            <div className="flex-1 leading-normal">{toastError}</div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="h-full w-full flex flex-col bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xl overflow-hidden font-sans relative">
       
