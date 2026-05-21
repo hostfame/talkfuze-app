@@ -1232,17 +1232,17 @@ export default function SipDialer() {
                       <span className="text-white/80 font-medium max-w-[180px] truncate">{whmcsClientInfo.email}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 pt-1">
+                  <div className="flex items-center gap-2 pt-2">
                     {whmcsClientInfo.services !== undefined && whmcsClientInfo.services > 0 ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black flex items-center gap-1.5 shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#34c759]"></span>
+                      <span className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,199,89,0.5)]"></span>
                         {whmcsClientInfo.services} Active
                       </span>
                     ) : null}
                     {whmcsClientInfo.unpaid !== undefined && whmcsClientInfo.unpaid > 0 ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white text-black flex items-center gap-1.5 shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                        ৳{whmcsClientInfo.unpaid.toLocaleString()} Unpaid
+                      <span className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20">
+                        <span className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_6px_rgba(244,63,94,0.5)]"></span>
+                        ৳{whmcsClientInfo.unpaid.toLocaleString()} Due
                       </span>
                     ) : null}
                   </div>
