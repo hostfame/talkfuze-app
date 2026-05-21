@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -9,6 +9,7 @@ import { updateContactName, updateContactPhone } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import SnoozeButton from "./SnoozeButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
+import { useInboxStore } from "@/lib/store"
 
 interface WhmcsClient {
   id: number;
@@ -52,6 +53,7 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 }
 
 export default function ContactSidebar({ conversation, orgId }: { conversation?: ConversationWithDetails | null, orgId: string }) {
+  const { triggerDial } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
   const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
@@ -790,12 +792,22 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 <p className="text-[13px] text-slate-500 truncate">
                   {contactPhone && contactPhone.includes('@') ? displayId : (contactPhone ? `Phone: ${contactPhone}` : displayId)}
                 </p>
+                {contactPhone && !contactPhone.includes('@') && (
+                  <button 
+                    onClick={() => triggerDial(contactPhone)}
+                    className="p-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm active:scale-95"
+                    title="Call via Dialer"
+                  >
+                    <PhoneCall size={11} strokeWidth={2.5} />
+                  </button>
+                )}
                 <button 
                   onClick={() => {
                     setEditedPhone(contactPhone || "")
                     setIsEditingPhone(true)
                   }} 
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
+                  title="Edit Phone"
                 >
                   <Pencil size={11} strokeWidth={2.5} />
                 </button>
