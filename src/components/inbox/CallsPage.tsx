@@ -125,6 +125,7 @@ export default function CallsPage() {
         { event: 'INSERT', schema: 'public', table: 'call_logs', filter: `org_id=eq.${orgId}` },
         async (payload) => {
           const newLog = payload.new as CallLog
+          if (newLog.call_type === 'browser') return // Exclude browser calls from real-time log list
           
           // Pre-enrich customer name in-memory to prevent visual delays
           const customerPhone = newLog.direction === 'inbound' ? newLog.from_number : newLog.to_number
@@ -223,7 +224,8 @@ export default function CallsPage() {
   }
 
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery) || (log.customer_name && log.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) || (log.call_type === 'browser' && 'browser'.includes(searchQuery.toLowerCase()))
+    if (log.call_type === 'browser') return false // Guarantee browser calls are excluded
+    const matchesSearch = log.from_number.includes(searchQuery) || log.to_number.includes(searchQuery) || (log.customer_name && log.customer_name.toLowerCase().includes(searchQuery.toLowerCase()))
     const logDate = new Date(log.created_at).toISOString().split('T')[0]
     const matchesDate = dateFilter ? logDate === dateFilter : true
     return matchesSearch && matchesDate

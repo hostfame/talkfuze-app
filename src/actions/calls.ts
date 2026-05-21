@@ -13,6 +13,7 @@ export async function getCallLogs(orgId: string) {
       .from('call_logs')
       .select('*')
       .eq('org_id', orgId)
+      .or('call_type.is.null,call_type.neq.browser') // Only return actual SIP telephony calls, exclude browser calls
       .order('created_at', { ascending: false })
       .limit(50)
 
