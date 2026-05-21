@@ -1114,7 +1114,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   </div>
                   {whmcsClient.credit !== undefined && (
                     <div className="shrink-0 flex flex-col items-end justify-center bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                      <span className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Credit Balance</span>
+                      <span className="text-[9.5px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Credit</span>
                       <span className="text-[12.5px] font-bold text-slate-700 dark:text-slate-300">
                         {whmcsClient.credit}
                       </span>
