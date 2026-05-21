@@ -2172,9 +2172,11 @@ export default function ChatThread({
                     <CornerUpLeft size={15} strokeWidth={2.5} />
                   </button>
 
-                  <div className={`${
+                   <div className={`${
                     msg.is_internal 
-                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5' 
+                      ? msg.sender_id === currentUser?.id
+                        ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm' 
+                        : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm'
                       : msg.content_type === 'audio' 
                         ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none' 
                         : 'bg-[#0070f3] text-white px-4 py-2.5'
@@ -2623,7 +2625,7 @@ export default function ChatThread({
                   handleSend()
                 }
               }}
-                placeholder={isInternal ? "Add an internal note (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+                placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
                 className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
               ></textarea>
             </div>
@@ -2683,7 +2685,7 @@ export default function ChatThread({
                   onClick={() => setIsInternal(true)}
                   className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  <Lock size={12} strokeWidth={2.5} /> Note
+                  <Lock size={12} strokeWidth={2.5} /> Whisper
                 </button>
               </div>
               
@@ -2698,7 +2700,7 @@ export default function ChatThread({
                     <span>Sending...</span>
                   </>
                 ) : (
-                  isInternal ? 'Add Note' : 'Send'
+                  isInternal ? 'Add Whisper' : 'Send'
                 )}
               </button>
             </div>
