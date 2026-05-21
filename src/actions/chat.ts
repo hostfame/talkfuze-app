@@ -461,3 +461,81 @@ export async function markMessagesAsRead(conversationId: string, role: 'contact'
     console.error('Failed to mark messages as read', e);
   }
 }
+
+export async function updateWidgetContactDetails(orgId: string, deviceId: string, name: string, phone: string) {
+  noStore();
+  if (!orgId || !deviceId) {
+    throw new Error("Missing required parameters");
+  }
+
+  try {
+    const { data: contacts } = await supabaseAdmin
+      .from("contacts")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("platform_type", "widget")
+      .eq("platform_id", deviceId)
+      .limit(1);
+
+    const contact = contacts && contacts.length > 0 ? contacts[0] : null;
+
+    if (!contact) {
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&length=1`;
+      const { data: newContact, error: contactErr } = await supabaseAdmin
+        .from("contacts")
+        .insert({
+          org_id: orgId,
+          platform_type: "widget",
+          platform_id: deviceId,
+          name: name.trim(),
+          phone: phone.trim() || null,
+          avatar_url: avatarUrl
+        })
+        .select("id")
+        .single();
+        
+      if (contactErr) throw contactErr;
+    } else {
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&length=1`;
+      const { error: updateErr } = await supabaseAdmin
+        .from("contacts")
+        .update({
+          name: name.trim(),
+          phone: phone.trim() || null,
+          avatar_url: avatarUrl
+        })
+        .eq("id", contact.id);
+
+      if (updateErr) throw updateErr;
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    console.error("updateWidgetContactDetails error:", e);
+    return { success: false, error: e.message };
+  }
+}
+
+export async function getWidgetContact(orgId: string, deviceId: string) {
+  noStore();
+  if (!orgId || !deviceId) return null;
+  
+  try {
+    const { data: contacts } = await supabaseAdmin
+      .from("contacts")
+      .select("name, phone")
+      .eq("org_id", orgId)
+      .eq("platform_type", "widget")
+      .eq("platform_id", deviceId)
+      .limit(1);
+      
+    if (contacts && contacts.length > 0) {
+      return contacts[0];
+    }
+    return null;
+  } catch (e) {
+    console.error("getWidgetContact error:", e);
+    return null;
+  }
+}
+
