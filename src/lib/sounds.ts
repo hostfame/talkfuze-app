@@ -57,8 +57,8 @@ export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string
 ];
 
 export const getSelectedSound = (): SoundPreset => {
-  if (typeof window === 'undefined') return 'intercom';
-  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'intercom';
+  if (typeof window === 'undefined') return 'loud';
+  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'loud';
 };
 
 export const setSelectedSound = (preset: SoundPreset): void => {
@@ -489,12 +489,12 @@ export const updateTabBadge = (count: number): void => {
 // Main Public API
 // ─────────────────────────────────────────────
 
-export const playUISound = (type: 'send' | 'receive') => {
+export const playUISound = (type: 'send' | 'receive', presetOverride?: SoundPreset) => {
   if (typeof window === 'undefined') return;
   // Respect DND for receive sounds
   if (type === 'receive' && isDndActive()) return;
   
-  const preset = getSelectedSound();
+  const preset = presetOverride || getSelectedSound();
   const volume = getSoundVolume();
 
   // Send sound uses its own independent volume

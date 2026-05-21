@@ -1337,7 +1337,7 @@ export default function WidgetPage() {
           if (newLen > prevLen) {
              const lastMsg = dbMessages[dbMessages.length - 1];
              if (lastMsg && lastMsg.sender_type !== 'contact') {
-                 playUISound('receive');
+                 playUISound('receive', 'intercom');
              }
           }
           return newMessages;
@@ -1409,7 +1409,7 @@ export default function WidgetPage() {
             
             // Play receive sound for incoming messages
             if (newMsg.sender_type !== 'contact') {
-                playUISound('receive');
+                playUISound('receive', 'intercom');
                 // Immediately clear agent typing/recording state to prevent UI flicker
                 setIsAgentTyping(false);
                 setIsAgentRecording(false);
