@@ -11,7 +11,7 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { playUISound, sendDesktopNotification, updateTabBadge } from "@/lib/sounds"
+import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
@@ -148,6 +148,8 @@ export default function InboxPage() {
           // Send desktop notification for incoming voice call
           const caller = payload.payload.callerName || 'Customer';
           sendDesktopNotification('Incoming Voice Call 📞', `${caller} is calling you...`);
+          // Flash browser tab title to grab attention immediately
+          startTabTitleFlash('INCOMING CALL 📞', 1);
           // Play a small alert sound immediately (ChatThread will play ringtone later)
           playUISound('receive');
         }

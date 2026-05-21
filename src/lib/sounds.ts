@@ -368,19 +368,82 @@ export const sendDesktopNotification = (title: string, body: string): void => {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const showPreview = localStorage.getItem('talkfuze_notif_preview') !== 'false';
-  new Notification(title, {
-    body: showPreview ? body : 'New message received',
-    icon: '/talkfuze-logo.png',
-    tag: 'talkfuze-msg',
-  });
+  try {
+    const notif = new Notification(title, {
+      body: showPreview ? body : 'New message received',
+      icon: '/talkfuze-logo.png',
+      tag: 'talkfuze-msg',
+    });
+    notif.onclick = () => {
+      window.focus();
+    };
+  } catch (e) {
+    // Fallback for browsers that block Notification constructor on main thread
+    console.error('Desktop notification trigger error:', e);
+  }
 };
 
 let _originalTitle: string | null = null;
+let flashIntervalId: ReturnType<typeof setInterval> | null = null;
+let isFlashState = false;
+
+export const startTabTitleFlash = (message: string, count: number): void => {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem('talkfuze_tab_badge') === 'false') return;
+  
+  // Only flash if tab is currently out of focus / blurred
+  if (document.hasFocus()) return;
+  
+  if (flashIntervalId !== null) {
+    clearInterval(flashIntervalId);
+  }
+
+  if (_originalTitle === null) {
+    _originalTitle = document.title.replace(/^\(\d+\)\s*/, '');
+  }
+
+  isFlashState = false;
+  flashIntervalId = setInterval(() => {
+    isFlashState = !isFlashState;
+    if (isFlashState) {
+      document.title = `🔴 ${message}`;
+    } else {
+      document.title = count > 0 ? `(${count}) ${_originalTitle}` : (_originalTitle || 'TalkFuze');
+    }
+  }, 1200);
+};
+
+export const stopTabTitleFlash = (): void => {
+  if (typeof window === 'undefined') return;
+  if (flashIntervalId !== null) {
+    clearInterval(flashIntervalId);
+    flashIntervalId = null;
+  }
+  if (_originalTitle !== null) {
+    const unreadStr = document.title.match(/^\((\d+)\)/);
+    const count = unreadStr ? parseInt(unreadStr[1]) : 0;
+    document.title = count > 0 ? `(${count}) ${_originalTitle}` : (_originalTitle || 'TalkFuze');
+  }
+};
+
+// Auto clear flash when window gets focus
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', () => {
+    stopTabTitleFlash();
+  });
+}
+
 export const updateTabBadge = (count: number): void => {
   if (typeof window === 'undefined') return;
   if (localStorage.getItem('talkfuze_tab_badge') === 'false') return;
   if (_originalTitle === null) _originalTitle = document.title.replace(/^\(\d+\)\s*/, '');
   document.title = count > 0 ? `(${count}) ${_originalTitle}` : (_originalTitle || 'TalkFuze');
+  
+  if (count > 0) {
+    startTabTitleFlash('NEW CHAT RECEIVED', count);
+  } else {
+    stopTabTitleFlash();
+  }
 };
 
 // ─────────────────────────────────────────────
