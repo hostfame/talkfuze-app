@@ -22,17 +22,9 @@ export default function SnoozeButton({ conversation, orgId }: { conversation: Co
     try {
       let targetTime = null;
       if (hours !== null) {
-        if (hours === 24) {
-          // Tomorrow at 9 AM
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(9, 0, 0, 0);
-          targetTime = tomorrow.toISOString();
-        } else {
-          const target = new Date();
-          target.setHours(target.getHours() + hours);
-          targetTime = target.toISOString();
-        }
+        const target = new Date();
+        target.setHours(target.getHours() + hours);
+        targetTime = target.toISOString();
       }
       await snoozeConversation(conversation.id, targetTime ? new Date(targetTime) : null)
     } catch (e) {
@@ -97,13 +89,13 @@ export default function SnoozeButton({ conversation, orgId }: { conversation: Co
             </button>
 
             <button 
-              onClick={() => handleSnooze(4)}
+              onClick={() => handleSnooze(12)}
               className="w-full text-left px-3 py-2 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
             >
               <div className="w-6 h-6 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center text-xs font-semibold shrink-0">
-                4h
+                12h
               </div>
-              <span className="truncate">This Evening (4 Hours)</span>
+              <span className="truncate">Later (12 Hours)</span>
             </button>
 
             <button 
@@ -111,9 +103,9 @@ export default function SnoozeButton({ conversation, orgId }: { conversation: Co
               className="w-full text-left px-3 py-2 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
             >
               <div className="w-6 h-6 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center text-xs font-semibold shrink-0">
-                Tmw
+                24h
               </div>
-              <span className="truncate">Tomorrow Morning (9AM)</span>
+              <span className="truncate">Tomorrow (24 Hours)</span>
             </button>
           </div>
         </>
