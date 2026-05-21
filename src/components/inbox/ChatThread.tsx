@@ -2941,9 +2941,9 @@ export default function ChatThread({
             <div className="flex justify-between items-center mb-5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                  <Zap size={18} className="fill-blue-500/20" />
+                  <Plus size={18} />
                 </div>
-                <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">Add to Quick Replies</h3>
+                <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">Add shortcut</h3>
               </div>
               <button 
                 onClick={() => setQuickReplyModalOpen(false)}
