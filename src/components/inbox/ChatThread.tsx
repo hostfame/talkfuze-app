@@ -1970,7 +1970,7 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Header */}
-      <div className="h-[72px] border-b border-slate-200/80 dark:border-slate-800 flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-slate-900/95 shrink-0 z-40 sticky top-0 shadow-sm">
+      <div className="h-[72px] border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           {/* Mobile back button */}
           {onBackToList && (
@@ -1988,7 +1988,7 @@ export default function ChatThread({
                   type="text" 
                   value={editedName} 
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="text-[16px] font-medium text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 bg-white dark:bg-slate-800 focus:outline-none focus:border-blue-500 w-[150px] md:w-[250px]"
+                  className="text-[16px] font-medium text-slate-900 dark:text-[#e9edef] border border-slate-300 dark:border-[#2a3942] rounded px-1.5 py-0.5 bg-white dark:bg-[#202c33] focus:outline-none focus:border-blue-500 w-[150px] md:w-[250px]"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName()
@@ -2003,7 +2003,7 @@ export default function ChatThread({
               </div>
             ) : (
               <>
-                <h2 className="font-medium text-[16px] text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <h2 className="font-medium text-[16px] text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
                   {contactName}
                   {isCustomerOnline && (
                     <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" title="Online now"></div>
@@ -2174,7 +2174,7 @@ export default function ChatThread({
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#0B0F19]">
+      <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#0b141a]">
         
         {messages.length >= 50 && hasMoreMessages && (
           <div className="flex justify-center mb-6">
@@ -2345,14 +2345,14 @@ export default function ChatThread({
                         editingMessage?.id === msg.id
                           ? 'w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-slate-900 dark:text-slate-100 min-w-[280px]'
                           : (msg.status === 'recalled' || msg.status === 'deleted')
-                            ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
+                            ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
                             : msg.is_internal 
                               ? msg.sender_id === currentUser?.id
                                 ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
                                 : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                               : msg.content_type === 'audio' 
-                                ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                                : 'bg-[#0070f3] text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                                ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -2530,10 +2530,10 @@ export default function ChatThread({
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
-                          ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-555 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
+                          ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
                           : msg.content_type === 'audio' 
-                            ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu' 
-                            : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu'
+                            ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu' 
+                            : 'bg-slate-100 dark:bg-[#202c33] px-4 py-2.5 text-slate-900 dark:text-[#e9edef] rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -2559,7 +2559,7 @@ export default function ChatThread({
                                     }, 2000);
                                   }
                                 }}
-                                className="mb-2 p-2 bg-black/5 dark:bg-white/5 border-l-[3px] border-[#0070f3] dark:border-blue-400 rounded-r-md text-left cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors max-w-full select-none"
+                                className="mb-2 p-2 bg-black/5 dark:bg-white/5 border-l-[3px] border-[#0070f3] dark:border-[#00a884] rounded-r-md text-left cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors max-w-full select-none"
                               >
                                 <div className="text-[11px] font-bold text-[#0070f3] dark:text-blue-400 truncate">
                                   {replyTo.sender_name}
@@ -2701,7 +2701,7 @@ export default function ChatThread({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0B0F19] relative">
+      <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0b141a] relative">
         {/* Actual composer - always shown, locked to whisper if not joined */}
         <div className={!isJoined ? "mt-4" : ""}>
         {/* Macro Menu */}
@@ -2728,7 +2728,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {isRecording ? (
             <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
               <div className="flex items-center gap-3">
@@ -2878,12 +2878,12 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-slate-100 placeholder:text-slate-400'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
               ></textarea>
             </div>
           )}
           
-          <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -2896,14 +2896,14 @@ export default function ChatThread({
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isSending || isRecording}
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 <Paperclip size={16} strokeWidth={2} />
               </button>
               <button 
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isSending}
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
               </button>
@@ -2911,7 +2911,7 @@ export default function ChatThread({
                 onClick={handleAiDraft}
                 disabled={isSending || isAiDrafting || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {isAiDrafting ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -2923,16 +2923,16 @@ export default function ChatThread({
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div className="flex bg-slate-100 dark:bg-[#2a3942] p-0.5 rounded-lg border border-slate-200 dark:border-[#2a3942]">
                 <button 
                   onClick={() => setIsInternal(false)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-[#111b21] text-slate-900 dark:text-[#e9edef] shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
                 >
                   Reply
                 </button>
                 <button 
                   onClick={() => setIsInternal(true)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-[#111b21] text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
                 >
                   <Lock size={12} strokeWidth={2.5} /> Whisper
                 </button>

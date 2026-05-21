@@ -715,23 +715,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
 
   return (
-    <div className="hidden md:flex flex-col h-full w-[340px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
-      <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30 overflow-x-auto hide-scrollbar">
+    <div className="hidden md:flex flex-col h-full w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
+      <div className="flex border-b border-slate-200/80 dark:border-[#222e35] px-3 pt-3 h-[72px] items-end bg-slate-50/30 dark:bg-transparent overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('details')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Details
         </button>
         <button 
           onClick={() => setActiveTab('copilot')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Portal
         </button>
         <button 
           onClick={() => setActiveTab('cobrowse')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 text-slate-900 dark:text-slate-100' : 'font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-transparent'}`}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Remote
         </button>
@@ -739,15 +739,15 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       </div>
 
       {activeTab === 'details' && (
-        <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
           <>
         {/* Contact Header Block (AnyChat Style) */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-start gap-3">
+        <div className="p-5 border-b border-slate-100 dark:border-[#222e35] flex items-start gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white bg-blue-600">
             {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
               <img src={contact.avatar_url} alt={contactName} className="w-full h-full object-cover rounded-full" />
             ) : (
-              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-full h-full object-cover rounded-full bg-slate-100 dark:bg-slate-800" />
+              <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-full h-full object-cover rounded-full bg-slate-100 dark:bg-[#202c33]" />
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -757,7 +757,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   type="text" 
                   value={editedName} 
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="text-[14px] font-semibold text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
+                  className="text-[14px] font-semibold text-slate-900 dark:text-[#e9edef] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName()
@@ -772,7 +772,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               </div>
             ) : (
               <div className="flex items-center gap-1.5 mb-0.5 group">
-                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white truncate">{contactName}</h2>
+                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-[#e9edef] truncate">{contactName}</h2>
                 <button 
                   onClick={() => {
                     setEditedName(contactName)
@@ -791,7 +791,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   value={editedPhone} 
                   onChange={(e) => setEditedPhone(e.target.value)}
                   placeholder="+8801..."
-                  className="text-[13px] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
+                  className="text-[13px] text-slate-700 dark:text-[#d1d7db] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSavePhone()
@@ -815,7 +815,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     <PhoneCall size={14} strokeWidth={2} />
                   </button>
                 )}
-                <p className="text-[13px] text-slate-500 dark:text-slate-400 truncate min-w-0">
+                <p className="text-[13px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
                   {contactPhone && contactPhone.includes('@') ? displayId : (contactPhone || displayId)}
                 </p>
                 <button 
@@ -849,12 +849,12 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
         </div>
 
         {/* Agents Joined Section */}
-        <div className="py-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
           <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
-            <h3 className="text-[13px] font-medium text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
               Agents Joined
             </h3>
-            <ChevronDown size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+            <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
           </div>
           <div className="px-5 space-y-2.5">
             {participants.length > 0 ? (
@@ -867,11 +867,11 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                       p.user?.name?.charAt(0).toUpperCase() || 'A'
                     )}
                   </div>
-                  <span className="text-[13px] text-slate-700 dark:text-slate-300 truncate">{p.user?.name || 'Agent'}</span>
+                  <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
                 </div>
               ))
             ) : (
-              <p className="text-[12px] text-slate-500 dark:text-slate-400 italic">No agents joined.</p>
+              <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
             )}
           </div>
         </div>
