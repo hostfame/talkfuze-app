@@ -767,7 +767,8 @@ export async function openTicket(
     subject: string,
     message: string,
     serviceId?: number,
-    attachments?: Array<{ filename?: string; name?: string; data: string }> // base64 file data
+    attachments?: Array<{ filename?: string; name?: string; data: string }>, // base64 file data
+    noemail?: boolean
 ) {
     const params: Record<string, string | number> = {
         clientid: clientId,
@@ -778,6 +779,10 @@ export async function openTicket(
 
     if (serviceId) {
         params.serviceid = serviceId;
+    }
+
+    if (noemail !== undefined) {
+        params.noemail = noemail ? 'true' : 'false';
     }
 
     // WHMCS expects attachments as base64-encoded JSON array of {filename, data}
@@ -800,13 +805,18 @@ export async function addTicketReply(
     ticketId: number, 
     message: string, 
     clientId: number,
-    attachments?: Array<{ filename?: string; name?: string; data: string }>
+    attachments?: Array<{ filename?: string; name?: string; data: string }>,
+    noemail?: boolean
 ) {
     const params: Record<string, string | number> = {
         ticketid: ticketId,
         message,
         clientid: clientId,
     };
+
+    if (noemail !== undefined) {
+        params.noemail = noemail ? 'true' : 'false';
+    }
 
     if (attachments && attachments.length > 0) {
         const formatted = attachments.map(att => ({

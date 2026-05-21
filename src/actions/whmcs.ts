@@ -212,10 +212,19 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       const senderType = isAgent ? 'agent' : 'contact'
       const senderName = isAgent ? (agentNames[msg.sender_id] || 'Agent') : contactName
 
+      // Extract the correct image URL from metadata.media_url if it's an image
+      const imageUrl = msg.content_type === 'image' 
+        ? ((msg.metadata as any)?.media_url || (msg.content && msg.content.startsWith('http') ? msg.content : null))
+        : null
+
       if (currentGroup && currentGroup.sender_type === senderType) {
-        if (msg.content_type === 'image' && msg.content) {
-          currentGroup.imageUrls.push(msg.content)
+        if (imageUrl) {
+          currentGroup.imageUrls.push(imageUrl)
           currentGroup.texts.push(`[Image Attachment]`)
+          // Preserve caption if any
+          if (msg.content && msg.content !== '[Image]') {
+            currentGroup.texts.push(msg.content)
+          }
         } else if (msg.content) {
           currentGroup.texts.push(msg.content)
         }
@@ -227,9 +236,13 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
           imageUrls: [],
           created_at: msg.created_at
         }
-        if (msg.content_type === 'image' && msg.content) {
-          currentGroup.imageUrls.push(msg.content)
+        if (imageUrl) {
+          currentGroup.imageUrls.push(imageUrl)
           currentGroup.texts.push(`[Image Attachment]`)
+          // Preserve caption if any
+          if (msg.content && msg.content !== '[Image]') {
+            currentGroup.texts.push(msg.content)
+          }
         } else if (msg.content) {
           currentGroup.texts.push(msg.content)
         }
@@ -271,8 +284,8 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
 
       const groupAttachments = await fetchAttachments(group.imageUrls)
       
-      // Post each reply sequentially to preserve order
-      await addTicketReply(ticketId, groupMessage, clientId, groupAttachments)
+      // Post each reply sequentially to preserve order, and suppress email notifications to prevent customer inbox flooding.
+      await addTicketReply(ticketId, groupMessage, clientId, groupAttachments, true)
     }
 
     // 9. Auto-insert system message into the conversation
