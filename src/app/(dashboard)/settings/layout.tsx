@@ -36,6 +36,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
         </div>
         <div className="px-2 pb-4 space-y-0.5 border-b border-slate-100 dark:border-slate-800">
           <NavLink href="/settings/profile" icon={<User size={18} />} label="My Profile" />
+          <NavLink href="/settings/appearance" icon={<Monitor size={18} />} label="Appearance & Theme" />
           <NavLink href="/settings/sounds" icon={<Volume2 size={18} />} label="Sound & Notifications" />
         </div>
         
@@ -61,7 +62,6 @@ export default async function SettingsLayout({ children }: { children: React.Rea
               <NavLink href="/settings/whatsapp-transactions" icon={<MessageCircle size={18} />} label="WhatsApp Transactions" />
               <NavLink href="/settings/conversations" icon={<MessageCircle size={18} />} label="Conversations settings" />
               <NavLink href="/settings/widget" icon={<MessageSquare size={18} />} label="Web Widget" />
-              <NavLink href="/settings/appearance" icon={<Monitor size={18} />} label="Appearance settings" />
               <NavLink href="/settings/knowledge-base" icon={<BookOpen size={18} />} label="Knowledge base" />
               <NavLink href="/settings/tickets" icon={<Ticket size={18} />} label="Tickets" />
             </div>

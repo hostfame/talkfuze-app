@@ -9,7 +9,7 @@ export default function AppearanceSettingsPage() {
   const options = [
     {
       id: "light" as Theme,
-      name: "Light Mode",
+      name: "Classic Mode (Light)",
       desc: "Clean and crisp background, ideal for bright working spaces.",
       icon: <Sun className="w-5 h-5 text-amber-500" />,
       preview: (
