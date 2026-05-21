@@ -501,8 +501,16 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   const [participants, setParticipants] = useState<any[]>([])
   useEffect(() => {
+    let active = true
     if (conversation?.id) {
-      getParticipants(conversation.id).then(data => setParticipants(data))
+      getParticipants(conversation.id).then(data => {
+        if (active) setParticipants(data)
+      })
+    } else {
+      setParticipants([])
+    }
+    return () => {
+      active = false
     }
   }, [conversation?.id])
 
@@ -1120,31 +1128,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               )}
             </div>
           )}
-
-          {/* Agents Joined Section */}
-          <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-            <h3 className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Agents Joined</h3>
-            {participants.length > 0 ? (
-              <div className="space-y-2">
-                {participants.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                      {p.user?.avatar_url ? (
-                        <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        p.user?.name?.charAt(0).toUpperCase() || 'A'
-                      )}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                       <span className="text-[13px] font-medium text-slate-800 dark:text-slate-200 truncate">{p.user?.name || 'Agent'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[12px] text-slate-500">No agents have joined yet.</p>
-            )}
-          </div>
 
           {/* Create Ticket Popup */}
           {showCreateTicket && (
