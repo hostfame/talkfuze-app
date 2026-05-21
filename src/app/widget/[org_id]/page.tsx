@@ -1808,7 +1808,7 @@ export default function WidgetPage() {
 
   // WhatsApp Hand-Off — Option C: context-aware redirect with conversation tagging
   const handleWhatsAppHandoff = async () => {
-    const waNumber = settings?.whatsapp_number || '8801896660960';
+    const waNumber = settings?.whatsapp_number || '8801325875955';
     const convId = activeConversationId && activeConversationId !== 'new' ? activeConversationId : null;
 
     // Build a context-rich pre-filled message for the visitor
