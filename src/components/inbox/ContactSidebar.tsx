@@ -82,6 +82,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     ? 'Messenger'
     : (displayPlatformId.startsWith('+') ? displayPlatformId : `+${displayPlatformId}`)
 
+  const isRawWidgetId = (val: string | null | undefined) => {
+    if (!val) return true;
+    if (val.includes('-') && val.length > 20) return true;
+    if (val.includes('@lid') || val.includes('@c.us')) return true;
+    return false;
+  }
+
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
   const [contactEmailOverrides, setContactEmailOverrides] = useState<Record<string, string>>({})
   const contactEmail = contact?.id ? contactEmailOverrides[contact.id] || contact?.email : contact?.email
@@ -90,6 +97,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const effectiveSearchQuery = contactEmail || contactPhone || displayPlatformId
   const isEmail = effectiveSearchQuery && typeof effectiveSearchQuery === 'string' && effectiveSearchQuery.includes('@') && !effectiveSearchQuery.endsWith('@lid')
   const cleanPhone = effectiveSearchQuery ? (isEmail ? effectiveSearchQuery : (effectiveSearchQuery.startsWith('+') ? effectiveSearchQuery : `+${effectiveSearchQuery}`)) : ""
+  const displayValue = contactEmail || (!isRawWidgetId(contactPhone) ? contactPhone : "");
 
   const isPhone = (text: string) => {
     if (!text) return false
@@ -469,48 +477,41 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setIsEditingName(false)
   }
 
-  const [isEditingPhone, setIsEditingPhone] = useState(false)
-  const [editedPhone, setEditedPhone] = useState("")
+  const [isEditingUniversal, setIsEditingUniversal] = useState(false)
+  const [editedUniversalValue, setEditedUniversalValue] = useState("")
 
-  const handleSavePhone = async () => {
+  const handleSaveUniversal = async () => {
     if (!contact?.id) return
-    const newPhone = editedPhone.trim()
-    if (newPhone === contactPhone) {
-      setIsEditingPhone(false)
+    const val = editedUniversalValue.trim()
+    
+    // Clear both if empty
+    if (!val) {
+      await updateContactPhone(contact.id, "")
+      await updateContactEmail(contact.id, "")
+      setContactPhoneOverrides((current) => ({ ...current, [contact.id]: "" }))
+      setContactEmailOverrides((current) => ({ ...current, [contact.id]: "" }))
+      setIsEditingUniversal(false)
       return
     }
-    const result = await updateContactPhone(contact.id, newPhone)
-    if (result.success) {
-      setContactPhoneOverrides((current) => ({
-        ...current,
-        [contact.id]: newPhone,
-      }))
-    } else {
-      setEditedPhone(contactPhone || "") // revert on error
-    }
-    setIsEditingPhone(false)
-  }
 
-  const [isEditingEmail, setIsEditingEmail] = useState(false)
-  const [editedEmail, setEditedEmail] = useState("")
-
-  const handleSaveEmail = async () => {
-    if (!contact?.id) return
-    const newEmail = editedEmail.trim()
-    if (newEmail === contactEmail) {
-      setIsEditingEmail(false)
-      return
-    }
-    const result = await updateContactEmail(contact.id, newEmail)
-    if (result.success) {
-      setContactEmailOverrides((current) => ({
-        ...current,
-        [contact.id]: newEmail,
-      }))
+    const isEmailInput = val.includes('@')
+    if (isEmailInput) {
+      const result = await updateContactEmail(contact.id, val)
+      if (result.success) {
+        await updateContactPhone(contact.id, "") // clear phone so only email is linked
+        setContactEmailOverrides((current) => ({ ...current, [contact.id]: val }))
+        setContactPhoneOverrides((current) => ({ ...current, [contact.id]: "" }))
+      }
     } else {
-      setEditedEmail(contactEmail || "") // revert on error
+      const cleanNum = val.replace(/[^\d+]/g, '')
+      const result = await updateContactPhone(contact.id, cleanNum)
+      if (result.success) {
+        await updateContactEmail(contact.id, "") // clear email so only phone is linked
+        setContactPhoneOverrides((current) => ({ ...current, [contact.id]: cleanNum }))
+        setContactEmailOverrides((current) => ({ ...current, [contact.id]: "" }))
+      }
     }
-    setIsEditingEmail(false)
+    setIsEditingUniversal(false)
   }
 
   // CRM State
@@ -882,31 +883,31 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               </div>
             )}
             
-            {/* Phone Number Row */}
-            {isEditingPhone ? (
+            {/* Universal CRM Link Row */}
+            {isEditingUniversal ? (
               <div className="flex items-center gap-1.5 mt-1.5">
-                <Phone size={12} className="text-slate-400 shrink-0" />
+                <Database size={12} className="text-slate-400 shrink-0" />
                 <input 
-                  value={editedPhone} 
-                  onChange={(e) => setEditedPhone(e.target.value)}
-                  placeholder="Phone number..."
+                  value={editedUniversalValue} 
+                  onChange={(e) => setEditedUniversalValue(e.target.value)}
+                  placeholder="Email or phone number..."
                   className="text-[12.5px] text-slate-700 dark:text-[#d1d7db] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSavePhone()
+                    if (e.key === 'Enter') handleSaveUniversal()
                     if (e.key === 'Escape') {
-                      setIsEditingPhone(false)
-                      setEditedPhone(contactPhone || "")
+                      setIsEditingUniversal(false)
+                      setEditedUniversalValue(displayValue || "")
                     }
                   }}
                 />
-                <button onClick={handleSavePhone} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check size={14} strokeWidth={2.5} /></button>
-                <button onClick={() => { setIsEditingPhone(false); setEditedPhone(contactPhone || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
+                <button onClick={handleSaveUniversal} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check size={14} strokeWidth={2.5} /></button>
+                <button onClick={() => { setIsEditingUniversal(false); setEditedUniversalValue(displayValue || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 mt-1 group">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  {showCallButton && (() => {
+                  {showCallButton && displayValue && !displayValue.includes('@') && (() => {
                     const hasCallAlert = isWhatsApp && conversation?.tags?.includes('alert') && conversation?.tags?.includes('automation');
                     
                     const handleCallClick = async () => {
@@ -948,73 +949,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                       </div>
                     );
                   })()}
-                  <Phone size={12} className="text-slate-400 shrink-0" />
+                  <Database size={12} className="text-slate-400 shrink-0" />
                   <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
-                    {contactPhone && !contactPhone.includes('@') ? contactPhone : <span className="italic text-slate-400 dark:text-slate-600">No phone</span>}
+                    {displayValue ? displayValue : <span className="italic text-slate-400 dark:text-slate-600">Link email or phone</span>}
                   </p>
                 </div>
                 <button 
                   onClick={() => {
-                    setEditedPhone(contactPhone && !contactPhone.includes('@') ? contactPhone : "")
-                    setIsEditingPhone(true)
+                    setEditedUniversalValue(displayValue || "")
+                    setIsEditingUniversal(true)
                   }} 
                   className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer"
-                  title="Edit Phone"
+                  title="Link Email or Phone"
                 >
                   <Pencil size={10} strokeWidth={2.5} />
                 </button>
               </div>
             )}
-
-            {/* Email Address Row */}
-            {isEditingEmail ? (
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <Mail size={12} className="text-slate-400 shrink-0" />
-                <input 
-                  value={editedEmail} 
-                  onChange={(e) => setEditedEmail(e.target.value)}
-                  placeholder="Email address..."
-                  className="text-[12.5px] text-slate-700 dark:text-[#d1d7db] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveEmail()
-                    if (e.key === 'Escape') {
-                      setIsEditingEmail(false)
-                      setEditedEmail(contactEmail || "")
-                    }
-                  }}
-                />
-                <button onClick={handleSaveEmail} className="text-emerald-600 hover:text-emerald-700 p-0.5"><Check size={14} strokeWidth={2.5} /></button>
-                <button onClick={() => { setIsEditingEmail(false); setEditedEmail(contactEmail || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 mt-1 group">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Mail size={12} className="text-slate-400 shrink-0" />
-                  <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
-                    {contactEmail ? contactEmail : <span className="italic text-slate-400 dark:text-slate-600">No email</span>}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => {
-                    setEditedEmail(contactEmail || "")
-                    setIsEditingEmail(true)
-                  }} 
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer"
-                  title="Edit Email"
-                >
-                  <Pencil size={10} strokeWidth={2.5} />
-                </button>
-              </div>
-            )}
-
-            {/* Platform ID Metadata Row */}
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <Globe size={12} className="text-slate-400 shrink-0" />
-              <p className="text-[11.5px] text-slate-400 dark:text-slate-600 truncate min-w-0" title={displayId}>
-                {displayId}
-              </p>
-            </div>
           </div>
           <button 
             onClick={handleToggleBan}
