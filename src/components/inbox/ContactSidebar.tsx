@@ -715,7 +715,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
 
   return (
-    <div className="hidden md:flex flex-col h-full w-[300px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
+    <div className="hidden md:flex flex-col h-full w-[340px] shrink-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       <div className="flex border-b border-slate-200/80 dark:border-slate-800 px-3 pt-3 h-[72px] items-end bg-slate-50/30 overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('details')}
@@ -1010,7 +1010,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                           </a>
                         </div>
                         {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
-                        <p className={`text-[11px] font-medium mt-1 ${product.status === 'Active' ? 'text-emerald-500' : 'text-slate-500'}`}>{product.status}</p>
+                        <span className={`inline-block text-[12px] font-semibold mt-1.5 px-2.5 py-0.5 rounded-full ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{product.status}</span>
                       </div>
                     ))}
                     {!whmcsServices?.products?.length && (
@@ -1032,7 +1032,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                           </a>
                         </div>
                         <div className="flex items-center justify-between mt-1">
-                          <p className={`text-[11px] font-medium ${domain.status === 'Active' ? 'text-emerald-500' : 'text-slate-500'}`}>{domain.status}</p>
+                          <span className={`inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${domain.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : domain.status === 'Expired' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{domain.status}</span>
                           <p className="text-[11px] text-slate-400">Exp: {domain.expirydate}</p>
                         </div>
                       </div>
@@ -1072,7 +1072,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                               {ticket.subject}
                               <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
                             </p>
-                            <span className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{ticket.status}</span>
+                            <span className={`text-[11px] font-semibold shrink-0 px-2.5 py-0.5 rounded-full ${ticket.status === 'Open' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ticket.status === 'Answered' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : ticket.status === 'Customer-Reply' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{ticket.status}</span>
                           </div>
                           <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
                         </a>
@@ -1103,7 +1103,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                             </div>
                             <div className="text-right">
                               <span className="text-[11px] font-bold text-red-600 dark:text-red-400 block mb-1">BDT {invoice.total}</span>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded uppercase">{invoice.status}</span>
+                              <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">{invoice.status}</span>
                             </div>
                           </div>
                           <button 
