@@ -1235,9 +1235,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     <div className="w-16 h-16 bg-gradient-to-br from-[#0070f3] to-[#0050c8] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                       <Eye size={26} strokeWidth={1.8} className="text-white" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-slate-800 border-2 border-white dark:border-slate-800 rounded-full flex items-center justify-center shadow-sm">
-                      <Shield size={12} className="text-emerald-500" />
-                    </div>
                   </div>
                   <div className="text-center max-w-[220px]">
                     <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-200">Remote View</p>

@@ -2051,15 +2051,6 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2 relative" ref={menuRef}>
-          {isWebWidget && callStatus === 'idle' && (
-            <button 
-              onClick={handleStartVoiceCallFromAgent}
-              className="p-1.5 text-slate-500 hover:text-[#0070f3] hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-md transition-colors"
-              title="Call visitor"
-            >
-              <Phone size={18} strokeWidth={2} />
-            </button>
-          )}
           {isJoined ? (
             <button 
               onClick={() => handleThreadAction('leave')}
