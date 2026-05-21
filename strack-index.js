@@ -850,6 +850,7 @@ async function processOutboundMessage(msg) {
   if (msg.is_internal) return;
   if (msg.platform_message_id) return; // already sent
 
+  let contact = null;
   try {
     const { data: conv } = await supabaseRealtime
       .from('conversations')
@@ -859,13 +860,30 @@ async function processOutboundMessage(msg) {
 
     if (!conv || conv.channels?.type !== 'whatsapp') return;
 
-    const { data: contact } = await supabaseRealtime
+    const { data: fetchedContact } = await supabaseRealtime
       .from('contacts')
-      .select('platform_id, phone, metadata')
+      .select('id, platform_id, phone, metadata')
       .eq('id', conv.contact_id)
       .single();
 
-    if (!contact) return;
+    if (!fetchedContact) return;
+    contact = fetchedContact;
+
+    // Skip if contact has invalid WhatsApp number to avoid carrier-ban precheck penalty
+    if (contact.metadata?.whatsapp_invalid) {
+      console.log(`[OUTBOUND] Skipping send to contact ${contact.id} - marked as whatsapp_invalid`);
+      await supabaseRealtime.from('messages')
+        .update({
+          status: 'failed',
+          metadata: {
+            ...(msg.metadata || {}),
+            delivery_error: 'Skipped: Contact number is verified as not registered on WhatsApp',
+            delivery_failed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', msg.id);
+      return;
+    }
 
     let jid = contact.platform_id.includes('@')
       ? contact.platform_id
@@ -966,6 +984,25 @@ async function processOutboundMessage(msg) {
     console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
   } catch (err) {
     console.error('[OUTBOUND] Error:', err.message);
+
+    // If Evolution returns that number is not registered on WhatsApp, flag contact to prevent Meta ban
+    if (contact) {
+      let isInvalidNumber = false;
+      try {
+        if (err.message.includes('exists":false') || err.message.includes('exists:false')) {
+          isInvalidNumber = true;
+        }
+      } catch (_) {}
+
+      if (isInvalidNumber) {
+        console.log(`[OUTBOUND] Auto-flagging contact ${contact.id} as whatsapp_invalid`);
+        const updatedMeta = { ...(contact.metadata || {}), whatsapp_invalid: true };
+        await supabaseRealtime.from('contacts')
+          .update({ metadata: updatedMeta })
+          .eq('id', contact.id);
+      }
+    }
+
     await supabaseRealtime.from('messages')
       .update({
         status: 'failed',
