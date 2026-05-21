@@ -2179,7 +2179,7 @@ export default function ChatThread({
                 {/* Agent Name Banner */}
                 <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
                 
-                <div className="flex items-end justify-end gap-2 max-w-[75%] relative group">
+                <div className="flex items-end justify-end gap-2 max-w-[75%] min-w-0 relative group">
                   {/* Reply Button on Hover */}
                   <button 
                     onClick={() => setReplyToMessage(msg)}
@@ -2195,14 +2195,14 @@ export default function ChatThread({
                         editingMessage?.id === msg.id
                           ? 'w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-slate-900 dark:text-slate-100 min-w-[280px]'
                           : (msg.status === 'recalled' || msg.status === 'deleted')
-                            ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none'
+                            ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
                             : msg.is_internal 
                               ? msg.sender_id === currentUser?.id
-                                ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
-                                : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                                ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                                : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                               : msg.content_type === 'audio' 
-                                ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
-                                : 'bg-[#0070f3] text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                                ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                                : 'bg-[#0070f3] text-white px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -2371,17 +2371,17 @@ export default function ChatThread({
                       className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800"
                     />
                   )}
-                  <div className="max-w-[75%] flex flex-col items-start gap-1">
+                  <div className="max-w-[75%] min-w-0 flex flex-col items-start gap-1">
                     {/* Participant Name Banner for Group Chats */}
                     {safeMeta.participant_name && (
                       <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
                     <div className={`${
                       (msg.status === 'recalled' || msg.status === 'deleted')
-                        ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none'
+                        ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
                         : msg.content_type === 'audio' 
-                          ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
-                          : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                          ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                          : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                     }`}>
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
                         <>
