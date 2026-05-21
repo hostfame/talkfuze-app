@@ -552,7 +552,6 @@ export default function SipDialer() {
               .then(convId => {
                 if (convId) {
                   setMatchedConversationId(convId)
-                  setSelectedId(convId) // Auto-navigate to their conversation
                 }
               })
               .catch(() => {})
@@ -773,6 +772,9 @@ export default function SipDialer() {
         }
       })
       console.log('[SIP] session.accept() resolved successfully - call should be establishing')
+      if (matchedConversationId) {
+        setSelectedId(matchedConversationId)
+      }
     } catch (e: any) {
       console.error('[SIP] Accept failed:', e?.message || e)
       console.error('[SIP] Accept error stack:', e?.stack)
