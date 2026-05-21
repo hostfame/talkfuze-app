@@ -64,15 +64,20 @@ export const setSelectedSound = (preset: SoundPreset): void => {
   localStorage.setItem('talkfuze_sound_preset', preset);
 };
 
+// Minimum volume floors - agents can't go below this
+export const MIN_SOUND_VOLUME = 0.30;
+export const MIN_RINGTONE_VOLUME = 0.40;
+
 export const getSoundVolume = (): number => {
   if (typeof window === 'undefined') return 0.9;
   const stored = localStorage.getItem('talkfuze_sound_volume');
-  return stored ? parseFloat(stored) : 0.9;
+  const val = stored ? parseFloat(stored) : 0.9;
+  return Math.max(MIN_SOUND_VOLUME, val);
 };
 
 export const setSoundVolume = (vol: number): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('talkfuze_sound_volume', String(Math.max(0, Math.min(1, vol))));
+  localStorage.setItem('talkfuze_sound_volume', String(Math.max(MIN_SOUND_VOLUME, Math.min(1, vol))));
 };
 
 // ─────────────────────────────────────────────
@@ -102,12 +107,13 @@ export const setSelectedRingtone = (preset: RingtonePreset): void => {
 export const getRingtoneVolume = (): number => {
   if (typeof window === 'undefined') return 1.0;
   const stored = localStorage.getItem('talkfuze_ringtone_volume');
-  return stored ? parseFloat(stored) : 1.0;
+  const val = stored ? parseFloat(stored) : 1.0;
+  return Math.max(MIN_RINGTONE_VOLUME, val);
 };
 
 export const setRingtoneVolume = (vol: number): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('talkfuze_ringtone_volume', String(Math.max(0, Math.min(1, vol))));
+  localStorage.setItem('talkfuze_ringtone_volume', String(Math.max(MIN_RINGTONE_VOLUME, Math.min(1, vol))));
 };
 
 // ─────────────────────────────────────────────
@@ -333,11 +339,14 @@ export const playUISound = (type: 'send' | 'receive') => {
   const preset = getSelectedSound();
   const volume = getSoundVolume();
 
-  // Send sound always uses the subtle swoosh (no customization needed)
+  // Send sound uses its own independent volume
   if (type === 'send') {
+    const sendVol = typeof window !== 'undefined'
+      ? Math.max(0.15, parseFloat(localStorage.getItem('talkfuze_send_volume') || '0.5'))
+      : 0.5;
     try {
       const audio = new Audio('/swoosh.mp3');
-      audio.volume = Math.min(0.35 * (volume / 0.7), 1.0);
+      audio.volume = Math.min(sendVol, 1.0);
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook, User } from "lucide-react"
+import { Paintbrush, Globe, Sparkles, Bot, FileText, Mail, LayoutTemplate, Tag, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Building2, Bell, Webhook, User, Volume2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
@@ -36,6 +36,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
         </div>
         <div className="px-2 pb-4 space-y-0.5 border-b border-slate-100 dark:border-slate-800">
           <NavLink href="/settings/profile" icon={<User size={18} />} label="My Profile" />
+          <NavLink href="/settings/sounds" icon={<Volume2 size={18} />} label="Sound & Notifications" />
         </div>
         
         {!isAgent && (
