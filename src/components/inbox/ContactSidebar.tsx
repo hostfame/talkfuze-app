@@ -27,6 +27,8 @@ interface WhmcsProduct {
   name: string;
   domain?: string;
   status: string;
+  username?: string;
+  password?: string;
 }
 
 interface WhmcsDomain {
