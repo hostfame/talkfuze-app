@@ -55,8 +55,8 @@ export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string
 ];
 
 export const getSelectedSound = (): SoundPreset => {
-  if (typeof window === 'undefined') return 'default';
-  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'default';
+  if (typeof window === 'undefined') return 'loud';
+  return (localStorage.getItem('talkfuze_sound_preset') as SoundPreset) || 'loud';
 };
 
 export const setSelectedSound = (preset: SoundPreset): void => {

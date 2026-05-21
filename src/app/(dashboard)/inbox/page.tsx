@@ -343,6 +343,55 @@ export default function InboxPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Repeat alerts for unread chats to prevent agents from missing messages
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const getRepeatSettings = () => {
+      const isRepeatEnabled = localStorage.getItem('talkfuze_repeat_alerts') !== 'false'; // defaults to true
+      const intervalSec = parseFloat(localStorage.getItem('talkfuze_repeat_interval') || '30');
+      return { isRepeatEnabled, intervalMs: intervalSec * 1000 };
+    };
+
+    const runAlertCheck = () => {
+      const { isRepeatEnabled } = getRepeatSettings();
+      if (!isRepeatEnabled) return;
+
+      // Check DND
+      const dndEnabled = localStorage.getItem('talkfuze_dnd') === 'true';
+      if (dndEnabled) {
+        const start = localStorage.getItem('talkfuze_dnd_start') || '22:00';
+        const end = localStorage.getItem('talkfuze_dnd_end') || '07:00';
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        const startMin = sh * 60 + sm;
+        const endMin = eh * 60 + em;
+        let isQuiet = false;
+        if (startMin <= endMin) {
+          isQuiet = nowMin >= startMin && nowMin < endMin;
+        } else {
+          isQuiet = nowMin >= startMin || nowMin < endMin;
+        }
+        if (isQuiet) return;
+      }
+
+      // Check if there are any unread conversations
+      const hasUnread = conversations.some(c => c.is_unread);
+      if (hasUnread) {
+        playUISound('receive');
+      }
+    };
+
+    const { intervalMs } = getRepeatSettings();
+    const intervalId = setInterval(runAlertCheck, intervalMs);
+
+    return () => clearInterval(intervalId);
+  }, [conversations]);
+
+
+
 
 
   const handleSelectConversation = (id: string) => {

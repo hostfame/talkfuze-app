@@ -195,7 +195,7 @@ export default function SoundsSettingsPage() {
   const [desktopNotifs, setDesktopNotifs] = useState(() => ls.getBool('talkfuze_desktop_notifs', true))
   const [notifPreview, setNotifPreview] = useState(() => ls.getBool('talkfuze_notif_preview', true))
   const [tabBadge, setTabBadge] = useState(() => ls.getBool('talkfuze_tab_badge', true))
-  const [repeatAlerts, setRepeatAlerts] = useState(() => ls.getBool('talkfuze_repeat_alerts', false))
+  const [repeatAlerts, setRepeatAlerts] = useState(() => ls.getBool('talkfuze_repeat_alerts', true))
   const [repeatInterval, setRepeatInterval] = useState(() => ls.getNum('talkfuze_repeat_interval', 30))
   const [dndEnabled, setDndEnabled] = useState(() => ls.getBool('talkfuze_dnd', false))
   const [dndStart, setDndStart] = useState(() => ls.get('talkfuze_dnd_start', '22:00'))
