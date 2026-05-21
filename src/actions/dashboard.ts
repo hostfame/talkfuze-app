@@ -716,3 +716,35 @@ export async function uploadAgentMedia(formData: FormData) {
     return { success: false, error: err.message || "Failed to upload to R2" };
   }
 }
+
+export async function editMessage(messageId: string, newContent: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabaseAdmin
+    .from('messages')
+    .update({ content: newContent })
+    .eq('id', messageId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function recallMessage(messageId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabaseAdmin
+    .from('messages')
+    .update({ status: 'recalled' })
+    .eq('id', messageId)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}

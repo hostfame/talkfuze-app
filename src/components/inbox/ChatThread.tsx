@@ -2057,13 +2057,6 @@ export default function ChatThread({
               return (
                 <div key={msg.id || idx} className="flex justify-center my-5">
                   <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5 rounded-full shadow-sm">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-800 shrink-0 overflow-hidden flex items-center justify-center">
-                      {agent?.avatar_url ? (
-                        <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-300">T</span>
-                      )}
-                    </div>
                     <span className="text-[12px] text-blue-700 dark:text-blue-300 font-semibold">
                       Your ticket is created
                     </span>
