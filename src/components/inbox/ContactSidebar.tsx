@@ -60,6 +60,13 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: number }) {
   const [expanded, setExpanded] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
+  const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
+
+  const handleCopy = (text: string, field: 'username' | 'password') => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const handleCpanelLogin = async () => {
     if (loggingIn) return;
@@ -93,10 +100,14 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
              <button 
                 onClick={(e) => { e.stopPropagation(); handleCpanelLogin(); }}
                 disabled={loggingIn}
-                className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1.5 rounded transition-colors flex items-center justify-center border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+                className="text-[#ff6c2c] hover:text-[#e56027] dark:text-[#ff7b42] bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 p-1.5 rounded transition-colors flex items-center justify-center border border-transparent hover:border-orange-200 dark:hover:border-orange-500/30"
                 title="Login to cPanel"
              >
-                {loggingIn ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+                {loggingIn ? <Loader2 size={13} className="animate-spin text-slate-400" /> : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={13} height={13} fill="currentColor">
+                    <path d="M12 0a12 12 0 1 0 12 12A12.013 12.013 0 0 0 12 0zm5.664 16.516a5.53 5.53 0 0 1-8.528-1.575 6.07 6.07 0 0 1-.72-3.414 6.275 6.275 0 0 1 1.748-4.475 5.53 5.53 0 0 1 8.016.31 1.157 1.157 0 0 1-.225 1.62l-1.395 1.05a1.14 1.14 0 0 1-1.425-.135 2.655 2.655 0 0 0-3.795-.12 3.12 3.12 0 0 0-1.02 2.37 3 3 0 0 0 .54 1.755 2.73 2.73 0 0 0 2.25.96 2.625 2.625 0 0 0 1.965-.96 1.14 1.14 0 0 1 1.575-.15l1.455 1.02a1.14 1.14 0 0 1 .555 1.744zM16.14 8.52h1.65v5.37h-1.65zM17.13 6.36a1.05 1.05 0 1 1 1.05 1.05 1.05 1.05 0 0 1-1.05-1.05z"/>
+                  </svg>
+                )}
              </button>
           )}
           <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${clientId}&id=${product.id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-slate-400 hover:text-blue-500 transition-colors p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800" title="View Service">
@@ -115,8 +126,8 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
              <div className="flex items-center gap-2">
                <span className="text-[11.5px] font-mono text-slate-800 dark:text-slate-200">{product.username || 'Not set'}</span>
                {product.username && (
-                 <button onClick={() => { navigator.clipboard.writeText(product.username || ''); alert('Username copied!'); }} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Username">
-                   <Copy size={11} />
+                 <button onClick={() => handleCopy(product.username || '', 'username')} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Username">
+                   {copiedField === 'username' ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
                  </button>
                )}
              </div>
@@ -126,8 +137,8 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
              <div className="flex items-center gap-2">
                <span className="text-[11.5px] font-mono text-slate-800 dark:text-slate-200">{product.password ? '••••••••' : 'Not set'}</span>
                {product.password && (
-                 <button onClick={() => { navigator.clipboard.writeText(product.password || ''); alert('Password copied!'); }} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Password">
-                   <Copy size={11} />
+                 <button onClick={() => handleCopy(product.password || '', 'password')} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Password">
+                   {copiedField === 'password' ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
                  </button>
                )}
              </div>
