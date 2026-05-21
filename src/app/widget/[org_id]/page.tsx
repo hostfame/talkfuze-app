@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -3680,7 +3680,14 @@ export default function WidgetPage() {
                 <span className="w-5 h-5 rounded-full bg-[#0070f3] text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
                 <div className="flex-1">
                   <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 leading-snug">Click lock icon</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-normal">Look at the browser address bar above and click the <b>🔒 (Lock)</b> icon next to the URL.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal font-normal">
+                    Look at the browser address bar above and click the 
+                    <span className="inline-flex items-center gap-1 bg-slate-150 dark:bg-slate-800 text-slate-650 dark:text-slate-350 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700/80 mx-1 font-bold text-[10.5px]">
+                      <Lock size={10.5} className="text-slate-500 dark:text-slate-400 shrink-0" />
+                      Lock
+                    </span> 
+                    icon next to the URL.
+                  </p>
                 </div>
               </div>
 
