@@ -387,6 +387,7 @@ export async function getWidgetConversations(orgId: string, deviceId: string, _c
       .from("messages")
       .select("conversation_id, content, sender_type, sender_id, created_at")
       .in("conversation_id", convIds)
+      .eq("is_internal", false)
       .order("created_at", { ascending: false });
       
     if (msgErr) console.error("getWidgetConversations msg err:", msgErr);

@@ -1239,7 +1239,7 @@ export default function WidgetPage() {
         fetchConversations()
         
         const newMsg = payload.new as any;
-        if (newMsg && newMsg.conversation_id === activeConversationId) {
+        if (newMsg && newMsg.conversation_id === activeConversationId && !newMsg.is_internal) {
           
           // Fetch agent details for realtime incoming agent/system messages
           if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
