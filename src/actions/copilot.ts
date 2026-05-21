@@ -65,7 +65,7 @@ export async function draftReply(conversationId: string, customPrompt?: string) 
       `${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`
     ).join("\n")
 
-    let systemPrompt = "You are an expert support agent for Hostnin. Draft a professional, empathetic, and highly concise reply to the customer's last message. Use Bengali if the customer is speaking Bengali, otherwise use English. Do not include placeholders like [Your Name]. Just write the message itself."
+    let systemPrompt = "You are an expert support agent for Hostnin. Draft a professional, empathetic, and highly concise reply to the customer's last message. Use Bengali if the customer is speaking Bengali, otherwise use English. Do not include placeholders like [Your Name]. Just write the message itself. IMPORTANT: DO NOT use markdown formatting like **bold** or *italics*. Do not use any asterisks. Use plain text only."
     
     if (customPrompt) {
       systemPrompt += `\n\nAdditional instructions from the agent: ${customPrompt}`
@@ -87,7 +87,12 @@ export async function draftReply(conversationId: string, customPrompt?: string) 
       max_tokens: 300
     })
 
-    return response.choices[0].message.content || "Could not generate draft."
+    let draft = response.choices[0].message.content || "Could not generate draft."
+    
+    // Strip any markdown asterisks just in case the AI ignores instructions
+    draft = draft.replace(/\*\*/g, '').replace(/\*/g, '')
+    
+    return draft
 
   } catch (error) {
     console.error("Draft Reply Error:", error)
