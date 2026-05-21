@@ -169,17 +169,70 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
     const t = ctx.currentTime;
     const vol = volumeMultiplier;
 
-    // Master limiter - high threshold so sounds stay loud and punchy
+    // For loud/alert: bypass compressor, go straight to destination with a waveshaper for max volume
+    // For others: use a light limiter
+    if (preset === 'loud') {
+      // ── MAXIMUM LOUDNESS PATH ──
+      // Waveshaper for soft-clipping saturation (pushes perceived loudness beyond digital ceiling)
+      const waveshaper = ctx.createWaveShaper();
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) {
+        const x = (i * 2) / 256 - 1;
+        curve[i] = (Math.PI + 3.5) * x / (Math.PI + 3.5 * Math.abs(x)); // tanh-like soft clip
+      }
+      waveshaper.curve = curve;
+      waveshaper.oversample = '2x';
+
+      // Master gain (no compressor - raw output)
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(1.0, t);
+      masterGain.connect(waveshaper);
+      waveshaper.connect(ctx.destination);
+
+      // Fat tone: stacks 2 slightly detuned oscillators for each note
+      const fatTone = (freq: number, start: number, dur: number, gain: number) => {
+        for (const detune of [-4, 4]) {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, t + start);
+          osc.detune.setValueAtTime(detune, t + start);
+          g.gain.setValueAtTime(0, t + start);
+          g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.005);
+          g.gain.setValueAtTime(gain * vol, t + start + dur * 0.7);
+          g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+          osc.start(t + start);
+          osc.stop(t + start + dur + 0.05);
+        }
+      };
+
+      // Hit 1: aggressive ascending triple
+      fatTone(1318, 0, 0.22, 1.0);       // E6
+      fatTone(1568, 0.14, 0.22, 0.95);   // G6
+      fatTone(1976, 0.28, 0.28, 1.0);    // B6
+      // Hit 2: repeat
+      fatTone(1318, 0.62, 0.22, 1.0);
+      fatTone(1568, 0.76, 0.22, 0.95);
+      fatTone(1976, 0.90, 0.28, 1.0);
+      // Sub-bass punch on both hits
+      fatTone(110, 0, 0.25, 0.60);
+      fatTone(110, 0.62, 0.25, 0.60);
+      return;
+    }
+
+    // ── STANDARD PATH (with limiter) ──
     const comp = ctx.createDynamicsCompressor();
-    comp.threshold.setValueAtTime(-6, t);
-    comp.knee.setValueAtTime(10, t);
-    comp.ratio.setValueAtTime(4, t);
+    comp.threshold.setValueAtTime(-3, t);
+    comp.knee.setValueAtTime(6, t);
+    comp.ratio.setValueAtTime(3, t);
     comp.attack.setValueAtTime(0.003, t);
-    comp.release.setValueAtTime(0.1, t);
+    comp.release.setValueAtTime(0.08, t);
     comp.connect(ctx.destination);
 
     // Helper to make a tone
-    const tone = (freq: number, start: number, dur: number, gain: number, waveType: OscillatorType = 'sine', filterFreq: number = 3000) => {
+    const tone = (freq: number, start: number, dur: number, gain: number, waveType: OscillatorType = 'sine', filterFreq: number = 3500) => {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       const filt = ctx.createBiquadFilter();
@@ -191,8 +244,8 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
       osc.type = waveType;
       osc.frequency.setValueAtTime(freq, t + start);
       g.gain.setValueAtTime(0, t + start);
-      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.008);
-      g.gain.setValueAtTime(gain * vol, t + start + dur * 0.6);
+      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.005);
+      g.gain.setValueAtTime(gain * vol, t + start + dur * 0.65);
       g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
       osc.start(t + start);
       osc.stop(t + start + dur + 0.05);
@@ -201,42 +254,27 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
     switch (preset) {
       case 'chime':
         // Two-tone rising chime - bright and clear
-        tone(880, 0, 0.3, 0.60);       // A5
-        tone(1175, 0.15, 0.35, 0.55);  // D6
+        tone(880, 0, 0.3, 0.70);       // A5
+        tone(1175, 0.15, 0.35, 0.65);  // D6
         break;
 
       case 'bell':
         // Clear bell ring - bright hit with harmonics
-        tone(1047, 0, 0.45, 0.65, 'sine', 4000);  // C6
-        tone(2093, 0, 0.3, 0.30, 'sine', 5000);   // C7 harmonic
-        tone(1568, 0.05, 0.25, 0.20, 'sine', 4000); // G6 shimmer
+        tone(1047, 0, 0.45, 0.75, 'sine', 5000);  // C6
+        tone(2093, 0, 0.3, 0.40, 'sine', 6000);   // C7 harmonic
+        tone(1568, 0.05, 0.25, 0.30, 'sine', 5000); // G6 shimmer
         break;
 
       case 'alert':
         // Urgent double-beep - hard square wave hits
-        tone(1200, 0, 0.15, 0.75, 'square', 2500);
-        tone(1200, 0.22, 0.15, 0.75, 'square', 2500);
-        break;
-
-      case 'loud':
-        // LOUD double-hit siren pattern - impossible to miss
-        // Hit 1: aggressive ascending triple
-        tone(1318, 0, 0.2, 0.85, 'square', 3500);     // E6 square
-        tone(1568, 0.12, 0.2, 0.80, 'square', 3500);   // G6
-        tone(1976, 0.24, 0.25, 0.90, 'square', 4000);   // B6
-        // Hit 2: repeat after short pause for urgency
-        tone(1318, 0.55, 0.2, 0.85, 'square', 3500);
-        tone(1568, 0.67, 0.2, 0.80, 'square', 3500);
-        tone(1976, 0.79, 0.25, 0.90, 'square', 4000);
-        // Sub-bass punch on both hits for physical feel
-        tone(110, 0, 0.2, 0.40, 'sine', 300);
-        tone(110, 0.55, 0.2, 0.40, 'sine', 300);
+        tone(1200, 0, 0.18, 0.90, 'square', 3000);
+        tone(1200, 0.25, 0.18, 0.90, 'square', 3000);
         break;
 
       default:
         // 'default' - balanced pop
-        tone(880, 0, 0.22, 0.45);
-        tone(1100, 0.1, 0.18, 0.35);
+        tone(880, 0, 0.22, 0.55);
+        tone(1100, 0.1, 0.18, 0.45);
         break;
     }
   } catch (err) {
