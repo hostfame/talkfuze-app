@@ -83,7 +83,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     : (displayPlatformId.startsWith('+') ? displayPlatformId : `+${displayPlatformId}`)
 
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
-  const contactEmail = contact?.email
+  const [contactEmailOverrides, setContactEmailOverrides] = useState<Record<string, string>>({})
+  const contactEmail = contact?.id ? contactEmailOverrides[contact.id] || contact?.email : contact?.email
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
   const effectivePhoneId = contactPhone || displayPlatformId
   const effectiveSearchQuery = contactEmail || contactPhone || displayPlatformId

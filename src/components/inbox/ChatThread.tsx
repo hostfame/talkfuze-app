@@ -2260,7 +2260,7 @@ export default function ChatThread({
                 <div key={msg.id || idx} className="flex justify-center my-5">
                   <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5 rounded-full shadow-sm">
                     <span className="text-[12px] text-blue-700 dark:text-blue-300 font-semibold">
-                      Your ticket is created
+                      {msg.content}
                     </span>
                     <span className="text-[10.5px] text-blue-400 dark:text-blue-500/70 ml-1">{msgTime}</span>
                   </div>

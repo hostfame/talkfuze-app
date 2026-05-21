@@ -74,7 +74,7 @@ export async function fetchWhmcsTickets(clientId: number) {
   }
 }
 
-import { openTicket } from "@/lib/whmcs"
+import { openTicket, addTicketReply } from "@/lib/whmcs"
 
 export async function createWhmcsTicket(clientId: number, deptId: number, subject: string, message: string) {
   try {
@@ -98,13 +98,13 @@ export async function fetchWhmcsUnpaidInvoices(clientId: number) {
 
 export async function convertChatToTicket(conversationId: string, clientId: number, deptId: number = 1, agentId?: string) {
   try {
-    // Fetch last 15 messages
+    // 1. Fetch last 20 messages to cover the full context of the active chat session
     const { data: messages, error } = await supabaseAdmin
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
-      .limit(15)
+      .limit(20)
 
     if (error || !messages || messages.length === 0) {
       return { success: false, error: "No messages found to convert." }
@@ -113,24 +113,175 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
     // Sort back to chronological order
     messages.reverse()
 
-    const subjectMsg = messages.find(m => m.sender_type !== 'agent' && m.content)
-    const subject = subjectMsg ? subjectMsg.content.substring(0, 50) + "..." : "WhatsApp Chat Escalation"
+    // 2. Fetch conversation with contact details to get the customer's name
+    const { data: conversation, error: convErr } = await supabaseAdmin
+      .from("conversations")
+      .select("*, contact:contacts(*)")
+      .eq("id", conversationId)
+      .single()
 
-    const transcript = messages.map(m => 
-      `[${new Date(m.created_at).toLocaleString()}] ${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`
-    ).join("\n\n")
+    if (convErr) {
+      console.error("Failed to fetch conversation details:", convErr)
+    }
 
-    const finalMessage = `This ticket was automatically generated from a TalkFuze chat escalation.\n\n=== CHAT TRANSCRIPT ===\n\n${transcript}`
+    const contactName = conversation?.contact?.name || "Customer"
 
-    const result = await openTicket(clientId, deptId, subject, finalMessage)
+    // 3. Filter out system messages and internal notes
+    const publicMessages = messages.filter(m => !m.is_internal && m.sender_type !== 'system')
+    if (publicMessages.length === 0) {
+      return { success: false, error: "No public messages found to convert." }
+    }
 
-    // Auto-insert system message into the conversation
+    // 4. Resolve agent names from the users table for agent messages
+    const agentIds = Array.from(new Set(
+      publicMessages
+        .filter(m => m.sender_type === 'agent' && m.sender_id)
+        .map(m => m.sender_id)
+    ))
+
+    const agentNames: Record<string, string> = {}
+    if (agentIds.length > 0) {
+      const { data: users } = await supabaseAdmin
+        .from('users')
+        .select('id, name')
+        .in('id', agentIds)
+      if (users) {
+        users.forEach(u => {
+          agentNames[u.id] = u.name
+        })
+      }
+    }
+
+    // Helper function to download and convert image URLs to base64 for WHMCS attachments
+    async function fetchImageAsBase64(url: string): Promise<{ name: string; data: string } | null> {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+        
+        const res = await fetch(url, { signal: controller.signal })
+        clearTimeout(timeoutId)
+        
+        if (!res.ok) return null
+        const arrayBuffer = await res.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const base64Data = buffer.toString('base64')
+        
+        const urlParts = url.split('/')
+        let filename = urlParts[urlParts.length - 1] || 'attachment.jpg'
+        // Clean query parameters from filename if any
+        if (filename.includes('?')) {
+          filename = filename.split('?')[0]
+        }
+        
+        return {
+          name: filename,
+          data: base64Data
+        }
+      } catch (err) {
+        console.error("Failed to fetch image for ticket attachment:", err)
+        return null
+      }
+    }
+
+    // Helper function to fetch multiple attachments
+    async function fetchAttachments(imageUrls: string[]): Promise<Array<{ name: string; data: string }>> {
+      const attachments: Array<{ name: string; data: string }> = []
+      for (const url of imageUrls) {
+        const attachment = await fetchImageAsBase64(url)
+        if (attachment) {
+          attachments.push(attachment)
+        }
+      }
+      return attachments
+    }
+
+    // 5. Group consecutive public messages from the same sender
+    interface GroupedMessage {
+      sender_type: 'contact' | 'agent';
+      sender_name: string;
+      texts: string[];
+      imageUrls: string[];
+      created_at: string;
+    }
+
+    const groups: GroupedMessage[] = []
+    let currentGroup: GroupedMessage | null = null
+
+    for (const msg of publicMessages) {
+      const isAgent = msg.sender_type === 'agent'
+      const senderType = isAgent ? 'agent' : 'contact'
+      const senderName = isAgent ? (agentNames[msg.sender_id] || 'Agent') : contactName
+
+      if (currentGroup && currentGroup.sender_type === senderType) {
+        if (msg.content_type === 'image' && msg.content) {
+          currentGroup.imageUrls.push(msg.content)
+          currentGroup.texts.push(`[Image Attachment]`)
+        } else if (msg.content) {
+          currentGroup.texts.push(msg.content)
+        }
+      } else {
+        currentGroup = {
+          sender_type: senderType,
+          sender_name: senderName,
+          texts: [],
+          imageUrls: [],
+          created_at: msg.created_at
+        }
+        if (msg.content_type === 'image' && msg.content) {
+          currentGroup.imageUrls.push(msg.content)
+          currentGroup.texts.push(`[Image Attachment]`)
+        } else if (msg.content) {
+          currentGroup.texts.push(msg.content)
+        }
+        groups.push(currentGroup)
+      }
+    }
+
+    if (groups.length === 0) {
+      return { success: false, error: "No grouped messages generated." }
+    }
+
+    // 6. Generate the ticket subject from the oldest customer text message
+    const firstCustomerMsg = publicMessages.find(m => m.sender_type !== 'agent' && m.content && m.content_type === 'text')
+    const subjectText = firstCustomerMsg ? firstCustomerMsg.content : "WhatsApp Chat Escalation"
+    const subject = subjectText.substring(0, 50) + (subjectText.length > 50 ? "..." : "")
+
+    // 7. Open the ticket using the first grouped message
+    const firstGroup = groups[0]
+    const firstGroupText = firstGroup.texts.join("\n")
+    const firstGroupMessage = firstGroup.sender_type === 'agent'
+      ? `👨‍💼 [Agent - ${firstGroup.sender_name}]:\n\n${firstGroupText}`
+      : firstGroupText
+
+    const firstGroupAttachments = await fetchAttachments(firstGroup.imageUrls)
+
+    const result = await openTicket(clientId, deptId, subject, firstGroupMessage, undefined, firstGroupAttachments)
+    if (!result || !result.id) {
+      return { success: false, error: "Failed to open WHMCS ticket." }
+    }
+
+    const ticketId = result.id
+
+    // 8. Add subsequent grouped messages as ticket replies in order
+    for (const group of groups.slice(1)) {
+      const groupText = group.texts.join("\n")
+      const groupMessage = group.sender_type === 'agent'
+        ? `👨‍💼 [Agent - ${group.sender_name}]:\n\n${groupText}`
+        : groupText
+
+      const groupAttachments = await fetchAttachments(group.imageUrls)
+      
+      // Post each reply sequentially to preserve order
+      await addTicketReply(ticketId, groupMessage, clientId, groupAttachments)
+    }
+
+    // 9. Auto-insert system message into the conversation
     await supabaseAdmin.from('messages').insert({
       conversation_id: conversationId,
       org_id: messages[0].org_id,
       sender_type: 'system',
       sender_id: agentId || null,
-      content: 'Your ticket is created',
+      content: `Your ticket is created: #${result.tid || ''}`,
       content_type: 'system',
       is_internal: false,
       status: 'delivered',
