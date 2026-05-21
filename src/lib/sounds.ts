@@ -330,11 +330,65 @@ export const previewSound = (preset: SoundPreset): void => {
 };
 
 // ─────────────────────────────────────────────
+// DND (Do Not Disturb) Check
+// ─────────────────────────────────────────────
+
+export const isDndActive = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const enabled = localStorage.getItem('talkfuze_dnd') === 'true';
+  if (!enabled) return false;
+
+  const start = localStorage.getItem('talkfuze_dnd_start') || '22:00';
+  const end = localStorage.getItem('talkfuze_dnd_end') || '07:00';
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+
+  // Handle overnight ranges (e.g. 22:00 - 07:00)
+  if (startMin <= endMin) {
+    return nowMin >= startMin && nowMin < endMin;
+  } else {
+    return nowMin >= startMin || nowMin < endMin;
+  }
+};
+
+// ─────────────────────────────────────────────
+// Desktop Notification + Tab Badge Utilities
+// ─────────────────────────────────────────────
+
+export const sendDesktopNotification = (title: string, body: string): void => {
+  if (typeof window === 'undefined') return;
+  if (isDndActive()) return;
+  if (localStorage.getItem('talkfuze_desktop_notifs') === 'false') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const showPreview = localStorage.getItem('talkfuze_notif_preview') !== 'false';
+  new Notification(title, {
+    body: showPreview ? body : 'New message received',
+    icon: '/talkfuze-logo.png',
+    tag: 'talkfuze-msg',
+  });
+};
+
+let _originalTitle: string | null = null;
+export const updateTabBadge = (count: number): void => {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem('talkfuze_tab_badge') === 'false') return;
+  if (_originalTitle === null) _originalTitle = document.title.replace(/^\(\d+\)\s*/, '');
+  document.title = count > 0 ? `(${count}) ${_originalTitle}` : (_originalTitle || 'TalkFuze');
+};
+
+// ─────────────────────────────────────────────
 // Main Public API
 // ─────────────────────────────────────────────
 
 export const playUISound = (type: 'send' | 'receive') => {
   if (typeof window === 'undefined') return;
+  // Respect DND for receive sounds
+  if (type === 'receive' && isDndActive()) return;
   
   const preset = getSelectedSound();
   const volume = getSoundVolume();
