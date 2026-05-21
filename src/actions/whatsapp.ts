@@ -7,11 +7,13 @@ const EVOLUTION_API_KEY = 'talkfuze_evolution_key_2026'
 const EVOLUTION_INSTANCE = 'talkfuze'
 
 /**
- * Fully disconnects WhatsApp:
+ * Soft-disconnects WhatsApp:
  * 1. Logs out + deletes the Evolution instance (server-side, bypasses firewall)
- * 2. Deletes the Supabase channel row using service role (bypasses RLS)
+ * 2. Updates the Supabase channel row to 'disconnected' status (preserves chat history)
  *
- * Must run as server action - browser anon client cannot delete channels (RLS blocked).
+ * IMPORTANT: We do NOT delete the channel row because conversations and messages
+ * reference it via channel_id with ON DELETE CASCADE. Deleting the channel would
+ * wipe ALL chat history. Instead we soft-disconnect by updating the status.
  */
 export async function disconnectWhatsAppFull(channelId: string) {
   // Step 1: Logout from Evolution API
@@ -36,13 +38,16 @@ export async function disconnectWhatsAppFull(channelId: string) {
     // Ignore
   }
 
-  // Step 3: Delete the channel row using service role (bypasses RLS)
+  // Step 3: Soft-disconnect - update status, clear connection config, keep the row
   const { error } = await supabaseAdmin
     .from('channels')
-    .delete()
+    .update({
+      config: { status: 'disconnected', qr_code: null, pairing_code: null },
+      is_active: false
+    })
     .eq('id', channelId)
 
-  if (error) throw new Error(`Failed to delete channel: ${error.message}`)
+  if (error) throw new Error(`Failed to disconnect channel: ${error.message}`)
 }
 
 export async function getOrCreateWhatsAppInstance(orgId: string) {
@@ -111,9 +116,9 @@ export async function getOrCreateWhatsAppInstance(orgId: string) {
       is_active: true
     })
   } else {
-    // If it already exists, reset its config status to pending to reset the loading state
+    // If it already exists (e.g. after a soft-disconnect), reactivate and reset status
     await supabaseAdmin.from('channels')
-      .update({ config: { status: 'pending' } })
+      .update({ config: { status: 'pending' }, is_active: true })
       .eq('id', existing.id)
   }
 }
