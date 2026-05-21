@@ -1412,16 +1412,24 @@ export default function ChatThread({
   const prevMsgLength = useRef(messages.length)
 
   useEffect(() => {
-    // Use instant scroll for bulk loads (e.g. initial chat load) and smooth scroll for single new messages
+    // Skip scroll when there are no messages (loading state)
+    if (messages.length === 0) {
+      prevMsgLength.current = 0
+      return
+    }
+
+    // Use instant scroll for bulk loads, smooth for single new messages
     const isBulkLoad = Math.abs(messages.length - prevMsgLength.current) > 1
-    const isConversationSwitch = prevMsgLength.current > 0 && messages.length === 0
     
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: (isBulkLoad || isConversationSwitch) ? 'auto' : 'smooth' 
+    // Use rAF to batch with paint and avoid layout thrashing
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: isBulkLoad ? 'auto' : 'smooth' 
+      })
     })
     
     prevMsgLength.current = messages.length
-  }, [messages.length, optimisticMessages.length, conversationId])
+  }, [messages.length, optimisticMessages.length])
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 

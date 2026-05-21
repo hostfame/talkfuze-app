@@ -62,7 +62,7 @@ export default function InboxPage() {
   }, [currentUser, setCurrentUser])
 
   const activeConversation = conversations.find(c => c.id === selectedId)
-  const messages = selectedId ? (messagesMap[selectedId] || (activeConversation?.messages?.length ? activeConversation.messages : [])) : []
+  const messages = selectedId ? (messagesMap[selectedId] || []) : []
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
