@@ -84,7 +84,7 @@ const SafeImage = ({
   };
 
   return (
-    <div className="relative w-full overflow-hidden bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center min-h-[140px] max-h-[320px] rounded-xl border border-slate-100 dark:border-slate-800/50">
+    <div className="relative w-[240px] max-w-full overflow-hidden bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center min-h-[140px] max-h-[320px] rounded-xl border border-slate-100 dark:border-slate-800/50">
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-50/80 dark:bg-slate-850/60 animate-pulse z-10">
           <div className="flex flex-col items-center gap-1.5">
@@ -2429,7 +2429,7 @@ export default function ChatThread({
                           })()}
                           {msg.content_type === 'image' && (mediaUrl) ? (
                             <div className="mb-2">
-                              <div className="max-w-[240px]">
+                              <div className="w-[240px] max-w-full">
                                 <SafeImage 
                                   src={(mediaUrl) as string} 
                                   alt="Attachment" 
@@ -2579,7 +2579,7 @@ export default function ChatThread({
                           })()}
                           {msg.content_type === 'image' && (mediaUrl) ? (
                             <div className="mb-2">
-                              <div className="max-w-[240px]">
+                              <div className="w-[240px] max-w-full">
                                 <SafeImage 
                                   src={(mediaUrl) as string} 
                                   alt="Attachment" 
