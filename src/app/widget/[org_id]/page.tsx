@@ -3450,16 +3450,24 @@ export default function WidgetPage() {
                              required={ticketLoginMethod === 'otp' && ticketOtpSent}
                            />
                          </div>
-                         <div className="flex justify-center mt-2">
-                           <button 
-                             type="button" 
-                             disabled={ticketOtpTimer > 0 || ticketLoading}
-                             onClick={handleResendOTP}
-                             className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 disabled:opacity-60 transition-colors"
-                           >
-                             {ticketOtpTimer > 0 ? `Resend Code in ${ticketOtpTimer}s` : 'Resend Code'}
-                           </button>
-                         </div>
+                          <div className="flex items-center justify-center gap-3 mt-2">
+                            <button 
+                              type="button" 
+                              disabled={ticketOtpTimer > 0 || ticketLoading}
+                              onClick={handleResendOTP}
+                              className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 disabled:opacity-60 transition-colors"
+                            >
+                              {ticketOtpTimer > 0 ? `Resend in ${ticketOtpTimer}s` : 'Resend Code'}
+                            </button>
+                            <span className="text-slate-300 text-[10px]">|</span>
+                            <button 
+                              type="button" 
+                              onClick={() => { setTicketOtpSent(false); setTicketOtp(''); setTicketError(''); setTicketOtpTimer(0); }}
+                              className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                              Change Email
+                            </button>
+                          </div>
                        </div>
                       )}
                       {!ticketOtpSent && (
