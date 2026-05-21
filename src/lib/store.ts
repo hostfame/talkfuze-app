@@ -115,6 +115,7 @@ interface InboxState {
   pendingIncomingCall: { conversationId: string; offer: any; callerName?: string } | null
   mobileView: 'list' | 'chat'
   convertingTickets: Record<string, boolean>
+  isFetchingMessages: Record<string, boolean>
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
@@ -129,6 +130,7 @@ interface InboxState {
   setPendingIncomingCall: (call: { conversationId: string; offer: any; callerName?: string } | null) => void
   setMobileView: (view: 'list' | 'chat') => void
   setConvertingTicket: (id: string, converting: boolean) => void
+  setIsFetchingMessages: (id: string, isFetching: boolean) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -143,6 +145,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   pendingIncomingCall: null,
   mobileView: 'list',
   convertingTickets: {},
+  isFetchingMessages: {},
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -173,6 +176,9 @@ export const useInboxStore = create<InboxState>((set) => ({
   setMobileView: (mobileView) => set({ mobileView }),
   setConvertingTicket: (id, converting) => set((state) => ({
     convertingTickets: { ...state.convertingTickets, [id]: converting }
+  })),
+  setIsFetchingMessages: (id, isFetching) => set((state) => ({
+    isFetchingMessages: { ...state.isFetchingMessages, [id]: isFetching }
   }))
 }))
 

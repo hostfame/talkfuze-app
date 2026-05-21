@@ -100,7 +100,11 @@
   var agentImages = [
     baseUrl + '/team/1.avif',
     baseUrl + '/team/2.avif',
-    baseUrl + '/team/3.avif'
+    baseUrl + '/team/3.avif',
+    baseUrl + '/team/4.avif',
+    baseUrl + '/team/5.avif',
+    baseUrl + '/team/6.avif',
+    baseUrl + '/team/7.avif'
   ];
   var currentImageIndex = 0;
 
@@ -118,7 +122,7 @@
 
   button.innerHTML = renderAvatar();
 
-  // Rotate images every 4 seconds
+  // Rotate images every 8 seconds
   setInterval(function() {
     if (isOpen) return;
     currentImageIndex = (currentImageIndex + 1) % agentImages.length;
@@ -130,7 +134,7 @@
         imgEl.style.opacity = '1';
       }, 300);
     }
-  }, 4000);
+  }, 8000);
 
   // Toggle Logic
   var isOpen = false;

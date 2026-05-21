@@ -40,137 +40,149 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   return (
     <>
-      {/* Secondary Sidebar (Folders / Filters) - hidden on mobile */}
-      <aside className="hidden md:flex w-[190px] flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto">
-        <div className="p-5 pb-2 flex justify-between items-center">
-          <h2 className="font-medium text-[15px] text-slate-900 dark:text-white">Inbox</h2>
-          <div className="flex gap-1">
-            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors"><Search size={15} strokeWidth={2}/></button>
-            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors"><Plus size={15} strokeWidth={2}/></button>
+      {/* Secondary Sidebar (Folders / Filters) - hidden on mobile, compact on tablet/small desktop */}
+      <aside className="hidden md:flex w-[68px] xl:w-[190px] flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto transition-all duration-300">
+        <div className="p-3 xl:p-5 pb-2 flex flex-col xl:flex-row justify-center xl:justify-between items-center gap-3 xl:gap-0">
+          <h2 className="hidden xl:block font-medium text-[15px] text-slate-900 dark:text-white">Inbox</h2>
+          <div className="flex flex-col xl:flex-row gap-3 xl:gap-1">
+            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors" title="Search"><Search className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2}/></button>
+            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors" title="New"><Plus className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2}/></button>
           </div>
         </div>
 
-        <div className="px-3 space-y-0.5 mt-2">
+        <div className="px-2 xl:px-3 space-y-1 xl:space-y-0.5 mt-2">
           <div 
             onClick={() => handleFilterClick('all')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="All"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'all' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> All</div>
-            <span className="text-[12px] font-medium">{allChats}</span>
+            <div className="flex items-center gap-2"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">All</span></div>
+            <span className="hidden xl:block text-[12px] font-medium">{allChats}</span>
           </div>
           
           <div 
             onClick={() => handleFilterClick('pinned')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="Pinned"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'pinned' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Pin size={15} strokeWidth={2} /> Pinned</div>
-            <span className="text-[12px] font-medium">{pinnedChats}</span>
+            <div className="flex items-center gap-2"><Pin className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Pinned</span></div>
+            <span className="hidden xl:block text-[12px] font-medium">{pinnedChats}</span>
           </div>
 
           <div 
             onClick={() => handleFilterClick('mentions')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="Mentions"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'mentions' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><span className="font-medium text-lg leading-none mt-[-2px]">@</span> Mentions</div>
-            <span className="text-[12px] font-medium opacity-50">0</span>
+            <div className="flex items-center gap-2"><span className="font-medium text-lg xl:text-lg leading-none mt-[-2px]">@</span><span className="hidden xl:block">Mentions</span></div>
+            <span className="hidden xl:block text-[12px] font-medium opacity-50">0</span>
           </div>
 
           <div 
             onClick={() => handleFilterClick('calls')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="Calls"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'calls' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
+            <div className="flex items-center gap-2"><Phone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Calls</span></div>
           </div>
 
           <div 
             onClick={() => handleFilterClick('alerts')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="Outbound"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'alerts' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Send size={14} className="-rotate-45 transform" strokeWidth={2.5} /> Outbound</div>
-            <span className="text-[12px] font-medium">{alertChats}</span>
+            <div className="flex items-center gap-2"><Send className="w-[18px] h-[18px] xl:w-[14px] xl:h-[14px] -rotate-45 transform" strokeWidth={2.5} /><span className="hidden xl:block">Outbound</span></div>
+            <span className="hidden xl:block text-[12px] font-medium">{alertChats}</span>
           </div>
 
           <div 
             onClick={() => handleFilterClick('archived')}
-            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+            title="Archived"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
               activeFilter === 'archived' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Archived</div>
+            <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span className="hidden xl:block">Archived</span></div>
           </div>
         </div>
 
         <div 
-          className="mt-6 px-6 mb-2 flex justify-between items-center cursor-pointer group"
+          className="mt-6 px-0 xl:px-6 mb-2 flex justify-center xl:justify-between items-center cursor-pointer group"
           onClick={() => setIsConnectionsExpanded(!isConnectionsExpanded)}
+          title="Connections"
         >
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide group-hover:text-slate-600 transition-colors">Connections</span>
-          {isConnectionsExpanded ? <ChevronDown size={12} className="text-slate-400" /> : <ChevronRight size={12} className="text-slate-400" />}
+          <span className="hidden xl:block text-[11px] font-medium text-slate-400 uppercase tracking-wide group-hover:text-slate-600 transition-colors">Connections</span>
+          {isConnectionsExpanded ? <ChevronDown className="w-[14px] h-[14px] xl:w-[12px] xl:h-[12px] text-slate-400" /> : <ChevronRight className="w-[14px] h-[14px] xl:w-[12px] xl:h-[12px] text-slate-400" />}
         </div>
         
         {isConnectionsExpanded && (
-          <div className="px-3 space-y-0.5">
+          <div className="px-2 xl:px-3 space-y-1 xl:space-y-0.5">
             <div 
               onClick={() => handleFilterClick('messenger')}
-              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              title="Messenger"
+              className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
                 activeFilter === 'messenger' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><MessageSquare size={15} strokeWidth={2} /> Messenger</div>
-              <span className="text-[12px] font-medium">{messengerChats}</span>
+              <div className="flex items-center gap-2"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Messenger</span></div>
+              <span className="hidden xl:block text-[12px] font-medium">{messengerChats}</span>
             </div>
             
             <div 
               onClick={() => handleFilterClick('whatsapp')}
-              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              title="WhatsApp"
+              className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
                 activeFilter === 'whatsapp' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><MessageCircle size={15} strokeWidth={2} /> WhatsApp</div>
-              <span className="text-[12px] font-medium">{whatsappChats}</span>
+              <div className="flex items-center gap-2"><MessageCircle className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">WhatsApp</span></div>
+              <span className="hidden xl:block text-[12px] font-medium">{whatsappChats}</span>
             </div>
 
             <div 
               onClick={() => handleFilterClick('instagram')}
-              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              title="Instagram"
+              className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
                 activeFilter === 'instagram' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><Smartphone size={15} strokeWidth={2} /> Instagram</div>
-              <span className="text-[12px] font-medium">{instagramChats}</span>
+              <div className="flex items-center gap-2"><Smartphone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Instagram</span></div>
+              <span className="hidden xl:block text-[12px] font-medium">{instagramChats}</span>
             </div>
 
             <div 
               onClick={() => handleFilterClick('widget')}
-              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              title="Website"
+              className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
                 activeFilter === 'widget' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
               <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                Website
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                <span className="hidden xl:block">Website</span>
               </div>
-              <span className="text-[12px] font-medium">{widgetChats}</span>
+              <span className="hidden xl:block text-[12px] font-medium">{widgetChats}</span>
             </div>
           </div>
         )}
 
-        <div className="mt-8 px-6 mb-2 flex justify-between items-center">
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">TalkFuze AI</span>
+        <div className="mt-8 px-0 xl:px-6 mb-2 flex justify-center xl:justify-between items-center" title="TalkFuze AI">
+          <span className="hidden xl:block text-[11px] font-medium text-slate-400 uppercase tracking-wide">TalkFuze AI</span>
+          <span className="block xl:hidden text-[11px] font-medium text-slate-400 uppercase tracking-wide">AI</span>
         </div>
-        <div className="px-3 space-y-0.5">
-          <div className="flex items-center justify-between px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer transition-all">
-            <div className="flex items-center gap-2"><Bot size={15} strokeWidth={2} /> AI Inbox</div>
+        <div className="px-2 xl:px-3 space-y-1 xl:space-y-0.5">
+          <div title="AI Inbox" className="flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer transition-all">
+            <div className="flex items-center gap-2"><Bot className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">AI Inbox</span></div>
           </div>
         </div>
       </aside>

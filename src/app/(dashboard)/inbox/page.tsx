@@ -25,7 +25,8 @@ export default function InboxPage() {
     messagesMap, setMessages, addMessage,
     teamMembers, setTeamMembers,
     isLoaded, setCurrentUser,
-    mobileView, setMobileView
+    mobileView, setMobileView,
+    isFetchingMessages, setIsFetchingMessages
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
@@ -60,7 +61,8 @@ export default function InboxPage() {
     if (currentUser) setCurrentUser(currentUser as UserProfile)
   }, [currentUser, setCurrentUser])
 
-  const messages = selectedId ? (messagesMap[selectedId] || []) : []
+  const activeConversation = conversations.find(c => c.id === selectedId)
+  const messages = selectedId ? (messagesMap[selectedId] || (activeConversation?.messages?.length ? activeConversation.messages : [])) : []
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
@@ -170,13 +172,16 @@ export default function InboxPage() {
 
     // Initial fetch
     const fetchData = async () => {
+      setIsFetchingMessages(selectedId, true)
       // Direct client-side fetch for instant loading (~50ms)
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', selectedId)
         .order('created_at', { ascending: false })
         .limit(50)
+
+      console.log('Client fetch data:', data, 'error:', error)
 
       if (!isActive) return
 
@@ -188,6 +193,7 @@ export default function InboxPage() {
         if (!isActive) return
         setMessages(selectedId, (fallbackData || []) as AppMessage[])
       }
+      setIsFetchingMessages(selectedId, false)
     }
     
     // If we don't have messages for this convo, fetch them immediately
@@ -416,7 +422,7 @@ export default function InboxPage() {
     setMobileView('list')
   }
 
-  const activeConversation = conversations.find(c => c.id === selectedId)
+  // activeConversation is defined above now
 
   if (activeFilter === 'calls') {
     return (
@@ -460,8 +466,7 @@ export default function InboxPage() {
           </div>
         </div>
       )}
-      {/* ConversationList: visible on desktop always, on mobile only when mobileView is 'list' */}
-      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[320px] shrink-0`}>
+      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[320px] shrink-0`}>
         <ConversationList 
           conversations={conversations} 
           selectedId={selectedId} 
@@ -489,6 +494,7 @@ export default function InboxPage() {
           })()}
           conversation={activeConversation}
           currentUser={currentUser as UserProfile}
+          isFetching={selectedId ? isFetchingMessages[selectedId] : false}
           onBackToList={handleBackToList}
         />
         <ContactSidebar 

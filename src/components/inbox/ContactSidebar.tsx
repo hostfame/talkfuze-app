@@ -933,7 +933,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
 
   return (
-    <div className="hidden md:flex flex-col h-full w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
+    <div className="hidden md:flex flex-col h-full w-[260px] lg:w-[280px] xl:w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
       <div className="flex border-b border-slate-200/80 dark:border-[#222e35] px-3 pt-3 h-[72px] items-end bg-slate-50/30 dark:bg-transparent overflow-x-auto hide-scrollbar">
         <button 
           onClick={() => setActiveTab('details')}

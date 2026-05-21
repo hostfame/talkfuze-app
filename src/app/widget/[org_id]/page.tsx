@@ -2762,22 +2762,37 @@ export default function WidgetPage() {
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M10.85 3.99984C10.85 4.21984 10.77 4.43984 10.6 4.59984L7.20005 7.99984L10.6 11.3998C10.93 11.7298 10.93 12.2698 10.6 12.5998C10.27 12.9298 9.73005 12.9298 9.40005 12.5998L4.80005 7.99984L9.40005 3.39984C9.73005 3.06984 10.27 3.06984 10.6 3.39984C10.77 3.56984 10.85 3.77984 10.85 3.99984Z" /></svg>
                  </button>
                  <div className="flex items-center gap-2.5">
-                   <div className="relative">
-                     {activeAgent?.avatar_url ? (
-                       <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                          <img src={activeAgent.avatar_url} className="w-full h-full object-cover" alt={headerName} />
+                   {activeAgent?.avatar_url ? (
+                     <>
+                       <div className="relative">
+                         <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
+                            <img src={activeAgent.avatar_url} className="w-full h-full object-cover" alt={headerName} />
+                         </div>
+                         <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
                        </div>
-                     ) : (
-                       <div className="w-9 h-9 rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                          <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Logo" />
+                       <div className="flex flex-col">
+                         <span className="font-bold text-[14px] text-slate-800 leading-tight tracking-tight">{headerName}</span>
+                         <span className="text-[12px] text-slate-500 leading-tight tracking-tight">{headerSubtitle}</span>
                        </div>
-                     )}
-                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
-                   </div>
-                   <div className="flex flex-col">
-                     <span className="font-bold text-[14px] text-slate-800 leading-tight">{headerName}</span>
-                     <span className="text-[12px] text-slate-500 leading-tight">{headerSubtitle}</span>
-                   </div>
+                     </>
+                   ) : (
+                     <>
+                       {/* Ahrefs / Intercom Style Stacked Avatars */}
+                       <div className="flex -space-x-2 relative mr-0.5">
+                         <img src="/team/4.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-30" alt="Team member" />
+                         <img src="/team/5.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-20" alt="Team member" />
+                         <img src="/team/6.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-10" alt="Team member" />
+                         <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full z-40 translate-x-[2px] translate-y-[2px]"></div>
+                       </div>
+                       <div className="flex flex-col">
+                         <span className="font-bold text-[15px] text-slate-800 leading-tight tracking-tight">Hostnin</span>
+                         <span className="text-[12px] text-slate-500 leading-tight tracking-tight flex items-center gap-1 mt-0.5">
+                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                           Replies within minutes
+                         </span>
+                       </div>
+                     </>
+                   )}
                  </div>
               </div>
               <div className="flex items-center gap-0.5 text-slate-400">

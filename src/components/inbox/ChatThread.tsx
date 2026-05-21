@@ -439,6 +439,7 @@ type ChatThreadProps = {
   activeAgents?: { name: string; activity: 'viewing' | 'typing' }[]
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
+  isFetching?: boolean
   onBackToList?: () => void
 }
 
@@ -453,6 +454,7 @@ export default function ChatThread({
   activeAgents = [],
   conversation = null,
   currentUser,
+  isFetching = false,
   onBackToList
 }: ChatThreadProps) {
   const contact = firstRelation(conversation?.contact)
@@ -2306,11 +2308,18 @@ export default function ChatThread({
         )}
         
         {allMessages.length === 0 && !isCustomerTyping && (
-          <div className="h-full flex flex-col items-center justify-center text-center opacity-70 mt-10">
-            <MessageSquare size={32} className="text-slate-300 mb-3" />
-            <p className="text-slate-500 font-medium text-[14px]">No messages yet</p>
-            <p className="text-slate-400 text-[13px] mt-1">Send a message to start the conversation.</p>
-          </div>
+          isFetching ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 animate-pulse opacity-70 mt-10">
+              <Loader2 size={32} className="text-blue-500/60 mb-4 animate-spin" />
+              <p className="text-slate-500 font-medium text-[14px]">Loading messages...</p>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center opacity-70 mt-10">
+              <MessageSquare size={32} className="text-slate-300 mb-3" />
+              <p className="text-slate-500 font-medium text-[14px]">No messages yet</p>
+              <p className="text-slate-400 text-[13px] mt-1">Send a message to start the conversation.</p>
+            </div>
+          )
         )}
 
         {allMessages.map((msg, idx) => {
