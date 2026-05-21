@@ -1806,11 +1806,12 @@ export default function WidgetPage() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isSending || !deviceId) return
+  const handleSend = async (forcedText?: string) => {
+    const textToSubmit = forcedText || input;
+    if (!textToSubmit.trim() || isSending || !deviceId) return
 
-    const messageText = input.trim()
-    setInput("")
+    const messageText = textToSubmit.trim()
+    if (!forcedText) setInput("")
     playUISound('send')
     
     setTimeout(() => {
@@ -2833,6 +2834,55 @@ export default function WidgetPage() {
                 <span className="text-[11px] text-slate-400 ml-[32px]">Support Team</span>
               </div>
 
+              {messages.length === 0 && (
+                <div className="flex flex-col gap-2.5 mt-2 ml-[32px] max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Quick Questions:</span>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => handleSend("What are the pricing plans for Web Hosting?")}
+                      className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[16px] group-hover:scale-110 transition-transform">🌐</span>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-bold text-slate-800">Check Web Hosting Pricing</span>
+                          <span className="text-[11px] text-slate-400">View premium cPanel packages</span>
+                        </div>
+                      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0070f3] group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+
+                    <button 
+                      onClick={() => handleSend("I have a pre-sales question about site migration.")}
+                      className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[16px] group-hover:scale-110 transition-transform">💬</span>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-bold text-slate-800">Pre-Sales Inquiry</span>
+                          <span className="text-[11px] text-slate-400">Migrating site to Hostnin</span>
+                        </div>
+                      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0070f3] group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+
+                    <button 
+                      onClick={() => handleSend("I need help with my domain nameservers.")}
+                      className="flex items-center justify-between text-left p-3.5 bg-white border border-slate-100 rounded-[14px] hover:border-[#0070f3]/30 hover:bg-[#0070f3]/5 transition-all duration-200 group shadow-[0_2px_8px_rgba(0,0,0,0.02)] active:scale-98"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[16px] group-hover:scale-110 transition-transform">🛠️</span>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-bold text-slate-800">Domain & DNS Help</span>
+                          <span className="text-[11px] text-slate-400">Pointing nameservers to Hostnin</span>
+                        </div>
+                      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0070f3] group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {messages.length >= 50 && hasMoreMessages && (
                 <div className="flex justify-center mb-2">
                   <button 
@@ -3104,12 +3154,9 @@ export default function WidgetPage() {
                           <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-colors rounded-full ${showEmojiPicker ? 'text-blue-600 bg-blue-50' : 'hover:text-slate-600 hover:bg-slate-50'}`}>
                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
                           </button>
-                          <button onClick={startRecording} className="p-2 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-50">
-                             <Mic size={18} />
-                          </button>
                        </div>
                        <button 
-                          onClick={handleSend}
+                          onClick={() => handleSend()}
                           disabled={!input.trim() || isSending}
                           className="w-[32px] h-[32px] bg-slate-100 text-slate-400 flex items-center justify-center rounded-full transition-all data-[active=true]:bg-[#0070f3] data-[active=true]:text-white mr-1 shrink-0"
                           data-active={!!input.trim() && !isSending}
