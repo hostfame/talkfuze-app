@@ -248,6 +248,23 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
           </div>
         </div>
       );
+    if (msg.content_type === 'audio') {
+      return (
+        <div className={`flex flex-col gap-2.5 p-3.5 rounded-[18px] min-w-[210px] animate-in fade-in duration-300 ${isDark ? 'bg-white/10 text-white border border-white/5' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/30 shadow-sm'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-full shrink-0 flex items-center justify-center ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+              <Mic size={18} className="animate-pulse" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold truncate leading-none">Sending voice message...</p>
+              <p className="text-[10px] opacity-65 font-medium mt-1.5">Uploading {progress}%</p>
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -1366,6 +1383,24 @@ export default function WidgetPage() {
         const xhr = new XMLHttpRequest()
         xhr.open('POST', '/api/upload', true)
 
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100)
+            setMessages(prev => prev.map(m => {
+              if (m.id === tempId) {
+                return {
+                  ...m,
+                  metadata: {
+                    ...m.metadata,
+                    uploadProgress: percentComplete
+                  }
+                }
+              }
+              return m
+            }))
+          }
+        }
+
         xhr.onload = async () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
@@ -1425,6 +1460,13 @@ export default function WidgetPage() {
 
       mediaRecorder.start()
       setIsRecording(true)
+      if (activeConversationId && activeConversationId !== 'new') {
+        supabase.channel(`typing:${org_id}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false, is_recording: true }
+        })
+      }
       setRecordingDuration(0)
       timerRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1)
@@ -1440,6 +1482,13 @@ export default function WidgetPage() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
+      if (activeConversationId && activeConversationId !== 'new') {
+        supabase.channel(`typing:${org_id}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false, is_recording: false }
+        })
+      }
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }
@@ -1451,6 +1500,13 @@ export default function WidgetPage() {
       // Stop all tracks
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
       setIsRecording(false)
+      if (activeConversationId && activeConversationId !== 'new') {
+        supabase.channel(`typing:${org_id}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false, is_recording: false }
+        })
+      }
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }
@@ -2575,7 +2631,7 @@ export default function WidgetPage() {
               
               {/* Typing Indicator */}
               {isAgentTyping && (
-              <div className="flex items-start gap-1 animate-in fade-in duration-300" id="tf-typing-indicator">
+              <div className="flex items-start gap-1 animate-in fade-in duration-300 mb-6" id="tf-typing-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
                  </div>
@@ -2589,7 +2645,7 @@ export default function WidgetPage() {
 
               {/* Voice Recording Indicator */}
               {isAgentRecording && !isAgentTyping && (
-              <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300" id="tf-recording-indicator">
+              <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300 mb-6" id="tf-recording-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
                  </div>
@@ -2627,7 +2683,7 @@ export default function WidgetPage() {
                  </div>
               </div>
               
-              <div ref={messagesEndRef} className="h-4" />
+              <div ref={messagesEndRef} className="h-8" />
             </div>
             
             {/* Embedded Composer (Intercom style floating box) */}

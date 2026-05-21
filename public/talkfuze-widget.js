@@ -262,6 +262,10 @@
         if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
             if (isOpen) toggleWidget();
         }
+
+        if (event.data && event.data.type === 'TALKFUZE_OPEN') {
+            if (!isOpen) toggleWidget();
+        }
         
         if (event.data && event.data.type === 'TALKFUZE_SET_COLOR') {
             launcher.style.backgroundColor = event.data.color;

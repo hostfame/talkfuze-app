@@ -192,6 +192,9 @@
     if (event.data.type === 'TALKFUZE_CLOSE') {
       closeWidget();
     }
+    if (event.data.type === 'TALKFUZE_OPEN') {
+      openWidget();
+    }
     if (event.data.type === 'TALKFUZE_EXPAND') {
       // Open widget in a new tab for full-screen experience
       window.open(baseUrl + '/widget/' + orgId, '_blank');

@@ -29,6 +29,7 @@ export default function InboxPage() {
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [recordingState, setRecordingState] = useState<Record<string, boolean>>({})
   const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
@@ -240,13 +241,20 @@ export default function InboxPage() {
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
-        const { conversation_id, direction, is_typing, agent_name, agent_id } = payload.payload;
+        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id } = payload.payload;
         // Track customer typing
         if (direction === 'contact') {
           setTypingState(prev => ({
             ...prev,
             [conversation_id]: is_typing
           }));
+          
+          if (is_recording !== undefined) {
+            setRecordingState(prev => ({
+              ...prev,
+              [conversation_id]: is_recording
+            }));
+          }
           
           if (typingTimeoutRefs.current[conversation_id]) {
             clearTimeout(typingTimeoutRefs.current[conversation_id]);
@@ -471,6 +479,7 @@ export default function InboxPage() {
           orgId={ORG_ID}
           teamMembers={teamMembers}
           isCustomerTyping={selectedId ? typingState[selectedId] : false}
+          isCustomerRecording={selectedId ? recordingState[selectedId] : false}
           activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
           isCustomerOnline={(() => {
             if (!activeConversation) return false;

@@ -434,6 +434,7 @@ type ChatThreadProps = {
   orgId: string
   teamMembers?: UserProfile[]
   isCustomerTyping?: boolean
+  isCustomerRecording?: boolean
   isCustomerOnline?: boolean
   activeAgents?: { name: string; activity: 'viewing' | 'typing' }[]
   conversation?: ConversationWithDetails | null
@@ -447,6 +448,7 @@ export default function ChatThread({
   orgId,
   teamMembers = [],
   isCustomerTyping = false,
+  isCustomerRecording = false,
   isCustomerOnline = false,
   activeAgents = [],
   conversation = null,
@@ -2658,6 +2660,41 @@ export default function ChatThread({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {isCustomerRecording && !isCustomerTyping && (
+          <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-end gap-2.5">
+              {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
+                <img src={contact.avatar_url} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
+              ) : (
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
+              )}
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-100/50 dark:border-red-900/30 rounded-2xl px-4 py-2.5 max-w-[70%] flex items-center gap-2.5">
+                <div className="relative flex items-center justify-center w-5 h-5">
+                  <div className="absolute inset-0 rounded-full bg-red-500/15 animate-ping" style={{ animationDuration: '1.5s' }} />
+                  <svg className="w-3.5 h-3.5 text-red-500 relative z-10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                  </svg>
+                </div>
+                <span className="text-[12.5px] font-medium text-slate-600 dark:text-slate-300">Recording a voice message...</span>
+                <div className="flex items-end gap-[3px] h-4 ml-0.5">
+                  <span className="w-[3px] rounded-full bg-red-400" style={{ animation: 'tf-soundbar 0.8s ease-in-out infinite', height: '40%' }} />
+                  <span className="w-[3px] rounded-full bg-red-400" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.15s infinite', height: '70%' }} />
+                  <span className="w-[3px] rounded-full bg-red-400" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.3s infinite', height: '100%' }} />
+                  <span className="w-[3px] rounded-full bg-red-400" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.45s infinite', height: '55%' }} />
+                  <span className="w-[3px] rounded-full bg-red-400" style={{ animation: 'tf-soundbar 0.8s ease-in-out 0.6s infinite', height: '35%' }} />
+                </div>
+              </div>
+            </div>
+            <style>{`
+              @keyframes tf-soundbar {
+                0%, 100% { transform: scaleY(0.3); }
+                50% { transform: scaleY(1); }
+              }
+            `}</style>
           </div>
         )}
         
