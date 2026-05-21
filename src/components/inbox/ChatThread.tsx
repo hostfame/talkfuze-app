@@ -550,6 +550,19 @@ export default function ChatThread({
       .on('broadcast', { event: 'voice_call_declined_by_visitor' }, () => {
         handleEndVoiceCall(false)
       })
+      .on('broadcast', { event: 'voice_call_popup_ready' }, () => {
+        // Visitor just loaded standalone call popup. Re-send offer!
+        console.log('[Agent Call] Visitor popped open standalone window. Re-sending offer.');
+        const pc = voiceConnectionRef.current;
+        const ch = voiceChannelRef.current;
+        if (pc && pc.localDescription && ch) {
+          ch.send({
+            type: 'broadcast',
+            event: 'voice_call_from_agent',
+            payload: { offer: pc.localDescription }
+          });
+        }
+      })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
         const pc = voiceConnectionRef.current;
         if (pc && pc.remoteDescription && payload.payload.candidate) {

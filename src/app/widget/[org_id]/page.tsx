@@ -2,7 +2,7 @@
 
 import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
 import { logBrowserCall } from "@/actions/calls"
 import { supabase } from "@/lib/supabase"
@@ -333,8 +333,14 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
 
 export default function WidgetPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const org_id = params.org_id as string
   const [deviceId] = useState(getStoredDeviceId)
+  
+  // Standalone call parameters
+  const isStandaloneCall = searchParams.get('standalone_call') === 'true'
+  const standaloneConvId = searchParams.get('convId')
+
   const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
   const [isAgentTyping, setIsAgentTyping] = useState(false)
@@ -557,6 +563,17 @@ export default function WidgetPage() {
         setActiveConversationId(convId);
         setActiveTab('chat');
         
+        const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+        if (isIframe) {
+          // Instantly pop open the secure first-party standalone call popup
+          try {
+            window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId }, '*');
+            return;
+          } catch (postErr) {
+            console.error("Failed to post open call message to parent window:", postErr);
+          }
+        }
+
         incomingAgentCallRef.current = { offer: payload.payload.offer }
         setCallStatus('ringing')
         
@@ -625,8 +642,8 @@ export default function WidgetPage() {
   }, [])
 
   const handleStartVoiceCall = async () => {
-    // Warm up/unlock the mobile browser audio context synchronously inside the user click event
-    const unlockedAudio = unlockAudioContext();
+    // Check if running inside an iframe (standard cross-origin environment)
+    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
 
     let targetConvId = activeConversationId;
     if (!targetConvId || targetConvId === 'new') {
@@ -641,6 +658,22 @@ export default function WidgetPage() {
         return;
       }
     }
+
+    if (isIframe) {
+      // Warm up/unlock the mobile browser audio context synchronously inside the user click event
+      unlockAudioContext();
+      // Delegate to parent SDK to open standalone first-party secure call popup
+      try {
+        window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId: targetConvId }, '*');
+        return;
+      } catch (postErr) {
+        console.error("Failed to post open call message, falling back:", postErr);
+      }
+    }
+
+    // Warm up/unlock the mobile browser audio context synchronously inside the user click event
+    const unlockedAudio = unlockAudioContext();
+
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setToastError("Microphone API unavailable. Ensure you're on a secure context (HTTPS) and your browser supports WebRTC.")
@@ -823,6 +856,12 @@ export default function WidgetPage() {
     // Resubscribe to a fresh, clean conversation voice channel to listen for future agent-initiated calls
     if (activeConversationId && activeConversationId !== 'new') {
       subscribeToVoiceCall(activeConversationId);
+    }
+
+    if (isStandaloneCall) {
+      setTimeout(() => {
+        window.close();
+      }, 2000);
     }
   }
 
@@ -1194,6 +1233,33 @@ export default function WidgetPage() {
       }
     } catch (e) {}
   }, [])
+
+  // Standalone call mount trigger
+  useEffect(() => {
+    if (isStandaloneCall && standaloneConvId) {
+      console.log('[Standalone Call] Mount detected. convId:', standaloneConvId);
+      setActiveConversationId(standaloneConvId);
+      setActiveTab('chat');
+
+      // Subscribe to conversation voice channel
+      const callChannel = subscribeToVoiceCall(standaloneConvId);
+      
+      // Delay slightly, then broadcast popup_ready to request the agent's offer retransmission
+      const handshakeTimer = setTimeout(() => {
+        if (callChannel) {
+          console.log('[Standalone Call] Sending voice_call_popup_ready handshake broadcast...');
+          callChannel.send({
+            type: 'broadcast',
+            event: 'voice_call_popup_ready'
+          });
+        }
+      }, 800);
+
+      return () => {
+        clearTimeout(handshakeTimer);
+      };
+    }
+  }, [isStandaloneCall, standaloneConvId]);
 
   useEffect(() => {
     if (selectedTicket) {

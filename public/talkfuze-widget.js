@@ -275,6 +275,16 @@
             isSoundMuted = event.data.muted;
             localStorage.setItem('tf_widget_muted', isSoundMuted);
         }
+
+        if (event.data && event.data.type === 'TALKFUZE_OPEN_CALL') {
+            const callUrl = `${baseUrl}/widget/${orgId}?standalone_call=true&convId=${event.data.convId}`;
+            // Open as a gorgeous center-screen calling popup window
+            const width = 380;
+            const height = 550;
+            const left = (window.screen.width / 2) - (width / 2);
+            const top = (window.screen.height / 2) - (height / 2);
+            window.open(callUrl, 'TalkFuzeSecureCall', `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no,resizable=no`);
+        }
     });
 
 })();
