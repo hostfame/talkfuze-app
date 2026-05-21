@@ -672,6 +672,105 @@ async function processMessage(msg) {
   }
 }
 
+async function handleIncomingWhatsAppCall(callData) {
+  const fromJid = callData.from;
+  if (!fromJid) return;
+
+  const rawPhone = fromJid.split('@')[0];
+  let cleanPhone = rawPhone.replace(/\D/g, '');
+  if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+    cleanPhone = '880' + cleanPhone;
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+    cleanPhone = '88' + cleanPhone;
+  }
+
+  const channelId = await getOrCreateChannel();
+  const contactId = await upsertContact(fromJid, null);
+  const conversationId = await upsertConversation(contactId, channelId);
+
+  const callMsgId = `wa-call-${callData.id}`;
+  const { data: existingMsg } = await supabase
+    .from('messages')
+    .select('id')
+    .eq('org_id', ORG_ID)
+    .eq('platform_message_id', callMsgId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingMsg) {
+    console.log(`[CALL] Missed call webhook already handled: ${callData.id}`);
+    return;
+  }
+
+  const missedCallContent = 'Missed WhatsApp voice call';
+  await supabase.from('messages').insert({
+    org_id: ORG_ID,
+    conversation_id: conversationId,
+    platform_message_id: callMsgId,
+    sender_type: 'system',
+    content: missedCallContent,
+    content_type: 'text',
+    metadata: {
+      is_whatsapp_missed_call: true,
+      whatsapp_call_id: callData.id,
+      timestamp: callData.timestamp
+    },
+    status: 'delivered'
+  });
+
+  const { data: conv } = await supabase.from('conversations')
+    .select('tags')
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  const currentTags = conv?.tags || [];
+  const updatedTags = Array.from(new Set([...currentTags, 'alert', 'automation']));
+  
+  await supabase.from('conversations')
+    .update({
+      last_message_at: new Date().toISOString(),
+      tags: updatedTags
+    })
+    .eq('id', conversationId);
+
+  console.log(`[CALL] Received incoming WhatsApp call from ${rawPhone}. Missed call logged.`);
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('settings')
+    .eq('id', ORG_ID)
+    .maybeSingle();
+
+  const settings = org?.settings || {};
+  if (settings.wa_call_auto_reply_enabled) {
+    const rawReply = settings.wa_call_auto_reply_text || "Thank you for calling! We have moved our voice support to our direct hotline. You can reach us directly at {hotline}.";
+    const hotline = settings.wa_call_hotline_number || "+880 9612 345678";
+    const replyText = rawReply.replace(/{hotline}/gi, hotline);
+
+    try {
+      console.log(`[CALL-AUTOREPLY] Dispatching automated reply to ${fromJid}...`);
+      await sendTextMessage(fromJid, replyText);
+
+      await supabase.from('messages').insert({
+        org_id: ORG_ID,
+        conversation_id: conversationId,
+        platform_message_id: `wa-call-autoreply-${callData.id}`,
+        sender_type: 'ai',
+        content: replyText,
+        content_type: 'text',
+        metadata: {
+          is_whatsapp_autoreply: true
+        },
+        status: 'sent'
+      });
+
+      console.log(`[CALL-AUTOREPLY] Automated reply dispatched successfully!`);
+    } catch (sendErr) {
+      console.error(`[CALL-AUTOREPLY] Failed to send automated reply:`, sendErr.message);
+    }
+  }
+}
+
 // ─────────────────────────────────────────────
 // Webhooks (Incoming from Evolution API)
 // ─────────────────────────────────────────────
@@ -690,6 +789,11 @@ app.post('/webhook/evolution', async (req, res) => {
     const messages = body.data?.messages || (body.data ? [body.data] : []);
     for (const msg of messages) {
       await processMessage(msg).catch(err => console.error('processMessage failed:', err.message));
+    }
+  } else if (event === 'call') {
+    const callData = body.data;
+    if (callData && !callData.fromMe) {
+      await handleIncomingWhatsAppCall(callData).catch(err => console.error('handleIncomingWhatsAppCall failed:', err.message));
     }
   } else if (event === 'connection.update') {
     const state = body.data?.state;
@@ -1362,7 +1466,8 @@ async function registerWebhook() {
           events: [
             'MESSAGES_UPSERT',
             'CONNECTION_UPDATE',
-            'QRCODE_UPDATED'
+            'QRCODE_UPDATED',
+            'CALL'
           ]
         }
       })

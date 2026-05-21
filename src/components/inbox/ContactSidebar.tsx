@@ -806,15 +806,48 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               </div>
             ) : (
               <div className="flex items-center gap-1.5 mt-0.5 group">
-                {showCallButton && (
-                  <button 
-                    onClick={() => triggerDial(effectivePhoneId)}
-                    className="text-slate-500 hover:text-blue-600 transition-colors shrink-0 cursor-pointer w-5 h-5 flex items-center justify-center"
-                    title="Call via Dialer"
-                  >
-                    <PhoneCall size={14} strokeWidth={2} />
-                  </button>
-                )}
+                {showCallButton && (() => {
+                  const hasCallAlert = isWhatsApp && conversation?.tags?.includes('alert') && conversation?.tags?.includes('automation');
+                  
+                  const handleCallClick = async () => {
+                    triggerDial(effectivePhoneId);
+                    if (hasCallAlert && conversation?.id) {
+                      const cleanedTags = (conversation.tags || []).filter((t: string) => t !== 'alert' && t !== 'automation');
+                      await supabase.from('conversations')
+                        .update({ tags: cleanedTags })
+                        .eq('id', conversation.id);
+                    }
+                  };
+
+                  return (
+                    <div className="relative group/call">
+                      <button 
+                        onClick={handleCallClick}
+                        className={`transition-colors shrink-0 cursor-pointer w-5 h-5 flex items-center justify-center rounded-md ${
+                          hasCallAlert 
+                            ? 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20' 
+                            : 'text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                        title="Call via Dialer"
+                      >
+                        <PhoneCall size={14} strokeWidth={2} />
+                      </button>
+                      {hasCallAlert && (
+                        <>
+                          <span className="absolute -top-0.5 -right-0.5 flex h-1.5 w-1.5 pointer-events-none">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                          </span>
+                          
+                          <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-950 dark:bg-slate-900 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-800 whitespace-nowrap z-50 pointer-events-none transition-all scale-0 group-hover/call:scale-100 origin-bottom duration-150">
+                            This person just called on WhatsApp. Call back now.
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-950 dark:border-t-slate-900" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
                 <p className="text-[13px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
                   {contactPhone && contactPhone.includes('@') ? displayId : (contactPhone || displayId)}
                 </p>

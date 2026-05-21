@@ -91,7 +91,7 @@ export async function getOrCreateWhatsAppInstance(orgId: string) {
           url: 'http://46.225.152.127:3001/webhook/evolution',
           byEvents: false,
           base64: true,
-          events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+          events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED', 'CALL']
         }
       }),
       cache: 'no-store'
