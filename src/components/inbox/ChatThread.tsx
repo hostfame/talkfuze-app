@@ -14,6 +14,7 @@ import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 import { generateAiDraft } from "@/actions/ai"
+import { playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 
 interface StagedAttachment {
   file: File;
@@ -385,7 +386,6 @@ export default function ChatThread({
   const voiceBufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const [callDuration, setCallDuration] = useState(0)
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
   const voiceChannelRef = useRef<any>(null)
   const voiceChannelSubscribedRef = useRef<boolean>(false)
 
@@ -504,19 +504,11 @@ export default function ChatThread({
 
   const playRingtone = () => {
     if (isRingtoneMuted) return
-    try {
-      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/903/903-84.wav")
-      audio.loop = true
-      ringtoneAudioRef.current = audio
-      audio.play().catch(e => console.log("Ringtone play barred by browser autoplay restrictions", e))
-    } catch (err) {}
+    playIncomingRingtoneLoop()
   }
 
   const stopRingtone = () => {
-    if (ringtoneAudioRef.current) {
-      ringtoneAudioRef.current.pause()
-      ringtoneAudioRef.current = null
-    }
+    stopIncomingRingtoneLoop()
   }
 
   const handleMuteRingtone = () => {

@@ -76,6 +76,41 @@ export const setSoundVolume = (vol: number): void => {
 };
 
 // ─────────────────────────────────────────────
+// Call Ringtone Presets System
+// ─────────────────────────────────────────────
+
+export type RingtonePreset = 'classic' | 'digital' | 'urgent' | 'marimba' | 'siren';
+
+export const RINGTONE_PRESETS: { id: RingtonePreset; name: string; description: string }[] = [
+  { id: 'classic', name: 'Classic', description: 'Traditional telephone ring' },
+  { id: 'digital', name: 'Digital', description: 'Modern soft digital tone' },
+  { id: 'urgent', name: 'Urgent', description: 'Fast-paced alert ring' },
+  { id: 'marimba', name: 'Marimba', description: 'Melodic ascending pattern' },
+  { id: 'siren', name: 'Siren', description: 'Loud oscillating alarm for noisy environments' },
+];
+
+export const getSelectedRingtone = (): RingtonePreset => {
+  if (typeof window === 'undefined') return 'classic';
+  return (localStorage.getItem('talkfuze_ringtone_preset') as RingtonePreset) || 'classic';
+};
+
+export const setSelectedRingtone = (preset: RingtonePreset): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('talkfuze_ringtone_preset', preset);
+};
+
+export const getRingtoneVolume = (): number => {
+  if (typeof window === 'undefined') return 1.0;
+  const stored = localStorage.getItem('talkfuze_ringtone_volume');
+  return stored ? parseFloat(stored) : 1.0;
+};
+
+export const setRingtoneVolume = (vol: number): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('talkfuze_ringtone_volume', String(Math.max(0, Math.min(1, vol))));
+};
+
+// ─────────────────────────────────────────────
 // Synthesized Sound Engine (fallback when mp3 blocked)
 // ─────────────────────────────────────────────
 
@@ -490,4 +525,124 @@ export const stopRingbackLoop = (): void => {
     clearInterval(ringbackIntervalId);
     ringbackIntervalId = null;
   }
+};
+
+// ─────────────────────────────────────────────
+// Incoming Call Ringtone Loop (Agent-selected preset)
+// ─────────────────────────────────────────────
+
+let ringtoneIntervalId: ReturnType<typeof setInterval> | null = null;
+
+const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    const t = ctx.currentTime;
+
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-3, t);
+    comp.knee.setValueAtTime(6, t);
+    comp.ratio.setValueAtTime(3, t);
+    comp.attack.setValueAtTime(0.003, t);
+    comp.release.setValueAtTime(0.08, t);
+    comp.connect(ctx.destination);
+
+    const ring = (freq: number, start: number, dur: number, gain: number, wave: OscillatorType = 'sine', filterFreq: number = 4000) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(filterFreq, t);
+      osc.connect(filt);
+      filt.connect(g);
+      g.connect(comp);
+      osc.type = wave;
+      osc.frequency.setValueAtTime(freq, t + start);
+      g.gain.setValueAtTime(0, t + start);
+      g.gain.linearRampToValueAtTime(gain * vol, t + start + 0.01);
+      g.gain.setValueAtTime(gain * vol, t + start + dur * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+      osc.start(t + start);
+      osc.stop(t + start + dur + 0.05);
+    };
+
+    switch (preset) {
+      case 'classic':
+        // Traditional telephone ring: two bursts of 440+480Hz
+        ring(440, 0, 0.4, 0.70);
+        ring(480, 0, 0.4, 0.65);
+        ring(440, 0.5, 0.4, 0.70);
+        ring(480, 0.5, 0.4, 0.65);
+        break;
+
+      case 'digital':
+        // Modern soft digital: melodic two-note pattern
+        ring(784, 0, 0.3, 0.55, 'sine', 3000);    // G5
+        ring(988, 0.25, 0.35, 0.50, 'sine', 3000); // B5
+        ring(784, 0.65, 0.3, 0.55, 'sine', 3000);
+        ring(988, 0.90, 0.35, 0.50, 'sine', 3000);
+        break;
+
+      case 'urgent':
+        // Fast staccato beeps - hard to ignore
+        ring(1000, 0, 0.1, 0.85, 'square', 2500);
+        ring(1000, 0.15, 0.1, 0.85, 'square', 2500);
+        ring(1000, 0.30, 0.1, 0.85, 'square', 2500);
+        ring(1200, 0.50, 0.1, 0.85, 'square', 2500);
+        ring(1200, 0.65, 0.1, 0.85, 'square', 2500);
+        ring(1200, 0.80, 0.1, 0.85, 'square', 2500);
+        break;
+
+      case 'marimba':
+        // Melodic ascending scale pattern
+        ring(523, 0, 0.2, 0.65, 'sine', 5000);     // C5
+        ring(659, 0.18, 0.2, 0.60, 'sine', 5000);  // E5
+        ring(784, 0.36, 0.2, 0.65, 'sine', 5000);  // G5
+        ring(1047, 0.54, 0.3, 0.70, 'sine', 5000); // C6
+        // Reverse
+        ring(784, 0.90, 0.2, 0.60, 'sine', 5000);
+        ring(659, 1.08, 0.2, 0.55, 'sine', 5000);
+        ring(523, 1.26, 0.3, 0.65, 'sine', 5000);
+        break;
+
+      case 'siren':
+        // Loud oscillating siren - maximum attention
+        for (let i = 0; i < 4; i++) {
+          const offset = i * 0.3;
+          ring(1200 + (i % 2) * 400, offset, 0.25, 0.90, 'square', 4000);
+          ring(200, offset, 0.15, 0.35, 'sine', 400); // sub-bass punch
+        }
+        break;
+    }
+  } catch (err) {
+    console.error('Ringtone chime error:', err);
+  }
+};
+
+export const playIncomingRingtoneLoop = (): void => {
+  if (typeof window === 'undefined') return;
+  if (ringtoneIntervalId !== null) return;
+
+  const preset = getSelectedRingtone();
+  const vol = getRingtoneVolume();
+
+  playRingtoneChime(preset, vol);
+  // Interval based on preset length
+  const interval = preset === 'marimba' ? 2200 : preset === 'urgent' ? 1400 : 1800;
+  ringtoneIntervalId = setInterval(() => playRingtoneChime(preset, vol), interval);
+};
+
+export const stopIncomingRingtoneLoop = (): void => {
+  if (ringtoneIntervalId !== null) {
+    clearInterval(ringtoneIntervalId);
+    ringtoneIntervalId = null;
+  }
+};
+
+// Preview a single cycle of a ringtone preset (for settings page)
+export const previewRingtone = (preset: RingtonePreset): void => {
+  const vol = getRingtoneVolume();
+  playRingtoneChime(preset, vol);
 };
