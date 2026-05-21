@@ -2096,15 +2096,22 @@ export default function ChatThread({
             <p className="text-[12px] text-slate-500 mt-1 leading-normal mb-5">
               Visitor <span className="font-semibold text-[#0070f3]">{callerName || contactName}</span> is calling...
             </p>
-            <div className="flex gap-3 w-full">
+            <div className="flex gap-2 w-full">
+              <button 
+                onClick={handleDeclineVoiceCall}
+                className="flex-1 py-2.5 text-[12.5px] font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                Decline
+              </button>
               <button 
                 onClick={handleMuteRingtone}
                 disabled={isRingtoneMuted}
-                className={`flex-1 py-2.5 text-[12.5px] font-semibold rounded-xl transition-all ${
+                className={`px-3 py-2.5 text-[12.5px] font-semibold rounded-xl transition-all ${
                   isRingtoneMuted 
                     ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:bg-slate-800/40 dark:text-slate-500'
                     : 'text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:text-amber-400 cursor-pointer active:scale-95'
                 }`}
+                title={isRingtoneMuted ? 'Ringtone Muted' : 'Mute Ringtone'}
               >
                 {isRingtoneMuted ? 'Muted' : 'Mute'}
               </button>
