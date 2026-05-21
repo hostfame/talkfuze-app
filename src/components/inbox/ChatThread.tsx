@@ -2872,8 +2872,8 @@ export default function ChatThread({
               Add shortcut
             </button>
 
-            {/* Edit and Recall - Only for current agent's messages */}
-            {contextMenu.message.sender_id === currentUser?.id && (contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
+            {/* Edit and Recall - Available for all agent/AI messages */}
+            {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
               <>
                 <button 
                   onClick={() => {
