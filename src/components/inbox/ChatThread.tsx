@@ -1082,7 +1082,7 @@ export default function ChatThread({
           if (!client) {
             setCustomAlert({
               title: "Client Profile Missing",
-              message: `No matching WHMCS client profile found for ${cleanPhone}. Please link a client profile in the Portal tab first.`,
+              message: `No WHMCS client found for ${cleanPhone}. Link a profile in the Portal tab first.`,
               type: "error"
             })
             setIsConverting(false)
