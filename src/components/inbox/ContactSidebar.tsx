@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -98,6 +98,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const statsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [autoReconnectCountdown, setAutoReconnectCountdown] = useState(0)
   const autoReconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const bufferedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
@@ -175,6 +176,30 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       if (autoReconnectTimerRef.current) clearInterval(autoReconnectTimerRef.current)
     }
   }, [coBrowseStatus])
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFull = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isCurrentlyFull);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const formatDuration = (sec: number) => {
     const m = Math.floor(sec / 60)
@@ -1238,7 +1263,10 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               )}
 
               {coBrowseStatus === 'active' && (
-                <div className="flex-1 flex flex-col min-h-0 rounded-2xl bg-slate-950 overflow-hidden relative shadow-xl border border-slate-800/50">
+                <div 
+                  id="cobrowse-fullscreen-wrapper" 
+                  className={`flex flex-col min-h-0 bg-slate-950 overflow-hidden relative shadow-xl ${isFullscreen ? 'fixed inset-0 z-[9999] w-screen h-screen rounded-none border-none' : 'flex-1 rounded-2xl border border-slate-800/50'}`}
+                >
                   {/* Session info bar at top */}
                   <div className="flex items-center justify-between px-3 py-2 bg-slate-900/95 border-b border-slate-800/60 z-10">
                     <div className="flex items-center gap-2">
@@ -1302,18 +1330,27 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     <div className="flex items-center gap-0.5">
                       <button 
                         onClick={() => {
-                          const container = videoRef.current?.parentElement;
-                          if (container) {
-                            if (container.requestFullscreen) {
-                              container.requestFullscreen();
-                            } else if ((container as any).webkitRequestFullscreen) {
-                              (container as any).webkitRequestFullscreen();
+                          const wrapper = document.getElementById('cobrowse-fullscreen-wrapper');
+                          if (wrapper) {
+                            if (!isFullscreen) {
+                              if (wrapper.requestFullscreen) {
+                                wrapper.requestFullscreen();
+                              } else if ((wrapper as any).webkitRequestFullscreen) {
+                                (wrapper as any).webkitRequestFullscreen();
+                              }
+                            } else {
+                              if (document.exitFullscreen) {
+                                document.exitFullscreen();
+                              } else if ((document as any).webkitExitFullscreen) {
+                                (document as any).webkitExitFullscreen();
+                              }
                             }
                           }
                         }}
-                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer" title="Fullscreen"
+                        className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer" 
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                       >
-                        <Maximize2 size={14} />
+                        {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                       </button>
                       <button 
                         onClick={handleScreenshot}

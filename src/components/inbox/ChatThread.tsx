@@ -371,6 +371,7 @@ export default function ChatThread({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const ringtoneAudioRef = useRef<HTMLAudioElement | null>(null)
   const voiceChannelRef = useRef<any>(null)
+  const voiceChannelSubscribedRef = useRef<boolean>(false)
 
   // Resolve pending WebRTC call from global alert
   useEffect(() => {
@@ -490,12 +491,16 @@ export default function ChatThread({
       console.log(`[Agent VoiceChannel] Subscribe status: ${status} for conv: ${activeCallId}`);
       if (status === 'SUBSCRIBED') {
         voiceChannelRef.current = callChannel
+        voiceChannelSubscribedRef.current = true
+      } else {
+        voiceChannelSubscribedRef.current = false
       }
     })
 
     return () => {
       supabase.removeChannel(callChannel)
       voiceChannelRef.current = null
+      voiceChannelSubscribedRef.current = false
       stopRingtone()
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
@@ -708,18 +713,21 @@ export default function ChatThread({
       await pc.setLocalDescription(offer);
       console.log('[Agent Call] Created offer, checking channel...');
 
-      // Wait for channel to be subscribed (up to 3s)
-      let ch = voiceChannelRef.current;
-      if (!ch) {
-        console.log('[Agent Call] Channel ref is null, polling...');
+      // Wait for channel to be SUBSCRIBED (up to 3s)
+      let isSubscribed = voiceChannelSubscribedRef.current;
+      if (!isSubscribed) {
+        console.log('[Agent Call] Channel not subscribed yet, polling...');
         for (let i = 0; i < 30; i++) {
           await new Promise(r => setTimeout(r, 100));
-          ch = voiceChannelRef.current;
-          if (ch) break;
+          if (voiceChannelSubscribedRef.current) {
+            isSubscribed = true;
+            break;
+          }
         }
       }
 
-      if (ch) {
+      const ch = voiceChannelRef.current;
+      if (ch && isSubscribed) {
         console.log('[Agent Call] Sending voice_call_from_agent on channel:', ch.topic);
         ch.send({
           type: 'broadcast',
@@ -736,7 +744,7 @@ export default function ChatThread({
           }
         }, 30000);
       } else {
-        console.error('[Agent Call] Voice channel not ready after 3s, cannot send offer');
+        console.error('[Agent Call] Failed to send offer: channel not subscribed');
         handleEndVoiceCall(false);
       }
     } catch (err) {
