@@ -2995,7 +2995,6 @@ export default function WidgetPage() {
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2.5 px-4 shadow-sm flex items-center gap-2.5 min-h-[40px]">
                     <div className="relative flex items-center justify-center w-5 h-5">
-                      <div className="absolute inset-0 rounded-full bg-red-500/15 animate-ping" style={{ animationDuration: '1.5s' }} />
                       <svg className="w-3.5 h-3.5 text-red-500 relative z-10" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                         <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
