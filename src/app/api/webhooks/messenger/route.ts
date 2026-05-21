@@ -270,6 +270,65 @@ export async function POST(request: Request) {
               .from("conversations")
               .update({ last_message_at: new Date().toISOString() })
               .eq("id", conversation.id);
+
+            // 7. Dynamic Messenger Auto-Reply Trigger
+            if (channelType === 'messenger') {
+              const pageAccessToken = channel.config?.access_token;
+              if (pageAccessToken) {
+                const autoReplyText = `আসসালামু আলাইকুম। এই মুহূর্তে আমরা মেসেঞ্জারে সাপোর্ট প্রদান করছি না। \n\nতাৎক্ষণিক সাপোর্টের জন্য অনুগ্রহ করে আমাদের হোয়াটসঅ্যাপ নম্বরে মেসেজ করুন অথবা আমাদের ওয়েবসাইট (https://hostnin.com) থেকে লাইভ চ্যাটে মেসেজ দিন। আমরা হোয়াটসঅ্যাপ ও ওয়েবসাইট চ্যাটে ১৫ সেকেন্ডের মধ্যে রিপ্লাই দিয়ে থাকি! ❤️\n\n---\n\nHello! We are not providing active support on Messenger right now. \n\nFor instant support, please message us on WhatsApp or use the live chat on our website (https://hostnin.com). We typically reply within 15 seconds on WhatsApp and Website chat!`;
+
+                try {
+                  // 1. Insert auto-reply message into Database as "ai" sender so agents see it instantly
+                  const { data: insertedMsg } = await supabaseAdmin
+                    .from("messages")
+                    .insert({
+                      org_id: orgId,
+                      conversation_id: conversation.id,
+                      sender_type: "ai",
+                      sender_id: null,
+                      content: autoReplyText,
+                      content_type: "text",
+                      status: "sending"
+                    })
+                    .select("id")
+                    .single();
+
+                  // 2. Post to Meta API to send the actual response to the user's Messenger inbox
+                  const endpoint = `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
+                  const fbResponse = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      recipient: { id: senderId },
+                      message: { text: autoReplyText },
+                      messaging_type: "RESPONSE"
+                    })
+                  });
+
+                  const fbResult = await fbResponse.json();
+                  if (fbResponse.ok && fbResult?.message_id && insertedMsg) {
+                    await supabaseAdmin
+                      .from("messages")
+                      .update({
+                        platform_message_id: fbResult.message_id,
+                        status: "delivered"
+                      })
+                      .eq("id", insertedMsg.id);
+                  } else if (insertedMsg) {
+                    console.error("Auto-reply Meta send failed:", fbResult);
+                    await supabaseAdmin
+                      .from("messages")
+                      .update({
+                        status: "failed",
+                        metadata: { delivery_error: fbResult?.error?.message || "Meta API send failed" }
+                      })
+                      .eq("id", insertedMsg.id);
+                  }
+                } catch (sendErr) {
+                  console.error("Failed to send/save Messenger auto-reply:", sendErr);
+                }
+              }
+            }
           }
         }
       }
