@@ -1213,7 +1213,6 @@ export default function ChatThread({
   
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null)
   const [editingMessage, setEditingMessage] = useState<any | null>(null)
-  const [editInput, setEditInput] = useState("")
 
   const handleContextMenu = (e: React.MouseEvent, message: any) => {
     if (message.content_type !== 'text') return
@@ -1228,12 +1227,13 @@ export default function ChatThread({
 
   const triggerEditMessage = (msg: any) => {
     setEditingMessage(msg);
-    setEditInput(msg.content);
+    setInput(msg.content);
     setContextMenu(null);
     setTimeout(() => {
-      const element = document.getElementById(`msg-${msg.id}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const len = msg.content?.length || 0;
+        textareaRef.current.setSelectionRange(len, len);
       }
     }, 100);
   }
@@ -1346,6 +1346,15 @@ export default function ChatThread({
     // Mark as read when messages load or change
     if (messages.length > 0) {
       markMessagesAsRead(conversationId, 'agent');
+      const hasUnread = messages.some(m => m.sender_type === 'contact' && m.status !== 'read');
+      if (hasUnread) {
+        const updatedMessages = messages.map(m => 
+          (m.sender_type === 'contact' && m.status !== 'read') ? { ...m, status: 'read' } : m
+        );
+        setTimeout(() => {
+          useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+        }, 50);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, conversationId])
@@ -1549,6 +1558,22 @@ export default function ChatThread({
 
     const msgText = input.trim()
     const currentAttachments = [...stagedAttachments]
+    
+    if (editingMessage) {
+      setInput("");
+      try {
+         await editMessage(editingMessage.id, msgText);
+         const updatedMessages = messages.map(m => 
+           m.id === editingMessage.id ? { ...m, content: msgText } : m
+         );
+         useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+      } catch (err: any) {
+         console.error('Failed to edit: ' + err.message);
+      } finally {
+         setEditingMessage(null);
+      }
+      return;
+    }
     
     // Capture and clear reply message instantly
     const repliedMessage = replyToMessage
@@ -2435,17 +2460,15 @@ export default function ChatThread({
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       className={`${
-                        editingMessage?.id === msg.id
-                          ? 'w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-slate-900 dark:text-slate-100 min-w-[280px]'
-                          : (msg.status === 'recalled' || msg.status === 'deleted')
-                            ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
-                            : msg.is_internal 
-                              ? msg.sender_id === currentUser?.id
-                                ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                                : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
-                              : msg.content_type === 'audio' 
-                                ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                        (msg.status === 'recalled' || msg.status === 'deleted')
+                          ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
+                          : msg.is_internal 
+                            ? msg.sender_id === currentUser?.id
+                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                            : msg.content_type === 'audio' 
+                              ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                              : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -2453,37 +2476,6 @@ export default function ChatThread({
                           <Ban size={13} className="opacity-60 shrink-0" />
                           <span>This message was recalled</span>
                         </>
-                      ) : editingMessage?.id === msg.id ? (
-                        <div className="flex flex-col gap-2.5 min-w-[240px]" onClick={e => e.stopPropagation()}>
-                          <textarea
-                            value={editInput}
-                            onChange={(e) => setEditInput(e.target.value)}
-                            className="w-full p-2.5 text-[14px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] resize-none shadow-sm"
-                            rows={3}
-                            autoFocus
-                          />
-                          <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => setEditingMessage(null)}
-                              className="px-3.5 py-1.5 text-[12px] font-semibold text-slate-650 hover:text-slate-800 dark:text-slate-350 dark:hover:text-white border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                            <button 
-                              onClick={async () => {
-                                try {
-                                  await editMessage(msg.id, editInput);
-                                  setEditingMessage(null);
-                                } catch (err: any) {
-                                  alert('Failed to edit: ' + err.message);
-                                }
-                              }}
-                              className="px-4 py-1.5 text-[12px] font-bold text-white bg-[#0070f3] hover:bg-blue-600 rounded-lg shadow-sm transition active:scale-95 cursor-pointer"
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </div>
                       ) : (
                         <>
                           {/* Render Reply Preview if present */}
@@ -2566,7 +2558,7 @@ export default function ChatThread({
                   {!msg.is_internal && (
                     <>
                       {msg.status === 'sending' ? (
-                        <Clock size={12} className="text-slate-400 animate-pulse" />
+                        <Check size={14} className="text-slate-400" />
                       ) : msg.status === 'failed' ? (
                         <span 
                           className="text-[10px] text-red-500 cursor-pointer hover:text-red-600 underline ml-1"
@@ -2918,6 +2910,27 @@ export default function ChatThread({
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+              {editingMessage && (
+                <div className="mx-4 mt-3 mb-1 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border-l-4 border-amber-500 dark:border-amber-500 rounded-r-lg flex items-center justify-between text-left select-none relative animate-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex flex-col gap-0.5 max-w-[90%]">
+                    <span className="text-[12px] font-semibold text-amber-600 dark:text-amber-400">
+                      Editing message
+                    </span>
+                    <span className="text-[13px] text-slate-600 dark:text-slate-350 truncate font-normal leading-relaxed">
+                      {editingMessage.content_type === 'image' ? 'Image' : editingMessage.content_type === 'video' ? 'Video' : editingMessage.content_type === 'audio' ? 'Voice message' : editingMessage.content}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setEditingMessage(null);
+                      setInput("");
+                    }}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700 rounded-full"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               )}
               {replyToMessage && (
