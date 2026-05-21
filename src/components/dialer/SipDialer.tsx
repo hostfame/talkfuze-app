@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff, ChevronDown, ExternalLink } from 'lucide-react'
 import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
+import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
 import { getLastCallForNumber, findConversationByPhone, saveCallNote } from '@/actions/calls'
@@ -15,7 +16,11 @@ const isPhoneNumber = (str: string) => {
 }
 
 export default function SipDialer() {
+  const authUser = useAuth()
   const { currentUser, pendingDialNumber, clearPendingDial, setSelectedId } = useInboxStore()
+  // Use authUser (always available from layout AuthProvider) for SIP creds,
+  // fall back to store's currentUser for display name
+  const sipUser = authUser || currentUser
   const [isOpen, setIsOpen] = useState(false)
   const [number, setNumber] = useState('')
   const [status, setStatus] = useState('Disconnected')
@@ -310,9 +315,11 @@ export default function SipDialer() {
 
     // Initialize SIP.js SimpleUser with per-agent credentials
     const server = 'wss://sip.talkfuze.com/ws'
-    const sipExtension = currentUser?.sip_extension || 'talkfuze_agent'
-    const sipPassword = currentUser?.sip_password || 'talkfuze_secure_pass_123'
+    const sipExtension = sipUser?.sip_extension || 'talkfuze_agent'
+    const sipPassword = sipUser?.sip_password || 'talkfuze_secure_pass_123'
     const aor = `sip:${sipExtension}@sip.talkfuze.com`
+    
+    console.log(`[SIP] Registering as ${sipExtension} for ${sipUser?.name || 'Unknown Agent'}`)
     
     const simpleUser = new Web.SimpleUser(server, {
       aor,
@@ -324,7 +331,7 @@ export default function SipDialer() {
       userAgentOptions: {
         authorizationPassword: sipPassword,
         authorizationUsername: sipExtension,
-        displayName: currentUser?.name || "TalkFuze Agent"
+        displayName: sipUser?.name || "TalkFuze Agent"
       }
     })
 
