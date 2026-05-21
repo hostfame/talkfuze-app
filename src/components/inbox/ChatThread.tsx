@@ -7,7 +7,7 @@ import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage, createQuickReply } from "@/actions/dashboard"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
-import { updateContactName } from "@/actions/contacts"
+import { updateContactName, updateContactEmail } from "@/actions/contacts"
 import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
@@ -3018,6 +3018,40 @@ export default function ChatThread({
             style={{ top: contextMenu.y, left: contextMenu.x }}
             className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[175px] animate-in fade-in zoom-in-95 duration-100"
           >
+            {/* Add to Database - Available if email is detected */}
+            {(() => {
+              const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
+              const emailMatch = contextMenu.message.content?.match(emailRegex);
+              const detectedEmail = emailMatch ? emailMatch[0] : null;
+
+              if (!detectedEmail || !contact?.id) return null;
+
+              return (
+                <button 
+                  onClick={async () => {
+                    setContextMenu(null);
+                    try {
+                      const result = await updateContactEmail(contact.id, detectedEmail);
+                      if (result.success) {
+                        if (conversationId) {
+                          updateConversation(conversationId, { contact: { ...contact, email: detectedEmail } });
+                        }
+                        alert(`Successfully added ${detectedEmail} to Database!`);
+                      } else {
+                        alert("Failed to add to database: " + result.error);
+                      }
+                    } catch (err: any) {
+                      alert("Error updating contact email: " + err.message);
+                    }
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[13px] text-blue-600 dark:text-[#00a884] hover:bg-blue-50/50 dark:hover:bg-[#00a884]/10 flex items-center gap-2 font-semibold border-b border-slate-100 dark:border-slate-700/50"
+                >
+                  <Database size={14} className="text-blue-500 dark:text-[#00a884]" />
+                  Add to Database
+                </button>
+              );
+            })()}
+
             {/* Reply - ALWAYS available for text messages */}
             <button 
               onClick={() => {
