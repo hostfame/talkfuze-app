@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin, Phone } from "lucide-react"
+import { Search, Plus, User, MessageSquare, Bot, HelpCircle, Users, ChevronDown, ChevronRight, MessageCircle, Smartphone, Pin, Phone, Bell } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
 import { useInboxStore } from "@/lib/store"
@@ -27,14 +27,15 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   }
 
   // Calculate badges
+  const alertChats = conversations.filter(c => c.tags?.includes('alert') && !c.is_archived).length
 
-  const pinnedChats = conversations.filter(c => c.is_pinned).length
+  const pinnedChats = conversations.filter(c => c.is_pinned && !c.tags?.includes('alert')).length
 
-  const allChats = conversations.length
+  const allChats = conversations.filter(c => !c.tags?.includes('alert') && !c.is_archived).length
 
-  const messengerChats = conversations.filter(c => firstRelation(c.channels)?.type === 'messenger').length
-  const whatsappChats = conversations.filter(c => firstRelation(c.channels)?.type === 'whatsapp').length
-  const instagramChats = conversations.filter(c => firstRelation(c.channels)?.type === 'instagram').length
+  const messengerChats = conversations.filter(c => firstRelation(c.channels)?.type === 'messenger' && !c.tags?.includes('alert')).length
+  const whatsappChats = conversations.filter(c => firstRelation(c.channels)?.type === 'whatsapp' && !c.tags?.includes('alert')).length
+  const instagramChats = conversations.filter(c => firstRelation(c.channels)?.type === 'instagram' && !c.tags?.includes('alert')).length
 
   return (
     <>
@@ -86,6 +87,16 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <div className="flex items-center gap-2"><Phone size={15} strokeWidth={2} /> Calls</div>
+          </div>
+
+          <div 
+            onClick={() => handleFilterClick('alerts')}
+            className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              activeFilter === 'alerts' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2"><Bell size={15} strokeWidth={2} /> Alerts</div>
+            <span className="text-[12px] font-medium">{alertChats}</span>
           </div>
 
           <div 

@@ -638,10 +638,31 @@ async function processMessage(msg) {
       status: 'delivered'
     });
 
-    // Update conversation last_message_at
-    await supabase.from('conversations')
-      .update({ last_message_at: new Date().toISOString() })
-      .eq('id', conversationId);
+    // Update conversation last_message_at and strip alert tags if customer replies
+    if (!fromMe) {
+      const { data: convData } = await supabase.from('conversations')
+        .select('tags')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (convData && convData.tags && convData.tags.includes('alert')) {
+        const cleanedTags = convData.tags.filter(t => t !== 'alert' && t !== 'automation');
+        await supabase.from('conversations')
+          .update({ 
+            last_message_at: new Date().toISOString(),
+            tags: cleanedTags
+          })
+          .eq('id', conversationId);
+      } else {
+        await supabase.from('conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', conversationId);
+      }
+    } else {
+      await supabase.from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+    }
 
     console.log(`[MSG] ${isGroup ? 'Group' : 'DM'} from ${fromMe ? 'Agent (Me)' : (senderName || senderJid)}: "${text.slice(0, 60)}"`);
   } catch (err) {

@@ -118,10 +118,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Database insert failed.' }, { status: 500 })
     }
 
-    // 7. Update last_message_at for thread persistence
+    // 7. Update last_message_at and tag as 'alert' for filtering
+    const { data: convData } = await supabaseAdmin
+      .from('conversations')
+      .select('tags')
+      .eq('id', conversationId)
+      .maybeSingle()
+
+    const currentTags = convData?.tags || []
+    const updatedTags = currentTags.includes('alert') ? currentTags : [...currentTags, 'alert']
+
     await supabaseAdmin
       .from('conversations')
-      .update({ last_message_at: new Date().toISOString() })
+      .update({ 
+        last_message_at: new Date().toISOString(),
+        tags: updatedTags
+      })
       .eq('id', conversationId)
 
     return NextResponse.json({

@@ -132,6 +132,12 @@ export default function ConversationList({
       return false; // Hide snoozed conversations
     }
 
+    const isAlert = conv.tags?.includes('alert');
+    if (activeFilter === 'alerts') {
+      return isAlert;
+    }
+    if (isAlert) return false;
+
     if (activeFilter === 'all') return true;
     
     const assignee = firstRelation(conv.assignee);
