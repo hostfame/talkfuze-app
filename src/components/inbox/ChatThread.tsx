@@ -4,7 +4,7 @@ import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2,
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
-import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
+import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage, createQuickReply } from "@/actions/dashboard"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName } from "@/actions/contacts"
@@ -1050,6 +1050,13 @@ export default function ChatThread({
   const [macroFilter, setMacroFilter] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
 
+  // Quick Replies Creation Modal
+  const [quickReplyModalOpen, setQuickReplyModalOpen] = useState(false)
+  const [quickReplyShortcut, setQuickReplyShortcut] = useState("")
+  const [quickReplyTitle, setQuickReplyTitle] = useState("")
+  const [quickReplyContent, setQuickReplyContent] = useState("")
+  const [quickReplySaving, setQuickReplySaving] = useState(false)
+
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
@@ -1085,7 +1092,6 @@ export default function ChatThread({
   const [editInput, setEditInput] = useState("")
 
   const handleContextMenu = (e: React.MouseEvent, message: any) => {
-    if (message.sender_type !== 'agent' && message.sender_type !== 'ai') return
     if (message.content_type !== 'text') return
     if (message.status === 'recalled' || message.status === 'deleted') return
     e.preventDefault()
@@ -1269,10 +1275,48 @@ export default function ChatThread({
     }
   }
 
-  const filteredMacros = quickReplies.filter(r => 
-    r.shortcut.toLowerCase().includes(macroFilter) || 
-    r.content.toLowerCase().includes(macroFilter)
-  )
+  const filteredMacros = quickReplies.filter(r => {
+    if (!macroFilter) return true;
+    const shortcutLower = r.shortcut.toLowerCase();
+    const titleLower = (r.title || '').toLowerCase();
+    
+    // Exact shortcut match or starts with shortcut prefix is highest priority
+    if (shortcutLower.startsWith(macroFilter) || titleLower.startsWith(macroFilter)) {
+      return true;
+    }
+    
+    // Shortcut or title contains the filter word
+    if (shortcutLower.includes(macroFilter) || titleLower.includes(macroFilter)) {
+      return true;
+    }
+    
+    // Content check: only match if the content has a word starting with the filter
+    const contentLower = r.content.toLowerCase();
+    const cleanFilter = macroFilter.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const wordRegex = new RegExp('\\b' + cleanFilter);
+    if (wordRegex.test(contentLower)) {
+      return true;
+    }
+    
+    return false;
+  }).sort((a, b) => {
+    if (!macroFilter) return a.shortcut.localeCompare(b.shortcut);
+    
+    const aShortcut = a.shortcut.toLowerCase();
+    const bShortcut = b.shortcut.toLowerCase();
+    
+    // Prioritize startsWith over contains
+    const aStartsWith = aShortcut.startsWith(macroFilter);
+    const bStartsWith = bShortcut.startsWith(macroFilter);
+    if (aStartsWith && !bStartsWith) return -1;
+    if (!aStartsWith && bStartsWith) return 1;
+    
+    // Prioritize exact match
+    if (aShortcut === macroFilter && bShortcut !== macroFilter) return -1;
+    if (bShortcut === macroFilter && aShortcut !== macroFilter) return 1;
+    
+    return aShortcut.localeCompare(bShortcut);
+  })
 
   const applyMacro = (message: string) => {
     setInput(message)
@@ -2376,13 +2420,16 @@ export default function ChatThread({
                     {safeMeta.participant_name && (
                       <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
-                    <div className={`${
-                      (msg.status === 'recalled' || msg.status === 'deleted')
-                        ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
-                        : msg.content_type === 'audio' 
-                          ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                          : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
-                    }`}>
+                    <div 
+                      onContextMenu={(e) => handleContextMenu(e, msg)}
+                      className={`${
+                        (msg.status === 'recalled' || msg.status === 'deleted')
+                          ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-555 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
+                          : msg.content_type === 'audio' 
+                            ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu' 
+                            : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu'
+                      }`}
+                    >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
                         <>
                           <Ban size={13} className="opacity-60 shrink-0" />
@@ -2781,36 +2828,56 @@ export default function ChatThread({
         >
           <div 
             style={{ top: contextMenu.y, left: contextMenu.x }}
-            className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[150px] animate-in fade-in zoom-in-95 duration-100"
+            className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[170px] animate-in fade-in zoom-in-95 duration-100"
           >
+            {/* Add to Quick Replies - ALWAYS available for text messages */}
             <button 
               onClick={() => {
-                setEditingMessage(contextMenu.message);
-                setEditInput(contextMenu.message.content);
+                setQuickReplyContent(contextMenu.message.content);
+                setQuickReplyShortcut("");
+                setQuickReplyTitle("");
+                setQuickReplyModalOpen(true);
                 setContextMenu(null);
               }}
               className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
             >
-              <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
-              Edit message
+              <Zap size={14} className="text-blue-500 dark:text-blue-400" />
+              Add to Quick Replies
             </button>
-            <button 
-              onClick={async () => {
-                const msgId = contextMenu.message.id;
-                setContextMenu(null);
-                if (confirm('Recall this message? It will delete it for everyone.')) {
-                  try {
-                    await recallMessage(msgId);
-                  } catch (err: any) {
-                    alert('Failed to recall: ' + err.message);
-                  }
-                }
-              }}
-              className="w-full text-left px-3.5 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
-            >
-              <Trash2 size={14} className="text-red-400 dark:text-red-500" />
-              Recall message
-            </button>
+
+            {/* Edit and Recall - Only for current agent's messages */}
+            {contextMenu.message.sender_id === currentUser?.id && (contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
+              <>
+                <button 
+                  onClick={() => {
+                    setEditingMessage(contextMenu.message);
+                    setEditInput(contextMenu.message.content);
+                    setContextMenu(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
+                >
+                  <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
+                  Edit message
+                </button>
+                <button 
+                  onClick={async () => {
+                    const msgId = contextMenu.message.id;
+                    setContextMenu(null);
+                    if (confirm('Recall this message? It will delete it for everyone.')) {
+                      try {
+                        await recallMessage(msgId);
+                      } catch (err: any) {
+                        alert('Failed to recall: ' + err.message);
+                      }
+                    }
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
+                >
+                  <Trash2 size={14} className="text-red-400 dark:text-red-500" />
+                  Recall message
+                </button>
+              </>
+            )}
           </div>
         </div>,
         document.body
@@ -2833,6 +2900,127 @@ export default function ChatThread({
           >
             <X size={24} />
           </button>
+        </div>,
+        document.body
+      )}
+
+      {/* Quick Reply Creation Modal */}
+      {quickReplyModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div 
+            className="bg-white dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <Zap size={18} className="fill-blue-500/20" />
+                </div>
+                <h3 className="text-[16px] font-bold text-slate-900 dark:text-slate-100">Add to Quick Replies</h3>
+              </div>
+              <button 
+                onClick={() => setQuickReplyModalOpen(false)}
+                className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!quickReplyShortcut.trim() || !quickReplyTitle.trim() || !quickReplyContent.trim()) return;
+              
+              const shortcut = quickReplyShortcut.toLowerCase().trim().replace(/^\//, ''); // strip leading slash if they typed it
+              if (quickReplies.some(r => r.shortcut.toLowerCase() === shortcut)) {
+                alert('Shortcut already exists! Please use a unique shortcut tag.');
+                return;
+              }
+
+              setQuickReplySaving(true);
+              try {
+                const created = await createQuickReply(orgId, shortcut, quickReplyTitle.trim(), quickReplyContent.trim());
+                if (created) {
+                  setQuickReplies(prev => [...prev, created as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)));
+                  setQuickReplyModalOpen(false);
+                }
+              } catch (err: any) {
+                alert('Failed to save quick reply: ' + err.message);
+              } finally {
+                setQuickReplySaving(false);
+              }
+            }} className="flex flex-col gap-4">
+              
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Shortcut Tag</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-[14px]">/</span>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="e.g. wal"
+                    value={quickReplyShortcut}
+                    onChange={(e) => setQuickReplyShortcut(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                    className="w-full pl-6 pr-3.5 py-2 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all font-semibold"
+                    disabled={quickReplySaving}
+                    autoFocus
+                  />
+                </div>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">Trigger abbreviation typed after / (e.g. typing /wal will insert this reply)</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Title / Description</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. Wa-alaykum Assalam Greeting"
+                  value={quickReplyTitle}
+                  onChange={(e) => setQuickReplyTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all"
+                  disabled={quickReplySaving}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Reply Message Content</label>
+                <textarea 
+                  required
+                  placeholder="Type the message to send..."
+                  value={quickReplyContent}
+                  onChange={(e) => setQuickReplyContent(e.target.value)}
+                  rows={4}
+                  className="w-full px-3.5 py-2.5 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all resize-none shadow-sm"
+                  disabled={quickReplySaving}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setQuickReplyModalOpen(false)}
+                  className="px-4 py-2 text-[13px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  disabled={quickReplySaving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-[13px] font-bold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
+                  disabled={quickReplySaving || !quickReplyShortcut.trim() || !quickReplyTitle.trim() || !quickReplyContent.trim()}
+                >
+                  {quickReplySaving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Reply</span>
+                  )}
+                </button>
+              </div>
+
+            </form>
+          </div>
         </div>,
         document.body
       )}

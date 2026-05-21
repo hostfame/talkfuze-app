@@ -145,6 +145,9 @@ export default function InboxPage() {
             callerName: payload.payload.callerName
           });
           useInboxStore.getState().setSelectedId(payload.payload.conversationId);
+          // Send desktop notification for incoming voice call
+          const caller = payload.payload.callerName || 'Customer';
+          sendDesktopNotification('Incoming Voice Call 📞', `${caller} is calling you...`);
           // Play a small alert sound immediately (ChatThread will play ringtone later)
           playUISound('receive');
         }

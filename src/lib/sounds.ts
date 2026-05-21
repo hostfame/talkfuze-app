@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
 // Sound Presets System
 // ─────────────────────────────────────────────
 
-export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud';
+export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud' | 'custom';
 
 export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string }[] = [
   { id: 'default', name: 'Default', description: 'Subtle pop sound' },
@@ -52,6 +52,7 @@ export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string
   { id: 'bell', name: 'Bell', description: 'Clear bell ring' },
   { id: 'alert', name: 'Alert', description: 'Urgent double-beep' },
   { id: 'loud', name: 'Loud Ping', description: 'Loud triple ping for noisy environments' },
+  { id: 'custom', name: 'Custom Uploaded Sound', description: 'Your custom uploaded notification sound' },
 ];
 
 export const getSelectedSound = (): SoundPreset => {
@@ -69,9 +70,9 @@ export const MIN_SOUND_VOLUME = 0.30;
 export const MIN_RINGTONE_VOLUME = 0.40;
 
 export const getSoundVolume = (): number => {
-  if (typeof window === 'undefined') return 0.9;
+  if (typeof window === 'undefined') return 1.0;
   const stored = localStorage.getItem('talkfuze_sound_volume');
-  const val = stored ? parseFloat(stored) : 0.9;
+  const val = stored ? parseFloat(stored) : 1.0;
   return Math.max(MIN_SOUND_VOLUME, val);
 };
 
@@ -84,7 +85,7 @@ export const setSoundVolume = (vol: number): void => {
 // Call Ringtone Presets System
 // ─────────────────────────────────────────────
 
-export type RingtonePreset = 'classic' | 'digital' | 'urgent' | 'marimba' | 'siren';
+export type RingtonePreset = 'classic' | 'digital' | 'urgent' | 'marimba' | 'siren' | 'custom';
 
 export const RINGTONE_PRESETS: { id: RingtonePreset; name: string; description: string }[] = [
   { id: 'classic', name: 'Classic', description: 'Traditional telephone ring' },
@@ -92,11 +93,12 @@ export const RINGTONE_PRESETS: { id: RingtonePreset; name: string; description: 
   { id: 'urgent', name: 'Urgent', description: 'Fast-paced alert ring' },
   { id: 'marimba', name: 'Marimba', description: 'Melodic ascending pattern' },
   { id: 'siren', name: 'Siren', description: 'Loud oscillating alarm for noisy environments' },
+  { id: 'custom', name: 'Custom Uploaded Ringtone', description: 'Your custom uploaded call ringtone' },
 ];
 
 export const getSelectedRingtone = (): RingtonePreset => {
-  if (typeof window === 'undefined') return 'classic';
-  return (localStorage.getItem('talkfuze_ringtone_preset') as RingtonePreset) || 'classic';
+  if (typeof window === 'undefined') return 'siren';
+  return (localStorage.getItem('talkfuze_ringtone_preset') as RingtonePreset) || 'siren';
 };
 
 export const setSelectedRingtone = (preset: RingtonePreset): void => {
@@ -396,8 +398,24 @@ export const playUISound = (type: 'send' | 'receive') => {
   // Send sound uses its own independent volume
   if (type === 'send') {
     const sendVol = typeof window !== 'undefined'
-      ? Math.max(0.15, parseFloat(localStorage.getItem('talkfuze_send_volume') || '0.5'))
-      : 0.5;
+      ? Math.max(0.15, parseFloat(localStorage.getItem('talkfuze_send_volume') || '1.0'))
+      : 1.0;
+    
+    // Play custom send sound if uploaded
+    if (typeof window !== 'undefined') {
+      const customSend = localStorage.getItem('talkfuze_custom_sound_send');
+      if (customSend) {
+        try {
+          const audio = new Audio(customSend);
+          audio.volume = Math.min(sendVol, 1.0);
+          audio.play().catch(() => playSynthesizedSound(type));
+          return;
+        } catch {
+          // Fallback to standard swoosh
+        }
+      }
+    }
+
     try {
       const audio = new Audio('/swoosh.mp3');
       audio.volume = Math.min(sendVol, 1.0);
@@ -414,7 +432,23 @@ export const playUISound = (type: 'send' | 'receive') => {
   }
 
   // Receive sound uses the selected preset
-  if (preset === 'default') {
+  if (preset === 'custom') {
+    if (typeof window !== 'undefined') {
+      const customMsg = localStorage.getItem('talkfuze_custom_sound_msg');
+      if (customMsg) {
+        try {
+          const audio = new Audio(customMsg);
+          audio.volume = Math.min(volume, 1.0);
+          audio.play().catch(() => playSynthPreset('loud', volume));
+          return;
+        } catch {
+          // Fallback to loud preset
+        }
+      }
+    }
+    // Fallback if custom file is missing
+    playSynthPreset('loud', volume);
+  } else if (preset === 'default') {
     // Original behavior: try mp3 first, fallback to synth
     try {
       const audio = new Audio('/pop.mp3');
@@ -684,17 +718,43 @@ const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
   }
 };
 
+let customRingtoneAudio: HTMLAudioElement | null = null;
+
 export const playIncomingRingtoneLoop = (): void => {
   if (typeof window === 'undefined') return;
-  if (ringtoneIntervalId !== null) return;
+  if (ringtoneIntervalId !== null || customRingtoneAudio !== null) return;
 
   const preset = getSelectedRingtone();
   const vol = getRingtoneVolume();
 
-  playRingtoneChime(preset, vol);
-  // Interval based on preset length
-  const interval = preset === 'marimba' ? 2200 : preset === 'urgent' ? 1400 : 1800;
-  ringtoneIntervalId = setInterval(() => playRingtoneChime(preset, vol), interval);
+  if (preset === 'custom') {
+    const customRing = localStorage.getItem('talkfuze_custom_sound_ring');
+    if (customRing) {
+      try {
+        const audio = new Audio(customRing);
+        audio.loop = true;
+        audio.volume = Math.min(vol, 1.0);
+        audio.play().then(() => {
+          customRingtoneAudio = audio;
+        }).catch(() => {
+          // Fallback to siren if play fails
+          playRingtoneChime('siren', vol);
+          ringtoneIntervalId = setInterval(() => playRingtoneChime('siren', vol), 1800);
+        });
+        return;
+      } catch {
+        // Fallback
+      }
+    }
+    // Fallback if missing
+    playRingtoneChime('siren', vol);
+    ringtoneIntervalId = setInterval(() => playRingtoneChime('siren', vol), 1800);
+  } else {
+    playRingtoneChime(preset, vol);
+    // Interval based on preset length
+    const interval = preset === 'marimba' ? 2200 : preset === 'urgent' ? 1400 : 1800;
+    ringtoneIntervalId = setInterval(() => playRingtoneChime(preset, vol), interval);
+  }
 };
 
 export const stopIncomingRingtoneLoop = (): void => {
@@ -702,10 +762,36 @@ export const stopIncomingRingtoneLoop = (): void => {
     clearInterval(ringtoneIntervalId);
     ringtoneIntervalId = null;
   }
+  if (customRingtoneAudio !== null) {
+    try {
+      customRingtoneAudio.pause();
+      customRingtoneAudio.currentTime = 0;
+    } catch {
+      // Ignore
+    }
+    customRingtoneAudio = null;
+  }
 };
 
 // Preview a single cycle of a ringtone preset (for settings page)
 export const previewRingtone = (preset: RingtonePreset): void => {
   const vol = getRingtoneVolume();
-  playRingtoneChime(preset, vol);
+  if (preset === 'custom') {
+    const customRing = localStorage.getItem('talkfuze_custom_sound_ring');
+    if (customRing) {
+      try {
+        const audio = new Audio(customRing);
+        audio.volume = Math.min(vol, 1.0);
+        audio.play();
+        // Stop it after 3 seconds for preview purposes
+        setTimeout(() => {
+          try { audio.pause(); } catch {}
+        }, 3000);
+        return;
+      } catch {}
+    }
+    playRingtoneChime('siren', vol);
+  } else {
+    playRingtoneChime(preset, vol);
+  }
 };
