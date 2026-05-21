@@ -84,6 +84,14 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
   const effectivePhoneId = contactPhone || displayPlatformId
 
+  const isPhone = (text: string) => {
+    if (!text) return false
+    if (text.includes('@')) return false
+    const cleaned = text.replace(/[\s\-+()]/g, '')
+    return /^\d+$/.test(cleaned) && cleaned.length >= 7
+  }
+  const showCallButton = isPhone(effectivePhoneId) && !isInstagram && !isMessenger
+
   const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
   
   // Co-Browsing States
@@ -792,9 +800,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                 <p className="text-[13px] text-slate-500 truncate">
                   {contactPhone && contactPhone.includes('@') ? displayId : (contactPhone ? `Phone: ${contactPhone}` : displayId)}
                 </p>
-                {contactPhone && !contactPhone.includes('@') && (
+                {showCallButton && (
                   <button 
-                    onClick={() => triggerDial(contactPhone)}
+                    onClick={() => triggerDial(effectivePhoneId)}
                     className="p-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all flex items-center justify-center shrink-0 cursor-pointer shadow-sm active:scale-95"
                     title="Call via Dialer"
                   >
