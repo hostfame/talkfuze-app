@@ -1,10 +1,10 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy, Server } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone, updateContactEmail } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import ForwardButton from "./ForwardButton"
@@ -53,6 +53,87 @@ interface WhmcsInvoice {
 
 function firstRelation<T>(relation: Relation<T> | undefined) {
   return Array.isArray(relation) ? relation[0] : relation
+}
+
+function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const handleCpanelLogin = async () => {
+    if (loggingIn) return;
+    setLoggingIn(true);
+    const res = await generateWHMCSControlPanelSsoToken(clientId, product.id);
+    setLoggingIn(false);
+    if (res.success && res.redirect_url) {
+      window.open(res.redirect_url, '_blank');
+    } else {
+      alert(res.error || "Failed to generate cPanel login token");
+    }
+  };
+
+  return (
+    <div className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
+      <div 
+        className="flex items-start justify-between cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex flex-col pr-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+              {product.status}
+            </span>
+          </div>
+          {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">{product.domain}</p>}
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {product.status === 'Active' && (
+             <button 
+                onClick={(e) => { e.stopPropagation(); handleCpanelLogin(); }}
+                disabled={loggingIn}
+                className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-50 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1.5 rounded transition-colors flex items-center justify-center border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+                title="Login to cPanel"
+             >
+                {loggingIn ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+             </button>
+          )}
+          <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${clientId}&id=${product.id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-slate-400 hover:text-blue-500 transition-colors p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800" title="View Service">
+            <ExternalLink size={13} />
+          </a>
+          <div className="p-1 text-slate-300 dark:text-slate-600">
+            <ChevronDown size={14} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          </div>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800/80 space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
+           <div className="flex items-center justify-between">
+             <span className="text-[11.5px] text-slate-500 dark:text-slate-400 font-medium">Username</span>
+             <div className="flex items-center gap-2">
+               <span className="text-[11.5px] font-mono text-slate-800 dark:text-slate-200">{product.username || 'Not set'}</span>
+               {product.username && (
+                 <button onClick={() => { navigator.clipboard.writeText(product.username || ''); alert('Username copied!'); }} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Username">
+                   <Copy size={11} />
+                 </button>
+               )}
+             </div>
+           </div>
+           <div className="flex items-center justify-between">
+             <span className="text-[11.5px] text-slate-500 dark:text-slate-400 font-medium">Password</span>
+             <div className="flex items-center gap-2">
+               <span className="text-[11.5px] font-mono text-slate-800 dark:text-slate-200">{product.password ? '••••••••' : 'Not set'}</span>
+               {product.password && (
+                 <button onClick={() => { navigator.clipboard.writeText(product.password || ''); alert('Password copied!'); }} className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1 rounded border border-slate-200 dark:border-slate-700 shadow-sm" title="Copy Password">
+                   <Copy size={11} />
+                 </button>
+               )}
+             </div>
+           </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ContactSidebar({ conversation, orgId }: { conversation?: ConversationWithDetails | null, orgId: string }) {
@@ -1197,16 +1278,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                     ) : (
                       <>
                         {whmcsServices?.products?.map((product: WhmcsProduct) => (
-                          <div key={product.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{product.name}</p>
-                              <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${whmcsClient.id}&id=${product.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Service">
-                                <ExternalLink size={13} />
-                              </a>
-                            </div>
-                            {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium">{product.domain}</p>}
-                            <span className={`inline-block text-[12px] font-semibold mt-1.5 px-2.5 py-0.5 rounded-full ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{product.status}</span>
-                          </div>
+                          <ServiceItem key={product.id} product={product} clientId={whmcsClient.id} />
                         ))}
                         {!whmcsServices?.products?.length && (
                            <p className="text-[12px] text-slate-500 text-center py-4">No services found.</p>

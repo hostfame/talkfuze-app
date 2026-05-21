@@ -329,3 +329,13 @@ export async function generateWHMCSSsoToken(clientId: number) {
     return { success: false, error: error.message || "Failed to generate token" }
   }
 }
+
+export async function generateWHMCSControlPanelSsoToken(clientId: number, serviceId: number) {
+  try {
+    const result = await createSsoToken(clientId, 'sso:custom_redirect', `clientarea.php?action=productdetails&id=${serviceId}&dosinglesignon=1`);
+    return { success: true, redirect_url: result.redirect_url }
+  } catch (error: any) {
+    console.error("Failed to generate cPanel SSO token:", error)
+    return { success: false, error: error.message || "Failed to generate token" }
+  }
+}
