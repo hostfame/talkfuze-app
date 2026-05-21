@@ -90,7 +90,6 @@ export default function SipDialer() {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     dragOffsetRef.current = { x: clientX - rect.left, y: clientY - rect.top }
-    e.preventDefault()
   }
 
   useEffect(() => {
@@ -98,11 +97,27 @@ export default function SipDialer() {
       if (!isDraggingRef.current) return
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-      const x = Math.max(0, Math.min(clientX - dragOffsetRef.current.x, window.innerWidth - 310))
+      const banner = bannerRef.current
+      if (!banner) return
+
+      const x = Math.max(0, Math.min(clientX - dragOffsetRef.current.x, window.innerWidth - 350))
       const y = Math.max(0, Math.min(clientY - dragOffsetRef.current.y, window.innerHeight - 100))
-      setBannerPos({ x, y })
+      
+      // Directly manipulate DOM for 60fps buttery-smooth dragging
+      banner.style.left = `${x}px`
+      banner.style.top = `${y}px`
+      banner.style.right = 'auto' // override default right position
     }
-    const handleUp = () => { isDraggingRef.current = false }
+
+    const handleUp = () => {
+      if (!isDraggingRef.current) return
+      isDraggingRef.current = false
+      const banner = bannerRef.current
+      if (banner) {
+        const rect = banner.getBoundingClientRect()
+        setBannerPos({ x: rect.left, y: rect.top })
+      }
+    }
     
     window.addEventListener('mousemove', handleMove)
     window.addEventListener('mouseup', handleUp)
@@ -545,8 +560,16 @@ export default function SipDialer() {
         reconnectAttempts = 0
       },
       onUnregistered: () => {
-        setStatus('Disconnected')
         setIsRegistered(false)
+        triggerBackoffReconnect()
+        
+        // Immunity: If we have an active call, do NOT disrupt the UI or timer.
+        if (activeCallSessionRef.current) {
+          console.log('[SIP] Unregistered event received, but ignoring to preserve active call.')
+          return
+        }
+        
+        setStatus('Disconnected')
         stopSynthesizedRing()
         stopTimer()
         setActiveCallSession(null)
@@ -555,11 +578,18 @@ export default function SipDialer() {
         setIsMicMuted(false)
         setShowTransferInput(false)
         setShowInCallKeypad(false)
-        triggerBackoffReconnect()
       },
       onServerDisconnect: () => {
-        setStatus('Disconnected')
         setIsRegistered(false)
+        triggerBackoffReconnect()
+        
+        // Immunity: If we have an active call, do NOT disrupt the UI or timer.
+        if (activeCallSessionRef.current) {
+          console.log('[SIP] Server disconnect received, but ignoring to preserve active call.')
+          return
+        }
+        
+        setStatus('Disconnected')
         stopSynthesizedRing()
         stopTimer()
         setActiveCallSession(null)
@@ -568,7 +598,6 @@ export default function SipDialer() {
         setIsMicMuted(false)
         setShowTransferInput(false)
         setShowInCallKeypad(false)
-        triggerBackoffReconnect()
       }
     }
 
@@ -906,11 +935,11 @@ export default function SipDialer() {
       {activeCallSession && (
         <div 
           ref={bannerRef}
-          className={`fixed z-[9999] w-[340px] bg-slate-900/95 dark:bg-slate-950/95 text-white backdrop-blur-xl border border-slate-800/80 shadow-[0_8px_30px_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden transition-all duration-300 ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
+          className={`fixed z-[9999] w-[340px] bg-gradient-to-b from-[#1c222b] to-[#12161c] text-white border border-emerald-500/20 shadow-[0_12px_40px_rgba(0,0,0,0.4),0_0_20px_rgba(16,185,129,0.06)] rounded-2xl overflow-hidden ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
           style={bannerPos ? { left: bannerPos.x, top: bannerPos.y } : { top: 16, right: 12 }}>
           
           {/* Main Pill Row */}
-          <div className="flex items-center justify-between gap-2.5 px-3 py-2.5 min-h-[58px]">
+          <div className="flex items-center justify-between gap-2.5 px-3 py-2.5 min-h-[58px] bg-slate-900/40">
             {/* Drag Handle & Avatar */}
             <div 
               className="flex items-center gap-2 cursor-grab active:cursor-grabbing shrink-0"
@@ -920,33 +949,33 @@ export default function SipDialer() {
               {/* Sleek dotted drag handle */}
               <div className="flex flex-col gap-0.5 opacity-40 hover:opacity-75">
                 <div className="flex gap-0.5">
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
                 </div>
                 <div className="flex gap-0.5">
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
                 </div>
                 <div className="flex gap-0.5">
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
-                  <span className="w-0.5 h-0.5 rounded-full bg-white"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
+                  <span className="w-0.5 h-0.5 rounded-full bg-emerald-400"></span>
                 </div>
               </div>
               
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 text-[#0070f3] flex items-center justify-center shrink-0 shadow-sm relative group">
-                <User size={15} strokeWidth={2.5} className="text-[#0070f3]" />
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-inner relative group">
+                <User size={15} strokeWidth={2.5} className="text-emerald-400" />
                 {sessionState === SessionState.Established && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-900 animate-pulse"></span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#1c222b] animate-pulse"></span>
                 )}
               </div>
             </div>
 
             {/* Identity & Status */}
             <div className="flex flex-col min-w-0 flex-1 justify-center">
-              <span className="font-semibold text-white text-[12.5px] truncate leading-tight">
+              <span className="font-bold text-slate-100 text-[12.5px] tracking-wide truncate leading-tight">
                 {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
               </span>
-              <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+              <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 mt-1">
                 {iceState === 'disconnected' ? (
                   <>
                     <AlertTriangle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />
@@ -954,9 +983,17 @@ export default function SipDialer() {
                   </>
                 ) : (
                   status === 'Connected' ? (
-                    <span className="text-emerald-400 font-semibold">{`Connected • ${formatTime(callDuration)}`}</span>
+                    <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      {`Connected • ${formatTime(callDuration)}`}
+                    </span>
                   ) :
-                  status === 'Incoming Call...' ? 'Incoming Call' :
+                  status === 'Incoming Call...' ? (
+                    <span className="text-emerald-400 font-semibold animate-pulse flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Incoming Call...
+                    </span>
+                  ) :
                   status === 'Connecting...' ? 'Connecting...' :
                   status === 'Calling...' || status === 'Dialing...' ? 'Calling...' :
                   status
@@ -970,7 +1007,7 @@ export default function SipDialer() {
               {(whmcsClientInfo || matchedConversationId) && (
                 <button 
                   onClick={() => setIsClientExpanded(!isClientExpanded)}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${isClientExpanded ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'}`}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${isClientExpanded ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'text-slate-400 border-transparent hover:text-white hover:bg-slate-800/60'}`}
                   title="Client Details & Notes"
                 >
                   <ChevronDown size={14} className={`transition-transform duration-200 ${isClientExpanded ? 'rotate-180' : ''}`} />
@@ -986,7 +1023,7 @@ export default function SipDialer() {
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                       isMuted 
                         ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                        : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                        : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/10'
                     }`}
                     title={isMuted ? "Muted" : "Mute Ring"}
                   >
@@ -994,7 +1031,7 @@ export default function SipDialer() {
                   </button>
                   <button 
                     onClick={handleAnswer}
-                    className="w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white flex items-center justify-center transition-all shadow-md cursor-pointer animate-pulse"
+                    className="w-7 h-7 rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-900 flex items-center justify-center transition-all shadow-md cursor-pointer animate-pulse"
                     title="Answer"
                   >
                     <Phone size={13} strokeWidth={2.5} />
@@ -1006,10 +1043,10 @@ export default function SipDialer() {
                   {sessionState === SessionState.Established && (
                     <button
                       onClick={handleHold}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
                         isOnHold
-                          ? 'bg-amber-500 text-white shadow-[0_2px_6px_rgba(245,158,11,0.3)]'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
+                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
                       }`}
                       title={isOnHold ? "Resume" : "Hold"}
                     >
@@ -1021,10 +1058,10 @@ export default function SipDialer() {
                   {sessionState === SessionState.Established && (
                     <button
                       onClick={handleMicMute}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
                         isMicMuted
-                          ? 'bg-rose-500 text-white shadow-[0_2px_6px_rgba(239,68,68,0.3)]'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-rose-500/20 border-rose-500/30 text-rose-400'
+                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
                       }`}
                       title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
                     >
@@ -1036,10 +1073,10 @@ export default function SipDialer() {
                   {sessionState === SessionState.Established && (
                     <button
                       onClick={() => setShowInCallKeypad(!showInCallKeypad)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
                         showInCallKeypad
-                          ? 'bg-blue-500 text-white'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
                       }`}
                       title="Keypad"
                     >
@@ -1051,10 +1088,10 @@ export default function SipDialer() {
                   {sessionState === SessionState.Established && (
                     <button
                       onClick={() => setShowTransferInput(!showTransferInput)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
                         showTransferInput
-                          ? 'bg-indigo-500 text-white'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
+                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
                       }`}
                       title="Transfer Call"
                     >
@@ -1069,7 +1106,7 @@ export default function SipDialer() {
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-md cursor-pointer ${
                       !canHangUp 
                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                        : 'bg-rose-500 hover:bg-rose-600 active:scale-95 text-white'
+                        : 'bg-rose-500 hover:bg-rose-600 hover:shadow-[0_0_12px_rgba(239,68,68,0.3)] active:scale-95 text-white'
                     }`}
                     title={!canHangUp ? "Connecting..." : "Hang up"}
                   >
@@ -1086,11 +1123,11 @@ export default function SipDialer() {
 
           {/* Bottom Expandable Details Tray */}
           {isClientExpanded && (whmcsClientInfo || matchedConversationId || lastCallInfo) && (
-            <div className="border-t border-slate-800/80 bg-slate-950/50 p-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="border-t border-slate-800/80 bg-[#0f1217] p-3.5 space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
               
               {/* Transfer Input Overlay inside tray */}
               {showTransferInput && (
-                <div className="flex items-center gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800/80">
+                <div className="flex items-center gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800/80 focus-within:border-emerald-500/30 transition-all">
                   <input
                     type="text"
                     value={transferNumber}
@@ -1103,7 +1140,7 @@ export default function SipDialer() {
                   <button
                     onClick={handleBlindTransfer}
                     disabled={!transferNumber.trim()}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#0070f3] text-white hover:bg-blue-600 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500 text-slate-900 hover:bg-emerald-600 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
                   >
                     Transfer
                   </button>
@@ -1112,12 +1149,12 @@ export default function SipDialer() {
 
               {/* In-Call DTMF Mini Keypad inside tray */}
               {showInCallKeypad && sessionState === SessionState.Established && (
-                <div className="grid grid-cols-4 gap-1 p-2 bg-slate-900 rounded-lg border border-slate-800/80">
+                <div className="grid grid-cols-4 gap-1 p-2 bg-[#14181f] rounded-lg border border-slate-800/80">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
                     <button
                       key={key}
                       onClick={() => sendDTMF(key)}
-                      className="h-6 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                      className="h-6 rounded bg-slate-800/50 hover:bg-emerald-500/20 hover:text-emerald-400 text-[10px] font-bold text-slate-300 flex items-center justify-center active:scale-90 transition-all cursor-pointer"
                     >
                       {key}
                     </button>
@@ -1127,29 +1164,33 @@ export default function SipDialer() {
 
               {/* WHMCS Profile details */}
               {whmcsClientInfo && (
-                <div className="space-y-1.5 text-[11.5px]">
+                <div className="space-y-2 text-[11.5px]">
                   <div className="flex items-center justify-between border-b border-slate-900/60 pb-1.5">
-                    <span className="text-slate-400">WHMCS Client</span>
-                    <span className="font-semibold text-white">#{whmcsClientInfo.id} ({whmcsClientInfo.status})</span>
+                    <span className="text-slate-400 font-medium">WHMCS Client</span>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold rounded">
+                      #{whmcsClientInfo.id} ({whmcsClientInfo.status})
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Name</span>
-                    <span className="text-slate-200 font-medium">{whmcsClientInfo.name}</span>
+                    <span className="text-slate-400 font-medium">Name</span>
+                    <span className="text-slate-200 font-bold">{whmcsClientInfo.name}</span>
                   </div>
                   {whmcsClientInfo.email && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Email</span>
-                      <span className="text-slate-300 max-w-[160px] truncate">{whmcsClientInfo.email}</span>
+                      <span className="text-slate-400 font-medium">Email</span>
+                      <span className="text-slate-300 font-medium max-w-[160px] truncate">{whmcsClientInfo.email}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 pt-0.5">
+                  <div className="flex items-center gap-1.5 pt-1">
                     {whmcsClientInfo.services && whmcsClientInfo.services > 0 ? (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950/60 border border-emerald-800/30 text-emerald-400">
-                        {whmcsClientInfo.services} Active Services
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
+                        {whmcsClientInfo.services} Active
                       </span>
                     ) : null}
                     {whmcsClientInfo.unpaid && whmcsClientInfo.unpaid > 0 ? (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-950/60 border border-rose-800/30 text-rose-400">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-rose-950/40 border border-rose-500/20 text-rose-400 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-rose-400"></span>
                         ৳{whmcsClientInfo.unpaid.toLocaleString()} Unpaid
                       </span>
                     ) : null}
@@ -1158,7 +1199,7 @@ export default function SipDialer() {
                     href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClientInfo.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-1 w-full mt-2 py-1 bg-blue-900/30 border border-blue-800/20 hover:bg-blue-900/50 rounded-lg text-[10px] font-semibold text-blue-400 transition-colors"
+                    className="flex items-center justify-center gap-1.5 w-full mt-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 rounded-lg text-[10px] font-bold text-emerald-400 transition-all active:scale-[0.98]"
                   >
                     <ExternalLink size={10} />
                     View WHMCS Profile
@@ -1168,9 +1209,9 @@ export default function SipDialer() {
 
               {/* Previous Call */}
               {lastCallInfo && (
-                <div className="flex items-center justify-between bg-slate-900/50 border border-slate-800/50 rounded-lg px-2 py-1.5 text-[10.5px]">
+                <div className="flex items-center justify-between bg-slate-900/30 border border-slate-800/40 rounded-lg px-2 py-1.5 text-[10.5px]">
                   <span className="text-slate-400 font-medium">Last Call</span>
-                  <span className="text-slate-300">
+                  <span className="text-slate-300 font-medium">
                     {(() => {
                       const diff = Date.now() - new Date(lastCallInfo.created_at).getTime()
                       const mins = Math.floor(diff / 60000)
@@ -1189,7 +1230,7 @@ export default function SipDialer() {
               {matchedConversationId && (
                 <div className="space-y-1.5">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Call Note</span>
-                  <div className="rounded-lg bg-slate-900 border border-slate-800/80 overflow-hidden">
+                  <div className="rounded-lg bg-[#14181f] border border-slate-800 overflow-hidden focus-within:border-emerald-500/40 transition-colors">
                     <textarea
                       value={callNote}
                       onChange={(e) => { setCallNote(e.target.value); setNoteSaved(false) }}
@@ -1214,7 +1255,7 @@ export default function SipDialer() {
                             }
                           }}
                           disabled={isSavingNote || noteSaved}
-                          className="text-[9.5px] font-bold px-2 py-0.5 rounded bg-[#0070f3] text-white hover:bg-blue-600 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+                          className="text-[9.5px] font-bold px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-900 transition-all cursor-pointer"
                         >
                           {isSavingNote ? 'Saving...' : 'Save'}
                         </button>
