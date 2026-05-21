@@ -1636,10 +1636,8 @@ export default function WidgetPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !deviceId) return;
-    
-    const file = e.target.files[0];
+  const uploadAndSendFile = async (file: File) => {
+    if (!deviceId) return;
     const tempId = `temp-upload-${Date.now()}`;
     
     // Determine content type
@@ -1783,6 +1781,29 @@ export default function WidgetPage() {
     xhr.send(formData);
 
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !deviceId) return;
+    const file = e.target.files[0];
+    uploadAndSendFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          uploadAndSendFile(file);
+          break;
+        }
+      }
+    }
   };
 
   const handleSend = async () => {
@@ -3035,6 +3056,7 @@ export default function WidgetPage() {
                   ) : (
                     <textarea 
                       ref={textareaRef}
+                      onPaste={handlePaste}
                       value={input}
                       onChange={(e) => {
                         setInput(e.target.value)
