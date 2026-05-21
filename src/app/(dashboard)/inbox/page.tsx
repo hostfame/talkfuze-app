@@ -83,13 +83,13 @@ export default function InboxPage() {
         const store = useInboxStore.getState()
         const toPreload = convosData.slice(0, 10).filter(c => !store.messagesMap[c.id])
         toPreload.forEach(conv => {
-          supabase.rpc('get_conversation_messages', { conv_id: conv.id, msg_limit: 50 })
-            .then(({ data }) => {
-              if (data && data.length > 0) {
-                useInboxStore.getState().setMessages(conv.id, (data as AppMessage[]).reverse())
-              }
-            })
-            .catch(() => {}) // silent - prefetch is best-effort
+          Promise.resolve(
+            supabase.rpc('get_conversation_messages', { conv_id: conv.id, msg_limit: 50 })
+          ).then(({ data }) => {
+            if (data && data.length > 0) {
+              useInboxStore.getState().setMessages(conv.id, (data as AppMessage[]).reverse())
+            }
+          }).catch(() => {})
         })
       }
     }
