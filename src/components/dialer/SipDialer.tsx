@@ -607,7 +607,7 @@ export default function SipDialer() {
     
     try {
       setStatus('Dialing...')
-      const cleanNumber = number.replace(/[\s-]/g, '')
+      const cleanNumber = number.replace(/[^\d+]/g, '')
       setActiveCallSession({ number: cleanNumber, direction: 'outbound' })
       await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
       
@@ -869,7 +869,7 @@ export default function SipDialer() {
   // === PHASE 1: CLICK-TO-CALL ===
   useEffect(() => {
     if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...' && status !== 'Dialing...') {
-      const dialTarget = pendingDialNumber.replace(/[\s-]/g, '')
+      const dialTarget = pendingDialNumber.replace(/[^\d+]/g, '')
       setNumber(dialTarget)
       setStatus('Dialing...') // Optimistic lock to prevent rapid re-entry
       clearPendingDial()
