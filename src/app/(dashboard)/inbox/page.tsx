@@ -169,11 +169,15 @@ export default function InboxPage() {
     if (!selectedId) return
 
     let isActive = true
+    const hasCached = !!messagesMap[selectedId]
 
-    // Initial fetch
     const fetchData = async () => {
-      setIsFetchingMessages(selectedId, true)
-      // Direct client-side fetch for instant loading (~50ms)
+      // Only show loading spinner if we have NO cached messages
+      if (!hasCached) {
+        setIsFetchingMessages(selectedId, true)
+      }
+
+      // Direct client-side fetch (~50ms with proper RLS)
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -181,28 +185,20 @@ export default function InboxPage() {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      console.log('Client fetch data:', data, 'error:', error)
-
       if (!isActive) return
 
       if (data && data.length > 0) {
         setMessages(selectedId, data.reverse() as AppMessage[])
-      } else {
-        // Fallback to Server Action if client fails or returns empty
+      } else if (!hasCached) {
+        // Only use server action fallback on first load if client returns empty
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
         setMessages(selectedId, (fallbackData || []) as AppMessage[])
       }
       setIsFetchingMessages(selectedId, false)
     }
-    
-    // If we don't have messages for this convo, fetch them immediately
-    if (!messagesMap[selectedId]) {
-      fetchData()
-    } else {
-      // Fetch in background to update
-      fetchData()
-    }
+
+    fetchData()
     
     // Use conversation-specific channel name to avoid conflicts across tab switches
     const channelName = `messages:${selectedId}`
