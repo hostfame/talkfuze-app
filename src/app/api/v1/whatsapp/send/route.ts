@@ -84,7 +84,9 @@ export async function POST(req: NextRequest) {
 
     // 5. Clean phone number format and fetch/create conversation
     let cleanPhone = to.replace(/\D/g, '')
-    if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+      cleanPhone = '880' + cleanPhone
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
       cleanPhone = '88' + cleanPhone
     }
 

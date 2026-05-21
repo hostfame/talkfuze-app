@@ -368,8 +368,10 @@ export async function createConversation(orgId: string, phone: string) {
   // Strip non-numeric characters for search
   let cleanPhone = phone.replace(/\D/g, '');
   
-  // Auto-format BD local numbers (11 digits starting with 0) to international (880...)
-  if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+  // Auto-format BD local numbers to international (880...)
+  if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+    cleanPhone = '880' + cleanPhone;
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
     cleanPhone = '88' + cleanPhone;
   }
   let { data: contact } = await supabaseAdmin
