@@ -599,7 +599,7 @@ export default function WidgetPage() {
       voiceChannelRef.current = null
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
-  }, [activeConversationId, conversations])
+  }, [activeConversationId, conversations[0]?.id])
 
   const handleStartVoiceCall = async () => {
     // Warm up/unlock the mobile browser audio context synchronously inside the user click event
@@ -901,10 +901,16 @@ export default function WidgetPage() {
         setCallDuration(d => d + 1)
         callDurationRef.current += 1
       }, 1000)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Visitor failed to answer agent call", err)
       setCallStatus('idle')
-      setToastError("Microphone access is required to answer calls.")
+      const msg = err?.message || err?.name || String(err);
+      if (msg.includes('Permission') || msg.includes('NotAllowed') || msg.includes('microphone') || msg.includes('allowed') || msg.includes('denied')) {
+        setToastError("Microphone access is required to answer calls. Please allow permission via your browser settings.")
+        setShowMicPermissionGuide(true)
+      } else {
+        setToastError(`Failed to answer call: ${msg}`)
+      }
     }
   }
 
