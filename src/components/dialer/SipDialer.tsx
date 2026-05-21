@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff, ChevronDown, ExternalLink } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff, ChevronDown, ExternalLink, Smartphone } from 'lucide-react'
 import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
@@ -941,201 +941,191 @@ export default function SipDialer() {
       {activeCallSession && (
         <div 
           ref={bannerRef}
-          className={`fixed z-[9999] w-[340px] bg-slate-950/85 backdrop-blur-xl text-white border border-slate-800/80 shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_20px_rgba(0,112,243,0.08)] rounded-3xl overflow-hidden ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
+          className={`fixed z-[9999] w-[370px] bg-[#2d2d30]/90 backdrop-blur-2xl border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.6)] rounded-[1.8rem] text-white overflow-hidden ${!bannerPos ? 'animate-in fade-in slide-in-from-top-3' : ''}`}
           style={bannerPos ? { left: bannerPos.x, top: bannerPos.y } : { top: 16, right: 12 }}>
           
+          <style>{`
+            @keyframes appleWaveform {
+              0%, 100% { transform: scaleY(0.35); }
+              50% { transform: scaleY(1); }
+            }
+            .apple-wave-bar {
+              transform-origin: bottom;
+              animation: appleWaveform 1.2s ease-in-out infinite;
+            }
+          `}</style>
+
           {/* Top Apple Sheet Gesture Grab Handle */}
           <div 
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
-            className="w-full h-6 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors absolute top-0 left-0 z-10"
+            className="w-full h-5 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors absolute top-0 left-0 z-10"
           >
-            <div className="w-8 h-1 rounded-full bg-slate-800" />
+            <div className="w-8 h-1 rounded-full bg-white/20" />
           </div>
 
-          {/* Main Pill Row */}
-          <div className="flex items-center justify-between gap-2.5 px-3 pb-2.5 pt-5 min-h-[64px] bg-slate-900/40 relative">
-            {/* Avatar & drag indicators */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-inner relative group">
-                <User size={15} strokeWidth={2.5} className="text-blue-400" />
-                {sessionState === SessionState.Established && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-slate-950 animate-pulse"></span>
-                )}
+          {/* Main FaceTime Banner Capsule */}
+          <div className="flex items-center justify-between gap-3 px-5 pb-3.5 pt-5 relative">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Profile Avatar with absolute overlay badge */}
+              <div className="w-11 h-11 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shrink-0 relative shadow-inner">
+                <User size={20} strokeWidth={2.5} className="text-white/80" />
+                <div className="absolute -bottom-1 -right-1 bg-black border border-white/20 rounded-full p-[2px] shadow-md flex items-center justify-center">
+                  <Smartphone size={8} className="text-white" />
+                </div>
+              </div>
+
+              {/* Identity & Subtitle details */}
+              <div className="flex flex-col min-w-0">
+                <span className="font-semibold text-white text-[14.5px] leading-snug tracking-wide truncate">
+                  {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
+                </span>
+                <span className="text-[11px] text-white/60 font-medium leading-none mt-1">
+                  {status === 'Connected' ? `from your iPhone — ${formatTime(callDuration)}` :
+                   status === 'Incoming Call...' ? 'Incoming Call...' :
+                   status === 'Connecting...' ? 'Connecting...' :
+                   status === 'Calling...' || status === 'Dialing...' ? 'Calling...' : status}
+                </span>
               </div>
             </div>
 
-            {/* Identity & Status */}
-            <div className="flex flex-col min-w-0 flex-1 justify-center pl-1">
-              <span className="font-bold text-slate-100 text-[12.5px] tracking-wide truncate leading-tight">
-                {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 mt-1">
-                {iceState === 'disconnected' ? (
-                  <>
-                    <AlertTriangle className="w-2.5 h-2.5 text-amber-500 animate-pulse shrink-0" />
-                    <span className="text-amber-400 font-semibold animate-pulse">Weak Connection</span>
-                  </>
-                ) : (
-                  status === 'Connected' ? (
-                    <span className="text-blue-400 font-bold flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                      {`Connected • ${formatTime(callDuration)}`}
-                    </span>
-                  ) :
-                  status === 'Incoming Call...' ? (
-                    <span className="text-blue-400 font-semibold animate-pulse flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                      Incoming Call...
-                    </span>
-                  ) :
-                  status === 'Connecting...' ? 'Connecting...' :
-                  status === 'Calling...' || status === 'Dialing...' ? 'Calling...' :
-                  status
-                )}
-              </span>
-            </div>
+            {/* Glowing Green Siri Waveform Visualizer */}
+            {sessionState === SessionState.Established && (
+              <div className="flex items-end gap-[2px] h-5 px-1.5 shrink-0 bg-transparent mb-0.5">
+                {[6, 12, 18, 10, 14, 16, 8, 12, 15, 6].map((h, i) => (
+                  <span 
+                    key={i} 
+                    className="w-[2.5px] rounded-full bg-emerald-400 apple-wave-bar shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                    style={{ 
+                      height: `${h}px`, 
+                      animationDelay: `${i * 0.08}s`
+                    }}
+                  ></span>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Actions & Toggles */}
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Toggle Info / Expand Tray (Only if info available) */}
-              {(whmcsClientInfo || matchedConversationId) && (
+          {/* Action Row - 5 Circular Buttons */}
+          <div className="flex items-center justify-between px-6 pb-5 pt-1.5">
+            {/* Keypad Grid Toggle */}
+            <button
+              onClick={() => setShowInCallKeypad(!showInCallKeypad)}
+              disabled={status === 'Incoming Call...'}
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+                showInCallKeypad
+                  ? 'bg-white text-neutral-900 border-white shadow-lg'
+                  : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+              title="Keypad"
+            >
+              <Grid3X3 size={18} strokeWidth={2.5} />
+            </button>
+
+            {/* Hold/Resume */}
+            <button
+              onClick={handleHold}
+              disabled={status === 'Incoming Call...'}
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+                isOnHold
+                  ? 'bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-500/20'
+                  : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+              title={isOnHold ? "Resume" : "Hold"}
+            >
+              {isOnHold ? <Play size={18} strokeWidth={2.5} /> : <Pause size={18} strokeWidth={2.5} />}
+            </button>
+
+            {/* Mic Mute */}
+            <button
+              onClick={handleMicMute}
+              disabled={status === 'Incoming Call...'}
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+                isMicMuted
+                  ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/20'
+                  : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+              title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
+            >
+              {isMicMuted ? <MicOff size={18} strokeWidth={2.5} /> : <Mic size={18} strokeWidth={2.5} />}
+            </button>
+
+            {/* Expand / Chevron Down details */}
+            <button
+              onClick={() => setIsClientExpanded(!isClientExpanded)}
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+                isClientExpanded
+                  ? 'bg-white text-neutral-900 border-white shadow-lg'
+                  : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95'
+              }`}
+              title="Details & Notes"
+            >
+              <ChevronDown size={18} strokeWidth={2.5} className={`transition-transform duration-200 ${isClientExpanded ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* End Call / Answer Trigger */}
+            {status === 'Incoming Call...' ? (
+              <div className="flex gap-2 shrink-0">
                 <button 
-                  onClick={() => setIsClientExpanded(!isClientExpanded)}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${isClientExpanded ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'text-slate-400 border-transparent hover:text-white hover:bg-slate-800/60'}`}
-                  title="Client Details & Notes"
+                  onClick={handleMuteRing}
+                  disabled={isMuted}
+                  className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+                    isMuted 
+                      ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed'
+                      : 'bg-amber-500 hover:bg-amber-600 border-amber-400 text-white active:scale-95 shadow-lg shadow-amber-500/20'
+                  }`}
+                  title="Mute Ring"
                 >
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${isClientExpanded ? 'rotate-180' : ''}`} />
+                  <VolumeX size={18} strokeWidth={2.5} />
                 </button>
-              )}
-
-              {/* Controls */}
-              {status === 'Incoming Call...' ? (
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={handleMuteRing}
-                    disabled={isMuted}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      isMuted 
-                        ? 'bg-slate-850 text-slate-600 cursor-not-allowed'
-                        : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/10'
-                    }`}
-                    title={isMuted ? "Muted" : "Mute Ring"}
-                  >
-                    <VolumeX size={13} strokeWidth={2.5} />
-                  </button>
-                  <button 
-                    onClick={handleAnswer}
-                    className="w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(0,112,243,0.3)] cursor-pointer animate-pulse"
-                    title="Answer"
-                  >
-                    <Phone size={13} strokeWidth={2.5} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1">
-                  {/* Hold/Resume */}
-                  {sessionState === SessionState.Established && (
-                    <button
-                      onClick={handleHold}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
-                        isOnHold
-                          ? 'bg-amber-500/20 border-amber-500/30 text-amber-400'
-                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      title={isOnHold ? "Resume" : "Hold"}
-                    >
-                      {isOnHold ? <Play size={12} strokeWidth={2.5} /> : <Pause size={12} strokeWidth={2.5} />}
-                    </button>
-                  )}
-                  
-                  {/* Mic Mute */}
-                  {sessionState === SessionState.Established && (
-                    <button
-                      onClick={handleMicMute}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
-                        isMicMuted
-                          ? 'bg-rose-500/20 border-rose-500/30 text-rose-400'
-                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
-                    >
-                      {isMicMuted ? <MicOff size={12} strokeWidth={2.5} /> : <Mic size={12} strokeWidth={2.5} />}
-                    </button>
-                  )}
-                  
-                  {/* DTMF Keypad Toggle */}
-                  {sessionState === SessionState.Established && (
-                    <button
-                      onClick={() => setShowInCallKeypad(!showInCallKeypad)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
-                        showInCallKeypad
-                          ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
-                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      title="Keypad"
-                    >
-                      <Grid3X3 size={12} strokeWidth={2.5} />
-                    </button>
-                  )}
-                  
-                  {/* Transfer */}
-                  {sessionState === SessionState.Established && (
-                    <button
-                      onClick={() => setShowTransferInput(!showTransferInput)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
-                        showTransferInput
-                          ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400'
-                          : 'text-slate-300 border-transparent hover:bg-slate-800/80 hover:text-white'
-                      }`}
-                      title="Transfer Call"
-                    >
-                      <PhoneForwarded size={12} strokeWidth={2.5} />
-                    </button>
-                  )}
-                  
-                  {/* Hangup */}
-                  <button 
-                    onClick={handleHangup}
-                    disabled={!canHangUp}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-md cursor-pointer ${
-                      !canHangUp 
-                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                        : 'bg-rose-500 hover:bg-rose-600 hover:shadow-[0_0_12px_rgba(239,68,68,0.3)] active:scale-95 text-white'
-                    }`}
-                    title={!canHangUp ? "Connecting..." : "Hang up"}
-                  >
-                    {!canHangUp ? (
-                      <Loader2 size={12} className="animate-spin text-slate-400" />
-                    ) : (
-                      <PhoneOff size={12} strokeWidth={2.5} />
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+                <button 
+                  onClick={handleAnswer}
+                  className="w-[42px] h-[42px] rounded-full bg-[#34c759] hover:bg-[#30b351] border border-[#34c759]/10 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(52,199,89,0.3)] active:scale-95 cursor-pointer animate-pulse"
+                  title="Answer"
+                >
+                  <Phone size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleHangup}
+                disabled={!canHangUp}
+                className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(255,59,48,0.3)] cursor-pointer border ${
+                  !canHangUp 
+                    ? 'bg-white/5 border-white/5 text-white/30 cursor-not-allowed'
+                    : 'bg-[#ff3b30] hover:bg-[#ff453a] border border-[#ff3b30]/10 text-white active:scale-95'
+                }`}
+                title={!canHangUp ? "Connecting..." : "Hang up"}
+              >
+                {!canHangUp ? (
+                  <Loader2 size={18} className="animate-spin text-white/40" />
+                ) : (
+                  <PhoneOff size={18} strokeWidth={2.5} />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Bottom Expandable Details Tray */}
           {isClientExpanded && (whmcsClientInfo || matchedConversationId || lastCallInfo) && (
-            <div className="border-t border-slate-900/60 bg-[#0a0c10]/95 p-3.5 space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="border-t border-white/10 bg-black/40 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               
               {/* Transfer Input Overlay inside tray */}
               {showTransferInput && (
-                <div className="flex items-center gap-1.5 p-2 bg-slate-950 rounded-lg border border-slate-800/80 focus-within:border-blue-500/30 transition-all">
+                <div className="flex items-center gap-1.5 p-2 bg-white/5 rounded-lg border border-white/10 focus-within:border-emerald-500/30 transition-all">
                   <input
                     type="text"
                     value={transferNumber}
                     onChange={(e) => setTransferNumber(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleBlindTransfer() }}
                     placeholder="Transfer number..."
-                    className="flex-1 text-[11.5px] bg-transparent outline-none text-slate-200 placeholder-slate-500"
+                    className="flex-1 text-[11.5px] bg-transparent outline-none text-white placeholder-white/30"
                     autoFocus
                   />
                   <button
                     onClick={handleBlindTransfer}
                     disabled={!transferNumber.trim()}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-500 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
+                    className="text-[10px] font-bold px-2.5 py-1 rounded bg-[#34c759] text-white hover:bg-[#30b351] active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
                   >
                     Transfer
                   </button>
@@ -1144,12 +1134,12 @@ export default function SipDialer() {
 
               {/* In-Call DTMF Mini Keypad inside tray */}
               {showInCallKeypad && sessionState === SessionState.Established && (
-                <div className="grid grid-cols-4 gap-1 p-2 bg-[#0e1116] rounded-lg border border-slate-900">
+                <div className="grid grid-cols-4 gap-1 p-2 bg-white/5 rounded-lg border border-white/10">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
                     <button
                       key={key}
                       onClick={() => sendDTMF(key)}
-                      className="h-6 rounded bg-slate-900 hover:bg-blue-500/20 hover:text-blue-400 text-[10px] font-bold text-slate-300 flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+                      className="h-7 rounded bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white flex items-center justify-center active:scale-90 transition-all border border-white/5 cursor-pointer"
                     >
                       {key}
                     </button>
@@ -1159,33 +1149,33 @@ export default function SipDialer() {
 
               {/* WHMCS Profile details */}
               {whmcsClientInfo && (
-                <div className="space-y-2 text-[11.5px]">
-                  <div className="flex items-center justify-between border-b border-slate-900/60 pb-1.5">
-                    <span className="text-slate-400 font-medium">WHMCS Client</span>
-                    <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-bold rounded">
+                <div className="space-y-2 text-[12px]">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <span className="text-white/60 font-medium">WHMCS Client</span>
+                    <span className="px-2.5 py-0.5 bg-[#34c759]/10 border border-[#34c759]/20 text-[#34c759] font-mono text-[10px] font-bold rounded-full">
                       #{whmcsClientInfo.id} ({whmcsClientInfo.status})
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400 font-medium">Name</span>
-                    <span className="text-slate-200 font-bold">{whmcsClientInfo.name}</span>
+                    <span className="text-white/60 font-medium">Name</span>
+                    <span className="text-white font-bold">{whmcsClientInfo.name}</span>
                   </div>
                   {whmcsClientInfo.email && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Email</span>
-                      <span className="text-slate-300 font-medium max-w-[160px] truncate">{whmcsClientInfo.email}</span>
+                      <span className="text-white/60 font-medium">Email</span>
+                      <span className="text-white/80 font-medium max-w-[180px] truncate">{whmcsClientInfo.email}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 pt-1">
                     {whmcsClientInfo.services && whmcsClientInfo.services > 0 ? (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-blue-950/40 border border-blue-500/20 text-blue-400 flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-blue-400"></span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#34c759]/10 border border-[#34c759]/20 text-[#34c759] flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-[#34c759]"></span>
                         {whmcsClientInfo.services} Active
                       </span>
                     ) : null}
                     {whmcsClientInfo.unpaid && whmcsClientInfo.unpaid > 0 ? (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-rose-950/40 border border-rose-500/20 text-rose-400 flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-rose-400"></span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-rose-500"></span>
                         ৳{whmcsClientInfo.unpaid.toLocaleString()} Unpaid
                       </span>
                     ) : null}
@@ -1194,9 +1184,9 @@ export default function SipDialer() {
                     href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClientInfo.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full mt-3 py-1.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 rounded-lg text-[10px] font-bold text-blue-400 transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 bg-white/10 border border-white/5 hover:bg-white/20 rounded-xl text-[11px] font-bold text-white transition-all active:scale-[0.98]"
                   >
-                    <ExternalLink size={10} />
+                    <ExternalLink size={12} />
                     View WHMCS Profile
                   </a>
                 </div>
@@ -1204,9 +1194,9 @@ export default function SipDialer() {
 
               {/* Previous Call */}
               {lastCallInfo && (
-                <div className="flex items-center justify-between bg-slate-900/30 border border-slate-800/40 rounded-lg px-2 py-1.5 text-[10.5px]">
-                  <span className="text-slate-400 font-medium">Last Call</span>
-                  <span className="text-slate-300 font-medium">
+                <div className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl px-3 py-2 text-[11px]">
+                  <span className="text-white/60 font-medium">Last Call</span>
+                  <span className="text-white font-semibold">
                     {(() => {
                       const diff = Date.now() - new Date(lastCallInfo.created_at).getTime()
                       const mins = Math.floor(diff / 60000)
@@ -1224,19 +1214,19 @@ export default function SipDialer() {
               {/* Call Note */}
               {matchedConversationId && (
                 <div className="space-y-1.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Call Note</span>
-                  <div className="rounded-lg bg-[#0e1116] border border-slate-800/80 overflow-hidden focus-within:border-blue-500/40 transition-colors">
+                  <span className="text-[10px] text-white/50 font-bold uppercase tracking-wider">Call Note</span>
+                  <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden focus-within:border-emerald-500/40 transition-colors">
                     <textarea
                       value={callNote}
                       onChange={(e) => { setCallNote(e.target.value); setNoteSaved(false) }}
                       placeholder="Type brief note here..."
-                      className="w-full px-2 py-1.5 text-[11px] bg-transparent outline-none text-slate-200 placeholder-slate-600 resize-none"
+                      className="w-full px-3 py-2 text-[11px] bg-transparent outline-none text-white placeholder-white/30 resize-none"
                       rows={2}
                     />
                     {callNote.trim() && (
-                      <div className="flex items-center justify-end px-2 pb-1.5 gap-1.5">
+                      <div className="flex items-center justify-end px-3 pb-2 gap-1.5">
                         {noteSaved && (
-                          <span className="text-[9.5px] text-blue-400 font-medium">Saved</span>
+                          <span className="text-[10px] text-[#34c759] font-medium">Saved</span>
                         )}
                         <button
                           onClick={async () => {
@@ -1250,7 +1240,7 @@ export default function SipDialer() {
                             }
                           }}
                           disabled={isSavingNote || noteSaved}
-                          className="text-[9.5px] font-bold px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 active:scale-95 text-white transition-all cursor-pointer"
+                          className="text-[10px] font-bold px-3 py-1 rounded bg-[#34c759] hover:bg-[#30b351] active:scale-95 text-white transition-all cursor-pointer"
                         >
                           {isSavingNote ? 'Saving...' : 'Save'}
                         </button>

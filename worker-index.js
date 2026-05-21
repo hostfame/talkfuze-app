@@ -1064,8 +1064,221 @@ async function sendPendingOutboundMessages() {
   }
 }
 
+// Outbound presence sync (typing/recording indicators)
+async function sendWhatsAppPresence(jid, presence) {
+  try {
+    const res = await fetch(`${EVOLUTION_API_URL}/chat/sendPresence/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        number: jid,
+        presence: presence
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[PRESENCE] Evolution sendPresence failed: ${err}`);
+    }
+  } catch (err) {
+    console.error(`[PRESENCE] Error sending presence to ${jid}:`, err.message);
+  }
+}
 
+// Outbound read receipt sync (blue ticks)
+async function markWhatsAppMessageAsRead(jid) {
+  try {
+    const res = await fetch(`${EVOLUTION_API_URL}/chat/markMessageAsRead/${EVOLUTION_INSTANCE}`, {
+      method: 'POST',
+      headers: {
+        'apikey': EVOLUTION_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        number: jid,
+        read: true
+      })
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[READ-RECEIPT] Evolution markMessageAsRead failed: ${err}`);
+    } else {
+      console.log(`[READ-RECEIPT] Sent blue tick for JID ${jid}`);
+    }
+  } catch (err) {
+    console.error(`[READ-RECEIPT] Error sending read receipt for ${jid}:`, err.message);
+  }
+}
 
+// Outbound message updates (editing and deletion/recalling)
+async function processOutboundMessageUpdate(oldMsg, newMsg) {
+  const isAgent = newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai';
+  
+  if (!isAgent) {
+    // If contact message status changed to 'read', send blue ticks to WhatsApp
+    if (newMsg.sender_type === 'contact' && newMsg.status === 'read' && oldMsg.status !== 'read') {
+      try {
+        const { data: conv } = await supabaseRealtime
+          .from('conversations')
+          .select('contact_id, channels!inner(type)')
+          .eq('id', newMsg.conversation_id)
+          .single();
+
+        if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+        const { data: contact } = await supabaseRealtime
+          .from('contacts')
+          .select('platform_id')
+          .eq('id', conv.contact_id)
+          .single();
+
+        if (!contact) return;
+
+        let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
+        if (jid.endsWith('@lid')) {
+          jid = jid.replace('@lid', '@s.whatsapp.net');
+        }
+
+        await markWhatsAppMessageAsRead(jid);
+      } catch (err) {
+        console.error('[READ-SYNC] Error:', err.message);
+      }
+    }
+    return;
+  }
+
+  const platformMessageId = newMsg.platform_message_id;
+  if (!platformMessageId) return;
+
+  // 1. Message Recall/Deletion
+  if ((newMsg.status === 'recalled' || newMsg.status === 'deleted') && oldMsg.status !== 'recalled' && oldMsg.status !== 'deleted') {
+    try {
+      const { data: conv } = await supabaseRealtime
+        .from('conversations')
+        .select('contact_id, channels!inner(type)')
+        .eq('id', newMsg.conversation_id)
+        .single();
+
+      if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+      const { data: contact } = await supabaseRealtime
+        .from('contacts')
+        .select('platform_id')
+        .eq('id', conv.contact_id)
+        .single();
+
+      if (!contact) return;
+
+      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
+      if (jid.endsWith('@lid')) {
+        jid = jid.replace('@lid', '@s.whatsapp.net');
+      }
+
+      console.log(`[RECALL] Recalling message ${platformMessageId} for customer ${jid}`);
+      
+      const payload = {
+        number: jid,
+        messageId: platformMessageId,
+        status: "DELETE_FOR_EVERYONE"
+      };
+
+      const res = await fetch(`${EVOLUTION_API_URL}/message/deleteMessage/${EVOLUTION_INSTANCE}`, {
+        method: 'POST',
+        headers: {
+          'apikey': EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Evolution deleteMessage failed: ${err}`);
+      }
+
+      console.log(`[RECALL] Message ${platformMessageId} successfully deleted on WhatsApp`);
+    } catch (err) {
+      console.error('[RECALL] Error:', err.message);
+    }
+  }
+
+  // 2. Message Editing
+  else if (newMsg.content !== oldMsg.content && newMsg.content_type === 'text') {
+    try {
+      const { data: conv } = await supabaseRealtime
+        .from('conversations')
+        .select('contact_id, channels!inner(type)')
+        .eq('id', newMsg.conversation_id)
+        .single();
+
+      if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+      const { data: contact } = await supabaseRealtime
+        .from('contacts')
+        .select('platform_id')
+        .eq('id', conv.contact_id)
+        .single();
+
+      if (!contact) return;
+
+      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
+      if (jid.endsWith('@lid')) {
+        jid = jid.replace('@lid', '@s.whatsapp.net');
+      }
+
+      let editedText = newMsg.content;
+      
+      let agentName = null;
+      if (newMsg.sender_type === 'agent' && newMsg.sender_id) {
+        const { data: agentUser } = await supabaseRealtime
+          .from('users')
+          .select('name')
+          .eq('id', newMsg.sender_id)
+          .maybeSingle();
+        if (agentUser && agentUser.name) {
+          agentName = agentUser.name;
+        }
+      } else if (newMsg.sender_type === 'ai') {
+        agentName = 'Nina';
+      }
+
+      if (agentName) {
+        editedText = `*${agentName}*\n${editedText}`;
+      }
+
+      console.log(`[EDIT] Editing message ${platformMessageId} to: "${editedText.slice(0, 40)}"`);
+
+      const payload = {
+        number: jid,
+        text: editedText,
+        status: "EDITED",
+        messageId: platformMessageId
+      };
+
+      const res = await fetch(`${EVOLUTION_API_URL}/message/updateMessageText/${EVOLUTION_INSTANCE}`, {
+        method: 'POST',
+        headers: {
+          'apikey': EVOLUTION_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Evolution updateMessageText failed: ${err}`);
+      }
+
+      console.log(`[EDIT] Message ${platformMessageId} successfully updated on WhatsApp`);
+    } catch (err) {
+      console.error('[EDIT] Error:', err.message);
+    }
+  }
+}
+
+// Supabase Realtime Channels setup
 supabaseRealtime
   .channel('outbound_messages')
   .on('postgres_changes', {
@@ -1076,8 +1289,54 @@ supabaseRealtime
   }, async (payload) => {
     await processOutboundMessage(payload.new);
   })
+  .on('postgres_changes', {
+    event: 'UPDATE',
+    schema: 'public',
+    table: 'messages',
+    filter: `org_id=eq.${ORG_ID}`
+  }, async (payload) => {
+    await processOutboundMessageUpdate(payload.old, payload.new);
+  })
   .subscribe((status) => {
-    console.log('[REALTIME] Status:', status);
+    console.log('[REALTIME-MESSAGES] Status:', status);
+  });
+
+// Supabase Broadcast Channel for agent activity and typing status
+supabaseRealtime
+  .channel(`typing:${ORG_ID}`)
+  .on('broadcast', { event: 'typingStatus' }, async (payload) => {
+    const { conversation_id, direction, is_typing } = payload.payload;
+    if (direction !== 'agent') return;
+
+    try {
+      const { data: conv } = await supabaseRealtime
+        .from('conversations')
+        .select('contact_id, channels!inner(type)')
+        .eq('id', conversation_id)
+        .single();
+
+      if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+      const { data: contact } = await supabaseRealtime
+        .from('contacts')
+        .select('platform_id')
+        .eq('id', conv.contact_id)
+        .single();
+
+      if (!contact) return;
+
+      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
+      if (jid.endsWith('@lid')) {
+        jid = jid.replace('@lid', '@s.whatsapp.net');
+      }
+
+      await sendWhatsAppPresence(jid, is_typing ? 'composing' : 'paused');
+    } catch (err) {
+      console.error('[TYPING-SYNC] Error:', err.message);
+    }
+  })
+  .subscribe((status) => {
+    console.log('[REALTIME-TYPING] Status:', status);
   });
 
 // ─────────────────────────────────────────────
