@@ -39,6 +39,98 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+const SafeImage = ({ 
+  src, 
+  alt = "Attachment", 
+  onClick, 
+  className = "" 
+}: { 
+  src: string; 
+  alt?: string; 
+  onClick?: () => void; 
+  className?: string; 
+}) => {
+  const [loaded, setLoaded] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState(src);
+  const [errorState, setErrorState] = useState(false);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+    setLoaded(false);
+    setRetryAttempt(0);
+    setErrorState(false);
+  }, [src]);
+
+  const handleLoad = () => {
+    setLoaded(true);
+    setErrorState(false);
+  };
+
+  const handleError = () => {
+    if (retryAttempt < 6) {
+      setErrorState(true);
+      const nextAttempt = retryAttempt + 1;
+      setRetryAttempt(nextAttempt);
+      
+      const delay = 800 * nextAttempt;
+      setTimeout(() => {
+        const separator = src.includes('?') ? '&' : '?';
+        setCurrentSrc(`${src}${separator}retry=${nextAttempt}&t=${Date.now()}`);
+      }, delay);
+    } else {
+      setErrorState(true);
+    }
+  };
+
+  return (
+    <div className="relative w-full overflow-hidden bg-slate-50 dark:bg-slate-800/40 flex items-center justify-center min-h-[140px] max-h-[320px] rounded-xl border border-slate-100 dark:border-slate-800/50">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-50/80 dark:bg-slate-850/60 animate-pulse z-10">
+          <div className="flex flex-col items-center gap-1.5">
+            <Loader2 size={16} className="animate-spin text-blue-500/60" />
+            <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-bold tracking-wider uppercase">Loading image</span>
+          </div>
+        </div>
+      )}
+
+      <img
+        src={currentSrc}
+        alt={alt}
+        onLoad={handleLoad}
+        onError={handleError}
+        onClick={onClick}
+        className={`${className} transition-all duration-300 ${
+          loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+        }`}
+        style={{
+          display: loaded ? 'block' : 'none'
+        }}
+      />
+
+      {errorState && !loaded && retryAttempt >= 6 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-50/90 dark:bg-slate-850 z-20">
+          <ImageIcon size={18} className="text-slate-400 mb-1" />
+          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Failed to load</span>
+          <button 
+            type="button"
+            onClick={() => {
+              setLoaded(false);
+              setRetryAttempt(0);
+              setErrorState(false);
+              const separator = src.includes('?') ? '&' : '?';
+              setCurrentSrc(`${src}${separator}refresh=${Date.now()}`);
+            }}
+            className="mt-1.5 px-2 py-0.5 text-[9.5px] font-bold text-[#0070f3] hover:text-blue-650 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md transition active:scale-95 shadow-sm cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'customer' | 'internal' }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2316,11 +2408,11 @@ export default function ChatThread({
                           })()}
                           {msg.content_type === 'image' && (mediaUrl) ? (
                             <div className="mb-2">
-                              <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                                <img 
+                              <div className="max-w-[240px]">
+                                <SafeImage 
                                   src={(mediaUrl) as string} 
                                   alt="Attachment" 
-                                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity rounded-xl"
                                   onClick={() => setZoomedImage((mediaUrl) as string)}
                                 />
                               </div>
@@ -2466,11 +2558,11 @@ export default function ChatThread({
                           })()}
                           {msg.content_type === 'image' && (mediaUrl) ? (
                             <div className="mb-2">
-                              <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                                <img 
+                              <div className="max-w-[240px]">
+                                <SafeImage 
                                   src={(mediaUrl) as string} 
                                   alt="Attachment" 
-                                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity rounded-xl"
                                   onClick={() => setZoomedImage((mediaUrl) as string)}
                                 />
                               </div>

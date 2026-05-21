@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff, ChevronDown, ExternalLink, Smartphone } from 'lucide-react'
+import { Phone, PhoneOff, X, PhoneCall, Delete, VolumeX, Volume2, AlertTriangle, User, Loader2, Pause, Play, PhoneForwarded, Grid3X3, Mic, MicOff, ChevronDown, ExternalLink, Smartphone, MessageSquare } from 'lucide-react'
 import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
@@ -772,9 +772,6 @@ export default function SipDialer() {
         }
       })
       console.log('[SIP] session.accept() resolved successfully - call should be establishing')
-      if (matchedConversationId) {
-        setSelectedId(matchedConversationId)
-      }
     } catch (e: any) {
       console.error('[SIP] Accept failed:', e?.message || e)
       console.error('[SIP] Accept error stack:', e?.stack)
@@ -1248,15 +1245,27 @@ export default function SipDialer() {
                       </span>
                     ) : null}
                   </div>
-                  <a
-                    href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClientInfo.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full mt-3 py-2 bg-white/10 border border-white/5 hover:bg-white/20 rounded-xl text-[11px] font-bold text-white transition-all active:scale-[0.98]"
-                  >
-                    <ExternalLink size={12} />
-                    View WHMCS Profile
-                  </a>
+                  <div className="flex items-center gap-2 mt-3 w-full">
+                    <a
+                      href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClientInfo.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-white/10 border border-white/5 hover:bg-white/20 rounded-xl text-[11px] font-bold text-white transition-all active:scale-[0.98]"
+                    >
+                      <ExternalLink size={12} />
+                      View Profile
+                    </a>
+                    {matchedConversationId && (
+                      <button
+                        onClick={() => setSelectedId(matchedConversationId)}
+                        type="button"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#0070f3] hover:bg-blue-600 rounded-xl text-[11px] font-bold text-white transition-all active:scale-[0.98] shadow-sm hover:shadow"
+                      >
+                        <MessageSquare size={12} />
+                        Go to Chat
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
