@@ -647,10 +647,14 @@ export default function WidgetPage() {
           globalChannel.send({
             type: 'broadcast',
             event: 'voice_call_alert',
-            payload: { conversationId: targetConvId }
+            payload: { 
+              conversationId: targetConvId,
+              offer: offer,
+              callerName: 'Visitor'
+            }
           });
           
-          // Delay the actual offer broadcast by 1.5s to ensure agent has switched tabs
+          // Delay the actual offer broadcast by 1.5s as fallback for active channels
           setTimeout(() => {
             if (voiceChannelRef.current) {
               voiceChannelRef.current.send({
