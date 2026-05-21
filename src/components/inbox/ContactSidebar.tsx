@@ -55,7 +55,7 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 }
 
 export default function ContactSidebar({ conversation, orgId }: { conversation?: ConversationWithDetails | null, orgId: string }) {
-  const { triggerDial } = useInboxStore()
+  const { triggerDial, convertingTickets, setConvertingTicket } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
   const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
@@ -523,7 +523,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [whmcsServices, setWhmcsServices] = useState<{ products: WhmcsProduct[], domains: WhmcsDomain[] } | null>(null)
   const [whmcsTickets, setWhmcsTickets] = useState<WhmcsTicket[]>([])
   const [whmcsInvoices, setWhmcsInvoices] = useState<WhmcsInvoice[]>([])
-  const [isConvertingTicket, setIsConvertingTicket] = useState(false)
+  const isConvertingTicket = conversation?.id ? convertingTickets[conversation.id] || false : false
   const [isSendingLink, setIsSendingLink] = useState<number | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
@@ -670,7 +670,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   const handleConvertToTicket = async () => {
     if (!conversation?.id || !whmcsClient?.id) return;
-    setIsConvertingTicket(true);
+    setConvertingTicket(conversation.id, true);
     try {
       const result = await convertChatToTicket(conversation.id, whmcsClient.id);
       if (result.success) {
@@ -683,7 +683,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     } catch (e) {
       alert("Failed to convert chat to ticket.");
     } finally {
-      setIsConvertingTicket(false);
+      setConvertingTicket(conversation.id, false);
     }
   }
 

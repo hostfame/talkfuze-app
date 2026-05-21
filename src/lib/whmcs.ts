@@ -767,7 +767,7 @@ export async function openTicket(
     subject: string,
     message: string,
     serviceId?: number,
-    attachments?: Array<{ name: string; data: string }> // base64 file data
+    attachments?: Array<{ filename?: string; name?: string; data: string }> // base64 file data
 ) {
     const params: Record<string, string | number> = {
         clientid: clientId,
@@ -780,9 +780,13 @@ export async function openTicket(
         params.serviceid = serviceId;
     }
 
-    // WHMCS expects attachments as base64-encoded JSON array of {name, data}
+    // WHMCS expects attachments as base64-encoded JSON array of {filename, data}
     if (attachments && attachments.length > 0) {
-        params.attachments = Buffer.from(JSON.stringify(attachments)).toString('base64');
+        const formatted = attachments.map(att => ({
+            filename: att.filename || att.name || 'attachment.jpg',
+            data: att.data
+        }));
+        params.attachments = Buffer.from(JSON.stringify(formatted)).toString('base64');
     }
 
     return whmcsRequest<{
@@ -796,7 +800,7 @@ export async function addTicketReply(
     ticketId: number, 
     message: string, 
     clientId: number,
-    attachments?: Array<{ name: string; data: string }>
+    attachments?: Array<{ filename?: string; name?: string; data: string }>
 ) {
     const params: Record<string, string | number> = {
         ticketid: ticketId,
@@ -805,7 +809,11 @@ export async function addTicketReply(
     };
 
     if (attachments && attachments.length > 0) {
-        params.attachments = Buffer.from(JSON.stringify(attachments)).toString('base64');
+        const formatted = attachments.map(att => ({
+            filename: att.filename || att.name || 'attachment.jpg',
+            data: att.data
+        }));
+        params.attachments = Buffer.from(JSON.stringify(formatted)).toString('base64');
     }
 
     return whmcsRequest<{

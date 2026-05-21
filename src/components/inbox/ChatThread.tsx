@@ -919,11 +919,11 @@ export default function ChatThread({
   }, [input])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isConverting, setIsConverting] = useState(false)
   const [showResolveConfirm, setShowResolveConfirm] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { updateConversation, removeConversation, isLoaded } = useInboxStore()
+  const { updateConversation, removeConversation, isLoaded, convertingTickets, setConvertingTicket } = useInboxStore()
+  const isConverting = conversationId ? convertingTickets[conversationId] || false : false
 
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState("")
@@ -1076,7 +1076,7 @@ export default function ChatThread({
           }
         }
       } else if (action === 'convert') {
-        setIsConverting(true)
+        setConvertingTicket(conversationId, true)
         try {
           const rawPlatformId = contact?.platform_id || ""
           const isLid = rawPlatformId.endsWith('@lid')
@@ -1098,7 +1098,7 @@ export default function ChatThread({
               message: `No WHMCS client found for ${cleanPhone}. Link a profile in the Portal tab first.`,
               type: "error"
             })
-            setIsConverting(false)
+            setConvertingTicket(conversationId, false)
             return
           }
 
@@ -1123,7 +1123,7 @@ export default function ChatThread({
             type: "error"
           })
         } finally {
-          setIsConverting(false)
+          setConvertingTicket(conversationId, false)
         }
       }
     } catch (e) {
@@ -2105,6 +2105,25 @@ export default function ChatThread({
           )}
         </div>
       </div>
+
+      {/* Background ticket conversion indicator */}
+      {isConverting && (
+        <div className="absolute top-[72px] left-0 right-0 h-1 bg-blue-50/50 dark:bg-slate-800/30 overflow-hidden z-50">
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes progress-slide {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(250%); }
+            }
+          `}} />
+          <div 
+            className="h-full bg-blue-600 dark:bg-[#0070f3] rounded-full" 
+            style={{ 
+              width: '40%', 
+              animation: 'progress-slide 1.8s infinite ease-in-out' 
+            }} 
+          />
+        </div>
+      )}
 
       {/* Incoming Call Agent Dialog */}
       {callStatus === 'ringing' && incomingCall && (

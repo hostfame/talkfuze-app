@@ -114,6 +114,7 @@ interface InboxState {
   pendingDialNumber: string | null
   pendingIncomingCall: { conversationId: string; offer: any; callerName?: string } | null
   mobileView: 'list' | 'chat'
+  convertingTickets: Record<string, boolean>
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
@@ -127,6 +128,7 @@ interface InboxState {
   clearPendingDial: () => void
   setPendingIncomingCall: (call: { conversationId: string; offer: any; callerName?: string } | null) => void
   setMobileView: (view: 'list' | 'chat') => void
+  setConvertingTicket: (id: string, converting: boolean) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -140,6 +142,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   pendingDialNumber: null,
   pendingIncomingCall: null,
   mobileView: 'list',
+  convertingTickets: {},
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -167,6 +170,9 @@ export const useInboxStore = create<InboxState>((set) => ({
   triggerDial: (number) => set({ pendingDialNumber: number }),
   clearPendingDial: () => set({ pendingDialNumber: null }),
   setPendingIncomingCall: (pendingIncomingCall) => set({ pendingIncomingCall }),
-  setMobileView: (mobileView) => set({ mobileView })
+  setMobileView: (mobileView) => set({ mobileView }),
+  setConvertingTicket: (id, converting) => set((state) => ({
+    convertingTickets: { ...state.convertingTickets, [id]: converting }
+  }))
 }))
 
