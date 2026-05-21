@@ -32,6 +32,16 @@ const getConversationAvatarUrl = (convId: string, name: string) => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${colorHex}&color=fff&length=1`;
 };
 
+const stripAgentNamePrefix = (text: string) => {
+  if (!text) return text;
+  const match = text.match(/^\*([^*]+)\*\s*\n?/);
+  if (match) {
+    const stripped = text.substring(match[0].length).trim();
+    return stripped || match[1];
+  }
+  return text;
+};
+
 export default function ConversationList({ 
   conversations, 
   selectedId, 
@@ -325,7 +335,7 @@ export default function ConversationList({
                             ) : lastMessage.content_type === 'file' || lastMessage.content === '[Attachment]' ? (
                               <><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</>
                             ) : (
-                              lastMessage.content
+                              stripAgentNamePrefix(lastMessage.content)
                             )}
                           </>
                         ) : (
