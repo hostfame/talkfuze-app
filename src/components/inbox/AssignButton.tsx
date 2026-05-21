@@ -111,9 +111,13 @@ export default function AssignButton({ conversation, orgId }: { conversation: Co
                 onClick={() => handleAssign(tm.id)}
                 className="w-full text-left px-3 py-2 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
               >
-                <div className="w-6 h-6 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 flex items-center justify-center text-xs font-semibold shrink-0">
-                  {tm.name.charAt(0).toUpperCase()}
-                </div>
+                {tm.avatar_url ? (
+                  <img src={tm.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 flex items-center justify-center text-[10px] font-semibold shrink-0">
+                    {tm.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <span className="truncate">{tm.name}</span>
                 {assignee?.id === tm.id && <Check size={14} className="ml-auto text-blue-600 shrink-0" />}
               </button>
