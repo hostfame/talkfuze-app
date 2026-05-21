@@ -11,7 +11,7 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { playUISound } from "@/lib/sounds"
+import { playUISound, sendDesktopNotification, updateTabBadge } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
@@ -117,6 +117,14 @@ export default function InboxPage() {
         // Play sound if the message is from a contact
         if (newMsg && newMsg.sender_type === 'contact') {
            playUISound('receive')
+           // Desktop notification
+           const conv = conversations.find(c => c.id === newMsg.conversation_id);
+           const contact = conv?.contact;
+           const convName = (Array.isArray(contact) ? contact[0]?.name : contact?.name) || 'Customer';
+           sendDesktopNotification(`New message from ${convName}`, newMsg.content_type === 'text' ? newMsg.content : 'Sent an attachment');
+           // Tab badge - count unread conversations
+           const unreadCount = conversations.filter(c => c.is_unread).length + 1;
+           updateTabBadge(unreadCount);
            // Immediately clear typing state to prevent UI flicker
            setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
            if (typingTimeoutRefs.current[newMsg.conversation_id]) {
@@ -279,6 +287,7 @@ export default function InboxPage() {
         const { conversation_id, assigned_to, assigned_by_name, contact_name } = payload.payload;
         if (assigned_to === currentUser?.id) {
           playUISound('receive');
+          sendDesktopNotification('Conversation Assigned', `${assigned_by_name} assigned ${contact_name}'s conversation to you`);
           setAssignedNotification({
             conversationId: conversation_id,
             senderName: assigned_by_name,
