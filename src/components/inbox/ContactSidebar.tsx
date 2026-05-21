@@ -253,7 +253,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
       })
       .on('broadcast', { event: 'webrtc_offer' }, async (payload) => {
         try {
-           setCoBrowseStatus('active')
           const pc = createPeerConnection({
             onConnectionFailed: () => {
               console.warn('[Dashboard] Co-browse ICE failed, showing reconnect UI');
@@ -272,10 +271,19 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
           pc.ontrack = (event) => {
             const stream = event.streams[0];
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-            }
             setCoBrowseStream(stream);
+
+            // Bind stream to video element - retry briefly if DOM isn't ready yet
+            const bindToVideo = () => {
+              if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(e => console.error("Autoplay co-browse stream failed:", e));
+              } else {
+                // Video DOM not mounted yet, retry after next frame
+                requestAnimationFrame(bindToVideo);
+              }
+            };
+            bindToVideo();
 
             // Monitor remote track ending (visitor stopped sharing without broadcast)
             const videoTrack = stream.getVideoTracks()[0];
@@ -296,6 +304,17 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             }
           };
 
+          // Set onicecandidate BEFORE setLocalDescription to catch early candidates
+          pc.onicecandidate = (event) => {
+            if (event.candidate && coBrowseChannelRef.current) {
+              coBrowseChannelRef.current.send({
+                type: 'broadcast',
+                event: 'ice_candidate',
+                payload: { candidate: event.candidate }
+              });
+            }
+          };
+
           await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.offer));
 
           // Flush buffered candidates
@@ -313,6 +332,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
+          // Set status to active AFTER WebRTC setup so video DOM mounts with stream ready
+          setCoBrowseStatus('active');
+
           if (coBrowseChannelRef.current) {
             await coBrowseChannelRef.current.send({
               type: 'broadcast',
@@ -320,16 +342,6 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
               payload: { answer }
             });
           }
-
-          pc.onicecandidate = (event) => {
-            if (event.candidate && coBrowseChannelRef.current) {
-              coBrowseChannelRef.current.send({
-                type: 'broadcast',
-                event: 'ice_candidate',
-                payload: { candidate: event.candidate }
-              });
-            }
-          };
 
         } catch (err) {
           console.error("Co-browse WebRTC establish error", err)
