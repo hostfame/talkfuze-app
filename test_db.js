@@ -1,11 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: '.env.local' });
-require('dotenv').config({ path: '.env' });
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-async function run() {
-  const { data, error } = await supabase.from('organizations').select('id, name');
-  console.log('Organizations:', data);
-  if (error) console.error('Error:', error);
+const supabaseUrl = 'https://fyuymnldgvfvdqcnbsxh.supabase.co';
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5dXltbmxkZ3ZmdmRxY25ic3hoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODgxNzUwNiwiZXhwIjoyMDk0MzkzNTA2fQ.fkZvxGkgW3yktVkLUxmOaEEdVRTymtrFK4uOj9Wa66A';
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+async function check() {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('*');
+  console.log('Orgs:', JSON.stringify(data, null, 2));
 }
-run();
+
+check();

@@ -2459,78 +2459,24 @@ export default function WidgetPage() {
                   // Hide the "Started a voice call" system message
                   if (msg.content === 'Started a voice call') return null;
 
-                  // Voice call ended / missed badge
+                  // Sleek, centered system messages with thin horizontal lines to match the admin panel styling perfectly
+                  let displayContent = msg.content;
                   if (msg.content.includes('voice call') || msg.content.includes('Voice call')) {
                     const isMissed = msg.content.toLowerCase().includes('missed');
-                    return (
-                      <div key={idx} className="flex justify-center my-5">
-                        <div className={`flex items-center gap-3 border px-4 py-2.5 rounded-2xl shadow-sm min-w-[200px] ${
-                          isMissed
-                            ? 'bg-slate-50 border-slate-200'
-                            : 'bg-blue-50 border-blue-100'
-                        }`}>
-                          <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center ${
-                            isMissed
-                              ? 'bg-slate-200'
-                              : 'bg-blue-100'
-                          }`}>
-                            {isMissed
-                              ? <PhoneOff size={15} className="text-slate-500" />
-                              : <Phone size={15} className="text-blue-600" />
-                            }
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className={`text-[12.5px] font-bold tracking-tight ${
-                              isMissed ? 'text-slate-600' : 'text-blue-700'
-                            }`}>
-                              {isMissed ? 'Missed Voice Call' : 'Voice Call Ended'}
-                            </span>
-                            <span className={`text-[11px] font-medium ${
-                              isMissed ? 'text-slate-400' : 'text-blue-500/70'
-                            }`}>
-                              {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
+                    const durationStr = safeMeta.duration ? ` (${safeMeta.duration})` : '';
+                    displayContent = isMissed ? 'Missed voice call' : `Voice call ended${durationStr}`;
+                  } else if (msg.content.includes('Screen share session') || msg.content.includes('screen share')) {
+                    const durationStr = safeMeta.duration ? ` (${safeMeta.duration})` : '';
+                    displayContent = `Screen share ended${durationStr}`;
                   }
 
-                  // Screen share session ended badge
-                  if (msg.content.includes('Screen share session') || msg.content.includes('screen share')) {
-                    return (
-                      <div key={idx} className="flex justify-center my-5">
-                        <div className="flex items-center gap-3 border px-4 py-2.5 rounded-2xl shadow-sm min-w-[200px] bg-blue-50 border-blue-100">
-                          <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center bg-blue-100">
-                            <Video size={15} className="text-blue-600" />
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[12.5px] font-bold tracking-tight text-blue-800">
-                              Screen Share Ended
-                            </span>
-                            <span className="text-[11px] font-medium text-blue-500">
-                              {msgTime}{safeMeta.duration ? ` \u00b7 ${safeMeta.duration}` : ''}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  const isTicketCreated = msg.content === 'Your ticket is created' || msg.content.includes('ticket is created');
-                  const isJoined = msg.content.includes('joined');
                   return (
-                    <div key={idx} className="flex justify-center my-4">
-                      <div className={`flex items-center gap-2 pr-3 pl-1.5 py-1.5 rounded-full tracking-tight shadow-[0_2px_10px_rgba(0,0,0,0.03)] ${isTicketCreated ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50 border border-slate-100'}`}>
-                        {msg.agent?.avatar_url ? (
-                          <img src={msg.agent.avatar_url} className="w-[22px] h-[22px] rounded-full object-cover shrink-0 border border-white shadow-sm" alt="Agent Avatar" />
-                        ) : (
-                          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center text-white shrink-0 border border-white shadow-sm bg-[#0070f3]`}>
-                            {isTicketCreated ? <Database size={10} strokeWidth={2.5}/> : (isJoined ? <User size={11} strokeWidth={2.5}/> : <Sparkles size={11} strokeWidth={2.5}/>)}
-                          </div>
-                        )}
-                        <span className={`text-[12px] font-semibold leading-none mr-1 ${isTicketCreated ? 'text-blue-700' : 'text-slate-600'}`}>{msg.content}</span>
-                      </div>
+                    <div key={idx} className="flex items-center gap-3 my-4 px-2 select-none">
+                      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0 tracking-tight">
+                        {displayContent}
+                      </span>
+                      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                     </div>
                   );
                 }
