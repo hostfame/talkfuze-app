@@ -144,7 +144,7 @@ export interface Database {
         Row: {
           id: string
           org_id: string
-          channel_id: string
+          channel_id: string | null
           contact_id: string
           status: string
           assigned_to: string | null
