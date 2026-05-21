@@ -1908,7 +1908,7 @@ export default function WidgetPage() {
       const res = await fetch('/api/widget/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', email: ticketEmail })
+        body: JSON.stringify({ action: 'send', email: ticketEmail, orgId: org_id })
       });
       const data = await res.json();
       if (data.success) {
@@ -1956,7 +1956,7 @@ export default function WidgetPage() {
           const res = await fetch('/api/widget/otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'prepare_otp', email: ticketEmail })
+            body: JSON.stringify({ action: 'prepare_otp', email: ticketEmail, orgId: org_id })
           });
           const data = await res.json();
           if (data.success) {
@@ -1969,7 +1969,7 @@ export default function WidgetPage() {
             fetch('/api/widget/otp', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'dispatch_email', email: ticketEmail })
+              body: JSON.stringify({ action: 'dispatch_email', email: ticketEmail, orgId: org_id })
             }).catch(e => console.error("OTP email dispatch failed", e));
           } else {
             setTicketError(data.error || "Failed to send OTP");
@@ -1979,7 +1979,7 @@ export default function WidgetPage() {
           const res = await fetch('/api/widget/otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'verify', email: ticketEmail, otp: ticketOtp, intent: 'login' })
+            body: JSON.stringify({ action: 'verify', email: ticketEmail, otp: ticketOtp, intent: 'login', orgId: org_id })
           });
           const data = await res.json();
           if (data.success) {
