@@ -1353,6 +1353,17 @@ export default function ChatThread({
         );
         setTimeout(() => {
           useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+          // Also update the lastMessage on the conversation so sidebar dot disappears
+          const store = useInboxStore.getState();
+          const conv = store.conversations.find(c => c.id === conversationId);
+          if (conv) {
+            const lastMsg = conv.messages?.[0];
+            if (lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read') {
+              store.updateConversation(conversationId, {
+                messages: [{ ...lastMsg, status: 'read' }]
+              });
+            }
+          }
         }, 50);
       }
     }
