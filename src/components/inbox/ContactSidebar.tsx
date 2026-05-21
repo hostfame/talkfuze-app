@@ -85,6 +85,8 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   const [contactPhoneOverrides, setContactPhoneOverrides] = useState<Record<string, string>>({})
   const contactPhone = contact?.id ? contactPhoneOverrides[contact.id] || contact?.phone : contact?.phone
   const effectivePhoneId = contactPhone || displayPlatformId
+  const isEmail = effectivePhoneId && typeof effectivePhoneId === 'string' && effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
+  const cleanPhone = effectivePhoneId ? (isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)) : ""
 
   const isPhone = (text: string) => {
     if (!text) return false
@@ -666,10 +668,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     setCrmData(null)
     setLastSearchedQuery("")
     
-    if (conversation?.id && platformId) {
-      const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
-      const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
-      
+    if (conversation?.id && platformId && platformId !== "No number") {
       // Prefill search query if we have a real phone number or email (avoid raw PSIDs/LIDs)
       if (metadataPhone || contactPhone || (!isLid && !isMessenger && contact?.platform_type !== 'instagram')) {
         setCrmSearchQuery(cleanPhone)
@@ -738,7 +737,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
     }
     
     return () => { mounted = false }
-  }, [conversation?.id, platformId, orgId, contactPhone, displayPlatformId, metadataPhone, isLid, isMessenger, contact])
+  }, [conversation?.id, cleanPhone, orgId, contact?.status, contact?.platform_type])
 
   const handleSummarize = async () => {
     if (!conversation?.id) return
