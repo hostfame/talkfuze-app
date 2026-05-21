@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import {
   Volume2, Play, Check, Phone, Send, MessageSquareText, Bell, BellOff, Eye, EyeOff,
-  Clock, Moon, RefreshCw, Monitor, Vibrate, ChevronRight
+  Clock, Moon, RefreshCw, Monitor, Vibrate, ChevronRight, Upload, Trash2
 } from "lucide-react"
 import {
   SOUND_PRESETS, getSelectedSound, setSelectedSound, getSoundVolume, setSoundVolume, previewSound, type SoundPreset,
@@ -177,6 +177,57 @@ function SettingRow({ icon, label, description, children }: { icon: React.ReactN
   )
 }
 
+// ─── Custom Sound Upload Component ───
+function CustomSoundUploadRow({
+  label,
+  fileName,
+  onUpload,
+  onClear,
+}: {
+  label: string
+  fileName: string
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onClear: () => void
+}) {
+  return (
+    <div className="mt-4 p-4 rounded-[14px] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="text-[11.5px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{label}</div>
+        {fileName ? (
+          <div className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate mt-1.5 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
+            {fileName}
+          </div>
+        ) : (
+          <div className="text-[13px] text-slate-400 dark:text-slate-500 mt-1.5">No custom file uploaded (MP3/WAV, max 1.5MB)</div>
+        )}
+      </div>
+      
+      <div className="flex items-center gap-2 shrink-0">
+        {fileName && (
+          <button
+            onClick={onClear}
+            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+            title="Remove sound"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
+        
+        <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer text-[12px] font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition-all active:scale-[0.98]">
+          <Upload size={13} />
+          {fileName ? 'Replace' : 'Upload'}
+          <input
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            onChange={onUpload}
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
 
 // ─── Main Page ───
 export default function SoundsSettingsPage() {
@@ -185,11 +236,16 @@ export default function SoundsSettingsPage() {
   const [msgVol, setMsgVol] = useState<number>(() => getSoundVolume())
   const [playingMsg, setPlayingMsg] = useState<SoundPreset | null>(null)
 
-  const [sendVol, setSendVol] = useState<number>(() => ls.getNum('talkfuze_send_volume', 0.5))
+  const [sendVol, setSendVol] = useState<number>(() => ls.getNum('talkfuze_send_volume', 1.0))
 
   const [ringPreset, setRingPreset] = useState<RingtonePreset>(() => getSelectedRingtone())
   const [ringVol, setRingVol] = useState<number>(() => getRingtoneVolume())
   const [playingRing, setPlayingRing] = useState<RingtonePreset | null>(null)
+
+  // ── Custom File Names ──
+  const [customMsgName, setCustomMsgName] = useState(() => ls.get('talkfuze_custom_sound_msg_name', ''))
+  const [customSendName, setCustomSendName] = useState(() => ls.get('talkfuze_custom_sound_send_name', ''))
+  const [customRingName, setCustomRingName] = useState(() => ls.get('talkfuze_custom_sound_ring_name', ''))
 
   // ── Notification Settings ──
   const [desktopNotifs, setDesktopNotifs] = useState(() => ls.getBool('talkfuze_desktop_notifs', true))
@@ -260,6 +316,59 @@ export default function SoundsSettingsPage() {
   const handleDndEnd = (v: string) => { setDndEnd(v); persist('talkfuze_dnd_end', v) }
   const handleAssignSound = (v: boolean) => { setAssignSound(v); persist('talkfuze_assign_sound', v) }
   const handleMentionSound = (v: boolean) => { setMentionSound(v); persist('talkfuze_mention_sound', v) }
+
+  // ── Handlers: Audio Uploads ──
+  const handleCustomUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'msg' | 'send' | 'ring') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('audio/')) {
+      alert('Please upload a valid audio file (MP3, WAV, etc.)')
+      return
+    }
+
+    if (file.size > 1.5 * 1024 * 1024) {
+      alert('File is too large! Please keep it under 1.5MB to save space.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      if (base64) {
+        ls.set(`talkfuze_custom_sound_${type}`, base64)
+        ls.set(`talkfuze_custom_sound_${type}_name`, file.name)
+        
+        if (type === 'msg') {
+          setCustomMsgName(file.name)
+          handleMsgPreset('custom')
+        } else if (type === 'send') {
+          setCustomSendName(file.name)
+          playUISound('send')
+        } else if (type === 'ring') {
+          setCustomRingName(file.name)
+          handleRingPreset('custom')
+        }
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const clearCustomSound = (type: 'msg' | 'send' | 'ring') => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`talkfuze_custom_sound_${type}`)
+      localStorage.removeItem(`talkfuze_custom_sound_${type}_name`)
+    }
+    if (type === 'msg') {
+      setCustomMsgName('')
+      handleMsgPreset('loud')
+    } else if (type === 'send') {
+      setCustomSendName('')
+    } else if (type === 'ring') {
+      setCustomRingName('')
+      handleRingPreset('siren')
+    }
+  }
 
   return (
     <div className="max-w-[640px]">
@@ -430,6 +539,12 @@ export default function SoundsSettingsPage() {
               onSelect={handleMsgPreset}
               onPreview={handleMsgPreview}
             />
+            <CustomSoundUploadRow
+              label="Custom Sound File"
+              fileName={customMsgName}
+              onUpload={(e) => handleCustomUpload(e, 'msg')}
+              onClear={() => clearCustomSound('msg')}
+            />
           </SectionBody>
         </Section>
 
@@ -444,13 +559,22 @@ export default function SoundsSettingsPage() {
             <div className="mb-4">
               <VolumeSlider value={sendVol} min={0.15} onChange={handleSendVol} />
             </div>
-            <button
-              onClick={() => playUISound('send')}
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[13px] font-medium hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
-            >
-              <Play size={13} />
-              Preview
-            </button>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => playUISound('send')}
+                className="w-fit flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <Play size={13} fill="currentColor" />
+                Preview Reply Sound
+              </button>
+              
+              <CustomSoundUploadRow
+                label="Custom Reply sound"
+                fileName={customSendName}
+                onUpload={(e) => handleCustomUpload(e, 'send')}
+                onClear={() => clearCustomSound('send')}
+              />
+            </div>
           </SectionBody>
         </Section>
 
@@ -471,6 +595,12 @@ export default function SoundsSettingsPage() {
               playingId={playingRing}
               onSelect={handleRingPreset}
               onPreview={handleRingPreview}
+            />
+            <CustomSoundUploadRow
+              label="Custom Call Ringtone"
+              fileName={customRingName}
+              onUpload={(e) => handleCustomUpload(e, 'ring')}
+              onClear={() => clearCustomSound('ring')}
             />
           </SectionBody>
         </Section>
