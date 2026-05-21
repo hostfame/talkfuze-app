@@ -672,8 +672,9 @@ export default function SipDialer() {
     setStatus('Connecting...')
     stopSynthesizedRing()
     
-    // Explicit browser gesture autoplay bypass
+    // Explicit browser gesture autoplay bypass + unmute if ring was muted
     if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = false
       remoteAudioRef.current.play().catch(e => console.warn('[WebRTC] Autoplay bypass failed on answer:', e))
     }
     
@@ -717,6 +718,10 @@ export default function SipDialer() {
   const handleMuteRing = () => {
     setIsMuted(true)
     stopSynthesizedRing()
+    // Also mute the remote audio so agent doesn't hear caller-side hold music
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = true
+    }
   }
 
   const handleActivateDialer = async () => {
