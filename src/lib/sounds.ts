@@ -40,18 +40,15 @@ if (typeof window !== 'undefined') {
   window.addEventListener('keydown', unlock, { passive: true });
 }
 
-export const playUISound = (type: 'send' | 'receive') => {
-  if (typeof window === 'undefined') return;
+const playSynthesizedSound = (type: 'send' | 'receive') => {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     
-    // If the browser suspended it again (e.g. tab went to background), try to resume
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
 
-    // Global compressor to make it completely smooth and avoid clipping
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.setValueAtTime(-30, ctx.currentTime);
     compressor.knee.setValueAtTime(40, ctx.currentTime);
@@ -63,43 +60,39 @@ export const playUISound = (type: 'send' | 'receive') => {
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
-    // Add a strong lowpass filter to make the tone very "round" and completely cut harsh highs
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(700, ctx.currentTime); // Lowered from 1200
+    filter.frequency.setValueAtTime(700, ctx.currentTime);
     
     osc.connect(filter);
     filter.connect(gainNode);
     gainNode.connect(compressor);
     
     if (type === 'send') {
-      // Extremely cute, soft, lower-pitched "bloop" going up slightly
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(250, ctx.currentTime); // Lower pitch
+      osc.frequency.setValueAtTime(250, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.1);
       
-      // Much softer volume and gentler attack
       gainNode.gain.setValueAtTime(0, ctx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.04); // Softer attack, lower volume
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2); // Gentle decay
+      gainNode.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.04);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
       
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.25);
     } else {
-      // receive: very gentle, cute double "bloop" (like tiny water drops)
       osc.type = 'sine';
       osc.frequency.setValueAtTime(350, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.08);
       
       gainNode.gain.setValueAtTime(0, ctx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.03); // Very quiet
+      gainNode.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.03);
       gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
       
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       const filter2 = ctx.createBiquadFilter();
       filter2.type = 'lowpass';
-      filter2.frequency.setValueAtTime(800, ctx.currentTime); // Cut harsh highs
+      filter2.frequency.setValueAtTime(800, ctx.currentTime);
       
       osc2.connect(filter2);
       filter2.connect(gain2);
@@ -120,7 +113,32 @@ export const playUISound = (type: 'send' | 'receive') => {
       osc2.stop(ctx.currentTime + 0.3);
     }
   } catch (err) {
-    console.error('Audio play error:', err);
+    console.error('Synthesized sound play error:', err);
+  }
+};
+
+export const playUISound = (type: 'send' | 'receive') => {
+  if (typeof window === 'undefined') return;
+  
+  // Try high-permissiveness HTML5 Audio first (perfect for background tabs)
+  try {
+    const audioPath = type === 'send' ? '/swoosh.mp3' : '/pop.mp3';
+    const audio = new Audio(audioPath);
+    audio.volume = type === 'send' ? 0.35 : 0.5; // Premium balanced volumes
+    
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        // Successfully played pre-recorded MP3
+        return;
+      }).catch((err) => {
+        console.warn('[AUDIO] HTML5 blocked or failed, using synthesizer:', err.message);
+        playSynthesizedSound(type);
+      });
+    }
+  } catch (err: any) {
+    console.warn('[AUDIO] HTML5 init failed, using synthesizer:', err.message);
+    playSynthesizedSound(type);
   }
 };
 
