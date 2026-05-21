@@ -248,6 +248,7 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
           </div>
         </div>
       );
+    }
     if (msg.content_type === 'audio') {
       return (
         <div className={`flex flex-col gap-2.5 p-3.5 rounded-[18px] min-w-[210px] animate-in fade-in duration-300 ${isDark ? 'bg-white/10 text-white border border-white/5' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/30 shadow-sm'}`}>
@@ -551,6 +552,13 @@ export default function WidgetPage() {
         console.log('[Widget Call] Received voice_call_from_agent, offer present:', !!payload.payload?.offer);
         incomingAgentCallRef.current = { offer: payload.payload.offer }
         setCallStatus('ringing')
+        
+        // Force maximize/slide open the chat widget in the parent browser window
+        try {
+          window.parent.postMessage({ type: 'TALKFUZE_OPEN' }, '*');
+        } catch (e) {
+          console.error("Failed to post message to parent:", e);
+        }
       })
       .on('broadcast', { event: 'ice_candidate' }, async (payload) => {
         const pc = voiceConnectionRef.current;
@@ -576,16 +584,22 @@ export default function WidgetPage() {
   }
 
   useEffect(() => {
-    if (!activeConversationId || activeConversationId === 'new') return
+    const mainConvId = activeConversationId && activeConversationId !== 'new' 
+      ? activeConversationId 
+      : conversations[0]?.id;
 
-    const callChannel = subscribeToVoiceCall(activeConversationId);
+    if (!mainConvId) return;
+
+    console.log('[Widget VoiceCall] Automatically subscribing to voice channel:', mainConvId);
+    const callChannel = subscribeToVoiceCall(mainConvId);
 
     return () => {
+      console.log('[Widget VoiceCall] Unsubscribing from voice channel:', mainConvId);
       supabase.removeChannel(callChannel)
       voiceChannelRef.current = null
       if (callTimerRef.current) clearInterval(callTimerRef.current)
     }
-  }, [activeConversationId])
+  }, [activeConversationId, conversations])
 
   const handleStartVoiceCall = async () => {
     // Warm up/unlock the mobile browser audio context synchronously inside the user click event
@@ -802,8 +816,16 @@ export default function WidgetPage() {
   // Visitor answers an agent-initiated call
   const handleAnswerAgentCall = async () => {
     const incoming = incomingAgentCallRef.current;
-    console.log('[Widget Call] handleAnswerAgentCall - incoming:', !!incoming, 'activeConv:', activeConversationId, 'channelRef:', !!voiceChannelRef.current);
-    if (!incoming || !activeConversationId) return;
+    const mainConvId = activeConversationId && activeConversationId !== 'new'
+      ? activeConversationId
+      : conversations[0]?.id;
+
+    console.log('[Widget Call] handleAnswerAgentCall - incoming:', !!incoming, 'activeConv:', mainConvId, 'channelRef:', !!voiceChannelRef.current);
+    if (!incoming || !mainConvId) return;
+
+    // Transition visitor to the chat interface immediately
+    setActiveConversationId(mainConvId);
+    setActiveTab('chat');
 
     // Warm up/unlock the mobile browser audio context synchronously inside the "Accept" click event
     const unlockedAudio = unlockAudioContext();
