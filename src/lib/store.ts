@@ -108,7 +108,7 @@ interface InboxState {
   teamMembers: UserProfile[]
   isLoaded: boolean
   selectedId: string | null
-  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived' | 'alerts'
+  activeFilter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts'
   currentUser: UserProfile | null
   messagesMap: Record<string, AppMessage[]>
   pendingDialNumber: string | null
@@ -118,7 +118,7 @@ interface InboxState {
   setConversations: (conversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
-  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived' | 'alerts') => void
+  setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts') => void
   setCurrentUser: (user: UserProfile | null) => void
   setMessages: (convoId: string, messages: AppMessage[]) => void
   addMessage: (convoId: string, message: AppMessage) => void

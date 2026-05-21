@@ -18,7 +18,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
 
-  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'pinned' | 'calls' | 'archived' | 'alerts') => {
+  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts') => {
     setActiveFilter(filter)
     setSelectedId(null)
     if (pathname !== '/inbox') {
@@ -36,6 +36,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   const messengerChats = conversations.filter(c => firstRelation(c.channels)?.type === 'messenger' && !c.tags?.includes('alert')).length
   const whatsappChats = conversations.filter(c => firstRelation(c.channels)?.type === 'whatsapp' && !c.tags?.includes('alert')).length
   const instagramChats = conversations.filter(c => firstRelation(c.channels)?.type === 'instagram' && !c.tags?.includes('alert')).length
+  const widgetChats = conversations.filter(c => firstRelation(c.channels)?.type === 'widget' && !c.tags?.includes('alert')).length
 
   return (
     <>
@@ -147,6 +148,19 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             >
               <div className="flex items-center gap-2"><Smartphone size={15} strokeWidth={2} /> Instagram</div>
               <span className="text-[12px] font-medium">{instagramChats}</span>
+            </div>
+
+            <div 
+              onClick={() => handleFilterClick('widget')}
+              className={`flex items-center justify-between px-3 py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+                activeFilter === 'widget' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                Website
+              </div>
+              <span className="text-[12px] font-medium">{widgetChats}</span>
             </div>
           </div>
         )}

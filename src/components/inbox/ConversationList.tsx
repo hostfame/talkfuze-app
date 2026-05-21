@@ -163,6 +163,9 @@ export default function ConversationList({
     if (activeFilter === 'instagram') {
       return channel?.type === 'instagram';
     }
+    if (activeFilter === 'widget') {
+      return channel?.type === 'widget';
+    }
     
     return true;
   });
