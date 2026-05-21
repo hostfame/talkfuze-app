@@ -199,3 +199,83 @@ export const stopAlertLoop = (): void => {
     alertIntervalId = null;
   }
 };
+
+// ---- Persistent alert loop for outgoing calls (Ringback Tone) ----
+// Synthesizes a premium, beautiful modern telephone ringback tone (425Hz + 450Hz sine pulse)
+let ringbackIntervalId: ReturnType<typeof setInterval> | null = null;
+
+const playRingbackChime = () => {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const t = ctx.currentTime;
+    
+    // Dynamics compressor for professional, clipping-free output
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-24, t);
+    comp.knee.setValueAtTime(30, t);
+    comp.ratio.setValueAtTime(8, t);
+    comp.attack.setValueAtTime(0.01, t);
+    comp.release.setValueAtTime(0.2, t);
+    comp.connect(ctx.destination);
+
+    // Pulse synthesis function
+    const pulse = (freq1: number, freq2: number, start: number, duration: number) => {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      // Lowpass filter to make it perfectly smooth, warm, and professional
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(750, t); 
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(freq1, t + start);
+      osc2.frequency.setValueAtTime(freq2, t + start);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(comp);
+
+      // Smooth breathe-like volume envelope
+      gain.gain.setValueAtTime(0, t + start);
+      gain.gain.linearRampToValueAtTime(0.06, t + start + 0.15); // soft warm fade-in
+      gain.gain.linearRampToValueAtTime(0.04, t + start + 0.5);  // slight natural dip
+      gain.gain.exponentialRampToValueAtTime(0.001, t + start + duration);
+
+      osc1.start(t + start);
+      osc2.start(t + start);
+      osc1.stop(t + start + duration + 0.05);
+      osc2.stop(t + start + duration + 0.05);
+    };
+
+    // Premium modern dual-sine telephone ringback chimes
+    // 0.8s chime, 0.2s pause, 0.8s chime, followed by 2.2s silence
+    pulse(425, 450, 0, 0.8);
+    pulse(425, 450, 1.0, 0.8);
+  } catch (err) {
+    console.error('Ringback chime error:', err);
+  }
+};
+
+export const playRingbackLoop = (): void => {
+  if (typeof window === 'undefined') return;
+  if (ringbackIntervalId !== null) return;
+
+  playRingbackChime();
+  ringbackIntervalId = setInterval(playRingbackChime, 4000); // 4-second telephone cadence
+};
+
+export const stopRingbackLoop = (): void => {
+  if (ringbackIntervalId !== null) {
+    clearInterval(ringbackIntervalId);
+    ringbackIntervalId = null;
+  }
+};

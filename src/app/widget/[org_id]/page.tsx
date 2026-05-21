@@ -8,7 +8,7 @@ import { logBrowserCall } from "@/actions/calls"
 import { supabase } from "@/lib/supabase"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, isScreenShareSupported } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
-import { playUISound, playAlertLoop, stopAlertLoop } from "@/lib/sounds"
+import { playUISound, playAlertLoop, stopAlertLoop, playRingbackLoop, stopRingbackLoop } from "@/lib/sounds"
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
 type WidgetMessage = AppMessage & {
@@ -921,14 +921,24 @@ export default function WidgetPage() {
     return () => { stopAlertLoop() }
   }, [showCoBrowseRequest])
 
-  // Start/stop alert sound when incoming call is ringing
+  // Start/stop alert sound when incoming call is ringing or outgoing call is calling
   useEffect(() => {
     if (callStatus === 'ringing') {
       playAlertLoop()
     } else {
       stopAlertLoop()
     }
-    return () => { stopAlertLoop() }
+
+    if (callStatus === 'calling') {
+      playRingbackLoop()
+    } else {
+      stopRingbackLoop()
+    }
+
+    return () => { 
+      stopAlertLoop()
+      stopRingbackLoop()
+    }
   }, [callStatus])
 
   const handleAcceptCoBrowse = async () => {

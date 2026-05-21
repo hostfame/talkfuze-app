@@ -405,6 +405,19 @@ export default function ChatThread({
       .on('broadcast', { event: 'voice_call_ended' }, () => {
         handleEndVoiceCall(false)
       })
+      .on('broadcast', { event: 'voice_call_answered' }, () => {
+        // If another agent answers the call, stop local ringing/popups
+        setCallStatus((prevStatus) => {
+          if (prevStatus === 'ringing') {
+            stopRingtone()
+            setIncomingCall(null)
+            setCallConversationId(null)
+            setCallerName('')
+            return 'idle'
+          }
+          return prevStatus
+        })
+      })
       .on('broadcast', { event: 'voice_call_answered_by_visitor' }, async (payload) => {
         // Visitor accepted agent-initiated call
         try {
