@@ -36,9 +36,6 @@ export default async function SettingsLayout({ children }: { children: React.Rea
         </div>
         <div className="px-2 pb-4 space-y-0.5 border-b border-slate-100 dark:border-slate-800">
           <NavLink href="/settings/profile" icon={<User size={18} />} label="My Profile" />
-          {isAgent && (
-            <NavLink href="/settings/notifications" icon={<Bell size={18} />} label="Notification settings" />
-          )}
         </div>
         
         {!isAgent && (
