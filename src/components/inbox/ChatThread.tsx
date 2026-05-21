@@ -2368,69 +2368,80 @@ export default function ChatThread({
                       <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
                     <div className={`${
-                      msg.content_type === 'audio' 
-                        ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none' 
-                        : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200'
-                    } rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal`}>
-                      {/* Render Reply Preview if present */}
-                      {(() => {
-                        const replyTo = safeMeta.reply_to;
-                        if (!replyTo) return null;
-                        return (
-                          <div 
-                            onClick={() => {
-                              const element = document.getElementById(`msg-${replyTo.message_id}`);
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                element.classList.add('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50', 'transition-all', 'duration-500');
-                                setTimeout(() => {
-                                  element.classList.remove('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50');
-                                }, 2000);
-                              }
-                            }}
-                            className="mb-2 p-2 bg-black/5 dark:bg-white/5 border-l-[3px] border-[#0070f3] dark:border-blue-400 rounded-r-md text-left cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors max-w-full select-none"
-                          >
-                            <div className="text-[11px] font-bold text-[#0070f3] dark:text-blue-400 truncate">
-                              {replyTo.sender_name}
-                            </div>
-                            <div className="text-[12.5px] text-slate-650 dark:text-slate-300 truncate leading-relaxed">
-                              {replyTo.content_type === 'image' ? 'Image' : replyTo.content_type === 'video' ? 'Video' : replyTo.content_type === 'audio' ? 'Voice message' : replyTo.content}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      {msg.content_type === 'image' && (mediaUrl) ? (
-                        <div className="mb-2">
-                          <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                            <img 
-                              src={(mediaUrl) as string} 
-                              alt="Attachment" 
-                              className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => setZoomedImage((mediaUrl) as string)}
-                            />
-                          </div>
-                          {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
-                        </div>
-                      ) : msg.content_type === 'file' && (mediaUrl) ? (
-                        <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
-                          <Paperclip size={16} />
-                          <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
-                        </a>
-                      ) : msg.content_type === 'audio' && (mediaUrl) ? (
-                        <div className="flex flex-col gap-1">
-                          <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" />
-                          {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
-                        </div>
-                      ) : msg.content_type === 'video' && (mediaUrl) ? (
-                        <div className="mb-2">
-                          <video controls className="max-w-[240px] rounded-lg border border-slate-200 dark:border-slate-700 bg-black">
-                            <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
-                            Your browser does not support the video tag.
-                          </video>
-                          {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
-                        </div>
+                      (msg.status === 'recalled' || msg.status === 'deleted')
+                        ? 'bg-slate-100/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none'
+                        : msg.content_type === 'audio' 
+                          ? 'bg-transparent text-slate-900 dark:text-slate-100 p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal' 
+                          : 'bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-slate-200 rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal'
+                    }`}>
+                      {(msg.status === 'recalled' || msg.status === 'deleted') ? (
+                        <>
+                          <Ban size={13} className="opacity-60 shrink-0" />
+                          <span>This message was recalled</span>
+                        </>
                       ) : (
-                        <div>{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>
+                        <>
+                          {/* Render Reply Preview if present */}
+                          {(() => {
+                            const replyTo = safeMeta.reply_to;
+                            if (!replyTo) return null;
+                            return (
+                              <div 
+                                onClick={() => {
+                                  const element = document.getElementById(`msg-${replyTo.message_id}`);
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    element.classList.add('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50', 'transition-all', 'duration-500');
+                                    setTimeout(() => {
+                                      element.classList.remove('bg-blue-50/50', 'dark:bg-blue-950/20', 'ring-2', 'ring-blue-400/50');
+                                    }, 2000);
+                                  }
+                                }}
+                                className="mb-2 p-2 bg-black/5 dark:bg-white/5 border-l-[3px] border-[#0070f3] dark:border-blue-400 rounded-r-md text-left cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors max-w-full select-none"
+                              >
+                                <div className="text-[11px] font-bold text-[#0070f3] dark:text-blue-400 truncate">
+                                  {replyTo.sender_name}
+                                </div>
+                                <div className="text-[12.5px] text-slate-650 dark:text-slate-300 truncate leading-relaxed">
+                                  {replyTo.content_type === 'image' ? 'Image' : replyTo.content_type === 'video' ? 'Video' : replyTo.content_type === 'audio' ? 'Voice message' : replyTo.content}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          {msg.content_type === 'image' && (mediaUrl) ? (
+                            <div className="mb-2">
+                              <div className="relative inline-block max-w-[240px] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                                <img 
+                                  src={(mediaUrl) as string} 
+                                  alt="Attachment" 
+                                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => setZoomedImage((mediaUrl) as string)}
+                                />
+                              </div>
+                              {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
+                            </div>
+                          ) : msg.content_type === 'file' && (mediaUrl) ? (
+                            <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
+                              <Paperclip size={16} />
+                              <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
+                            </a>
+                          ) : msg.content_type === 'audio' && (mediaUrl) ? (
+                            <div className="flex flex-col gap-1">
+                              <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" />
+                              {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
+                            </div>
+                          ) : msg.content_type === 'video' && (mediaUrl) ? (
+                            <div className="mb-2">
+                              <video controls className="max-w-[240px] rounded-lg border border-slate-200 dark:border-slate-700 bg-black">
+                                <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
+                                Your browser does not support the video tag.
+                              </video>
+                              {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
+                            </div>
+                          ) : (
+                            <div>{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -2749,6 +2760,52 @@ export default function ChatThread({
         </div>
         </div>
       </div>
+      {/* Custom Context Menu */}
+      {contextMenu && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-[99998] cursor-default" 
+          onClick={() => setContextMenu(null)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setContextMenu(null);
+          }}
+        >
+          <div 
+            style={{ top: contextMenu.y, left: contextMenu.x }}
+            className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[150px] animate-in fade-in zoom-in-95 duration-100"
+          >
+            <button 
+              onClick={() => {
+                setEditingMessage(contextMenu.message);
+                setEditInput(contextMenu.message.content);
+                setContextMenu(null);
+              }}
+              className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
+            >
+              <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
+              Edit message
+            </button>
+            <button 
+              onClick={async () => {
+                const msgId = contextMenu.message.id;
+                setContextMenu(null);
+                if (confirm('Recall this message? It will delete it for everyone.')) {
+                  try {
+                    await recallMessage(msgId);
+                  } catch (err: any) {
+                    alert('Failed to recall: ' + err.message);
+                  }
+                }
+              }}
+              className="w-full text-left px-3.5 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
+            >
+              <Trash2 size={14} className="text-red-400 dark:text-red-500" />
+              Recall message
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(
         <div 
