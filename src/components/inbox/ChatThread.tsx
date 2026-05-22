@@ -2717,6 +2717,8 @@ export default function ChatThread({
             if (msg.content === 'Started a voice call') return null;
 
             if (msg.content.toLowerCase().includes("voice call")) {
+              if (msg.content === 'Voice call ended' && !safeMeta.duration) return null;
+              
               const isMissed = msg.content.includes("Missed");
               const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
               return (
