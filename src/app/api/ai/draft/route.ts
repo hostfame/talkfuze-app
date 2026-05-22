@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import knowledge from "@/actions/hostnin-knowledge.json";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { buildKnowledgeContext } from "@/actions/knowledge-engine";
 
-// Node runtime needed for supabaseAdmin (createClient uses Node APIs)
-// Still fast since we stream the response
+// ============================================================
+// LANGUAGE DETECTION
+// ============================================================
 
 const BENGLISH_WORDS = new Set([
   'ami', 'tumi', 'apni', 'amader', 'apnar', 'tomar', 'koto', 'bhai', 'apuni', 'apuo',
@@ -19,10 +20,12 @@ const BENGLISH_WORDS = new Set([
   'ebong', 'kintu'
 ]);
 
-// Pre-stringify the knowledge base once at module load, not per request
-const KNOWLEDGE_STRING = JSON.stringify(knowledge);
+// ============================================================
+// STATIC SYSTEM PROMPT (cached by Anthropic, ~500 tokens)
+// Only personality + rules. NO knowledge data here.
+// ============================================================
 
-const STATIC_SYSTEM_PROMPT = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
+const SYSTEM_PROMPT = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
 
 YOUR PERSONALITY:
 - Confident, proactive, highly helpful, and warm.
@@ -40,14 +43,15 @@ BEING SMART:
 1. Read the full conversation context. Don't repeat questions or details the customer already provided.
 2. If you can solve it immediately, do so. Don't ask unnecessary questions.
 3. Keep simple acknowledgements (like "ok", "thanks") extremely brief (1 line).
-4. Use exact resolution protocols from the Knowledge Base when applicable.
-
-Hostnin Knowledge Base:
-${KNOWLEDGE_STRING}
+4. Use exact resolution protocols from the provided Knowledge when applicable.
+5. If Reference Responses are provided, match their tone and style closely.
 
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
-// Cache few-shot data in-memory (module-level, survives across requests)
+// ============================================================
+// LEARNING DATA CACHE (few-shot examples + corrections)
+// ============================================================
+
 interface CachedLearning {
   fewShotBlock: string;
   mistakesBlock: string;
@@ -114,6 +118,10 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
   return { fewShotBlock, mistakesBlock };
 }
 
+// ============================================================
+// MAIN ROUTE
+// ============================================================
+
 export async function POST(req: Request) {
   try {
     const { contextMessages, contactName, orgId } = await req.json();
@@ -123,11 +131,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
-    // Detect language (instant, no IO)
+    // 1. Detect language (instant, no IO)
     const customerLines = contextMessages.split('\n')
       .map((line: string) => line.trim())
       .filter((line: string) => line && !line.startsWith('[Agent]'));
-    
+
     const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
     const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
     const words = lastCustomerText.split(/[^a-zA-Z]+/);
@@ -137,36 +145,44 @@ export async function POST(req: Request) {
     }
     const detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
 
-    // Fetch learning data (cached, ~0ms on hit, ~200ms on miss)
-    const { fewShotBlock, mistakesBlock } = orgId 
-      ? await getLearningData(orgId) 
+    // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
+    const knowledgeContext = buildKnowledgeContext(contextMessages);
+
+    // 3. Fetch learning data (cached, ~0ms on hit)
+    const { fewShotBlock, mistakesBlock } = orgId
+      ? await getLearningData(orgId)
       : { fewShotBlock: '', mistakesBlock: '' };
 
-    const dynamicInstructions = `CRITICAL RULE 1: LANGUAGE MATCHING
-${detectedLanguage === 'en' 
-  ? `The customer is writing in English. You MUST reply 100% in English.
-- Do NOT use any Bengali script or words.
-- Reply in natural, conversational English using contractions: "I'll", "we've", "you're", "don't".
-- Talk like a natural human: "Hey, thanks for reaching out!", "Got it! Let me check this real quick.", "Absolutely, happy to help."
+    // 4. Build user message with language rules + knowledge + context
+    const languageRule = detectedLanguage === 'en'
+      ? `LANGUAGE: English. Reply 100% in English.
+- Use contractions: "I'll", "we've", "you're", "don't".
+- Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
 - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".`
-  : `The customer is writing in Bengali or Benglish. You MUST reply 100% in Bengali script (বাংলা হরফে).
-- Write in casual, natural, conversational Bengali script as used on WhatsApp, NOT bookish or textbook style.
-- Avoid robotic terms like "অনুগ্রহপূর্বক" (use "প্লিজ" or omit), "সহযোগিতা" (use "হেল্প" or "হেল্প করতে পারি"), "অনুগ্রহ করে" (use "একতু" or "প্লিজ").
-- Transliterate technical English terms to Bengali script: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, বিলিং, পেমেন্ট, একটিভ, ফিক্স, চেক.
-- Brand names: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার". Never write brand names in English letters inside Bengali script text.
-- Use direct, warm, respectful terms: ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার" or "তুই/তোর".
-- Emojis: Use sparingly (1-2 max): 😊 ✅ 👍`}
+      : `LANGUAGE: Bengali. Reply 100% in Bengali script (বাংলা হরফে).
+- Write casual, natural WhatsApp-style Bengali, NOT bookish.
+- Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
+- Transliterate tech terms: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, পেমেন্ট, ফিক্স, চেক.
+- Brand names in Bengali: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার".
+- ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
+- Emojis: 1-2 max: 😊 ✅ 👍`;
 
-CRITICAL RULE 2: FORMATTING & BREVITY (BITE-SIZED MESSAGING)
-- ALWAYS keep your response extremely short, concise, and bite-sized.
-- MAXIMUM 3 to 4 lines total.
-- NEVER write long paragraphs or 10-12 line essays. Humans chat in short bursts.
-- If the issue is complex and requires a long explanation, DO NOT write it all at once. Instead, give a short summary (1-2 lines) and ASK a question to guide the customer.
-- Example of good formatting: "Sure, the .COM price is 1650 BDT.\nAre you looking to buy a new one or transfer an existing one?"
+    const userMessage = `${languageRule}
 
-${fewShotBlock}${mistakesBlock}`;
+BREVITY: Keep response 3-4 lines max. Short bursts, not essays. If complex, give 1-2 line summary + ask a question.
+${fewShotBlock}${mistakesBlock}
 
-    // Fire Anthropic streaming request
+## Hostnin Knowledge (use ONLY if relevant to the question)
+${knowledgeContext}
+
+Customer Name: ${contactName}
+
+Conversation:
+${contextMessages}
+
+Draft a smart, helpful reply as the support agent.`;
+
+    // 5. Fire Anthropic streaming request
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -182,15 +198,12 @@ ${fewShotBlock}${mistakesBlock}`;
         system: [
           {
             type: "text",
-            text: STATIC_SYSTEM_PROMPT,
+            text: SYSTEM_PROMPT,
             cache_control: { type: "ephemeral" }
           }
         ],
         messages: [
-          {
-            role: "user",
-            content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`,
-          },
+          { role: "user", content: userMessage },
         ],
       }),
     });
@@ -199,27 +212,26 @@ ${fewShotBlock}${mistakesBlock}`;
       return NextResponse.json({ error: await anthropicResponse.text() }, { status: 500 });
     }
 
-    // Pipe Anthropic SSE stream directly to client with minimal processing
+    // 6. Pipe Anthropic SSE stream directly to client
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        // Send language detection immediately (client gets this in ~0ms)
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: detectedLanguage })}\n\n`));
 
         const reader = anthropicResponse.body?.getReader();
         const decoder = new TextDecoder("utf-8");
         if (!reader) { controller.close(); return; }
 
-        let buffer = ''; // Handle partial chunks from Anthropic
+        let buffer = '';
 
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
               if (line.startsWith("data: ") && line !== "data: [DONE]") {
@@ -231,7 +243,7 @@ ${fewShotBlock}${mistakesBlock}`;
                     );
                   }
                 } catch {
-                  // incomplete JSON chunk, will be handled on next read
+                  // incomplete JSON chunk
                 }
               }
             }
@@ -248,7 +260,7 @@ ${fewShotBlock}${mistakesBlock}`;
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
-        "X-Accel-Buffering": "no", // Disable Nginx/proxy buffering
+        "X-Accel-Buffering": "no",
       },
     });
 
