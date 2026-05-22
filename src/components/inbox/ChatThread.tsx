@@ -3218,7 +3218,7 @@ export default function ChatThread({
                   onClick={() => setIsInternal(true)}
                   className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-[#111b21] text-amber-600 dark:text-amber-400 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
                 >
-                  <Lock size={12} strokeWidth={2.5} /> Whisper
+                  Whisper
                 </button>
               </div>
               
