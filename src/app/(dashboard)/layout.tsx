@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { logout } from "@/actions/auth"
 import { AuthProvider } from "@/lib/auth-context"
 import SipDialer from "@/components/dialer/SipDialer"
+import LogoutButton from "@/components/auth/LogoutButton"
 
 export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
 
@@ -73,15 +74,7 @@ export default async function DashboardLayout({
                 </div>
               )}
             </Link>
-            <form action={logout} className="w-full flex justify-center">
-              <button 
-                type="submit" 
-                className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer" 
-                title="Log Out"
-              >
-                <LogOut size={22} strokeWidth={2} />
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </aside>
 

@@ -22,7 +22,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 font-sans">
+    <>
+      {isLoading && !error && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm transition-all duration-300">
+          <Loader2 size={40} className="text-blue-600 dark:text-blue-500 animate-spin mb-4" />
+          <p className="text-lg font-medium text-slate-800 dark:text-white">Authenticating...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Preparing your workspace</p>
+        </div>
+      )}
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 font-sans">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -108,5 +116,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
