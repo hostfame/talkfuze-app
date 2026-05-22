@@ -1635,6 +1635,15 @@ export default function ChatThread({
     return aShortcut.localeCompare(bShortcut);
   });
 
+  useEffect(() => {
+    if (showMacroMenu) {
+      const element = document.getElementById(`macro-item-${selectedIndex}`);
+      if (element) {
+        element.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedIndex, showMacroMenu]);
+
   const applyMacro = (macroContent: string) => {
     const val = input;
     const textarea = textareaRef.current;
@@ -3137,6 +3146,7 @@ export default function ChatThread({
                 filteredMacros.map((macro, i) => (
                   <div 
                     key={macro.id} 
+                    id={`macro-item-${i}`}
                     onMouseEnter={() => setSelectedIndex(i)}
                     onClick={() => applyMacro(macro.content)}
                     className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 ${i === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
