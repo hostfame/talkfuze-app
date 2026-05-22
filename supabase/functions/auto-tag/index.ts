@@ -69,7 +69,7 @@ Message: "${messageContent}"`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Anthropic error:", errorText);
-      return new Response(JSON.stringify({ error: "AI failed" }), { status: 500 })
+      return new Response(JSON.stringify({ error: "AI failed", details: errorText }), { status: 500 })
     }
 
     const aiData = await response.json()
