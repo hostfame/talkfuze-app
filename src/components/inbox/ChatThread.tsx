@@ -1552,6 +1552,15 @@ export default function ChatThread({
         return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
       }).join('\n')
 
+    // Broadcast typing to widget so visitor sees typing indicator during AI draft
+    if (conversationId && !isInternal) {
+      supabase.channel(`typing:${orgId}`).send({
+        type: 'broadcast',
+        event: 'typingStatus',
+        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true }
+      });
+    }
+
     try {
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
@@ -1600,6 +1609,15 @@ export default function ChatThread({
 
       setIsAiStreaming(false)
 
+      // Stop typing indicator on widget
+      if (conversationId && !isInternal) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+        });
+      }
+
       // Log the AI draft for learning (fire and forget)
       if (currentUser?.id && fullText.trim()) {
         logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
@@ -1611,6 +1629,14 @@ export default function ChatThread({
       setTimeout(() => setAiDraftFailed(false), 3000)
       setIsAiDrafting(false)
       setIsAiStreaming(false)
+      // Stop typing indicator on error too
+      if (conversationId && !isInternal) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+        });
+      }
     }
   }
 
