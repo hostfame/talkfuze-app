@@ -1223,6 +1223,16 @@ export default function WidgetPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const ticketEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null)
+  const isUserScrolledUpRef = useRef(false)
+  
+  const handleChatScroll = () => {
+    if (chatScrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatScrollContainerRef.current
+      isUserScrolledUpRef.current = scrollHeight - scrollTop - clientHeight > 100
+    }
+  }
 
   useEffect(() => {
     // Check for existing WHMCS session in localStorage
@@ -1466,7 +1476,11 @@ export default function WidgetPage() {
 
   useEffect(() => {
     if (activeTab === 'chat') {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      if (!isUserScrolledUpRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+    } else {
+      isUserScrolledUpRef.current = false;
     }
   }, [messages, activeTab, isAgentTyping, isAgentRecording])
 
@@ -1664,6 +1678,7 @@ export default function WidgetPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const uploadAndSendFile = async (file: File) => {
+    isUserScrolledUpRef.current = false;
     if (!deviceId) return;
     const tempId = `temp-upload-${Date.now()}`;
     
@@ -1863,6 +1878,7 @@ export default function WidgetPage() {
   };
 
   const handleSend = async (forcedText?: string) => {
+    isUserScrolledUpRef.current = false;
     const textToSubmit = forcedText || input;
     if (!textToSubmit.trim() || isSending || !deviceId) return
 
@@ -2893,7 +2909,7 @@ export default function WidgetPage() {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
+            <div ref={chatScrollContainerRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
               {/* Persistent Welcome Greeting */}
               <div className="flex flex-col gap-1 items-start mb-1 mt-2">
                 <div className="flex gap-2 items-end">
