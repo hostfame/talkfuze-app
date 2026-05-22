@@ -1420,8 +1420,11 @@ export default function WidgetPage() {
     const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
     if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') return;
 
+    // Check if auto-reply is enabled in settings
+    if (settings?.widget_auto_reply_enabled === false) return;
+
     // Check if there's already an auto-reply for being busy in this conversation
-    const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && (m.content.includes('busy') || m.content.includes('ব্যস্ত')));
+    const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && m.metadata?.auto_reply);
     if (hasBusyAutoReply) return;
 
     const timer = setTimeout(async () => {
@@ -1429,9 +1432,14 @@ export default function WidgetPage() {
       const isBengali = messages.some(m => m.sender_type === 'contact' && /[\u0980-\u09FF]/.test(m.content || ''));
       const waNumber = settings?.whatsapp_number || '+8801325875955';
       
-      const content = isBengali 
-        ? `সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করতে পারেনঃ ${waNumber}`
-        : `It seems all our support agents are currently busy. For faster support, you can message us on WhatsApp: ${waNumber}`;
+      const defaultEn = `It seems all our support agents are currently busy. For faster support, you can message us on WhatsApp: {whatsapp_number}`;
+      const defaultBn = `সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করতে পারেনঃ {whatsapp_number}`;
+
+      let content = isBengali 
+        ? (settings?.widget_auto_reply_text_bn || defaultBn)
+        : (settings?.widget_auto_reply_text_en || defaultEn);
+
+      content = content.replace('{whatsapp_number}', waNumber);
 
       try {
         await sendWidgetMessage(

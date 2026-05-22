@@ -19,7 +19,13 @@ export default function AutomationSettingsPage() {
   const [replyText, setReplyText] = useState("")
   const [hotlineNumber, setHotlineNumber] = useState("")
 
+  const [widgetAutoReplyEnabled, setWidgetAutoReplyEnabled] = useState(false)
+  const [widgetAutoReplyEn, setWidgetAutoReplyEn] = useState("")
+  const [widgetAutoReplyBn, setWidgetAutoReplyBn] = useState("")
+
   const DEFAULT_REPLY = "Hi! Thank you for calling us on WhatsApp. We are currently moving our voice support to our direct hotline. We will call you back shortly, or you can reach us directly at {hotline}."
+  const DEFAULT_WIDGET_EN = "It seems all our support agents are currently busy. For faster support, you can message us on WhatsApp: {whatsapp_number}"
+  const DEFAULT_WIDGET_BN = "সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করতে পারেনঃ {whatsapp_number}"
 
   // Fetch settings from supabase
   const fetchSettings = useCallback(async () => {
@@ -39,6 +45,10 @@ export default function AutomationSettingsPage() {
         setEnabled(!!settings.wa_call_auto_reply_enabled)
         setReplyText(settings.wa_call_auto_reply_text || DEFAULT_REPLY)
         setHotlineNumber(settings.wa_call_hotline_number || "+880 9612 345678")
+        
+        setWidgetAutoReplyEnabled(!!settings.widget_auto_reply_enabled)
+        setWidgetAutoReplyEn(settings.widget_auto_reply_text_en || DEFAULT_WIDGET_EN)
+        setWidgetAutoReplyBn(settings.widget_auto_reply_text_bn || DEFAULT_WIDGET_BN)
       }
     } catch (err: any) {
       console.error("[AUTOMATION_SETTINGS] Fetch error:", err)
@@ -74,7 +84,10 @@ export default function AutomationSettingsPage() {
         ...currentSettings,
         wa_call_auto_reply_enabled: enabled,
         wa_call_auto_reply_text: replyText.trim(),
-        wa_call_hotline_number: hotlineNumber.trim()
+        wa_call_hotline_number: hotlineNumber.trim(),
+        widget_auto_reply_enabled: widgetAutoReplyEnabled,
+        widget_auto_reply_text_en: widgetAutoReplyEn.trim(),
+        widget_auto_reply_text_bn: widgetAutoReplyBn.trim()
       }
 
       const { error: updateErr } = await supabase
@@ -192,6 +205,91 @@ export default function AutomationSettingsPage() {
                   </div>
                   <p className="text-[12.5px] text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                     When active, TalkFuze automatically processes rejected incoming calls. It replies to the client instantly and triggers a persistent call-back alert on your agent workspace call icons.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Trigger Card: Widget Auto-Reply */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start gap-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <MessageSquare size={18} className="text-slate-400" />
+                  Live Chat Unresponsive Auto-Reply
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Trigger an automated fallback message if no agent replies to a new live chat visitor within 60 seconds.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={widgetAutoReplyEnabled}
+                  onChange={(e) => setWidgetAutoReplyEnabled(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#0070f3]"></div>
+              </label>
+            </div>
+
+            {widgetAutoReplyEnabled && (
+              <div className="p-6 space-y-5 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      English Message
+                    </label>
+                    <textarea
+                      value={widgetAutoReplyEn}
+                      onChange={(e) => setWidgetAutoReplyEn(e.target.value)}
+                      rows={3}
+                      className="w-full px-3.5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all leading-relaxed"
+                      placeholder="Enter auto-reply text template for English..."
+                    />
+                    <div className="flex justify-between items-center text-[11px] text-slate-400">
+                      <span>Use <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded font-mono font-bold">{"{whatsapp_number}"}</code> to output your configured WhatsApp number.</span>
+                      <button
+                        type="button"
+                        onClick={() => setWidgetAutoReplyEn(DEFAULT_WIDGET_EN)}
+                        className="text-[#0070f3] hover:underline font-medium"
+                      >
+                        Reset English
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Bengali Message
+                    </label>
+                    <textarea
+                      value={widgetAutoReplyBn}
+                      onChange={(e) => setWidgetAutoReplyBn(e.target.value)}
+                      rows={3}
+                      className="w-full px-3.5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all leading-relaxed"
+                      placeholder="Enter auto-reply text template for Bengali..."
+                    />
+                    <div className="flex justify-end items-center text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setWidgetAutoReplyBn(DEFAULT_WIDGET_BN)}
+                        className="text-[#0070f3] hover:underline font-medium"
+                      >
+                        Reset Bengali
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                    <Zap size={16} />
+                    <span>Language Detection</span>
+                  </div>
+                  <p className="text-[12.5px] text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
+                    TalkFuze automatically detects the language of the visitor's message and selects the appropriate localized template. If no Bengali script is found, the English version is used by default.
                   </p>
                 </div>
               </div>
