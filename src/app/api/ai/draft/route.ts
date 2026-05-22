@@ -186,10 +186,10 @@ export async function POST(req: Request) {
     const userMessage = `${languageRule}
 
 FORMATTING & BREVITY:
-- CRITICAL: Structure the message into bite-sized chunks using double line breaks (paragraphs).
-- NEVER write a single large block of text. Always add breathing space between logical sentences.
-- Example structure: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
-- Keep response 3-4 short paragraphs max. Short bursts, not essays.
+- CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
+- NEVER combine multiple sentences into a single paragraph, even for very short messages. ALWAYS add breathing space.
+- Example for a short reply: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
+- Keep response 3-4 short sentences max. Short bursts, not essays.
 ${fewShotBlock}${mistakesBlock}
 ${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
 The agent has explicitly requested you to write a message conveying the following exact meaning:
