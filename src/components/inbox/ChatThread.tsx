@@ -749,7 +749,7 @@ export default function ChatThread({
     } catch (err) {
       console.error("Agent microphone access failed", err)
       setCallStatus('idle')
-      alert("Microphone permission is required to answer the voice call.")
+      setCustomAlert({ title: 'Permission Denied', message: 'Microphone permission is required to answer the voice call.', type: 'error' })
       handleDeclineVoiceCall()
     }
   }
@@ -931,7 +931,7 @@ export default function ChatThread({
     } catch (err) {
       console.error('[Agent Call] Initiation failed:', err)
       setCallStatus('idle')
-      alert("Microphone permission is required to place calls.")
+      setCustomAlert({ title: 'Permission Denied', message: 'Microphone permission is required to place calls.', type: 'error' })
     }
   }
 
@@ -1027,7 +1027,7 @@ export default function ChatThread({
       setIsMenuOpen(false)
     } catch (error) {
       console.error(error)
-      alert("Failed to send review prompt or archive conversation")
+      setCustomAlert({ title: 'Error', message: 'Failed to send review prompt or archive conversation', type: 'error' })
     } finally {
       setIsResolving(false)
     }
@@ -1224,6 +1224,7 @@ export default function ChatThread({
   const [quickReplyTitle, setQuickReplyTitle] = useState("")
   const [quickReplyContent, setQuickReplyContent] = useState("")
   const [quickReplySaving, setQuickReplySaving] = useState(false)
+  const [quickReplyError, setQuickReplyError] = useState(false)
 
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
@@ -1963,7 +1964,7 @@ export default function ChatThread({
       }, 1000)
     } catch (err) {
       console.error("Error accessing microphone:", err)
-      alert("Microphone access is required to record audio.")
+      setCustomAlert({ title: 'Permission Denied', message: 'Microphone access is required to record audio.', type: 'error' })
     }
   }
 
@@ -3432,7 +3433,7 @@ export default function ChatThread({
                     await recallMessage(msgId);
                   } catch (err: any) {
                     // Revert if it fails (optional, but alerts for now)
-                    alert('Failed to delete: ' + err.message);
+                    setCustomAlert({ title: 'Error', message: 'Failed to delete: ' + err.message, type: 'error' });
                   }
                 }}
                 className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
@@ -3471,9 +3472,19 @@ export default function ChatThread({
       {quickReplyModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div 
-            className="bg-white dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
+            <style>{`
+              @keyframes tf-shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+                20%, 40%, 60%, 80% { transform: translateX(4px); }
+              }
+              .animate-tf-shake {
+                animation: tf-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+              }
+            `}</style>
             <div className="flex justify-between items-center mb-5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
@@ -3491,7 +3502,11 @@ export default function ChatThread({
 
             <form onSubmit={async (e) => {
               e.preventDefault();
-              if (!quickReplyShortcut.trim() || !quickReplyTitle.trim() || !quickReplyContent.trim()) return;
+              if (!quickReplyShortcut.trim() || !quickReplyTitle.trim() || !quickReplyContent.trim()) {
+                setQuickReplyError(true);
+                setTimeout(() => setQuickReplyError(false), 500);
+                return;
+              }
               
               const shortcut = quickReplyShortcut.toLowerCase().trim().replace(/^\//, ''); // strip leading slash if they typed it
               if (quickReplies.some(r => r.shortcut.toLowerCase() === shortcut)) {
@@ -3507,7 +3522,7 @@ export default function ChatThread({
                   setQuickReplyModalOpen(false);
                 }
               } catch (err: any) {
-                alert('Failed to save quick reply: ' + err.message);
+                setCustomAlert({ title: 'Error', message: 'Failed to save quick reply: ' + err.message, type: 'error' });
               } finally {
                 setQuickReplySaving(false);
               }
@@ -3523,7 +3538,7 @@ export default function ChatThread({
                     placeholder="e.g. wal"
                     value={quickReplyShortcut}
                     onChange={(e) => setQuickReplyShortcut(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                    className="w-full pl-6 pr-3.5 py-2 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all font-semibold"
+                    className={`w-full pl-6 pr-3.5 py-2 text-[14px] rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all font-semibold ${quickReplyError && !quickReplyShortcut.trim() ? 'border-red-500 ring-1 ring-red-500 animate-tf-shake' : 'border-slate-200 dark:border-slate-800'}`}
                     disabled={quickReplySaving}
                     autoFocus
                   />
@@ -3539,7 +3554,7 @@ export default function ChatThread({
                   placeholder="e.g. Wa-alaykum Assalam Greeting"
                   value={quickReplyTitle}
                   onChange={(e) => setQuickReplyTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all"
+                  className={`w-full px-3.5 py-2 text-[14px] rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all ${quickReplyError && !quickReplyTitle.trim() ? 'border-red-500 ring-1 ring-red-500 animate-tf-shake' : 'border-slate-200 dark:border-slate-800'}`}
                   disabled={quickReplySaving}
                 />
               </div>
@@ -3552,7 +3567,7 @@ export default function ChatThread({
                   value={quickReplyContent}
                   onChange={(e) => setQuickReplyContent(e.target.value)}
                   rows={4}
-                  className="w-full px-3.5 py-2.5 text-[14px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all resize-none shadow-sm"
+                  className={`w-full px-3.5 py-2.5 text-[14px] rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0070f3]/50 focus:border-[#0070f3] focus:bg-white dark:focus:bg-slate-950 transition-all resize-none shadow-sm ${quickReplyError && !quickReplyContent.trim() ? 'border-red-500 ring-1 ring-red-500 animate-tf-shake' : 'border-slate-200 dark:border-slate-800'}`}
                   disabled={quickReplySaving}
                 />
               </div>
@@ -3569,7 +3584,7 @@ export default function ChatThread({
                 <button 
                   type="submit"
                   className="px-4 py-2 text-[13px] font-bold text-white bg-[#0070f3] hover:bg-blue-600 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"
-                  disabled={quickReplySaving || !quickReplyShortcut.trim() || !quickReplyTitle.trim() || !quickReplyContent.trim()}
+                  disabled={quickReplySaving}
                 >
                   {quickReplySaving ? (
                     <>
