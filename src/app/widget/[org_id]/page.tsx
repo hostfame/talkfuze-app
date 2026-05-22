@@ -1230,7 +1230,8 @@ export default function WidgetPage() {
   const handleChatScroll = () => {
     if (chatScrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatScrollContainerRef.current
-      isUserScrolledUpRef.current = scrollHeight - scrollTop - clientHeight > 100
+      // Threshold must be > 120px because pb-[120px] padding might not be scrolled into view
+      isUserScrolledUpRef.current = scrollHeight - scrollTop - clientHeight > 250
     }
   }
 
