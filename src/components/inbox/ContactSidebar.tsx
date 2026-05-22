@@ -1153,7 +1153,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     if (!unblockIpInput.trim() || isUnblocking) return;
                     setIsUnblocking(true);
                     try {
-                      const res = await unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0);
+                      const res = await unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0) as any;
                       if (res && res.result === 'success') {
                         alert(`Successfully unblocked IP!\n${Object.entries(res.details || {}).map(([s, result]) => `${s}: ${result}`).join('\n')}`);
                         setUnblockIpInput('');
