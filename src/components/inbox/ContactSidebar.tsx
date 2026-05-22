@@ -1267,25 +1267,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       </span>
                     </div>
                   )}
-                </div>
-                <button
-                  onClick={async () => {
-                    if (isLoggingIn) return;
-                    setIsLoggingIn(true);
-                    const res = await generateWHMCSSsoToken(whmcsClient.id);
-                    setIsLoggingIn(false);
-                    if (res.success && res.redirect_url) {
-                      window.open(res.redirect_url, '_blank');
-                    } else {
-                      alert(res.error || "Failed to generate login token");
-                    }
-                  }}
-                  disabled={isLoggingIn}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-[13px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {isLoggingIn ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
-                  Login as Client
-                </button>
               </div>
             </div>
           ) : (

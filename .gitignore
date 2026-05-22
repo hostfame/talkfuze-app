@@ -44,3 +44,12 @@ next-env.d.ts
 # local binaries
 /team/
 credentials.md
+
+# Scratch and testing files
+scratch/
+*.bin
+*.log
+test*.js
+test*.ts
+check*.js
+
