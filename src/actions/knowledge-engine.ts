@@ -124,8 +124,8 @@ const INTENT_PATTERNS: [Intent, RegExp][] = [
   ['pricing_web', /web\s*host|shared\s*host|হোস্টিং\s*(দাম|প্রাইস|কত)|hosting\s*(price|cost|plan)/i],
   ['domain', /\bdomain\b|ডোমেইন|\.com\b|\.net\b|\.org\b|\.io\b|\.xyz\b|\.bd\b|\.online\b|\btld\b|transfer\s*domain/i],
   ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill\b|\brefund\b|পেমেন্ট|বিল|টাকা|\btaka\b|\brenew/i],
-  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bspeed\b|\bbackup\b|\bip\s*block/i],
-  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to)\b|\bmove\s*site|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
+  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bbackup\b|\bip\s*block/i],
+  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to)\b|\bmove\b.*\bsite\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
   ['comparison', /\bcompare\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)|\bbetter\b/i],
 ];
 
