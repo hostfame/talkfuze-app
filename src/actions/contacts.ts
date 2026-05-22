@@ -110,3 +110,36 @@ export async function updateContactEmail(contactId: string, newEmail: string) {
   
   return { success: true }
 }
+
+
+export async function updateContactNotes(contactId: string, notes: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Unauthorized")
+
+  // fetch current metadata
+  const { data, error: fetchErr } = await supabaseAdmin
+    .from('contacts')
+    .select('metadata')
+    .eq('id', contactId)
+    .single()
+
+  if (fetchErr) {
+    return { success: false, error: fetchErr.message }
+  }
+
+  const existingMeta = (data?.metadata as Record<string, any>) || {}
+  const newMeta = { ...existingMeta, notes }
+
+  const { error } = await supabaseAdmin
+    .from('contacts')
+    .update({ metadata: newMeta })
+    .eq('id', contactId)
+    
+  if (error) {
+    console.error('Error updating contact notes:', error)
+    return { success: false, error: error.message }
+  }
+  
+  return { success: true }
+}

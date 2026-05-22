@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken } from "@/actions/whmcs"
-import { updateContactName, updateContactPhone, updateContactEmail } from "@/actions/contacts"
+import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import ForwardButton from "./ForwardButton"
 import SnoozeButton from "./SnoozeButton"
@@ -202,7 +202,7 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   }
   const showCallButton = isPhone(effectivePhoneId) && !isInstagram && !isMessenger
 
-  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse' | 'notes' | 'journey'>('details')
   
   // Co-Browsing States
   const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined' | 'connection_lost'>('idle')
@@ -554,6 +554,20 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
   
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState("")
+  
+  const [contactNotes, setContactNotes] = useState((contact?.metadata as any)?.notes || "")
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
+  
+  useEffect(() => {
+    setContactNotes((contact?.metadata as any)?.notes || "")
+  }, [contact?.metadata])
+
+  const handleSaveNotes = async () => {
+    if (!contact?.id) return
+    setIsSavingNotes(true)
+    await updateContactNotes(contact.id, contactNotes)
+    setIsSavingNotes(false)
+  }
 
   const handleSaveName = async () => {
     if (!editedName.trim() || editedName === contactName || !contact?.id) {
@@ -942,6 +956,18 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           Details
         </button>
         <button 
+          onClick={() => setActiveTab('notes')}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'notes' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+        >
+          Notes
+        </button>
+        <button 
+          onClick={() => setActiveTab('journey')}
+          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+        >
+          Journey
+        </button>
+        <button 
           onClick={() => setActiveTab('copilot')}
           className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
@@ -1129,6 +1155,34 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             ) : (
               <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
             )}
+          </div>
+        </div>
+
+        {/* Server Diagnostics Section */}
+        <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
+          <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
+              Server Diagnostics
+            </h3>
+            <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
+          </div>
+          <div className="px-5 space-y-2.5">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-2">Check IP or Unblock Firewall</p>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter IP Address..." 
+                  className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
+                />
+                <button 
+                  onClick={() => alert('IP Check trigger will be connected here.')}
+                  className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors"
+                >
+                  Unblock
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1492,7 +1546,70 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
           </div>
         </div>
-      )}      {activeTab === 'cobrowse' && (
+      )}
+      
+      {activeTab === 'notes' && (
+        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#111b21] p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Pencil size={14} className="text-amber-500" />
+              Sticky Notes
+            </h3>
+            {isSavingNotes && <Loader2 size={12} className="animate-spin text-slate-400" />}
+          </div>
+          <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-3">
+            Add context about this customer. These notes are visible to all agents.
+          </p>
+          <textarea
+            value={contactNotes}
+            onChange={(e) => setContactNotes(e.target.value)}
+            onBlur={handleSaveNotes}
+            placeholder="e.g. VIP Client, usually asks for discounts..."
+            className="flex-1 w-full text-[13px] p-3 border border-amber-200 dark:border-slate-700 bg-amber-50/50 dark:bg-slate-800 rounded-xl focus:outline-none focus:border-amber-400 dark:focus:border-blue-500 resize-none shadow-sm"
+          />
+        </div>
+      )}
+
+      {activeTab === 'journey' && (
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+              <Globe size={13} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100">User Journey</h3>
+          </div>
+          
+          <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 space-y-4 py-2">
+            {/* Dummy timeline for now */}
+            <div className="relative">
+              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
+              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Started Chat</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Just now</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
+              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Viewed Pricing Page</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">2 mins ago</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
+              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Visited Homepage</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">3 mins ago</p>
+            </div>
+            <div className="relative">
+              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
+              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Arrived from Google Ads</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">3 mins ago</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+             <p className="text-[12px] text-slate-500 text-center">Live tracking events will populate here once the widget event emitter is deployed.</p>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'cobrowse' && (
         <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-4 space-y-4 overflow-y-auto">
 
           {(isWhatsApp || isMessenger || isInstagram) ? (
