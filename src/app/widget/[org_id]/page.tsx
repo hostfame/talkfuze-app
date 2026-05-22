@@ -2637,7 +2637,7 @@ export default function WidgetPage() {
             <p className="text-sm font-medium text-slate-400 mb-4">{agentTitle}</p>
             
             {/* Status Description Badge */}
-            <div className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : isRinging ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse' : isCalling ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-400'} text-xs font-semibold tracking-wide`}>
+            <div className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-50/10 text-slate-100 border border-slate-50/20 text-[11px] font-semibold tracking-wider uppercase ${isRinging ? 'animate-pulse' : ''}`}>
               {isActive ? (
                 <>
                   Connected • {formatCallDuration(callDuration)}
