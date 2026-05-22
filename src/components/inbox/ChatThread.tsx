@@ -3176,6 +3176,7 @@ export default function ChatThread({
                 )}
               </button>
             </div>
+          </div>
         </div>
         </div>
       </div>
