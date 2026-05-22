@@ -663,6 +663,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   const [unblockIpInput, setUnblockIpInput] = useState("")
   const [isUnblocking, setIsUnblocking] = useState(false)
   const [unblockResult, setUnblockResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  const [isUnblockExpanded, setIsUnblockExpanded] = useState(false)
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
@@ -1135,68 +1136,83 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
             <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
           </div>
           <div className="px-5 space-y-2.5">
+            {/* Firewall IP Unblock Card (Expandable) */}
             <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-              <p className="text-[12px] text-slate-600 dark:text-slate-400 mb-2">Check IP or Unblock Firewall</p>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={unblockIpInput}
-                  onChange={(e) => setUnblockIpInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (!unblockIpInput.trim() || isUnblocking) return;
-                      setIsUnblocking(true);
-                      setUnblockResult(null);
-                      unblockIPFast(unblockIpInput.trim()).then((res: any) => {
-                        if (res && res.result === 'success') {
-                          setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
-                          setUnblockIpInput('');
-                        } else {
-                          setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
+              <button 
+                onClick={() => setIsUnblockExpanded(!isUnblockExpanded)}
+                className="w-full flex justify-between items-center text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Shield size={13} />
+                  Firewall IP Unblock
+                </span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${isUnblockExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isUnblockExpanded && (
+                <div className="mt-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={unblockIpInput}
+                      onChange={(e) => setUnblockIpInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (!unblockIpInput.trim() || isUnblocking) return;
+                          setIsUnblocking(true);
+                          setUnblockResult(null);
+                          unblockIPFast(unblockIpInput.trim()).then((res: any) => {
+                            if (res && res.result === 'success') {
+                              setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
+                              setUnblockIpInput('');
+                            } else {
+                              setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
+                            }
+                          }).catch((err) => {
+                            console.error(err);
+                            setUnblockResult({ type: 'error', message: 'Failed to unblock IP' });
+                          }).finally(() => {
+                            setIsUnblocking(false);
+                            setTimeout(() => setUnblockResult(null), 8000);
+                          });
                         }
-                      }).catch((err) => {
-                        console.error(err);
-                        setUnblockResult({ type: 'error', message: 'Failed to unblock IP' });
-                      }).finally(() => {
-                        setIsUnblocking(false);
-                        setTimeout(() => setUnblockResult(null), 8000);
-                      });
-                    }
-                  }}
-                  placeholder="Enter IP Address..." 
-                  className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
-                />
-                <button 
-                  onClick={async () => {
-                    if (!unblockIpInput.trim() || isUnblocking) return;
-                    setIsUnblocking(true);
-                    setUnblockResult(null);
-                    try {
-                      const res = await unblockIPFast(unblockIpInput.trim()) as any;
-                      if (res && res.result === 'success') {
-                        setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
-                        setUnblockIpInput('');
-                      } else {
-                        setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
-                      }
-                    } catch (e) {
-                      setUnblockResult({ type: 'error', message: 'An error occurred' });
-                    } finally {
-                      setIsUnblocking(false);
-                      setTimeout(() => setUnblockResult(null), 8000);
-                    }
-                  }}
-                  disabled={isUnblocking || !unblockIpInput.trim()}
-                  className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors disabled:opacity-50"
-                >
-                  {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
-                </button>
-              </div>
-              {unblockResult && (
-                <p className={`text-[11px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                  {unblockResult.type === 'success' ? '\u2713' : '\u2717'} {unblockResult.message}
-                </p>
+                      }}
+                      placeholder="Enter IP Address..." 
+                      className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
+                    />
+                    <button 
+                      onClick={async () => {
+                        if (!unblockIpInput.trim() || isUnblocking) return;
+                        setIsUnblocking(true);
+                        setUnblockResult(null);
+                        try {
+                          const res = await unblockIPFast(unblockIpInput.trim()) as any;
+                          if (res && res.result === 'success') {
+                            setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
+                            setUnblockIpInput('');
+                          } else {
+                            setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
+                          }
+                        } catch (e) {
+                          setUnblockResult({ type: 'error', message: 'An error occurred' });
+                        } finally {
+                          setIsUnblocking(false);
+                          setTimeout(() => setUnblockResult(null), 8000);
+                        }
+                      }}
+                      disabled={isUnblocking || !unblockIpInput.trim()}
+                      className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors disabled:opacity-50"
+                    >
+                      {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
+                    </button>
+                  </div>
+                  {unblockResult && (
+                    <p className={`text-[11px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                      {unblockResult.type === 'success' ? '\u2713' : '\u2717'} {unblockResult.message}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
             
