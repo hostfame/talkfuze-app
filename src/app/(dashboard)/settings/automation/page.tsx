@@ -24,8 +24,8 @@ export default function AutomationSettingsPage() {
   const [widgetAutoReplyBn, setWidgetAutoReplyBn] = useState("")
 
   const DEFAULT_REPLY = "Hi! Thank you for calling us on WhatsApp. We are currently moving our voice support to our direct hotline. We will call you back shortly, or you can reach us directly at {hotline}."
-  const DEFAULT_WIDGET_EN = "It seems all our support agents are currently busy. For faster support, you can message us on WhatsApp: {whatsapp_number}"
-  const DEFAULT_WIDGET_BN = "সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করতে পারেনঃ {whatsapp_number}"
+  const DEFAULT_WIDGET_EN = "It seems all our support agents are currently busy. For faster support, please click the button below to message us directly on WhatsApp."
+  const DEFAULT_WIDGET_BN = "সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে নিচের বাটনে ক্লিক করে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করুন।"
 
   // Fetch settings from supabase
   const fetchSettings = useCallback(async () => {
@@ -249,7 +249,7 @@ export default function AutomationSettingsPage() {
                       placeholder="Enter auto-reply text template for English..."
                     />
                     <div className="flex justify-between items-center text-[11px] text-slate-400">
-                      <span>Use <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded font-mono font-bold">{"{whatsapp_number}"}</code> to output your configured WhatsApp number.</span>
+                      <span>Use <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded font-mono font-bold">{"{whatsapp_number}"}</code> to output your configured WhatsApp number. A clickable WhatsApp button will automatically be added below the message.</span>
                       <button
                         type="button"
                         onClick={() => setWidgetAutoReplyEn(DEFAULT_WIDGET_EN)}
@@ -271,7 +271,8 @@ export default function AutomationSettingsPage() {
                       className="w-full px-3.5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all leading-relaxed"
                       placeholder="Enter auto-reply text template for Bengali..."
                     />
-                    <div className="flex justify-end items-center text-[11px]">
+                    <div className="flex justify-between items-center text-[11px] text-slate-400">
+                      <span>A clickable WhatsApp button will automatically be added below the message.</span>
                       <button
                         type="button"
                         onClick={() => setWidgetAutoReplyBn(DEFAULT_WIDGET_BN)}
