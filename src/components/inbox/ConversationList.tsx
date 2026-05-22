@@ -241,6 +241,7 @@ export default function ConversationList({
           const isTyping = typingState[conv.id]
           const isOnline = contact ? onlineUsers.has(contact.id) : false
           const lastMessage = (conv as any).matched_message || (conv.messages && conv.messages.length > 0 ? conv.messages[0] : null)
+          const isUnread = lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read'
 
           const getInitials = (name: string) => {
             if (name.startsWith('+')) return name.substring(0, 2)
@@ -293,7 +294,13 @@ export default function ConversationList({
                 {/* Line 1: Name and Time */}
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2 truncate">
-                    <span className={`text-[14.5px] truncate ${isSelected ? 'font-semibold text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-800 dark:text-[#d1d7db]'}`}>
+                    <span className={`text-[14.5px] truncate ${
+                      isUnread 
+                        ? 'font-extrabold text-slate-900 dark:text-white' 
+                        : isSelected 
+                          ? 'font-semibold text-slate-900 dark:text-[#e9edef]' 
+                          : 'font-medium text-slate-800 dark:text-[#d1d7db]'
+                    }`}>
                       {contactName}
                     </span>
                     {conv.status === 'resolved' && (
@@ -307,7 +314,13 @@ export default function ConversationList({
                       </span>
                     )}
                   </div>
-                  <span className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-slate-500 dark:text-[#8696a0] font-medium' : 'text-slate-400 dark:text-[#8696a0]'}`}>
+                  <span className={`text-[11px] shrink-0 ml-2 ${
+                    isUnread
+                      ? 'text-blue-600 dark:text-[#00a884] font-bold'
+                      : isSelected 
+                        ? 'text-slate-500 dark:text-[#8696a0] font-medium' 
+                        : 'text-slate-400 dark:text-[#8696a0]'
+                  }`}>
                     {time}
                   </span>
                 </div>
@@ -331,7 +344,13 @@ export default function ConversationList({
                         typing...
                       </p>
                     ) : (
-                      <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${lastMessage?.sender_type === 'agent' ? 'text-slate-400 dark:text-[#8696a0]' : 'text-slate-600 dark:text-[#8696a0] font-medium'}`}>
+                      <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${
+                        isUnread
+                          ? 'text-slate-900 dark:text-white font-bold'
+                          : lastMessage?.sender_type === 'agent' 
+                            ? 'text-slate-400 dark:text-[#8696a0]' 
+                            : 'text-slate-600 dark:text-[#8696a0] font-medium'
+                      }`}>
                         {lastMessage ? (
                           <>
                             {lastMessage.sender_type === 'agent' && <span className="text-slate-400 shrink-0">You: </span>}
@@ -353,8 +372,8 @@ export default function ConversationList({
                       </p>
                     )}
                   </div>
-                  {lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read' && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 dark:bg-[#00a884] shrink-0 shadow-[0_0_6px_rgba(0,168,132,0.4)]"></div>
+                  {isUnread && (
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-[#00a884] shrink-0 shadow-[0_0_6px_rgba(37,99,235,0.4)] dark:shadow-[0_0_6px_rgba(0,168,132,0.4)]"></div>
                   )}
                 </div>
               </div>
