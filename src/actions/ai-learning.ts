@@ -50,7 +50,7 @@ export async function logAiDraft(
 /**
  * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
  */
-async function generateCorrectionFeedback(aiDraft: string, agentSent: string): Promise<string | null> {
+async function generateCorrectionFeedback(context: string, aiDraft: string, agentSent: string): Promise<string | null> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
@@ -63,23 +63,26 @@ async function generateCorrectionFeedback(aiDraft: string, agentSent: string): P
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 150,
         messages: [
           {
             role: "user",
             content: `You are an AI learning coordinator. Compare the following AI-generated support draft with the human agent's corrected message. 
-Identify exactly why the human agent edited the draft. 
+Identify exactly why the human agent edited the draft, focusing on the factual differences or protocol changes in the context of the customer's question.
 Write a concise, 1-sentence, highly actionable rule/insight (in English) describing the correction, to help the AI avoid repeating this mistake next time.
 
 Format example:
 "Avoid formal textbook words like 'অনুগ্রহপূর্বক'; the agent prefers casual terms like 'প্লিজ' or omitting them."
-"The agent corrected the suspension status to active; verify account status before claiming it is suspended."
+"The agent corrected the .COM domain price to 1650tk; always use 1,650 BDT for .COM registrations."
+
+Conversation Context (What the customer was asking):
+"${context}"
 
 AI Draft:
 "${aiDraft}"
 
-Agent's Message:
+Agent's Final Message:
 "${agentSent}"
 
 Output ONLY the 1-sentence actionable rule/insight. No labels, no prefixes.`
@@ -108,7 +111,8 @@ Output ONLY the 1-sentence actionable rule/insight. No labels, no prefixes.`
  */
 export async function completeAiDraftLog(
   logId: string,
-  agentSent: string
+  agentSent: string,
+  context: string
 ): Promise<void> {
   try {
     const supabase = await createClient();
@@ -128,7 +132,7 @@ export async function completeAiDraftLog(
 
     if (wasEdited) {
       // Generate self-correction insight in background/context
-      correctionFeedback = await generateCorrectionFeedback(log.ai_draft, agentSent);
+      correctionFeedback = await generateCorrectionFeedback(context, log.ai_draft, agentSent);
     }
 
     await supabase
@@ -223,12 +227,26 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
       .eq("was_edited", true)
       .not("correction_feedback", "is", null)
       .order("created_at", { ascending: false })
-      .limit(6);
+      .limit(30);
 
     if (error || !data) return [];
-    const corrections = data.map(row => row.correction_feedback).filter((c): c is string => !!c);
-    recentCorrectionsCache[orgId] = { data: corrections, timestamp: now };
-    return corrections;
+    
+    // Deduplicate similar rules (naively by exact match after lowercasing)
+    const uniqueCorrections: string[] = [];
+    const seenNormalized = new Set<string>();
+
+    for (const row of data) {
+      if (!row.correction_feedback) continue;
+      const normalized = row.correction_feedback.toLowerCase().trim();
+      if (!seenNormalized.has(normalized)) {
+        seenNormalized.add(normalized);
+        uniqueCorrections.push(row.correction_feedback);
+        if (uniqueCorrections.length >= 6) break;
+      }
+    }
+
+    recentCorrectionsCache[orgId] = { data: uniqueCorrections, timestamp: now };
+    return uniqueCorrections;
   } catch (e) {
     console.error("getRecentCorrections error:", e);
     return [];

@@ -1701,7 +1701,16 @@ export default function ChatThread({
       await aiDraftLogPromiseRef.current;
     }
     if (aiDraftLogIdRef.current && msgText) {
-      completeAiDraftLog(aiDraftLogIdRef.current, msgText).catch(() => {})
+      const contextMessages = allMessages
+        .filter(m => !m.is_internal && m.content_type !== 'system')
+        .slice(-20)
+        .map(m => {
+          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+          const name = isAgent ? 'Agent' : contactName
+          return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+        }).join('\n')
+
+      completeAiDraftLog(aiDraftLogIdRef.current, msgText, contextMessages).catch(() => {})
       aiDraftLogIdRef.current = null
       aiDraftLogPromiseRef.current = null
     }
