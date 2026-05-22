@@ -80,7 +80,7 @@ export default async function AnalyticsPage() {
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+              <div className="p-2 bg-slate-100 dark:bg-[#202c33] text-slate-600 dark:text-slate-300 rounded-lg">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <span className="font-medium">Sent As-Is</span>
@@ -91,7 +91,7 @@ export default async function AnalyticsPage() {
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg">
+              <div className="p-2 bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-slate-400 rounded-lg">
                 <FileEdit className="w-5 h-5" />
               </div>
               <span className="font-medium">Edited by Agent</span>
@@ -102,7 +102,7 @@ export default async function AnalyticsPage() {
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
             <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg">
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
                 <Zap className="w-5 h-5" />
               </div>
               <span className="font-medium">AI Accuracy</span>
@@ -125,7 +125,7 @@ export default async function AnalyticsPage() {
           {/* Active Learning Rules */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <BrainCircuit className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <BrainCircuit className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Self-Learned Rules</h2>
             </div>
             <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden">
@@ -172,11 +172,11 @@ export default async function AnalyticsPage() {
                               Not Sent
                             </span>
                           ) : log.was_edited ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-500">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-[#202c33] dark:text-slate-400">
                               Edited
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-500">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                               Sent As-Is
                             </span>
                           )}
@@ -186,7 +186,7 @@ export default async function AnalyticsPage() {
                             {log.ai_draft}
                           </div>
                           {log.was_edited && log.agent_sent && (
-                            <div className="text-emerald-600 dark:text-emerald-400 mt-1 truncate max-w-md text-xs" title={log.agent_sent}>
+                            <div className="text-slate-600 dark:text-slate-400 mt-1 truncate max-w-md text-xs" title={log.agent_sent}>
                               <span className="font-semibold mr-1">↳ Sent:</span>
                               {log.agent_sent}
                             </div>
