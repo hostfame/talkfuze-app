@@ -7,6 +7,8 @@ import { logout } from "@/actions/auth"
 import { AuthProvider } from "@/lib/auth-context"
 import SipDialer from "@/components/dialer/SipDialer"
 
+export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
+
 export default async function DashboardLayout({
   children,
 }: {

@@ -1145,6 +1145,26 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   type="text" 
                   value={unblockIpInput}
                   onChange={(e) => setUnblockIpInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (!unblockIpInput.trim() || isUnblocking) return;
+                      setIsUnblocking(true);
+                      unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0).then((res: any) => {
+                        if (res && res.result === 'success') {
+                          alert(`Successfully unblocked IP!\n${Object.entries(res.details || {}).map(([s, result]) => `${s}: ${result}`).join('\n')}`);
+                          setUnblockIpInput('');
+                        } else {
+                          alert(res?.message || 'Failed to unblock IP');
+                        }
+                      }).catch((err) => {
+                        console.error(err);
+                        alert('Failed to unblock IP');
+                      }).finally(() => {
+                        setIsUnblocking(false);
+                      });
+                    }
+                  }}
                   placeholder="Enter IP Address..." 
                   className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
                 />
