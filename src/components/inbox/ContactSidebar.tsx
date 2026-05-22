@@ -1694,7 +1694,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     </div>
                   </div>
                 </div>
-              )})}
+              );
+              });
             })()}
           </div>
         </div>
