@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight, Gauge } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -3047,7 +3047,7 @@ export default function WidgetPage() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full border border-slate-100 bg-slate-50/55 flex items-center justify-center text-slate-400 group-hover:text-[#0070f3] group-hover:border-[#0070f3]/15 group-hover:bg-[#0070f3]/5 transition-all duration-200 shrink-0">
-                          <Globe size={15} strokeWidth={2} />
+                          <Gauge size={15} strokeWidth={2} />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[13px] font-bold text-slate-800">Check Web Hosting Pricing</span>
