@@ -103,8 +103,7 @@
     baseUrl + '/team/3.avif',
     baseUrl + '/team/4.avif',
     baseUrl + '/team/5.avif',
-    baseUrl + '/team/6.avif',
-    baseUrl + '/team/7.avif'
+    baseUrl + '/team/6.avif'
   ];
   var currentImageIndex = 0;
 
