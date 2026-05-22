@@ -1119,6 +1119,117 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           <ForwardButton conversation={conversation} orgId={orgId} />
         </div>
 
+        <div className="py-4 px-5 border-b border-slate-100 dark:border-[#222e35] space-y-2.5">
+          {/* Firewall IP Unblock Card (Expandable) */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={() => setIsUnblockExpanded(!isUnblockExpanded)}
+              className="w-full flex justify-between items-center text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <Shield size={13} />
+                Firewall IP Unblock
+              </span>
+              <ChevronDown size={13} className={`transition-transform duration-200 ${isUnblockExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isUnblockExpanded && (
+              <div className="mt-2.5 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={unblockIpInput}
+                    onChange={(e) => setUnblockIpInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (!unblockIpInput.trim() || isUnblocking) return;
+                        setIsUnblocking(true);
+                        setUnblockResult(null);
+                        unblockIPFast(unblockIpInput.trim()).then((res: any) => {
+                          if (res && res.result === 'success') {
+                            setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
+                            setUnblockIpInput('');
+                          } else {
+                            setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
+                          }
+                        }).catch((err: any) => {
+                          console.error(err);
+                          setUnblockResult({ type: 'error', message: 'Failed to unblock IP' });
+                        }).finally(() => {
+                          setIsUnblocking(false);
+                          setTimeout(() => setUnblockResult(null), 8000);
+                        });
+                      }
+                    }}
+                    placeholder="Enter IP Address..." 
+                    className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                  <button 
+                    onClick={async () => {
+                      if (!unblockIpInput.trim() || isUnblocking) return;
+                      setIsUnblocking(true);
+                      setUnblockResult(null);
+                      try {
+                        const res = await unblockIPFast(unblockIpInput.trim()) as any;
+                        if (res && res.result === 'success') {
+                          setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
+                          setUnblockIpInput('');
+                        } else {
+                          setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
+                        }
+                      } catch (e) {
+                        setUnblockResult({ type: 'error', message: 'An error occurred' });
+                      } finally {
+                        setIsUnblocking(false);
+                        setTimeout(() => setUnblockResult(null), 8000);
+                      }
+                    }}
+                    disabled={isUnblocking || !unblockIpInput.trim()}
+                    className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors disabled:opacity-50"
+                  >
+                    {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
+                  </button>
+                </div>
+                {unblockResult && (
+                  <p className={`text-[11.5px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {unblockResult.type === 'success' ? '✓' : '✗'} {unblockResult.message}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Sticky Notes Card (Expandable) */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+              className="w-full flex justify-between items-center text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <AlignLeft size={13} />
+                Sticky Notes
+              </span>
+              <div className="flex items-center gap-1.5">
+                {isSavingNotes && <Loader2 size={11} className="animate-spin text-slate-400" />}
+                <ChevronDown size={13} className={`transition-transform duration-200 ${isNotesExpanded ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
+            
+            {isNotesExpanded && (
+              <div className="mt-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                <textarea
+                  value={contactNotes}
+                  onChange={(e) => setContactNotes(e.target.value)}
+                  onBlur={handleSaveNotes}
+                  placeholder="Add context about this customer (visible to all agents)..."
+                  className="w-full h-24 text-[12.5px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-blue-500 rounded-lg resize-none shadow-sm transition-colors"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Agents Joined Section */}
         <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
           <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
