@@ -510,6 +510,7 @@ export default function InboxPage() {
         <ContactSidebar 
           conversation={activeConversation}
           orgId={ORG_ID}
+          messages={messages}
         />
       </div>
     </div>

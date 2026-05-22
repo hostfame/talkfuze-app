@@ -174,6 +174,38 @@
     iframe.src = WIDGET_URL;
     iframe.allow = 'autoplay; microphone; camera; display-capture';
     
+    // Pageview tracking
+    function sendPageView() {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ 
+                type: 'TALKFUZE_PAGE_VIEW', 
+                title: document.title, 
+                url: window.location.href 
+            }, '*');
+        }
+    }
+
+    iframe.onload = () => {
+        sendPageView();
+    };
+
+    // SPA Navigation Tracking
+    const originalPushState = history.pushState;
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
+        setTimeout(sendPageView, 100);
+    };
+    
+    const originalReplaceState = history.replaceState;
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
+        setTimeout(sendPageView, 100);
+    };
+
+    window.addEventListener('popstate', () => {
+        setTimeout(sendPageView, 100);
+    });
+    
     iframeContainer.appendChild(iframe);
 
     // Create launcher button

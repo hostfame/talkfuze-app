@@ -1298,10 +1298,10 @@ export default function SipDialer() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-50 cursor-pointer"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-slate-700/80 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-50 cursor-pointer"
         >
-          <Phone strokeWidth={2.5} size={24} />
-          {isRegistered && <span className="absolute top-0 right-0 w-3 h-3 bg-white border-2 border-blue-600 rounded-full" />}
+          <Phone strokeWidth={2.5} size={22} />
+          {isRegistered && <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full" />}
         </button>
       )}
 

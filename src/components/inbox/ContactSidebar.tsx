@@ -149,7 +149,7 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
   )
 }
 
-export default function ContactSidebar({ conversation, orgId }: { conversation?: ConversationWithDetails | null, orgId: string }) {
+export default function ContactSidebar({ conversation, orgId, messages = [] }: { conversation?: ConversationWithDetails | null, orgId: string, messages?: any[] }) {
   const { triggerDial, convertingTickets, setConvertingTicket } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
@@ -948,38 +948,37 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
 
   return (
     <div className="hidden md:flex flex-col h-full w-[260px] lg:w-[280px] xl:w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
-      <div className="flex border-b border-slate-200/80 dark:border-[#222e35] px-3 pt-3 h-[72px] items-end bg-slate-50/30 dark:bg-transparent overflow-x-auto hide-scrollbar">
+      <div className="flex justify-between border-b border-slate-200/80 dark:border-[#222e35] px-1 pt-3 h-[72px] items-end bg-slate-50/30 dark:bg-transparent overflow-x-auto hide-scrollbar w-full">
         <button 
           onClick={() => setActiveTab('details')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Details
         </button>
         <button 
-          onClick={() => setActiveTab('notes')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'notes' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
-        >
-          Notes
-        </button>
-        <button 
-          onClick={() => setActiveTab('journey')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
-        >
-          Journey
-        </button>
-        <button 
           onClick={() => setActiveTab('copilot')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Portal
         </button>
         <button 
           onClick={() => setActiveTab('cobrowse')}
-          className={`px-3 py-3 text-[13.5px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Remote
         </button>
-        <div className="flex-1"></div>
+        <button 
+          onClick={() => setActiveTab('journey')}
+          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+        >
+          Journey
+        </button>
+        <button 
+          onClick={() => setActiveTab('notes')}
+          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'notes' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+        >
+          Notes
+        </button>
       </div>
 
       {activeTab === 'details' && (
@@ -1580,31 +1579,23 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
           </div>
           
           <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 space-y-4 py-2">
-            {/* Dummy timeline for now */}
-            <div className="relative">
-              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
-              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Started Chat</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">Just now</p>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
-              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Viewed Pricing Page</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">2 mins ago</p>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
-              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Visited Homepage</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">3 mins ago</p>
-            </div>
-            <div className="relative">
-              <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900"></div>
-              <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">Arrived from Google Ads</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">3 mins ago</p>
-            </div>
-          </div>
-          
-          <div className="mt-6 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
-             <p className="text-[12px] text-slate-500 text-center">Live tracking events will populate here once the widget event emitter is deployed.</p>
+            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => (
+              <div key={msg.id} className="relative group">
+                <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900 group-hover:bg-blue-500 transition-colors"></div>
+                <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200 truncate pr-2" title={msg.content}>
+                  {msg.content.replace('Viewed: ', '')}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            ))}
+            
+            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).length === 0 && (
+              <div className="mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                 <p className="text-[12px] text-slate-500 text-center">No journey events tracked yet. Live events will appear here once the visitor navigates your site.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1628,10 +1619,9 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
             <>
               {coBrowseStatus === 'idle' && (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-sm space-y-5">
-                  {/* Premium gradient icon */}
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#0070f3] to-[#0050c8] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                      <Eye size={26} strokeWidth={1.8} className="text-white" />
+                    <div className="w-14 h-14 bg-slate-50 border border-slate-200 dark:bg-slate-800/50 dark:border-slate-700/50 rounded-2xl flex items-center justify-center shadow-sm">
+                      <Eye size={22} strokeWidth={1.8} className="text-slate-500 dark:text-slate-400" />
                     </div>
                   </div>
                   <div className="text-center max-w-[220px]">
@@ -1642,13 +1632,13 @@ export default function ContactSidebar({ conversation, orgId }: { conversation?:
                   </div>
                   <button 
                     onClick={handleRequestCoBrowse}
-                    className="px-5 py-2.5 bg-[#0070f3] hover:bg-blue-600 active:scale-[0.97] text-white font-semibold text-[13px] rounded-xl shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30 transition-all cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 active:scale-[0.97] text-slate-700 dark:text-slate-300 font-medium text-[13px] rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <Monitor size={15} strokeWidth={2.2} />
+                    <Monitor size={15} strokeWidth={2} className="text-slate-400" />
                     Request Screen Share
                   </button>
-                  <p className="text-[10.5px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                    <Shield size={10} /> End-to-end encrypted session
+                  <p className="text-[10.5px] text-slate-400 dark:text-slate-500">
+                    End-to-end encrypted session
                   </p>
                 </div>
               )}

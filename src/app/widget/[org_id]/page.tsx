@@ -1296,6 +1296,21 @@ export default function WidgetPage() {
     })
   }, [org_id])
 
+  // Journey Tracking
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'TALKFUZE_PAGE_VIEW') {
+        const { title, url } = event.data
+        if (activeConversationId && activeConversationId !== 'new' && deviceId) {
+          sendWidgetMessage(org_id as string, deviceId, `Viewed: ${title || url}`, 'system', { url, title, event: 'page_view' }, activeConversationId)
+        }
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [activeConversationId, deviceId, org_id])
+
   const fetchConversations = async () => {
     if (!org_id || !deviceId) return
     try {
