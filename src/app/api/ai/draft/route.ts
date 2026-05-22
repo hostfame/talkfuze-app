@@ -126,7 +126,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
 export async function POST(req: Request) {
   try {
-    const { contextMessages, contactName, orgId, instruction } = await req.json();
+    const { contextMessages, contactName, orgId, instruction, isTranslation } = await req.json();
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
@@ -160,12 +160,21 @@ export async function POST(req: Request) {
     const { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
 
     // 3. Fetch learning data (cached, ~0ms on hit)
-    const { fewShotBlock, mistakesBlock } = orgId
+    const { fewShotBlock, mistakesBlock } = (orgId && !isTranslation)
       ? await getLearningData(orgId)
       : { fewShotBlock: '', mistakesBlock: '' };
 
     // 4. Build user message with language rules + knowledge + context
-    const languageRule = detectedLanguage === 'en'
+    let userMessage = '';
+    
+    if (isTranslation) {
+      userMessage = `You are a highly accurate translation API. Your only job is to translate the provided text exactly as instructed, without adding any conversational filler, quotes, or support agent persona.
+      
+Instruction: ${instruction}
+
+Output ONLY the translation in raw plain text.`;
+    } else {
+      const languageRule = detectedLanguage === 'en'
       ? `LANGUAGE: English. Reply 100% in English.
 - Use contractions: "I'll", "we've", "you're", "don't".
 - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
@@ -209,6 +218,7 @@ Conversation:
 ${contextMessages}
 
 Draft a smart, helpful reply as the support agent.`;
+    }
 
     // 5. Fire Anthropic streaming request
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {

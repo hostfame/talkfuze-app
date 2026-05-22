@@ -1770,7 +1770,7 @@ export default function ChatThread({
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextMessages, contactName, orgId, instruction })
+        body: JSON.stringify({ contextMessages, contactName, orgId, instruction, isTranslation })
       })
 
       if (!res.ok) throw new Error('API failed')
