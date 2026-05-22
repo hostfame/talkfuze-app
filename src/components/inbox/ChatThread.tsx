@@ -327,7 +327,6 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
       
       {transcript && (
         <div className="text-[12px] text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 px-3 py-2 rounded-xl rounded-tl-sm w-fit max-w-[280px]">
-           <span className="text-slate-400 dark:text-slate-500 mr-1.5">🎤</span>
            <span className="leading-relaxed">{transcript}</span>
         </div>
       )}
@@ -2699,7 +2698,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
                               <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
-                              {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
                             <div className="mb-2">
@@ -2849,7 +2848,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
                               <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
-                              {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
                             <div className="mb-2">

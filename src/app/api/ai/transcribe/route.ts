@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     const blob = new Blob([new Uint8Array(buffer)], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' });
     formData.append("file", blob, filename);
     formData.append("model", "whisper-1");
+    formData.append("prompt", "This is a customer support message in either Bengali or English. Do not transcribe in Hindi.");
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
