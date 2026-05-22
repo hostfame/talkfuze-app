@@ -18,7 +18,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
 
-  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts') => {
+  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'assigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts') => {
     setActiveFilter(filter)
     setSelectedId(null)
     if (pathname !== '/inbox') {
@@ -30,6 +30,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   const alertChats = conversations.filter(c => c.tags?.includes('alert') && !c.is_archived).length
 
   const pinnedChats = conversations.filter(c => c.is_pinned && !c.tags?.includes('alert')).length
+  const assignedChats = conversations.filter(c => firstRelation(c.assignee)?.id === currentUser?.id && !c.is_archived && !c.tags?.includes('alert')).length
 
   const allChats = conversations.filter(c => !c.tags?.includes('alert') && !c.is_archived).length
 
@@ -60,6 +61,17 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
           >
             <div className="flex items-center gap-2"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">All</span></div>
             <span className="hidden xl:block text-[12px] font-medium">{allChats}</span>
+          </div>
+          
+          <div 
+            onClick={() => handleFilterClick('assigned')}
+            title="Assigned"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              activeFilter === 'assigned' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2"><User className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Assigned</span></div>
+            <span className="hidden xl:block text-[12px] font-medium">{assignedChats}</span>
           </div>
           
           <div 

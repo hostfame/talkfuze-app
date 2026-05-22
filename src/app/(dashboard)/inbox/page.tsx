@@ -106,7 +106,7 @@ export default function InboxPage() {
       .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
         const currentFilter = useInboxStore.getState().activeFilter as any
-        getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as any;
@@ -133,7 +133,7 @@ export default function InboxPage() {
            } else {
               // It's a brand new conversation, fetch it quietly
               const currentFilter = useInboxStore.getState().activeFilter as any;
-              getConversations(ORG_ID, currentFilter).then(data => setConversations((data || []) as ConversationWithDetails[]));
+              getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
            }
         }
         

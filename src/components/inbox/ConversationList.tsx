@@ -141,7 +141,7 @@ export default function ConversationList({
     if (activeFilter === 'all') return true;
     
     const assignee = firstRelation(conv.assignee);
-    if (activeFilter === 'mine') {
+    if (activeFilter === 'mine' || activeFilter === 'assigned') {
       return assignee?.id === currentUser?.id;
     }
     if (activeFilter === 'pinned') {
