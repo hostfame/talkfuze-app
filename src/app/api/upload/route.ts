@@ -4,12 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
-    // Auth check: require valid Supabase session
+    // Auth check: try to get valid Supabase session (allow both authenticated agents and anonymous widget visitors)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
 
     const formData = await req.formData()
     const file = formData.get('file') as File
@@ -19,7 +16,7 @@ export async function POST(req: Request) {
 
     const fileExt = file.name ? file.name.split('.').pop() : 'png'
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `agent-uploads/${fileName}`
+    const filePath = user ? `agent-uploads/${fileName}` : `widget-uploads/${fileName}`
 
     // Upload directly using supabaseAdmin to bypass all RLS limitations securely
     const { error: uploadError } = await supabaseAdmin.storage
