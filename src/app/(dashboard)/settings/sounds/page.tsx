@@ -41,31 +41,80 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
   )
 }
 
-// ─── Volume Slider ───
 function VolumeSlider({ value, min, onChange }: { value: number; min: number; onChange: (v: number) => void }) {
   const pct = Math.round(value * 100)
   const minPct = Math.round(min * 100)
   const fillPct = ((value - min) / (1 - min)) * 100
+  
+  const [isDragging, setIsDragging] = useState(false)
+  const sliderRef = useRef<HTMLDivElement>(null)
+
+  const handleScrub = (clientX: number) => {
+    if (!sliderRef.current) return;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const percentage = x / rect.width;
+    
+    const newValue = min + percentage * (1 - min);
+    onChange(Math.max(min, Math.min(1, newValue)));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    handleScrub(e.clientX);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    handleScrub(e.clientX);
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    if (e.touches.length > 0) handleScrub(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    if (e.touches.length > 0) handleScrub(e.touches[0].clientX);
+  };
+
   return (
-    <div>
+    <div onMouseLeave={handleMouseUpOrLeave} onMouseUp={handleMouseUpOrLeave}>
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[13px] text-slate-500 dark:text-slate-400">Volume</span>
         <span className="text-[13px] font-semibold tabular-nums text-slate-800 dark:text-slate-200">{pct}%</span>
       </div>
-      <div className="relative">
-        <input
-          type="range"
-          min={min}
-          max={1}
-          step={0.01}
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="w-full h-[6px] rounded-full appearance-none cursor-pointer bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[20px] [&::-webkit-slider-thumb]:h-[20px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-[2px] [&::-webkit-slider-thumb]:border-blue-600 [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-10"
-          style={{
-            background: `linear-gradient(to right, #2563eb 0%, #2563eb ${fillPct}%, #e2e8f0 ${fillPct}%, #e2e8f0 100%)`
-          }}
+      
+      <div 
+        ref={sliderRef}
+        className="relative h-6 flex items-center cursor-pointer group py-2"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleMouseUpOrLeave}
+      >
+        {/* Track */}
+        <div className="absolute left-0 right-0 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          {/* Fill */}
+          <div 
+            className="absolute top-0 bottom-0 left-0 bg-[#0070f3] rounded-full transition-none"
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+        
+        {/* Thumb */}
+        <div 
+          className={`absolute top-1/2 -translate-y-1/2 -ml-2.5 w-5 h-5 rounded-full bg-white border-2 border-[#0070f3] shadow-sm transition-transform duration-75 z-10 ${isDragging ? 'scale-110' : 'scale-100 group-hover:scale-105'}`}
+          style={{ left: `${fillPct}%` }}
         />
       </div>
+      
       <p className="text-[11px] text-slate-400 mt-1.5">Minimum {minPct}% enforced</p>
     </div>
   )

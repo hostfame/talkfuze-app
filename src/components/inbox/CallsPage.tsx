@@ -11,6 +11,9 @@ function CustomAudioPlayer({ src }: { src: string }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [speed, setSpeed] = useState(1)
+  const [isDragging, setIsDragging] = useState(false)
+  const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
   
   const togglePlay = () => {
     if (audioRef.current) {
@@ -21,18 +24,16 @@ function CustomAudioPlayer({ src }: { src: string }) {
   }
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isDragging) {
       const current = audioRef.current.currentTime
-      const total = audioRef.current.duration
-      if (total > 0) setProgress((current / total) * 100)
+      setCurrentTime(current)
+      if (duration > 0) setProgress((current / duration) * 100)
     }
   }
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      const newTime = (Number(e.target.value) / 100) * audioRef.current.duration
-      audioRef.current.currentTime = newTime
-      setProgress(Number(e.target.value))
+      setDuration(audioRef.current.duration)
     }
   }
 
@@ -47,38 +48,132 @@ function CustomAudioPlayer({ src }: { src: string }) {
   const handleEnded = () => {
     setIsPlaying(false)
     setProgress(0)
+    setCurrentTime(0)
   }
 
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Real-time seek drag/scrub mechanics
+  const handleScrub = (clientX: number, currentTarget: HTMLDivElement) => {
+    if (!audioRef.current || !duration) return;
+    const rect = currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const percentage = x / rect.width;
+    audioRef.current.currentTime = percentage * duration;
+    setProgress(percentage * 100);
+    setCurrentTime(percentage * duration);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleScrub(e.clientX, e.currentTarget);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    handleScrub(e.clientX, e.currentTarget);
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    if (e.touches.length > 0) {
+      handleScrub(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    if (e.touches.length > 0) {
+      handleScrub(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Wave bar heights (compact version for table rows)
+  const waveHeights = [6, 10, 8, 14, 10, 16, 12, 18, 14, 20, 16, 18, 12, 14, 8, 12, 8, 10, 6, 8];
+
   return (
-    <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-full px-3 py-1.5 w-full max-w-[240px]">
-      <audio 
-        ref={audioRef} 
-        src={src} 
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleEnded}
-      />
-      <button 
-        onClick={togglePlay}
-        className="w-7 h-7 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full shrink-0 transition-colors"
-      >
-        {isPlaying ? <Pause size={14} className="fill-current" /> : <Play size={14} className="fill-current ml-0.5" />}
-      </button>
-      
-      <input 
-        type="range" 
-        min="0" 
-        max="100" 
-        value={progress || 0}
-        onChange={handleSeek}
-        className="flex-1 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full"
-      />
-      
-      <button 
-        onClick={cycleSpeed}
-        className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 shrink-0 w-6 text-center transition-colors"
-      >
-        {speed}x
-      </button>
+    <div className="flex flex-col gap-1 w-full max-w-[240px]">
+      <div className="flex items-center gap-2.5 transition-all duration-300 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-2.5 py-1.5 shadow-sm min-w-[200px]">
+        <audio 
+          ref={audioRef} 
+          src={src} 
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleEnded}
+        />
+        
+        <button 
+          onClick={togglePlay} 
+          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm bg-[#0070f3] text-white hover:bg-[#0062d2]"
+        >
+          {isPlaying ? (
+             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          ) : (
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+          )}
+        </button>
+
+        <div className="flex-1 flex flex-col justify-center gap-0.5 overflow-hidden pr-1">
+          <div className="flex items-center gap-2 w-full">
+            <div 
+              className="flex items-end gap-[2px] h-5 flex-1 cursor-pointer select-none group/wave relative py-0.5"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {waveHeights.map((h, i) => {
+                const barProgress = (i / waveHeights.length) * 100;
+                const isActive = progress >= barProgress;
+                return (
+                  <div 
+                    key={i} 
+                    className="w-[2.5px] rounded-full transition-colors duration-150 relative z-10"
+                    style={{ 
+                      height: `${h}px`, 
+                      backgroundColor: isActive ? '#0070f3' : 'rgba(0,112,243,0.15)' 
+                    }}
+                  />
+                );
+              })}
+              <div 
+                className={`absolute top-1/2 -translate-y-1/2 -ml-1 w-2 h-2 rounded-full shadow-sm transition-all duration-75 z-20 pointer-events-none ${isDragging ? 'scale-125' : 'scale-100'}`}
+                style={{ 
+                  left: `${progress}%`,
+                  backgroundColor: '#0070f3'
+                }}
+              />
+            </div>
+          </div>
+          <div className="text-[9px] font-semibold flex justify-between tracking-wide px-0.5 text-slate-400 dark:text-slate-500">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+
+        <button 
+          onClick={cycleSpeed}
+          className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 shrink-0 w-6 text-center transition-colors bg-slate-200/50 dark:bg-slate-700/50 py-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
+        >
+          {speed}x
+        </button>
+      </div>
     </div>
   )
 }
