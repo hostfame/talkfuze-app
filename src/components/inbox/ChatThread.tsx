@@ -1171,6 +1171,15 @@ export default function ChatThread({
       const timer = setTimeout(() => {
         const draft = localStorage.getItem(`draft_${conversationId}`)
         setInput(draft || "")
+        
+        // Restore AI draft log ID if exists
+        const logId = localStorage.getItem(`draft_log_id_${conversationId}`)
+        if (logId) {
+          aiDraftLogIdRef.current = logId
+        } else {
+          aiDraftLogIdRef.current = null
+        }
+        aiDraftLogPromiseRef.current = null
       }, 0)
       return () => clearTimeout(timer)
     }
@@ -1183,6 +1192,8 @@ export default function ChatThread({
         localStorage.setItem(`draft_${conversationId}`, input)
       } else {
         localStorage.removeItem(`draft_${conversationId}`)
+        localStorage.removeItem(`draft_log_id_${conversationId}`)
+        aiDraftLogIdRef.current = null
       }
     }
   }, [input, conversationId])
@@ -1697,9 +1708,15 @@ export default function ChatThread({
       }
 
       // Log the AI draft for learning - store promise to handle fast sends
-      if (currentUser?.id && fullText.trim()) {
+      if (orgId && conversationId && currentUser) {
         aiDraftLogPromiseRef.current = logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
-          .then(logId => { aiDraftLogIdRef.current = logId; return logId; })
+          .then(logId => { 
+            aiDraftLogIdRef.current = logId; 
+            if (logId) {
+              localStorage.setItem(`draft_log_id_${conversationId}`, logId);
+            }
+            return logId; 
+          })
           .catch(() => null)
       }
     } catch (e: any) {
@@ -1761,6 +1778,7 @@ export default function ChatThread({
     setInput("")
     setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
+    localStorage.removeItem(`draft_log_id_${conversationId}`)
     setIsSending(true)
 
     // Complete AI draft log if this message came from an AI draft
