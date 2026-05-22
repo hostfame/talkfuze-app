@@ -413,6 +413,15 @@ export default function WidgetPage() {
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   
+  const getResumeConversationId = () => {
+    const lastConv = conversations[0];
+    if (!lastConv) return 'new';
+    if (lastConv.status === 'resolved' || lastConv.status === 'closed' || lastConv.is_archived) return 'new';
+    const lastActivity = new Date(lastConv.last_message_at || lastConv.created_at).getTime();
+    if (Date.now() - lastActivity > 24 * 60 * 60 * 1000) return 'new';
+    return lastConv.id;
+  };
+  
   // WHMCS Tickets State
   const [ticketView, setTicketView] = useState<'login' | 'list' | 'detail' | 'new'>('login')
   const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string } | null>(null)
@@ -2809,7 +2818,7 @@ export default function WidgetPage() {
             {/* Recent Message Card */}
             <div 
               className="bg-white p-4 rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 flex flex-col gap-3 cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all" 
-              onClick={() => { setActiveConversationId(conversations[0]?.id || 'new'); setActiveTab('chat'); }}
+              onClick={() => { setActiveConversationId(getResumeConversationId()); setActiveTab('chat'); }}
             >
                <div className="flex justify-between items-center">
                   <span className="text-[13px] font-bold text-slate-800 tracking-tight">Recent message</span>

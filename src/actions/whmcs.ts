@@ -373,6 +373,12 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       status: 'delivered',
     })
 
+    // 10. Automatically mark the conversation as resolved/archived so the next message starts a new incident
+    await supabaseAdmin.from('conversations').update({
+      status: 'resolved',
+      is_archived: true
+    }).eq('id', conversationId)
+
     return { success: true, ticket: result }
   } catch (error: any) {
     console.error("Failed to convert chat to WHMCS ticket:", error)

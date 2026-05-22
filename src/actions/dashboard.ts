@@ -623,9 +623,13 @@ export async function snoozeConversation(conversationId: string, until: Date | n
 // ─────────────────────────────────────────────
 
 export async function toggleConversationFlag(conversationId: string, flag: 'is_pinned' | 'is_unread' | 'is_muted' | 'is_archived', value: boolean) {
+  const updateData: any = { [flag]: value }
+  if (flag === 'is_archived' && value === true) {
+    updateData.status = 'resolved'
+  }
   const { error } = await supabaseAdmin
     .from('conversations')
-    .update({ [flag]: value })
+    .update(updateData)
     .eq('id', conversationId)
 
   if (error) throw new Error(error.message)
