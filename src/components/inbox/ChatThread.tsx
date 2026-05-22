@@ -1255,6 +1255,7 @@ export default function ChatThread({
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
+  const isPickedUp = !conversationId ? true : participants.length > 0
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -1477,13 +1478,13 @@ export default function ChatThread({
 
   // Ringtone for unjoined chats
   useEffect(() => {
-    if (!isJoined && conversationId) {
+    if (!isPickedUp && conversationId) {
       playIncomingRingtoneLoop();
       return () => stopIncomingRingtoneLoop();
     } else {
       stopIncomingRingtoneLoop();
     }
-  }, [isJoined, conversationId]);
+  }, [isPickedUp, conversationId]);
 
   // Smart confirm: when real agent messages arrive, remove matching optimistic ones by content
   useEffect(() => {
@@ -3171,9 +3172,9 @@ export default function ChatThread({
             </div>
           </div>
         </div>
-        {/* Actual composer - always shown, locked to whisper if not joined */}
-        <div className={`relative ${!isJoined ? "mt-4" : ""}`}>
-          {!isJoined && (
+        {/* Actual composer - always shown, locked to whisper if not picked up */}
+        <div className={`relative ${!isPickedUp ? "mt-4" : ""}`}>
+          {!isPickedUp && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/40 dark:bg-[#0b141a]/40 backdrop-blur-[3px] rounded-xl pointer-events-auto">
               <button
                 onClick={handleJoinThread}
@@ -3185,7 +3186,7 @@ export default function ChatThread({
               </button>
             </div>
           )}
-          <div className={`transition-all duration-300 ${!isJoined ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
+          <div className={`transition-all duration-300 ${!isPickedUp ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
