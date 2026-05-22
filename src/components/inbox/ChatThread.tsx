@@ -2696,17 +2696,18 @@ export default function ChatThread({
                       ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' 
                       : 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
                   }`}>
-                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
-                      isMissed
-                        ? 'bg-slate-200 dark:bg-slate-700'
-                        : 'bg-blue-100 dark:bg-blue-800'
-                    }`}>
-                      {isMissed 
-                        ? <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
-                        : <Phone size={14} className="text-blue-600 dark:text-blue-300" />
-                      }
-                    </div>
-                    <div className="flex flex-col">
+                    {agent && (
+                      <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden border border-white/50 shadow-sm flex items-center justify-center bg-blue-50 dark:bg-slate-800">
+                        {agent.avatar_url ? (
+                          <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                            {agent.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex flex-col flex-1 mr-2">
                       <span className={`text-[12px] font-semibold ${
                         isMissed ? 'text-slate-600 dark:text-slate-300' : 'text-blue-700 dark:text-blue-300'
                       }`}>
@@ -2727,17 +2728,16 @@ export default function ChatThread({
                         )}
                       </div>
                     </div>
-                    {agent && (
-                      <div className="w-7 h-7 rounded-full shrink-0 overflow-hidden ml-2 border border-white/50 shadow-sm flex items-center justify-center bg-blue-50 dark:bg-slate-800">
-                        {agent.avatar_url ? (
-                          <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                            {agent.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
+                      isMissed
+                        ? 'bg-slate-200 dark:bg-slate-700'
+                        : 'bg-blue-100 dark:bg-blue-800'
+                    }`}>
+                      {isMissed 
+                        ? <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
+                        : <Phone size={14} className="text-blue-600 dark:text-blue-300" />
+                      }
+                    </div>
                   </div>
                 </div>
               )
