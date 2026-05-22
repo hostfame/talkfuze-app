@@ -193,7 +193,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   }
   const showCallButton = isPhone(effectivePhoneId) && !isInstagram && !isMessenger
 
-  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse' | 'journey'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
   
   // Co-Browsing States
@@ -942,8 +942,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   }
 
   return (
-    <div className="hidden md:flex flex-col h-full w-[260px] lg:w-[280px] xl:w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
-      <div className="grid grid-cols-4 border-b border-slate-200/80 dark:border-[#222e35] h-[52px] bg-slate-50/30 dark:bg-transparent w-full">
+    <div className="hidden md:flex flex-col h-full w-[240px] lg:w-[250px] xl:w-[280px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
+      <div className="grid grid-cols-3 border-b border-slate-200/80 dark:border-[#222e35] h-[52px] bg-slate-50/30 dark:bg-transparent w-full">
         <button 
           onClick={() => setActiveTab('details')}
           className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
@@ -961,12 +961,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Remote
-        </button>
-        <button 
-          onClick={() => setActiveTab('journey')}
-          className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
-        >
-          Journey
         </button>
       </div>
 
@@ -1627,109 +1621,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       )}
 
 
-      {activeTab === 'journey' && (
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100">User Journey</h3>
-          </div>
-          
-          <div className="space-y-0 py-2">
-            {(() => {
-              const journeyEvents = messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:')));
-              
-              if (journeyEvents.length === 0) {
-                return (
-                  <div className="mt-2 p-6 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl flex flex-col items-center justify-center text-center space-y-3 shadow-sm">
-                    <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                      <Globe size={24} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">No journey events yet</p>
-                      <p className="text-[12px] text-slate-500 mt-1 leading-relaxed">Live page navigation events will appear<br/>here once the visitor navigates your site.</p>
-                    </div>
-                  </div>
-                );
-              }
 
-              return journeyEvents.map((msg: any, index: number) => {
-                const ua = msg.metadata?.userAgent || '';
-                let browser = '';
-                if (ua.includes('Chrome')) browser = 'Chrome';
-                else if (ua.includes('Firefox')) browser = 'Firefox';
-                else if (ua.includes('Safari')) browser = 'Safari';
-                else if (ua.includes('Edge')) browser = 'Edge';
-                
-                const isDesktop = !ua.includes('Mobile');
-                
-                // Calculate time spent (difference with next event)
-                let timeSpentStr = '';
-                if (index < journeyEvents.length - 1) {
-                  const nextEvent = journeyEvents[index + 1];
-                  const diff = new Date(nextEvent.created_at).getTime() - new Date(msg.created_at).getTime();
-                  if (diff > 0) {
-                    const secs = Math.floor(diff / 1000);
-                    if (secs < 60) timeSpentStr = `${secs}s`;
-                    else {
-                      const mins = Math.floor(secs / 60);
-                      const remSecs = secs % 60;
-                      timeSpentStr = `${mins}m ${remSecs}s`;
-                    }
-                  } else {
-                    timeSpentStr = '< 1s';
-                  }
-                } else {
-                  timeSpentStr = 'Current page';
-                }
-                
-                return (
-                <div key={msg.id} className="relative group pl-6">
-                  {/* Beautiful timeline line */}
-                  {index < journeyEvents.length - 1 && (
-                    <div className="absolute left-[9px] top-[28px] bottom-[-16px] w-[2px] bg-gradient-to-b from-blue-500/30 to-blue-500/10 dark:from-[#00a884]/30 dark:to-transparent rounded-full z-0"></div>
-                  )}
-                  {/* Node dot */}
-                  <div className={`absolute left-[5px] top-3.5 w-[10px] h-[10px] rounded-full ring-4 shadow-sm z-10 ${
-                    index === journeyEvents.length - 1 
-                      ? 'bg-blue-500 dark:bg-[#00a884] ring-blue-50 dark:ring-slate-900 animate-pulse'
-                      : 'bg-slate-300 dark:bg-slate-600 ring-slate-50 dark:ring-slate-900'
-                  }`}></div>
-                  
-                  <div className="bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 p-3.5 rounded-[14px] shadow-sm mb-4 transition-all hover:border-blue-200 dark:hover:border-[#00a884]/50 hover:shadow-md">
-                    <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 leading-snug line-clamp-2" title={msg.content}>
-                      {msg.content.replace('Viewed: ', '')}
-                    </p>
-                    
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 mt-2.5">
-                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                        <Clock size={12} className="text-slate-400 dark:text-slate-500" />
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      
-                      {timeSpentStr && (
-                        <div className={`flex items-center gap-1.5 text-[10.5px] font-semibold px-2 py-0.5 rounded-md ${
-                          index === journeyEvents.length - 1 
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30' 
-                            : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50'
-                        }`}>
-                          {timeSpentStr}
-                        </div>
-                      )}
-                      
-                      {browser && index === 0 && (
-                        <div className="flex items-center gap-1.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400 px-2 py-0.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-md">
-                          <Monitor size={12} className="text-slate-400 dark:text-slate-500" />
-                          {browser} {isDesktop ? 'Desktop' : 'Mobile'}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-              });
-            })()}
-          </div>
-        </div>
-      )}
 
       {activeTab === 'cobrowse' && (
         <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-4 space-y-4 overflow-y-auto">
