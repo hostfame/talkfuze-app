@@ -1475,22 +1475,24 @@ export default function ChatThread({
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Check cursor position to trigger quick reply menu
+  const checkMacroTrigger = (val: string, selectionStart: number) => {
+    const textUpToCursor = val.slice(0, selectionStart);
+    const match = textUpToCursor.match(/(?:^|\s)\/([a-zA-Z0-9_-]*)$/);
+    if (match) {
+      setShowMacroMenu(true);
+      setMacroFilter(match[1].toLowerCase());
+      setSelectedIndex(0);
+    } else {
+      setShowMacroMenu(false);
+    }
+  };
+
   // Handle Input Change for Macro Menu
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value
-    setInput(val)
-
-    if (val === '/') {
-      setShowMacroMenu(true)
-      setMacroFilter("")
-      setSelectedIndex(0)
-    } else if (val.startsWith('/')) {
-      setShowMacroMenu(true)
-      setMacroFilter(val.substring(1).toLowerCase())
-      setSelectedIndex(0)
-    } else {
-      setShowMacroMenu(false)
-    }
+    const val = e.target.value;
+    setInput(val);
+    checkMacroTrigger(val, e.target.selectionStart);
 
     // Broadcast agent typing status
     if (conversationId && !isInternal) {
@@ -1510,7 +1512,7 @@ export default function ChatThread({
         });
       }, 2000);
     }
-  }
+  };
 
   const filteredMacros = quickReplies.filter(r => {
     if (!macroFilter) return true;
@@ -1553,12 +1555,42 @@ export default function ChatThread({
     if (bShortcut === macroFilter && aShortcut !== macroFilter) return 1;
     
     return aShortcut.localeCompare(bShortcut);
-  })
+  });
 
-  const applyMacro = (message: string) => {
-    setInput(message)
-    setShowMacroMenu(false)
-  }
+  const applyMacro = (macroContent: string) => {
+    const val = input;
+    const textarea = textareaRef.current;
+    
+    if (textarea) {
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+      const textUpToCursor = val.slice(0, selectionStart);
+      const textAfterCursor = val.slice(selectionEnd);
+      
+      const match = textUpToCursor.match(/(?:^|\s)\/([a-zA-Z0-9_-]*)$/);
+      if (match) {
+        // Find the index of the "/" that triggered this macro
+        const slashIndex = textUpToCursor.lastIndexOf('/');
+        
+        // Construct the new value replacing only the "/" trigger part
+        const newValue = val.slice(0, slashIndex) + macroContent + textAfterCursor;
+        setInput(newValue);
+        setShowMacroMenu(false);
+        
+        // Return focus and set caret exactly after the inserted macro
+        setTimeout(() => {
+          textarea.focus();
+          const newCursorPos = slashIndex + macroContent.length;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 10);
+        return;
+      }
+    }
+    
+    // Fallback direct replacement
+    setInput(macroContent);
+    setShowMacroMenu(false);
+  };
 
   const loadMoreMessages = async () => {
     if (!messages.length || isLoadingMore || !hasMoreMessages || !conversationId) return;
@@ -3134,6 +3166,14 @@ export default function ChatThread({
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
+                onKeyUp={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  checkMacroTrigger(target.value, target.selectionStart);
+                }}
+                onClick={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  checkMacroTrigger(target.value, target.selectionStart);
+                }}
                 onPaste={(e) => {
                   if (e.clipboardData.files && e.clipboardData.files.length > 0) {
                     e.preventDefault();
