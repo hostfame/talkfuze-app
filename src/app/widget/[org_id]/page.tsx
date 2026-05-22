@@ -1467,6 +1467,40 @@ export default function WidgetPage() {
           });
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, async (payload) => {
+        const updatedMsg = payload.new as any;
+        if (updatedMsg && updatedMsg.conversation_id === activeConversationId && !updatedMsg.is_internal) {
+          
+          // Re-fetch agent details if needed (usually already there for updates, but safe to check)
+          if (updatedMsg.sender_type === 'agent' || updatedMsg.sender_type === 'system') {
+            let existingAgent = null;
+            setMessages(prev => {
+              const prevMsgWithAgent = prev.find(m => m.sender_id === updatedMsg.sender_id && m.agent);
+              if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
+              return prev;
+            });
+
+            if (existingAgent) {
+              updatedMsg.agent = existingAgent;
+            } else {
+              const agentData = await getAgentProfile(updatedMsg.sender_id);
+              if (agentData) {
+                updatedMsg.agent = agentData;
+              }
+            }
+          }
+
+          setMessages(prev => {
+            const index = prev.findIndex(m => m.id === updatedMsg.id);
+            if (index !== -1) {
+              const next = [...prev];
+              next[index] = updatedMsg as WidgetMessage;
+              return next;
+            }
+            return prev;
+          });
+        }
+      })
       .subscribe()
 
     return () => {
