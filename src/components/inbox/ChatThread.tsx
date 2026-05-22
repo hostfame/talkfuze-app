@@ -2887,7 +2887,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isAiStreaming ? 'bg-blue-50/30 dark:bg-blue-950/10 border-blue-400 dark:border-blue-600 ring-1 ring-blue-400/50 animate-pulse' : isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {isRecording ? (
             <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
               <div className="flex items-center gap-3">
