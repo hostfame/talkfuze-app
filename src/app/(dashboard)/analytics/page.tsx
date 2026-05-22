@@ -46,7 +46,17 @@ export default async function AnalyticsPage() {
   
   const accuracy = totalSent > 0 ? Math.round((sentAsIs / totalSent) * 100) : 0;
   
-  const rulesLearned = safeLogs.filter(l => l.correction_feedback !== null);
+  // Fetch Learned Rules separately so they don't disappear if they fall outside the last 100 drafts
+  const { data: rulesData } = await supabase
+    .from("ai_draft_logs")
+    .select("id, correction_feedback, created_at")
+    .eq("org_id", profile.org_id)
+    .eq("was_edited", true)
+    .not("correction_feedback", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const rulesLearned = rulesData || [];
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0b141a]">
