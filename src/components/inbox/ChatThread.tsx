@@ -1255,7 +1255,7 @@ export default function ChatThread({
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
-  const isPickedUp = !conversationId ? true : participants.length > 0
+  const isPickedUp = !conversationId ? true : (participants.length > 0 || messages.some(m => m.sender_type === 'agent'))
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
