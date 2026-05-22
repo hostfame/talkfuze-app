@@ -61,11 +61,31 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: number }) {
   const [expanded, setExpanded] = useState(false);
   const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleCopy = (text: string, field: 'username' | 'password') => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleLogin = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    try {
+      const destination = `clientarea.php?action=productdetails&id=${product.id}`;
+      const url = await generateWHMCSSsoToken(clientId, destination);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        alert("Failed to generate login token.");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   return (
@@ -81,9 +101,27 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
               {product.status}
             </span>
           </div>
-          {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">{product.domain}</p>}
+          {product.domain && (
+            <a 
+              href={`http://${product.domain}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={(e) => e.stopPropagation()} 
+              className="text-[11.5px] text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 font-medium mt-0.5 inline-block"
+            >
+              {product.domain}
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <button 
+            onClick={handleLogin}
+            disabled={isLoggingIn}
+            className="text-slate-400 hover:text-blue-500 bg-white dark:bg-slate-800 p-1.5 rounded border border-slate-200 dark:border-slate-700 shadow-sm disabled:opacity-50"
+            title="Login to Service"
+          >
+            {isLoggingIn ? <Loader2 size={12} className="animate-spin" /> : <LogIn size={12} />}
+          </button>
           <div className="p-1 text-slate-300 dark:text-slate-600">
             <ChevronDown size={14} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
           </div>
