@@ -99,29 +99,45 @@ type Intent =
   | 'domain' | 'billing' | 'technical' | 'migration' | 'comparison';
 
 const INTENT_PATTERNS: [Intent, RegExp][] = [
+  // Specific products first (checked before generic web hosting)
   ['pricing_vps', /\bvps\b|ভিপিএস|virtual\s*private/i],
   ['pricing_dedicated', /\bdedicated\b|bare\s*metal|ডেডিকেটেড/i],
   ['pricing_wordpress', /\bwordpress\b|wp\s*host|ওয়ার্ডপ্রেস/i],
-  ['pricing_woocommerce', /\bwoocommerce\b|woo\s*commerce|উকমার্স|ই-কমার্স|ecommerce\s*host/i],
-  ['pricing_cloud', /\bcloud\s*host|\bcloud\s*plan|ক্লাউড\s*হোস্ট/i],
+  ['pricing_woocommerce', /\bwoocommerce\b|woo\s*commerce|উকমার্স|ই-কমার্স|ecommerce|online\s*store|অনলাইন\s*স্টোর/i],
+  ['pricing_cloud', /\bcloud\b|ক্লাউড/i],
   ['pricing_turbo', /\bturbo\b|nvme\s*host|টার্বো/i],
   ['pricing_bdix', /\bbdix\b|বিডিআইএক্স/i],
   ['pricing_nodejs', /\bnode\.?js\b|\bmern\b|নোড/i],
   ['pricing_n8n', /\bn8n\b|automation\s*host/i],
+  // Generic web hosting (will be suppressed if a specific product matched)
   ['pricing_web', /web\s*host|shared\s*host|হোস্টিং\s*(দাম|প্রাইস|কত)|hosting\s*(price|cost|plan)/i],
   ['domain', /\bdomain\b|ডোমেইন|\.com\b|\.net\b|\.org\b|\.io\b|\.xyz\b|\.bd\b|\.online\b|\btld\b|transfer\s*domain/i],
   ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill\b|\brefund\b|পেমেন্ট|বিল|টাকা|\btaka\b|\brenew/i],
   ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bspeed\b|\bbackup\b|\bip\s*block/i],
-  ['migration', /\bmigrat|\btransfer\s*site|\bmove\s*site|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
-  ['comparison', /\bcompare\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)/i],
+  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to)\b|\bmove\s*site|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
+  ['comparison', /\bcompare\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)|\bbetter\b/i],
 ];
+
+// Specific pricing intents (if any of these matched, suppress generic pricing_web)
+const SPECIFIC_PRICING_INTENTS = new Set([
+  'pricing_wordpress', 'pricing_cloud', 'pricing_turbo', 'pricing_bdix',
+  'pricing_vps', 'pricing_dedicated', 'pricing_woocommerce', 'pricing_nodejs', 'pricing_n8n'
+]);
 
 function detectIntents(text: string): Intent[] {
   const intents: Intent[] = [];
   for (const [intent, pattern] of INTENT_PATTERNS) {
     if (pattern.test(text)) intents.push(intent);
   }
-  // Generic pricing fallback
+
+  // Suppress generic pricing_web if a specific product was already detected
+  const hasSpecific = intents.some(i => SPECIFIC_PRICING_INTENTS.has(i));
+  if (hasSpecific) {
+    const filtered = intents.filter(i => i !== 'pricing_web');
+    if (filtered.length > 0) return [...new Set(filtered)];
+  }
+
+  // Generic pricing fallback (only if nothing specific matched)
   if (intents.length === 0 && /\b(price|pricing|cost|কত|দাম|প্রাইস|plan|package)\b/i.test(text)) {
     intents.push('pricing_web');
   }
@@ -163,7 +179,17 @@ export function getRelevantCannedResponses(userMessage: string, limit = 3): stri
     .map(entry => {
       let score = 0;
       for (const word of queryWords) {
+        // Exact word match
         if (entry.words.has(word)) score++;
+        // Substring match for Bengali words (they can be long compound words)
+        else {
+          for (const entryWord of entry.words) {
+            if (entryWord.length > 4 && (entryWord.includes(word) || word.includes(entryWord))) {
+              score += 0.5;
+              break;
+            }
+          }
+        }
       }
       // Boost if title matches strongly
       const titleLower = entry.title.toLowerCase();
