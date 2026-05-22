@@ -1301,9 +1301,16 @@ export default function WidgetPage() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'TALKFUZE_PAGE_VIEW') {
-        const { title, url } = event.data
+        const { title, url, userAgent, referrer } = event.data
         if (activeConversationId && activeConversationId !== 'new' && deviceId) {
-          sendWidgetMessage(org_id as string, deviceId, `Viewed: ${title || url}`, 'system', { url, title, event: 'page_view' }, activeConversationId)
+          sendWidgetMessage(
+            org_id as string, 
+            deviceId, 
+            `Viewed: ${title || url}`, 
+            'system', 
+            { url, title, userAgent, referrer, event: 'page_view' }, 
+            activeConversationId
+          )
         }
       }
     }

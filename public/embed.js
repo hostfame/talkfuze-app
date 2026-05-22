@@ -218,6 +218,36 @@
   container.appendChild(button);
   document.body.appendChild(container);
 
+  // --- User Journey Tracking ---
+  var sendPageView = function() {
+    try {
+      iframe.contentWindow.postMessage({
+        type: 'TALKFUZE_PAGE_VIEW',
+        url: window.location.href,
+        title: document.title,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent
+      }, '*');
+    } catch(e) {}
+  };
+
+  iframe.addEventListener('load', sendPageView);
+
+  var _pushState = history.pushState;
+  history.pushState = function() {
+    _pushState.apply(history, arguments);
+    sendPageView();
+  };
+  
+  var _replaceState = history.replaceState;
+  history.replaceState = function() {
+    _replaceState.apply(history, arguments);
+    sendPageView();
+  };
+  
+  window.addEventListener('popstate', sendPageView);
+  // ------------------------------
+
   // Expose API to host window
   window.TalkFuze = {
     setContext: function(contextData) {
