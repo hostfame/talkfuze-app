@@ -2688,6 +2688,7 @@ export default function ChatThread({
 
             if (msg.content.toLowerCase().includes("voice call")) {
               const isMissed = msg.content.includes("Missed");
+              const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
               return (
                 <div key={msg.id || idx} className="flex justify-center my-4">
                   <div className={`flex items-center gap-2.5 border px-3.5 py-2 rounded-[14px] shadow-sm ${
@@ -2726,6 +2727,17 @@ export default function ChatThread({
                         )}
                       </div>
                     </div>
+                    {agent && (
+                      <div className="w-7 h-7 rounded-full shrink-0 overflow-hidden ml-2 border border-white/50 shadow-sm flex items-center justify-center bg-blue-50 dark:bg-slate-800">
+                        {agent.avatar_url ? (
+                          <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                            {agent.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )
