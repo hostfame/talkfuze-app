@@ -1552,9 +1552,9 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   </div>
                   <button 
                     onClick={handleRequestCoBrowse}
-                    className="px-5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 active:scale-[0.97] text-slate-700 dark:text-slate-300 font-medium text-[13px] rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                    className="px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 active:scale-[0.97] text-slate-700 dark:text-slate-300 font-medium text-[12px] rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap"
                   >
-                    <Monitor size={15} strokeWidth={2} className="text-slate-400" />
+                    <Monitor size={14} strokeWidth={2} className="text-slate-400" />
                     Request Screen Share
                   </button>
                   <p className="text-[10.5px] text-slate-400 dark:text-slate-500">
