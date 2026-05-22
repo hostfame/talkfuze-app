@@ -201,13 +201,67 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       }
     }
 
-    // Helper function to fetch multiple attachments
-    async function fetchAttachments(mediaUrls: string[]): Promise<Array<{ name: string; data: string }>> {
+    // Helper function to transcribe audio using OpenAI Whisper
+    async function transcribeAudio(audioBuffer: Buffer, filename: string): Promise<string | null> {
+      try {
+        const apiKey = process.env.OPENAI_API_KEY
+        if (!apiKey) {
+          console.warn('OPENAI_API_KEY is not set. Skipping transcription.')
+          return null
+        }
+
+        const formData = new FormData()
+        // Convert Buffer to File/Blob equivalent for FormData
+        const blob = new Blob([audioBuffer], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' })
+        formData.append('file', blob, filename)
+        formData.append('model', 'whisper-1')
+
+        const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: formData as any,
+        })
+
+        if (!res.ok) {
+          const err = await res.text()
+          console.error('Whisper transcription failed:', err)
+          return null
+        }
+
+        const data = await res.json()
+        return data.text || null
+      } catch (err) {
+        console.error('Failed to transcribe audio:', err)
+        return null
+      }
+    }
+
+    // Helper function to fetch multiple attachments and transcribe audio
+    async function fetchAttachmentsAndTranscribe(mediaUrls: string[], texts: string[]): Promise<Array<{ name: string; data: string }>> {
       const attachments: Array<{ name: string; data: string }> = []
-      for (const url of mediaUrls) {
+      
+      for (let i = 0; i < mediaUrls.length; i++) {
+        const url = mediaUrls[i]
         const attachment = await fetchMediaAsBase64(url)
+        
         if (attachment) {
           attachments.push(attachment)
+          
+          // If it's an audio file, attempt transcription
+          if (attachment.name.endsWith('.ogg') || attachment.name.endsWith('.mp3') || attachment.name.endsWith('.wav')) {
+             const buffer = Buffer.from(attachment.data, 'base64')
+             const transcription = await transcribeAudio(buffer, attachment.name)
+             if (transcription) {
+                // Find the placeholder and replace/append the transcription
+                const listenPlaceholder = `(Listen: ${url})`
+                const textIndex = texts.findIndex(t => t.includes(listenPlaceholder))
+                if (textIndex !== -1) {
+                  texts[textIndex] = texts[textIndex].replace(listenPlaceholder, `(Listen: ${url})\n🎤 **Transcription:** "${transcription}"`)
+                }
+             }
+          }
         }
       }
       return attachments
@@ -279,12 +333,13 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
 
     // 7. Open the ticket using the first grouped message
     const firstGroup = groups[0]
+    const firstGroupAttachments = await fetchAttachmentsAndTranscribe(firstGroup.imageUrls, firstGroup.texts)
+    
+    // texts array may have been modified by fetchAttachmentsAndTranscribe with transcription
     const firstGroupText = firstGroup.texts.join("\n")
     const firstGroupMessage = firstGroup.sender_type === 'agent'
       ? `👨‍💼 [Agent - ${firstGroup.sender_name}]:\n\n${firstGroupText}`
       : firstGroupText
-
-    const firstGroupAttachments = await fetchAttachments(firstGroup.imageUrls)
 
     const result = await openTicket(clientId, deptId, subject, firstGroupMessage, undefined, firstGroupAttachments)
     if (!result || !result.id) {
@@ -295,12 +350,12 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
 
     // 8. Add subsequent grouped messages as ticket replies in order
     for (const group of groups.slice(1)) {
+      const groupAttachments = await fetchAttachmentsAndTranscribe(group.imageUrls, group.texts)
+      
       const groupText = group.texts.join("\n")
       const groupMessage = group.sender_type === 'agent'
         ? `👨‍💼 [Agent - ${group.sender_name}]:\n\n${groupText}`
         : groupText
-
-      const groupAttachments = await fetchAttachments(group.imageUrls)
       
       // Post each reply sequentially to preserve order, and suppress email notifications to prevent customer inbox flooding.
       await addTicketReply(ticketId, groupMessage, clientId, groupAttachments, true)
