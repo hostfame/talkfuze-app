@@ -131,13 +131,27 @@ const SafeImage = ({
   );
 };
 
-const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'customer' | 'internal' }) => {
+const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, type: 'agent' | 'customer' | 'internal', messageId?: string, transcript?: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  useEffect(() => {
+    if (messageId && !transcript && !isTranscribing) {
+      setIsTranscribing(true);
+      fetch('/api/ai/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId })
+      }).catch(e => {
+        console.error("Transcription trigger failed:", e);
+      });
+    }
+  }, [messageId, transcript]);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -241,73 +255,87 @@ const CustomAudioPlayer = ({ url, type }: { url: string, type: 'agent' | 'custom
   const waveHeights = [8, 14, 10, 18, 12, 22, 16, 24, 18, 26, 20, 24, 16, 20, 12, 16, 10, 14, 8, 12, 6, 10];
 
   return (
-    <div className={`flex items-center gap-3 transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
-      <audio 
-        ref={audioRef} 
-        src={url} 
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => { setIsPlaying(false); setProgress(0); setCurrentTime(0); }}
-        className="hidden" 
-      />
-      
-      <button 
-        onClick={togglePlay} 
-        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${buttonStyle}`}
-      >
-        {isPlaying ? (
-           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-        ) : (
-           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
-        )}
-      </button>
+    <div className="flex flex-col gap-1.5 w-full">
+      <div className={`flex items-center gap-3 transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
+        <audio 
+          ref={audioRef} 
+          src={url} 
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={() => { setIsPlaying(false); setProgress(0); setCurrentTime(0); }}
+          className="hidden" 
+        />
+        
+        <button 
+          onClick={togglePlay} 
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${buttonStyle}`}
+        >
+          {isPlaying ? (
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          ) : (
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+          )}
+        </button>
 
-      <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
-        <div className="flex items-center gap-2 w-full">
-          <div 
-            className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none group/wave relative py-1"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUpOrLeave}
-            onMouseLeave={handleMouseUpOrLeave}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {waveHeights.map((barHeight, i, arr) => {
-              const barProgress = (i / arr.length) * 100;
-              const isActive = progress >= barProgress;
-              return (
-                <div 
-                  key={i} 
-                  className="w-[3px] rounded-full transition-all duration-75 origin-bottom"
-                  style={{ 
-                    height: `${barHeight}px`,
-                    backgroundColor: isActive ? activeWaveColor : inactiveWaveColor,
-                    transform: isDragging && isActive ? 'scaleY(1.15)' : undefined
-                  }}
-                />
-              );
-            })}
-            
-            {/* Smooth Floating Scrubbing Playhead */}
+        <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
+          <div className="flex items-center gap-2 w-full">
             <div 
-              className={`absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-3 rounded-full pointer-events-none transition-opacity duration-200 z-30 shadow-[0_1px_4px_rgba(0,0,0,0.3)] ${
-                isDragging ? 'opacity-100 scale-125' : 'opacity-0 group-hover/wave:opacity-100'
-              }`}
-              style={{ 
-                left: `${progress}%`,
-                backgroundColor: playheadColor
-              }}
-            />
+              className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none group/wave relative py-1"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {waveHeights.map((barHeight, i, arr) => {
+                const barProgress = (i / arr.length) * 100;
+                const isActive = progress >= barProgress;
+                return (
+                  <div 
+                    key={i} 
+                    className="w-[3px] rounded-full transition-all duration-75 origin-bottom"
+                    style={{ 
+                      height: `${barHeight}px`,
+                      backgroundColor: isActive ? activeWaveColor : inactiveWaveColor,
+                      transform: isDragging && isActive ? 'scaleY(1.15)' : undefined
+                    }}
+                  />
+                );
+              })}
+              
+              {/* Smooth Floating Scrubbing Playhead */}
+              <div 
+                className={`absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-3 rounded-full pointer-events-none transition-opacity duration-200 z-30 shadow-[0_1px_4px_rgba(0,0,0,0.3)] ${
+                  isDragging ? 'opacity-100 scale-125' : 'opacity-0 group-hover/wave:opacity-100'
+                }`}
+                style={{ 
+                  left: `${progress}%`,
+                  backgroundColor: playheadColor
+                }}
+              />
+            </div>
+          </div>
+          
+          <div className={`text-[10px] font-bold tracking-wide flex justify-between ${timeStyle}`}>
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
-        
-        <div className={`text-[10px] font-bold tracking-wide flex justify-between ${timeStyle}`}>
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
       </div>
+      
+      {transcript && (
+        <div className="text-[12px] text-slate-700 dark:text-slate-300 bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50 px-3 py-2 rounded-xl rounded-tl-sm w-fit max-w-[280px]">
+           <span className="text-slate-400 dark:text-slate-500 mr-1.5">🎤</span>
+           <span className="leading-relaxed">{transcript}</span>
+        </div>
+      )}
+      {!transcript && isTranscribing && (
+        <div className="text-[11px] text-slate-400 dark:text-slate-500 italic px-2 animate-pulse">
+           Transcribing audio...
+        </div>
+      )}
     </div>
   );
 };
@@ -1559,7 +1587,12 @@ export default function ChatThread({
       .map(m => {
         const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
         const name = isAgent ? 'Agent' : contactName
-        return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+        let contentStr = m.content_type === 'text' ? m.content : `[${m.content_type}]`
+        if (m.content_type === 'audio') {
+           const transcript = (m.metadata as any)?.transcript
+           contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
+        }
+        return `[${name}]: ${contentStr}`
       }).join('\n')
 
     // Broadcast typing to widget so visitor sees typing indicator during AI draft
@@ -1710,7 +1743,12 @@ export default function ChatThread({
             .map(m => {
               const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
               const name = isAgent ? 'Agent' : contactName
-              return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+              let contentStr = m.content_type === 'text' ? m.content : `[${m.content_type}]`
+              if (m.content_type === 'audio') {
+                 const transcript = (m.metadata as any)?.transcript
+                 contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
+              }
+              return `[${name}]: ${contentStr}`
             }).join('\n')
 
           await completeAiDraftLog(finalId, text, contextMessages);
@@ -2659,7 +2697,7 @@ export default function ChatThread({
                             </a>
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
-                              <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} />
+                              <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
                               {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
@@ -2809,7 +2847,7 @@ export default function ChatThread({
                             </a>
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
-                              <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" />
+                              <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
                               {msg.content !== '[Audio Voice Message]' && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
