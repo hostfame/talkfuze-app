@@ -1267,6 +1267,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       </span>
                     </div>
                   )}
+                </div>
               </div>
             </div>
           ) : (
