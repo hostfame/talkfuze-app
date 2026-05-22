@@ -147,8 +147,12 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId })
-      }).catch(e => {
+      })
+      .catch(e => {
         console.error("Transcription trigger failed:", e);
+      })
+      .finally(() => {
+        setIsTranscribing(false);
       });
     }
   }, [messageId, transcript]);
