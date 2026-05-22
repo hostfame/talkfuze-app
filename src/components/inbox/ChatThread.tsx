@@ -1607,13 +1607,7 @@ export default function ChatThread({
       return true;
     }
     
-    // Content check: only match if the content has a word starting with the filter
-    const contentLower = r.content.toLowerCase();
-    const cleanFilter = macroFilter.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    const wordRegex = new RegExp('\\b' + cleanFilter);
-    if (wordRegex.test(contentLower)) {
-      return true;
-    }
+
     
     return false;
   }).sort((a, b) => {
