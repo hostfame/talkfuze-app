@@ -803,6 +803,8 @@ export default function WidgetPage() {
   }
 
   const handleEndVoiceCall = (sendBroadcast = true) => {
+    const wasActiveCall = !!(voiceConnectionRef.current || voiceStreamRef.current || callDurationRef.current > 0);
+    
     voiceBufferedCandidatesRef.current = [];
     if (voiceStreamRef.current) {
       voiceStreamRef.current.getTracks().forEach(t => t.stop())
@@ -838,7 +840,7 @@ export default function WidgetPage() {
       supabase.removeChannel(globalChannel);
     }
 
-    if (activeConversationId && activeConversationId !== 'new') {
+    if (activeConversationId && activeConversationId !== 'new' && wasActiveCall) {
       const duration = callDurationRef.current;
       if (duration > 0) {
         const metadata: any = { duration: formatCallDuration(duration) };

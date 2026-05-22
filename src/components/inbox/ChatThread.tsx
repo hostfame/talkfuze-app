@@ -2760,15 +2760,25 @@ export default function ChatThread({
                         )}
                       </div>
                     </div>
-                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
+                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-white/50 shadow-sm ${
                       isMissed
                         ? 'bg-slate-200 dark:bg-slate-700'
                         : 'bg-blue-100 dark:bg-blue-800'
                     }`}>
-                      {isMissed 
-                        ? <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
-                        : <Phone size={14} className="text-blue-600 dark:text-blue-300" />
-                      }
+                      {isMissed ? (
+                        <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
+                      ) : (
+                        (() => {
+                          const answeringAgentName = safeMeta.agent_name;
+                          const answeringAgent = answeringAgentName ? teamMembers.find(t => t.name === answeringAgentName) : null;
+                          if (answeringAgent?.avatar_url) {
+                            return <img src={answeringAgent.avatar_url} alt="" className="w-full h-full object-cover" />;
+                          } else if (answeringAgent) {
+                            return <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300">{answeringAgent.name.charAt(0).toUpperCase()}</span>;
+                          }
+                          return <Phone size={14} className="text-blue-600 dark:text-blue-300" />;
+                        })()
+                      )}
                     </div>
                   </div>
                 </div>
