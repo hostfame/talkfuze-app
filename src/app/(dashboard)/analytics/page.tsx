@@ -113,7 +113,7 @@ export default async function AnalyticsPage() {
             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
               <div 
                 className="bg-blue-600 h-1.5 rounded-full" 
-                style={{ width: \`\${accuracy}%\` }}
+                style={{ width: `${accuracy}%` }}
               />
             </div>
           </div>
