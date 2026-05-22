@@ -25,6 +25,9 @@ Payment: bKash, Nagad, Bank Transfer, Card (Stripe)
 Bank: ISLAMI BANK, SPOTLIGHT CREATIVE, Pahartali Branch, Acc: 20502020100506002`;
 
 const POLICIES = `## Key Policies
+- 99.9% Uptime Guarantee on all hosting plans.
+- All shared/cloud/turbo hosting includes: Free SSL, LiteSpeed Web Server, cPanel, Daily Backups.
+- Free website migration from any provider (we handle it for you).
 - 30-day money-back for hosting. Refund to original method ONLY if Hostnin's fault. Otherwise = Account Credit.
 - Domains, VPS, Dedicated Servers: Non-refundable.
 - Prohibited content: Adult, spam, nulled scripts, phishing, illegal.
@@ -33,9 +36,11 @@ const POLICIES = `## Key Policies
 - VPS: Self-managed by default, full root access. Locations: Bangladesh (BDIX), Singapore, Germany, Finland, USA.
 - Dedicated Servers: Full dedicated hardware, most have setup fees (except Value AMD = Free Setup).
 - If customer asks for a domain extension not in our list, say: "Check availability and price at https://hostnin.com/domain"
-- Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.`;
+- Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.
+- Nameservers: ns1.stackdns.com, ns2.stackdns.com (for shared/cloud/turbo/bdix hosting).
+- Order any plan at: https://hostnin.com or https://my.hostnin.com`;
 
-// Build pricing sections from JSON data (lean markdown)
+// Build pricing sections from JSON data with full specs per plan
 function buildPricingMD(type: string): string {
   const plans = (knowledge as any).plans.filter((p: any) => p.type === type);
   if (plans.length === 0) return '';
@@ -46,14 +51,17 @@ function buildPricingMD(type: string): string {
   let md = `## ${type} Pricing (BDT)\n`;
 
   if (monthly.length > 0 && yearly.length > 0) {
-    md += `| Plan | Monthly | Yearly |\n|---|---|---|\n`;
+    // Shared hosting style: show monthly + yearly + specs per plan
+    md += `| Plan | Monthly | Yearly | Specs |\n|---|---|---|---|\n`;
     const names = [...new Set(monthly.map((p: any) => p.name))] as string[];
     for (const name of names) {
       const m = monthly.find((p: any) => p.name === name);
       const y = yearly.find((p: any) => p.name === name);
-      md += `| ${name} | ৳${m?.price || 'N/A'} | ৳${y?.price || 'N/A'} |\n`;
+      const specs = (m?.server || []).join(', ') || (m?.features || []).slice(0, 4).join(', ');
+      md += `| ${name} | ৳${m?.price || 'N/A'} | ৳${y?.price || 'N/A'} | ${specs} |\n`;
     }
   } else {
+    // VPS/Dedicated style: show price + full specs
     md += `| Plan | Price/mo | Specs |\n|---|---|---|\n`;
     for (const p of plans) {
       const specs = ((p as any).server || []).join(', ');
@@ -62,9 +70,12 @@ function buildPricingMD(type: string): string {
     }
   }
 
-  // Add features for context
+  // Add common features only if they exist and are non-empty
   if (monthly.length > 0 && monthly[0].features) {
-    md += `Includes: ${monthly[0].features.slice(0, 5).join(', ')}\n`;
+    const features = monthly[0].features.filter((f: string) => f && f.trim().length > 0);
+    if (features.length > 0) {
+      md += `All plans include: ${features.slice(0, 6).join(', ')}\n`;
+    }
   }
 
   return md;

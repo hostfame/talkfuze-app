@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, unblockIP } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
+import { unblockIPFast } from "@/actions/server-ops"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import ForwardButton from "./ForwardButton"
@@ -661,6 +662,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   
   const [unblockIpInput, setUnblockIpInput] = useState("")
   const [isUnblocking, setIsUnblocking] = useState(false)
+  const [unblockResult, setUnblockResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
@@ -1145,18 +1147,20 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       e.preventDefault();
                       if (!unblockIpInput.trim() || isUnblocking) return;
                       setIsUnblocking(true);
-                      unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0).then((res: any) => {
+                      setUnblockResult(null);
+                      unblockIPFast(unblockIpInput.trim()).then((res: any) => {
                         if (res && res.result === 'success') {
-                          alert(`Successfully unblocked IP!\n${Object.entries(res.details || {}).map(([s, result]) => `${s}: ${result}`).join('\n')}`);
+                          setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
                           setUnblockIpInput('');
                         } else {
-                          alert(res?.message || 'Failed to unblock IP');
+                          setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
                         }
                       }).catch((err) => {
                         console.error(err);
-                        alert('Failed to unblock IP');
+                        setUnblockResult({ type: 'error', message: 'Failed to unblock IP' });
                       }).finally(() => {
                         setIsUnblocking(false);
+                        setTimeout(() => setUnblockResult(null), 8000);
                       });
                     }
                   }}
@@ -1167,18 +1171,20 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   onClick={async () => {
                     if (!unblockIpInput.trim() || isUnblocking) return;
                     setIsUnblocking(true);
+                    setUnblockResult(null);
                     try {
-                      const res = await unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0) as any;
+                      const res = await unblockIPFast(unblockIpInput.trim()) as any;
                       if (res && res.result === 'success') {
-                        alert(`Successfully unblocked IP!\n${Object.entries(res.details || {}).map(([s, result]) => `${s}: ${result}`).join('\n')}`);
+                        setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' });
                         setUnblockIpInput('');
                       } else {
-                        alert(res?.message || 'Failed to unblock IP');
+                        setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' });
                       }
                     } catch (e) {
-                      alert('An error occurred');
+                      setUnblockResult({ type: 'error', message: 'An error occurred' });
                     } finally {
                       setIsUnblocking(false);
+                      setTimeout(() => setUnblockResult(null), 8000);
                     }
                   }}
                   disabled={isUnblocking || !unblockIpInput.trim()}
@@ -1187,6 +1193,11 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
                 </button>
               </div>
+              {unblockResult && (
+                <p className={`text-[11px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                  {unblockResult.type === 'success' ? '\u2713' : '\u2717'} {unblockResult.message}
+                </p>
+              )}
             </div>
             
             {/* Sticky Notes Card (Expandable) */}

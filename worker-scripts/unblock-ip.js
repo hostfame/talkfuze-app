@@ -41,16 +41,18 @@ async function unblockOnServer(server, ip) {
   
   // Build the remote command: try CSF, CPGuard, and Fail2Ban
   // Each command is independent - if one tool doesn't exist, it won't error
+  // Append '; true' to force exit 0 (CSF returns non-zero when IP wasn't blocked)
   const remoteCmd = [
-    // CSF: remove from deny + temp deny
-    `csf -dr ${ip} 2>/dev/null; csf -tr ${ip} 2>/dev/null`,
-    // CPGuard: remove from blacklist + allow
-    `cpgcli ip --remove-blacklist ${ip} 2>/dev/null; cpgcli ip --allow ${ip} 2>/dev/null`,
-    // Fail2Ban: unban from all jails
-    `fail2ban-client unban ${ip} 2>/dev/null`,
+    `csf -dr ${ip} 2>/dev/null || true`,
+    `csf -tr ${ip} 2>/dev/null || true`,
+    `cpgcli ip --deny --remove ${ip} 2>/dev/null || true`,
+    `cpgcli ip --temp-allow --remove ${ip} 2>/dev/null || true`,
+    `cpgcli ip --allow ${ip} --reason 'TalkFuze unblock' 2>/dev/null || true`,
+    `fail2ban-client unban ${ip} 2>/dev/null || true`,
+    `echo DONE`,
   ].join('; ');
 
-  const cmd = `ssh ${sshOpts} root@${server.host} '${remoteCmd}' 2>&1`;
+  const cmd = `ssh ${sshOpts} root@${server.host} "${remoteCmd}" 2>&1`;
   
   const startTime = Date.now();
   try {
