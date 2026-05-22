@@ -59,25 +59,12 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 
 function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: number }) {
   const [expanded, setExpanded] = useState(false);
-  const [loggingIn, setLoggingIn] = useState(false);
   const [copiedField, setCopiedField] = useState<'username' | 'password' | null>(null);
 
   const handleCopy = (text: string, field: 'username' | 'password') => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  const handleCpanelLogin = async () => {
-    if (loggingIn) return;
-    setLoggingIn(true);
-    const res = await generateWHMCSControlPanelSsoToken(clientId, product.id);
-    setLoggingIn(false);
-    if (res.success && res.redirect_url) {
-      window.open(res.redirect_url, '_blank');
-    } else {
-      alert(res.error || "Failed to generate cPanel login token");
-    }
   };
 
   return (
@@ -96,23 +83,6 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
           {product.domain && <p className="text-[11.5px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">{product.domain}</p>}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          {product.status === 'Active' && (
-             <button 
-                onClick={(e) => { e.stopPropagation(); handleCpanelLogin(); }}
-                disabled={loggingIn}
-                className="text-[#ff6c2c] hover:text-[#e56027] dark:text-[#ff7b42] bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 p-1.5 rounded transition-colors flex items-center justify-center border border-transparent hover:border-orange-200 dark:hover:border-orange-500/30"
-                title="Login to cPanel"
-             >
-                {loggingIn ? <Loader2 size={13} className="animate-spin text-slate-400" /> : (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={13} height={13} fill="currentColor">
-                    <path d="M12 0a12 12 0 1 0 12 12A12.013 12.013 0 0 0 12 0zm5.664 16.516a5.53 5.53 0 0 1-8.528-1.575 6.07 6.07 0 0 1-.72-3.414 6.275 6.275 0 0 1 1.748-4.475 5.53 5.53 0 0 1 8.016.31 1.157 1.157 0 0 1-.225 1.62l-1.395 1.05a1.14 1.14 0 0 1-1.425-.135 2.655 2.655 0 0 0-3.795-.12 3.12 3.12 0 0 0-1.02 2.37 3 3 0 0 0 .54 1.755 2.73 2.73 0 0 0 2.25.96 2.625 2.625 0 0 0 1.965-.96 1.14 1.14 0 0 1 1.575-.15l1.455 1.02a1.14 1.14 0 0 1 .555 1.744zM16.14 8.52h1.65v5.37h-1.65zM17.13 6.36a1.05 1.05 0 1 1 1.05 1.05 1.05 1.05 0 0 1-1.05-1.05z"/>
-                  </svg>
-                )}
-             </button>
-          )}
-          <a href={`https://my.hostnin.com/root/clientsservices.php?userid=${clientId}&id=${product.id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-slate-400 hover:text-blue-500 transition-colors p-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-800" title="View Service">
-            <ExternalLink size={13} />
-          </a>
           <div className="p-1 text-slate-300 dark:text-slate-600">
             <ChevronDown size={14} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
           </div>
@@ -831,7 +801,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       const invoiceUrl = `https://my.hostnin.com/viewinvoice.php?id=${invoiceId}`;
       const message = `You have an unpaid invoice. Please pay securely here: ${invoiceUrl}`;
       await replyToConversation(orgId, conversation.id, message, false);
-      alert("Invoice link sent successfully!");
     } catch (e) {
       alert("Failed to send invoice link.");
     } finally {
@@ -1374,10 +1343,16 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                         {whmcsServices?.domains?.map((domain: WhmcsDomain) => (
                           <div key={domain.id} className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0 relative group">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200 pr-5">{domain.domainname}</p>
-                              <a href={`https://my.hostnin.com/root/clientsdomains.php?userid=${whmcsClient.id}&domainid=${domain.id}`} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100 absolute right-0 top-0" title="View Domain">
-                                <ExternalLink size={13} />
-                              </a>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{domain.domainname}</p>
+                                <button
+                                  onClick={() => navigator.clipboard.writeText(domain.domainname)}
+                                  className="text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+                                  title="Copy Domain"
+                                >
+                                  <Copy size={13} />
+                                </button>
+                              </div>
                             </div>
                             <div className="flex items-center justify-between mt-1">
                               <span className="inline-block text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-sm">{domain.status}</span>
@@ -1462,7 +1437,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                                 <button
                                   onClick={() => {
                                     navigator.clipboard.writeText(`https://my.hostnin.com/viewinvoice.php?id=${invoice.id}`);
-                                    alert("Invoice link copied to clipboard!");
                                   }}
                                   className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded transition-colors"
                                   title="Copy Invoice Link"

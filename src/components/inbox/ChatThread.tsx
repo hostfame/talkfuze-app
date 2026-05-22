@@ -3349,12 +3349,10 @@ export default function ChatThread({
                 onClick={async () => {
                   const msgId = contextMenu.message.id;
                   setContextMenu(null);
-                  if (confirm('Recall this message? It will delete it for everyone.')) {
-                    try {
-                      await recallMessage(msgId);
-                    } catch (err: any) {
-                      alert('Failed to recall: ' + err.message);
-                    }
+                  try {
+                    await recallMessage(msgId);
+                  } catch (err: any) {
+                    alert('Failed to recall: ' + err.message);
                   }
                 }}
                 className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"

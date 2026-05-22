@@ -769,7 +769,7 @@ export async function editMessage(messageId: string, newContent: string) {
     .single()
 
   if (error) throw new Error(error.message)
-  return data
+  return { success: true }
 }
 
 export async function recallMessage(messageId: string) {
@@ -785,5 +785,5 @@ export async function recallMessage(messageId: string) {
     .single()
 
   if (error) throw new Error(error.message)
-  return data
+  return { success: true }
 }
