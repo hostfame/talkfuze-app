@@ -3139,15 +3139,17 @@ export default function ChatThread({
         >
           <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
             <div className="flex -space-x-1.5">
-              {displayTypingAgents.slice(0, 3).map((agent, i) => (
-                agent.avatar_url ? (
-                  <img key={i} src={agent.avatar_url} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
+              {displayTypingAgents.slice(0, 3).map((agent, i) => {
+                const matchedAgent = teamMembers.find(t => t.name === agent.name);
+                const avatar = agent.avatar_url || matchedAgent?.avatar_url;
+                return avatar ? (
+                  <img key={i} src={avatar} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
                 ) : (
                   <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
                     {agent.name.charAt(0).toUpperCase()}
                   </div>
-                )
-              ))}
+                );
+              })}
             </div>
             <div className="flex gap-[3px] items-center">
               <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
