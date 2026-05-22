@@ -72,8 +72,6 @@ export async function POST(req: Request) {
     formData.append("model", "whisper-1");
     // Providing a Bengali prompt anchors the model to output Bengali script natively
     formData.append("prompt", "এটি একটি কাস্টমার সাপোর্ট মেসেজ। কাস্টমার বাংলায় কথা বলছে।");
-    // Enforce Bengali output completely, banning Hindi. English audio will be translated to Bengali.
-    formData.append("language", "bn");
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
@@ -86,7 +84,7 @@ export async function POST(req: Request) {
     if (!whisperRes.ok) {
       const errText = await whisperRes.text();
       console.error("Whisper error:", errText);
-      return NextResponse.json({ error: "Whisper transcription failed" }, { status: 500 });
+      return NextResponse.json({ error: "Whisper transcription failed", details: errText }, { status: 500 });
     }
 
     const whisperData = await whisperRes.json();
