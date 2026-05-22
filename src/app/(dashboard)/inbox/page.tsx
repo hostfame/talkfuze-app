@@ -111,6 +111,11 @@ export default function InboxPage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as any;
         
+        // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
+        if (newMsg && newMsg.conversation_id) {
+           useInboxStore.getState().addMessage(newMsg.conversation_id, newMsg as AppMessage);
+        }
+
         // Update conversation list locally instead of re-fetching everything
         if (newMsg && newMsg.conversation_id) {
            const prev = useInboxStore.getState().conversations;
@@ -147,6 +152,31 @@ export default function InboxPage() {
            setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
            if (typingTimeoutRefs.current[newMsg.conversation_id]) {
              clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
+           }
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+        const newMsg = payload.new as any;
+        if (newMsg && newMsg.conversation_id) {
+          const currentMsgs = useInboxStore.getState().messagesMap[newMsg.conversation_id] || [];
+          if (currentMsgs.length > 0) {
+             useInboxStore.getState().setMessages(newMsg.conversation_id, currentMsgs.map(m => m.id === newMsg.id ? { ...m, ...newMsg } : m));
+          }
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
+        const oldMsg = payload.old as any;
+        // In default Postgres, DELETE only returns the primary key (id).
+        // We will scan all conversations in the store and remove the message if found.
+        if (oldMsg && oldMsg.id) {
+           const store = useInboxStore.getState();
+           const msgsMap = store.messagesMap;
+           for (const convId in msgsMap) {
+              const currentMsgs = msgsMap[convId];
+              if (currentMsgs.some(m => m.id === oldMsg.id)) {
+                 store.setMessages(convId, currentMsgs.filter(m => m.id !== oldMsg.id));
+                 break;
+              }
            }
         }
       })
@@ -213,55 +243,8 @@ export default function InboxPage() {
     }
 
     fetchData()
-    
-    // Use conversation-specific channel name to avoid conflicts across tab switches
-    const channelName = `messages:${selectedId}`
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedId}`
-        },
-        (payload) => {
-          addMessage(selectedId, payload.new as AppMessage)
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedId}`
-        },
-        (payload) => {
-          // Update status (read receipts) in place
-          const currentMsgs = useInboxStore.getState().messagesMap[selectedId] || []
-          setMessages(selectedId, currentMsgs.map(m => m.id === payload.new.id ? { ...m, ...(payload.new as Partial<AppMessage>) } : m))
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedId}`
-        },
-        (payload) => {
-          const currentMsgs = useInboxStore.getState().messagesMap[selectedId] || []
-          setMessages(selectedId, currentMsgs.filter(m => m.id !== payload.old.id))
-        }
-      )
-      .subscribe()
-
     return () => {
       isActive = false
-      supabase.removeChannel(channel)
     }
   }, [selectedId])
 
