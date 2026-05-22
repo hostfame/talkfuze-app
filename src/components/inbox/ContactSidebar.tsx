@@ -1208,8 +1208,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     </button>
                   </div>
                   {unblockResult && (
-                    <p className={`text-[11px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                      {unblockResult.type === 'success' ? '\u2713' : '\u2717'} {unblockResult.message}
+                    <p className={`text-[11.5px] mt-1.5 font-medium ${unblockResult.type === 'success' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {unblockResult.type === 'success' ? '✓' : '✗'} {unblockResult.message}
                     </p>
                   )}
                 </div>
