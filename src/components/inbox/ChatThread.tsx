@@ -1476,15 +1476,7 @@ export default function ChatThread({
     }
   }
 
-  // Ringtone for unjoined chats
-  useEffect(() => {
-    if (!isPickedUp && conversationId) {
-      playIncomingRingtoneLoop();
-      return () => stopIncomingRingtoneLoop();
-    } else {
-      stopIncomingRingtoneLoop();
-    }
-  }, [isPickedUp, conversationId]);
+  // Global ringtone for unjoined chats is now handled in page.tsx
 
   // Smart confirm: when real agent messages arrive, remove matching optimistic ones by content
   useEffect(() => {

@@ -84,6 +84,7 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
       contact:contacts(*),
       assignee:users!assigned_to(*),
       channels(type),
+      participants:conversation_participants(id),
       messages(id, content, sender_type, content_type, created_at, status, platform_message_id, is_internal, metadata)
     `)
     .eq("org_id", orgId)
@@ -356,6 +357,7 @@ export async function searchConversations(orgId: string, query: string) {
       contact:contacts(*),
       assignee:users!assigned_to(*),
       channels(type),
+      participants:conversation_participants(id),
       messages(id, content, sender_type, content_type, created_at, status, platform_message_id)
     `)
     .eq("org_id", orgId)

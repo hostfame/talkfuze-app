@@ -821,10 +821,12 @@ const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
 };
 
 let customRingtoneAudio: HTMLAudioElement | null = null;
+let isRingtoneStopping = false;
 
 export const playIncomingRingtoneLoop = (): void => {
   if (typeof window === 'undefined') return;
   if (ringtoneIntervalId !== null || customRingtoneAudio !== null) return;
+  isRingtoneStopping = false;
 
   const preset = getSelectedRingtone();
   const vol = getRingtoneVolume();
@@ -836,12 +838,19 @@ export const playIncomingRingtoneLoop = (): void => {
         const audio = new Audio(customRing);
         audio.loop = true;
         audio.volume = Math.min(vol, 1.0);
+        customRingtoneAudio = audio;
         audio.play().then(() => {
-          customRingtoneAudio = audio;
+          if (isRingtoneStopping) {
+            audio.pause();
+            audio.currentTime = 0;
+            customRingtoneAudio = null;
+          }
         }).catch(() => {
           // Fallback to siren if play fails
-          playRingtoneChime('siren', vol);
-          ringtoneIntervalId = setInterval(() => playRingtoneChime('siren', vol), 1800);
+          if (!isRingtoneStopping) {
+            playRingtoneChime('siren', vol);
+            ringtoneIntervalId = setInterval(() => playRingtoneChime('siren', vol), 1800);
+          }
         });
         return;
       } catch {
@@ -860,6 +869,7 @@ export const playIncomingRingtoneLoop = (): void => {
 };
 
 export const stopIncomingRingtoneLoop = (): void => {
+  isRingtoneStopping = true;
   if (ringtoneIntervalId !== null) {
     clearInterval(ringtoneIntervalId);
     ringtoneIntervalId = null;

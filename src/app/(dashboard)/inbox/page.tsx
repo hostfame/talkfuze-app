@@ -11,7 +11,7 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash } from "@/lib/sounds"
+import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash, playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
@@ -368,6 +368,30 @@ export default function InboxPage() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Global check for COMPLETELY UNPICKED conversations (rings continuously)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // If we are currently in a voice call, don't play chat ringtones
+    const hasUnpicked = conversations.some(c => {
+      if (c.status !== 'open' || !c.is_unread) return false;
+      let msgs: any[] = [];
+      if (messagesMap[c.id] && messagesMap[c.id].length > 0) msgs = messagesMap[c.id];
+      else if ((c as any).latestMessage) msgs = (c as any).latestMessage;
+      else if (c.messages) msgs = c.messages;
+      
+      const hasAgentReply = msgs.some((m: any) => m.sender_type === 'agent' || m.sender_type === 'system');
+      const hasAgentParticipant = c.participants && c.participants.length > 0;
+      return !hasAgentReply && !hasAgentParticipant;
+    });
+
+    if (hasUnpicked) {
+      playIncomingRingtoneLoop();
+    } else {
+      stopIncomingRingtoneLoop();
+    }
+  }, [conversations, messagesMap]);
 
   // Repeat alerts for unread chats to prevent agents from missing messages
   useEffect(() => {
