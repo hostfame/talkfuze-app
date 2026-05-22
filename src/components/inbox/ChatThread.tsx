@@ -3161,14 +3161,14 @@ export default function ChatThread({
                 );
               })}
             </div>
-            <div className="flex gap-[3px] items-center">
+            <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300 tracking-tight truncate">
+              {displayTypingAgents.map(a => a.name.split(' ')[0]).join(', ')} {displayTypingAgents.length > 1 ? 'are' : 'is'} typing
+            </span>
+            <div className="flex gap-[3px] items-center pr-1">
               <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
               <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1s" }}></span>
               <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1s" }}></span>
             </div>
-            <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300 tracking-tight truncate pr-1">
-              {displayTypingAgents.map(a => a.name.split(' ')[0]).join(', ')} {displayTypingAgents.length > 1 ? 'are' : 'is'} typing...
-            </span>
           </div>
         </div>
         {/* Actual composer - always shown, locked to whisper if not joined */}
