@@ -164,10 +164,10 @@ export async function POST(req: Request) {
       : `LANGUAGE: Bengali. Reply 100% in Bengali script (বাংলা হরফে).
 - Write casual, natural WhatsApp-style Bengali, NOT bookish.
 - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
-- TRANSLITERATE ALL ENGLISH WORDS to Bengali script (except URLs). Do NOT write any English letters.
-  * Correct: "গুড", "ফিক্স", "পেমেন্ট"
-  * Wrong: "Good", "Fix", "Payment"
-- Translaterate all plan & brand names: Basic Hosting = ব্যাসিক হোস্টিং, Starter = স্টার্টার, Pro = প্রো, Hostnin = হোষ্টনিন, Hostinger = হোষ্টিংগার.
+- THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
+  * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
+  * Example pattern: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
+  * The ONLY exception to this rule is URLs/Links.
 - ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
 - NO EMOJIS EVER. Do not use a single emoji.
 - NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
