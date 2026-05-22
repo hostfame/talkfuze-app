@@ -86,18 +86,30 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     conversationId = newConv!.id;
   }
 
-  // Insert message + update last_message_at in PARALLEL (saves ~50ms)
-  const isSystemMsg = contentType === 'system';
+  let senderType = "contact";
+  let finalContentType = contentType;
+  let finalSenderId: string | null = contactId;
+
+  if (contentType === 'system') {
+    senderType = "system";
+    finalContentType = "text";
+    finalSenderId = null;
+  } else if (contentType === 'ai') {
+    senderType = "ai";
+    finalContentType = "text";
+    finalSenderId = null;
+  }
+
   const now = new Date().toISOString();
   
   const [msgResult] = await Promise.all([
     supabaseAdmin.from("messages").insert({
       org_id: orgId,
       conversation_id: conversationId,
-      sender_type: isSystemMsg ? "system" : "contact",
-      sender_id: isSystemMsg ? null : contactId,
+      sender_type: senderType,
+      sender_id: finalSenderId,
       content: content,
-      content_type: isSystemMsg ? "text" : contentType,
+      content_type: finalContentType,
       metadata: Object.keys(metadata).length > 0 ? metadata : null
     }),
     supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
