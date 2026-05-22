@@ -2563,7 +2563,9 @@ export default function WidgetPage() {
              clientId: whmcsUser.clientId, 
              deptid: 1, // Default support dept
              subject: subject, 
-             message: finalMessage 
+             message: finalMessage,
+             conversationId,
+             orgId: org_id
           })
         });
         const data = await res.json();
