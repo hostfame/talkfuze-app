@@ -38,7 +38,12 @@ const POLICIES = `## Key Policies
 - If customer asks for a domain extension not in our list, say: "Check availability and price at https://hostnin.com/domain"
 - Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.
 - Nameservers: ns1.stackdns.com, ns2.stackdns.com (for shared/cloud/turbo/bdix hosting).
-- Order any plan at: https://hostnin.com or https://my.hostnin.com`;
+- Order any plan at: https://hostnin.com or https://my.hostnin.com
+
+## Hosting Recommendation Rules (STRICT)
+- NEVER recommend Cloud Hosting or WordPress Hosting by default.
+- DO NOT recommend Cloud Hosting for e-commerce or Bangladesh-targeted sites (Cloud/WordPress plans are UK/Global optimized and slow for BD traffic).
+- Only recommend Cloud Hosting if the user explicitly prioritizes massive STORAGE capacity over speed.`;
 
 // Build pricing sections from JSON data with full specs per plan
 function buildPricingMD(type: string): string {
