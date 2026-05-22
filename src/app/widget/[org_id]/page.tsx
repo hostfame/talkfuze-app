@@ -1415,6 +1415,41 @@ export default function WidgetPage() {
     }
   }, [org_id])
 
+  // Auto-reply after 1 minute of inactivity
+  useEffect(() => {
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') return;
+
+    // Check if there's already an auto-reply for being busy in this conversation
+    const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && (m.content.includes('busy') || m.content.includes('ব্যস্ত')));
+    if (hasBusyAutoReply) return;
+
+    const timer = setTimeout(async () => {
+      if (!org_id || !deviceId) return;
+      const isBengali = messages.some(m => m.sender_type === 'contact' && /[\u0980-\u09FF]/.test(m.content || ''));
+      const waNumber = settings?.whatsapp_number || '+8801325875955';
+      
+      const content = isBengali 
+        ? `সম্ভবত আমাদের সকল সাপোর্ট এজেন্ট এই মুহূর্তে ব্যস্ত আছেন। দ্রুত সাপোর্ট পেতে আমাদের হোয়াটসঅ্যাপ এ মেসেজ করতে পারেনঃ ${waNumber}`
+        : `It seems all our support agents are currently busy. For faster support, you can message us on WhatsApp: ${waNumber}`;
+
+      try {
+        await sendWidgetMessage(
+          org_id, 
+          deviceId, 
+          content, 
+          'ai', 
+          { auto_reply: true }, 
+          activeConversationId === 'new' ? undefined : activeConversationId
+        );
+      } catch (e) {
+        console.error("Failed to send busy auto-reply", e);
+      }
+    }, 60000); // 1 minute
+
+    return () => clearTimeout(timer);
+  }, [messages, org_id, deviceId, settings, activeConversationId]);
+
   useEffect(() => {
     fetchConversations()
     fetchMsgs()
