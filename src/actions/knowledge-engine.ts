@@ -107,7 +107,7 @@ type Intent =
   | 'pricing_web' | 'pricing_wordpress' | 'pricing_cloud' | 'pricing_turbo'
   | 'pricing_bdix' | 'pricing_vps' | 'pricing_dedicated' | 'pricing_woocommerce'
   | 'pricing_nodejs' | 'pricing_n8n'
-  | 'domain' | 'billing' | 'technical' | 'migration' | 'comparison';
+  | 'domain' | 'billing' | 'technical' | 'migration' | 'comparison' | 'pricing_objection';
 
 const INTENT_PATTERNS: [Intent, RegExp][] = [
   // Specific products first (checked before generic web hosting)
@@ -127,6 +127,7 @@ const INTENT_PATTERNS: [Intent, RegExp][] = [
   ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bdowntime\b|\bslow\b|\bbackup\b|\bip\s*block|আইপি\s*ব্লক/i],
   ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to|korte|kora|my)\b|\bmov(e|ing)\b.*\b(site|from|to)\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
   ['comparison', /\bcompare\b|\bcomparison\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\b.{0,30}\b(one|plan|hosting)\b|\bbetter\b/i],
+  ['pricing_objection', /\bexpensiv|\bcostly\b|\boverpriced\b|\btoo\s*(much|high)|\bhigh.{0,10}pric|দামী|দামি|বেশ[িী]|অনেক.{0,10}দাম|দাম.{0,10}(অনেক|বেশ)|beshi|dami|dam\s*beshi/i],
 ];
 
 // Specific pricing intents (if any of these matched, suppress generic pricing_web)
@@ -195,7 +196,7 @@ export function getRelevantCannedResponses(userMessage: string, limit = 3): stri
         // Substring match for Bengali words (they can be long compound words)
         else {
           for (const entryWord of entry.words) {
-            if (entryWord.length > 4 && (entryWord.includes(word) || word.includes(entryWord))) {
+            if (entryWord.length >= 3 && (entryWord.includes(word) || word.includes(entryWord))) {
               score += 0.5;
               break;
             }
@@ -247,6 +248,13 @@ export function buildKnowledgeContext(contextMessages: string): string {
     }
     if (intent === 'domain') sections.push(DOMAINS);
     if (intent === 'comparison') sections.push(COMPARISONS);
+    if (intent === 'pricing_objection') {
+      // Force-inject the /expensive canned response as THE reference reply
+      const expensiveReply = (knowledge as any).canned_responses?.['expensive'];
+      if (expensiveReply) {
+        sections.push(`## PRICING OBJECTION HANDLER (customer thinks we're expensive, use this as your primary reference)\n${expensiveReply}`);
+      }
+    }
   }
 
   // Match top 3 canned responses by keyword overlap
