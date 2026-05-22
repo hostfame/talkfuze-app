@@ -2928,10 +2928,9 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer' : isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:ring-1 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
-          <div className={(isAiDrafting || isAiStreaming) ? 'ai-composer-inner rounded-[10px] overflow-hidden' : ''}>
           {isRecording ? (
             <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
               <div className="flex items-center gap-3">
@@ -3177,8 +3176,6 @@ export default function ChatThread({
                 )}
               </button>
             </div>
-          </div>
-          </div>
         </div>
         </div>
       </div>

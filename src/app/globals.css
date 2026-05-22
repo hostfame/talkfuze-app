@@ -135,11 +135,20 @@
   100% { background-position: -200% 0; }
 }
 
-/* AI generation, thick gradient glow that spreads into the box */
-@keyframes ai-gradient-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* AI generation: smooth glow, no layout shift */
+@keyframes ai-glow-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1.5px #007FFF,
+      0 0 12px rgba(0, 127, 255, 0.2),
+      0 0 24px rgba(42, 82, 190, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px #2A52BE,
+      0 0 20px rgba(0, 127, 255, 0.3),
+      0 0 40px rgba(42, 82, 190, 0.15);
+  }
 }
 
 @keyframes ai-shimmer-sweep {
@@ -147,32 +156,10 @@
   100% { transform: translateX(100%); }
 }
 
-/* Outer wrapper: thick animated gradient that bleeds inward */
 .ai-composer-active {
-  position: relative;
-  border-color: transparent !important;
-  background: linear-gradient(135deg, #007FFF, #2A52BE, #007FFF, #2A52BE) !important;
-  background-size: 300% 300% !important;
-  animation: ai-gradient-flow 3s ease infinite !important;
-  padding: 2.5px !important;
-  box-shadow:
-    0 0 12px rgba(0, 127, 255, 0.35),
-    0 0 24px rgba(42, 82, 190, 0.2) !important;
-}
-
-/* Inner content area */
-.ai-composer-active > * {
-  position: relative;
-  z-index: 2;
-}
-
-.ai-composer-inner {
-  background: rgba(255, 255, 255, 0.97) !important;
-  border-radius: 10px;
-}
-
-.dark .ai-composer-inner {
-  background: rgba(42, 57, 66, 0.97) !important;
+  border-color: #007FFF !important;
+  animation: ai-glow-breathe 2.5s ease-in-out infinite !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 /* Shimmer sweep across entire box */
@@ -184,10 +171,10 @@
 .ai-composer-shimmer > .ai-shimmer-overlay {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: inherit;
 }
 
 .ai-composer-shimmer > .ai-shimmer-overlay::before {
@@ -197,9 +184,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 127, 255, 0.05) 20%,
-    rgba(42, 82, 190, 0.08) 50%,
-    rgba(0, 127, 255, 0.05) 80%,
+    rgba(0, 127, 255, 0.04) 25%,
+    rgba(42, 82, 190, 0.07) 50%,
+    rgba(0, 127, 255, 0.04) 75%,
     transparent 100%
   );
   animation: ai-shimmer-sweep 2s ease-in-out infinite;
@@ -209,9 +196,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 127, 255, 0.07) 20%,
-    rgba(42, 82, 190, 0.12) 50%,
-    rgba(0, 127, 255, 0.07) 80%,
+    rgba(0, 127, 255, 0.06) 25%,
+    rgba(42, 82, 190, 0.1) 50%,
+    rgba(0, 127, 255, 0.06) 75%,
     transparent 100%
   );
 }
