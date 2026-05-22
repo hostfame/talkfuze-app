@@ -1358,11 +1358,21 @@ export default function WidgetPage() {
   // Uses ref to always read the current activeConversationId
   useEffect(() => {
     if (!org_id) return
+    let agentTypingTimeout: NodeJS.Timeout | null = null
+
     const typingChannel = supabase.channel(`typing:${org_id}`)
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
         const currentConvId = activeConversationIdRef.current
         if (payload.payload.direction === 'agent' && payload.payload.conversation_id === currentConvId) {
           setIsAgentTyping(payload.payload.is_typing)
+          
+          // Safety net: auto-clear typing after 5s if stop broadcast is missed
+          if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
+          if (payload.payload.is_typing) {
+            agentTypingTimeout = setTimeout(() => {
+              setIsAgentTyping(false)
+            }, 5000)
+          }
         }
       })
       .on('broadcast', { event: 'recordingStatus' }, (payload) => {
@@ -1374,6 +1384,7 @@ export default function WidgetPage() {
       .subscribe()
 
     return () => {
+      if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
       supabase.removeChannel(typingChannel)
     }
   }, [org_id])
