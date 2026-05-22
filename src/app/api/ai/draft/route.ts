@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildKnowledgeContext } from "@/actions/knowledge-engine";
-
+import OpenAI from "openai";
 // ============================================================
 // LANGUAGE DETECTION
 // ============================================================
@@ -157,7 +157,41 @@ export async function POST(req: Request) {
     }
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
-    const { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
+    let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
+
+    // 2.5 Vector DB RAG Search
+    try {
+      if (process.env.OPENAI_API_KEY) {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const lines = contextMessages.split('\n')
+          .map((line: string) => line.trim())
+          .filter((line: string) => line && !line.startsWith('[Agent]'));
+        const lastQuery = lines.slice(-3).join(' ');
+        
+        if (lastQuery.length > 10) {
+          const embeddingRes = await openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: lastQuery,
+            dimensions: 1536
+          });
+          const query_embedding = embeddingRes.data[0].embedding;
+          
+          const { data: vectorDocs } = await supabaseAdmin.rpc('match_knowledge', {
+            query_embedding,
+            match_threshold: 0.3,
+            match_count: 3
+          });
+          
+          if (vectorDocs && vectorDocs.length > 0) {
+            knowledgeContext += '\n\n## Past Solved Tickets (Use these to exactly mimic past solutions)\n' + 
+              vectorDocs.map((d: any) => `User: ${d.question}\nPast Solution: ${d.answer}`).join('\n\n---\n\n');
+            vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Vector DB search failed:', e);
+    }
 
     // 3. Fetch learning data (cached, ~0ms on hit)
     const { fewShotBlock, mistakesBlock } = (orgId && !isTranslation)
