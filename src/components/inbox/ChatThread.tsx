@@ -1432,6 +1432,15 @@ export default function ChatThread({
     prevMsgLength.current = messages.length
   }, [messages.length, optimisticMessages.length])
 
+  // Keep messages pinned to bottom as textarea grows during AI streaming
+  useEffect(() => {
+    if (isAiStreaming && input) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+      })
+    }
+  }, [isAiStreaming, input])
+
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Handle Input Change for Macro Menu
