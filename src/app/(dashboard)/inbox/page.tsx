@@ -31,7 +31,7 @@ export default function InboxPage() {
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
   const [recordingState, setRecordingState] = useState<Record<string, boolean>>({})
-  const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
+  const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, avatar_url?: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
 
@@ -253,7 +253,7 @@ export default function InboxPage() {
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
-        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id } = payload.payload;
+        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id, agent_avatar } = payload.payload;
         // Track customer typing
         if (direction === 'contact') {
           setTypingState(prev => ({
@@ -291,6 +291,7 @@ export default function InboxPage() {
                 ...next[conversation_id],
                 [agent_id]: {
                   name: agent_name || 'Agent',
+                  avatar_url: agent_avatar,
                   activity: 'typing',
                   timestamp: Date.now()
                 }

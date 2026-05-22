@@ -486,7 +486,7 @@ type ChatThreadProps = {
   isCustomerTyping?: boolean
   isCustomerRecording?: boolean
   isCustomerOnline?: boolean
-  activeAgents?: { name: string; activity: 'viewing' | 'typing' }[]
+  activeAgents?: { name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
   isFetching?: boolean
@@ -1320,7 +1320,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
         });
         lastBroadcastRef.current = true;
       }
@@ -1329,7 +1329,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
         });
       }, 2500);
       
@@ -1339,7 +1339,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
         });
         lastBroadcastRef.current = false;
       }
@@ -3130,9 +3130,13 @@ export default function ChatThread({
             <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
               <div className="flex -space-x-1.5">
                 {activeAgents.filter(a => a.activity === 'typing').slice(0, 3).map((agent, i) => (
-                  <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
-                    {agent.name.charAt(0).toUpperCase()}
-                  </div>
+                  agent.avatar_url ? (
+                    <img key={i} src={agent.avatar_url} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
+                  ) : (
+                    <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
+                      {agent.name.charAt(0).toUpperCase()}
+                    </div>
+                  )
                 ))}
               </div>
               <div className="flex gap-[3px] items-center">
