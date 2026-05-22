@@ -113,8 +113,8 @@ const INTENT_PATTERNS: [Intent, RegExp][] = [
   // Specific products first (checked before generic web hosting)
   ['pricing_vps', /\bvps\b|ভিপিএস|virtual\s*private/i],
   ['pricing_dedicated', /\bdedicated\b|bare\s*metal|ডেডিকেটেড/i],
-  ['pricing_wordpress', /\bwordpress\b|wp\s*host|ওয়ার্ডপ্রেস/i],
-  ['pricing_woocommerce', /\bwoocommerce\b|woo\s*commerce|উকমার্স|ই-কমার্স|ecommerce|online\s*store|অনলাইন\s*স্টোর/i],
+  ['pricing_wordpress', /\bwordpres{1,2}\b|wp\s*host|ওয়ার্ডপ্রেস/i],
+  ['pricing_woocommerce', /\bwoocomm?erce\b|woo\s*commerce|উকমার্স|ই-কমার্স|ecommerce|online\s*store|অনলাইন\s*স্টোর/i],
   ['pricing_cloud', /\bcloud\b|ক্লাউড/i],
   ['pricing_turbo', /\bturbo\b|nvme\s*host|টার্বো/i],
   ['pricing_bdix', /\bbdix\b|বিডিআইএক্স/i],
@@ -123,10 +123,10 @@ const INTENT_PATTERNS: [Intent, RegExp][] = [
   // Generic web hosting (will be suppressed if a specific product matched)
   ['pricing_web', /web\s*host|shared\s*host|হোস্টিং\s*(দাম|প্রাইস|কত)|hosting\s*(price|cost|plan)/i],
   ['domain', /\bdomain\b|ডোমেইন|\.com\b|\.net\b|\.org\b|\.io\b|\.xyz\b|\.bd\b|\.online\b|\btld\b|transfer\s*domain/i],
-  ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill\b|\brefund\b|পেমেন্ট|বিল|টাকা|\btaka\b|\brenew/i],
-  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bbackup\b|\bip\s*block/i],
-  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to)\b|\bmove\b.*\bsite\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
-  ['comparison', /\bcompare\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)|\bbetter\b/i],
+  ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill\b|\brefund\b|পেমেন্ট|বিল|টাকা|\brenew/i],
+  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bbackup\b|\bip\s*block|আইপি\s*ব্লক/i],
+  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to|korte|kora)\b|\bmov(e|ing)\b.*\b(site|from|to)\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
+  ['comparison', /\bcompare\b|\bcomparison\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)|\bbetter\b/i],
 ];
 
 // Specific pricing intents (if any of these matched, suppress generic pricing_web)
@@ -149,7 +149,7 @@ function detectIntents(text: string): Intent[] {
   }
 
   // Generic pricing fallback (only if nothing specific matched)
-  if (intents.length === 0 && /\b(price|pricing|cost|কত|দাম|প্রাইস|plan|package)\b/i.test(text)) {
+  if (intents.length === 0 && /\b(prices?|pricing|কত|দাম|প্রাইস|plan|package)\b/i.test(text)) {
     intents.push('pricing_web');
   }
   return [...new Set(intents)]; // deduplicate
