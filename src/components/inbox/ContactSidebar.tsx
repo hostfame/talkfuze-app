@@ -1112,33 +1112,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           <ForwardButton conversation={conversation} orgId={orgId} />
         </div>
 
-        {/* Agents Joined Section */}
-        <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
-          <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
-            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
-              Agents Joined
-            </h3>
-            <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
-          </div>
-          <div className="px-5 space-y-2.5">
-            {participants.length > 0 ? (
-              participants.map((p, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                    {p.user?.avatar_url ? (
-                      <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      p.user?.name?.charAt(0).toUpperCase() || 'A'
-                    )}
-                  </div>
-                  <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
-            )}
-          </div>
-        </div>
 
         {/* Server Diagnostics Section */}
         <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
@@ -1257,6 +1230,34 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Agents Joined Section */}
+        <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
+          <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
+              Agents Joined
+            </h3>
+            <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
+          </div>
+          <div className="px-5 space-y-2.5">
+            {participants.length > 0 ? (
+              participants.map((p, idx) => (
+                <div key={idx} className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                    {p.user?.avatar_url ? (
+                      <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      p.user?.name?.charAt(0).toUpperCase() || 'A'
+                    )}
+                  </div>
+                  <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
+            )}
           </div>
         </div>
 
