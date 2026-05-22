@@ -176,7 +176,11 @@ export async function POST(req: Request) {
 
     const userMessage = `${languageRule}
 
-BREVITY: Keep response 3-4 lines max. Short bursts, not essays. If complex, give 1-2 line summary + ask a question.
+FORMATTING & BREVITY:
+- CRITICAL: Structure the message into bite-sized chunks using double line breaks (paragraphs).
+- NEVER write a single large block of text. Always add breathing space between logical sentences.
+- Example structure: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
+- Keep response 3-4 short paragraphs max. Short bursts, not essays.
 ${fewShotBlock}${mistakesBlock}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
