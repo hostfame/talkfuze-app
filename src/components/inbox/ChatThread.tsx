@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
-import { generateAiDraft } from "@/actions/ai"
+// removed generateAiDraft import
 import { logAiDraft, completeAiDraftLog } from "@/actions/ai-learning"
 import { playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 
@@ -1206,6 +1206,7 @@ export default function ChatThread({
   const [customAlert, setCustomAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'info' } | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
+  const [isAiStreaming, setIsAiStreaming] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const aiDraftLogIdRef = useRef<string | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
@@ -1541,36 +1542,75 @@ export default function ChatThread({
     setIsAiDrafting(true)
     aiDraftLogIdRef.current = null
     
-    // Format context messages
-    const contextMessages = allMessages.slice(-20).map(m => {
-      const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-      const name = isAgent ? 'Agent' : contactName
-      return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
-    }).join('\n')
+    // Format context messages - exclude whisper/internal messages
+    const contextMessages = allMessages
+      .filter(m => !m.is_internal && m.content_type !== 'system')
+      .slice(-20)
+      .map(m => {
+        const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+        const name = isAgent ? 'Agent' : contactName
+        return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+      }).join('\n')
 
     try {
-      const response = await generateAiDraft(contextMessages, contactName, orgId)
-      if (response.success && response.text) {
-        setInput(response.text)
-        setIsInternal(false)
-        if (textareaRef.current) {
-          textareaRef.current.focus()
+      const res = await fetch('/api/ai/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contextMessages, contactName, orgId })
+      })
+
+      if (!res.ok) throw new Error('API failed')
+      if (!res.body) throw new Error('No body')
+
+      setInput('')
+      setIsInternal(false)
+      setIsAiDrafting(false) // stop spinner, text is about to stream
+      setIsAiStreaming(true) // show pulsing blue border while streaming
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+      let lang = 'en'
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.text) {
+                fullText += data.text
+                setInput(fullText)
+                if (textareaRef.current) {
+                  textareaRef.current.focus()
+                  textareaRef.current.scrollTop = textareaRef.current.scrollHeight
+                }
+              }
+              if (data.language) {
+                lang = data.language
+              }
+            } catch (e) {}
+          }
         }
-        // Log the AI draft for learning (fire and forget)
-        if (currentUser?.id) {
-          logAiDraft(orgId, conversationId, currentUser.id, response.text, response.language || 'en')
-            .then(logId => { aiDraftLogIdRef.current = logId })
-            .catch(() => {})
-        }
-      } else {
-        setAiDraftFailed(true)
-        setTimeout(() => setAiDraftFailed(false), 3000)
+      }
+
+      setIsAiStreaming(false)
+
+      // Log the AI draft for learning (fire and forget)
+      if (currentUser?.id && fullText.trim()) {
+        logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
+          .then(logId => { aiDraftLogIdRef.current = logId })
+          .catch(() => {})
       }
     } catch (e: any) {
       setAiDraftFailed(true)
       setTimeout(() => setAiDraftFailed(false), 3000)
-    } finally {
       setIsAiDrafting(false)
+      setIsAiStreaming(false)
     }
   }
 
@@ -3018,7 +3058,7 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
               ></textarea>
             </div>
           )}
@@ -3049,12 +3089,14 @@ export default function ChatThread({
               </button>
               <button 
                 onClick={handleAiDraft}
-                disabled={isSending || isAiDrafting || allMessages.length === 0}
+                disabled={isSending || isAiDrafting || isAiStreaming || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isAiStreaming ? 'text-blue-500 animate-pulse' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {isAiDrafting ? (
                   <Loader2 size={16} className="animate-spin" />
+                ) : isAiStreaming ? (
+                  <Bot size={16} strokeWidth={2} className="text-blue-500" />
                 ) : aiDraftFailed ? (
                   <X size={16} strokeWidth={2} />
                 ) : (
