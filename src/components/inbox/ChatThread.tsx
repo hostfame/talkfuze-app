@@ -1209,6 +1209,7 @@ export default function ChatThread({
   const [isAiStreaming, setIsAiStreaming] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const aiDraftLogIdRef = useRef<string | null>(null)
+  const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
@@ -1627,11 +1628,11 @@ export default function ChatThread({
         });
       }
 
-      // Log the AI draft for learning (fire and forget)
+      // Log the AI draft for learning - store promise to handle fast sends
       if (currentUser?.id && fullText.trim()) {
-        logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
-          .then(logId => { aiDraftLogIdRef.current = logId })
-          .catch(() => {})
+        aiDraftLogPromiseRef.current = logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
+          .then(logId => { aiDraftLogIdRef.current = logId; return logId; })
+          .catch(() => null)
       }
     } catch (e: any) {
       setAiDraftFailed(true)
@@ -1695,9 +1696,14 @@ export default function ChatThread({
     setIsSending(true)
 
     // Complete AI draft log if this message came from an AI draft
+    // If logAiDraft hasn't resolved yet (fast send), await it first
+    if (aiDraftLogPromiseRef.current && !aiDraftLogIdRef.current) {
+      await aiDraftLogPromiseRef.current;
+    }
     if (aiDraftLogIdRef.current && msgText) {
       completeAiDraftLog(aiDraftLogIdRef.current, msgText).catch(() => {})
       aiDraftLogIdRef.current = null
+      aiDraftLogPromiseRef.current = null
     }
 
     // Auto-join if not joined and sending a public reply
