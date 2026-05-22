@@ -1529,7 +1529,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#111b21] p-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Pencil size={14} className="text-amber-500" />
               Sticky Notes
             </h3>
             {isSavingNotes && <Loader2 size={12} className="animate-spin text-slate-400" />}
@@ -1542,7 +1541,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
             onChange={(e) => setContactNotes(e.target.value)}
             onBlur={handleSaveNotes}
             placeholder="e.g. VIP Client, usually asks for discounts..."
-            className="flex-1 w-full text-[13px] p-3 border border-amber-200 dark:border-slate-700 bg-amber-50/50 dark:bg-slate-800 rounded-xl focus:outline-none focus:border-amber-400 dark:focus:border-blue-500 resize-none shadow-sm"
+            className="flex-1 w-full text-[13px] p-3 border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl focus:outline-none focus:border-blue-500 resize-none shadow-sm transition-colors"
           />
         </div>
       )}
@@ -1550,9 +1549,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       {activeTab === 'journey' && (
         <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-              <Globe size={13} className="text-blue-600 dark:text-blue-400" />
-            </div>
             <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100">User Journey</h3>
           </div>
           
