@@ -629,6 +629,13 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
+  const [copiedEmail, setCopiedEmail] = useState(false)
+
+  const handleCopyEmail = (email: string) => {
+    navigator.clipboard.writeText(email)
+    setCopiedEmail(true)
+    setTimeout(() => setCopiedEmail(false), 2000)
+  }
 
   const [participants, setParticipants] = useState<any[]>([])
   useEffect(() => {
@@ -1333,7 +1340,17 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                 <div className="flex justify-between items-start mb-3">
                   <div className="min-w-0 pr-3">
                     <h4 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100 truncate">{whmcsClient.firstname} {whmcsClient.lastname}</h4>
-                    <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{whmcsClient.email}</p>
+                    <div 
+                      className="flex items-center gap-1.5 mt-0.5 cursor-pointer group/email"
+                      onClick={() => handleCopyEmail(whmcsClient.email)}
+                    >
+                      <p className="text-[12px] text-slate-500 dark:text-slate-400 group-hover/email:text-blue-500 transition-colors truncate">{whmcsClient.email}</p>
+                      {copiedEmail ? (
+                        <Check size={12} className="text-emerald-500 shrink-0" />
+                      ) : (
+                        <Copy size={12} className="text-slate-400 opacity-0 group-hover/email:opacity-100 transition-opacity shrink-0" />
+                      )}
+                    </div>
                   </div>
                   {whmcsClient.credit !== undefined && (
                     <div className="shrink-0 flex flex-col items-end justify-center bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg whitespace-nowrap">
