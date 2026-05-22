@@ -406,6 +406,7 @@ export default function WidgetPage() {
   
   const [conversations, setConversations] = useState<any[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | 'new' | null>(null)
+  const activeConversationIdRef = useRef<string | 'new' | null>(null)
   const subscribedConvIdsRef = useRef<Set<string>>(new Set())
   
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
@@ -1348,6 +1349,35 @@ export default function WidgetPage() {
     }
   }
 
+  // Keep ref in sync so stable callbacks always have current value
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId
+  }, [activeConversationId])
+
+  // Stable typing channel - never tears down on conversation switch
+  // Uses ref to always read the current activeConversationId
+  useEffect(() => {
+    if (!org_id) return
+    const typingChannel = supabase.channel(`typing:${org_id}`)
+      .on('broadcast', { event: 'typingStatus' }, (payload) => {
+        const currentConvId = activeConversationIdRef.current
+        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === currentConvId) {
+          setIsAgentTyping(payload.payload.is_typing)
+        }
+      })
+      .on('broadcast', { event: 'recordingStatus' }, (payload) => {
+        const currentConvId = activeConversationIdRef.current
+        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === currentConvId) {
+          setIsAgentRecording(payload.payload.is_recording)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(typingChannel)
+    }
+  }, [org_id])
+
   useEffect(() => {
     fetchConversations()
     fetchMsgs()
@@ -1362,19 +1392,6 @@ export default function WidgetPage() {
         })
       }
     })
-
-    const typingChannel = supabase.channel(`typing:${org_id}`)
-      .on('broadcast', { event: 'typingStatus' }, (payload) => {
-        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === activeConversationId) {
-          setIsAgentTyping(payload.payload.is_typing)
-        }
-      })
-      .on('broadcast', { event: 'recordingStatus' }, (payload) => {
-        if (payload.payload.direction === 'agent' && payload.payload.conversation_id === activeConversationId) {
-          setIsAgentRecording(payload.payload.is_recording)
-        }
-      })
-      .subscribe()
       
     const channel = supabase
       .channel('public:messages')
@@ -1432,7 +1449,6 @@ export default function WidgetPage() {
 
     return () => {
       supabase.removeChannel(channel)
-      supabase.removeChannel(typingChannel)
       supabase.removeChannel(presenceChannel)
     }
   }, [org_id, deviceId, activeConversationId])
