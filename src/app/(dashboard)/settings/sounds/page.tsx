@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
   Volume2, Play, Check, Phone, Send, MessageSquareText, Bell, BellOff, Eye, EyeOff,
   Clock, Moon, RefreshCw, Monitor, Vibrate, ChevronRight, Upload, Trash2
