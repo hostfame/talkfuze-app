@@ -677,7 +677,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       const tickets = await fetchWhmcsTickets(whmcsClient.id)
       setWhmcsTickets(tickets)
     } else {
-      alert("Failed to create ticket: " + result.error)
+      console.error("Failed to create ticket: " + result.error)
     }
     setCrmSearchQuery("")
     setIsCreatingTicket(false)
@@ -694,7 +694,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       }
     } catch (e) {
       console.error(e)
-      alert("Failed to update ban status.")
+      console.error("Failed to update ban status.")
     } finally {
       setIsBanning(false)
     }
@@ -785,14 +785,13 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
     try {
       const result = await convertChatToTicket(conversation.id, whmcsClient.id);
       if (result.success) {
-        alert(`Chat converted to ticket #${result.ticket?.tid || 'successfully'}!`);
         const tickets = await fetchWhmcsTickets(whmcsClient.id);
         setWhmcsTickets(tickets);
       } else {
-        alert("Error: " + result.error);
+        console.error("Error: " + result.error);
       }
     } catch (e) {
-      alert("Failed to convert chat to ticket.");
+      console.error("Failed to convert chat to ticket.");
     } finally {
       setConvertingTicket(conversation.id, false);
     }
@@ -806,7 +805,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       const message = `You have an unpaid invoice. Please pay securely here: ${invoiceUrl}`;
       await replyToConversation(orgId, conversation.id, message, false);
     } catch (e) {
-      alert("Failed to send invoice link.");
+      console.error("Failed to send invoice link.");
     } finally {
       setIsSendingLink(null);
     }

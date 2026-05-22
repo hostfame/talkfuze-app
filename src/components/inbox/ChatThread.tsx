@@ -2030,7 +2030,7 @@ export default function ChatThread({
       } catch (err: unknown) {
         console.error("Upload failed:", err);
         markFailed(conversationId, tempId)
-        alert(`Failed to send voice message: ${getErrorMessage(err)}`);
+        setCustomAlert({ title: 'Upload Failed', message: `Failed to send voice message: ${getErrorMessage(err)}`, type: 'error' })
       }
       audioChunksRef.current = []
     }
@@ -3343,12 +3343,11 @@ export default function ChatThread({
                         if (conversationId) {
                           updateConversation(conversationId, { contact: { ...contact, email: detectedEmail } });
                         }
-                        alert(`Successfully added ${detectedEmail} to Database!`);
                       } else {
-                        alert("Failed to add to database: " + result.error);
+                        setCustomAlert({ title: 'Error', message: "Failed to add to database: " + result.error, type: 'error' });
                       }
                     } catch (err: any) {
-                      alert("Error updating contact email: " + err.message);
+                      setCustomAlert({ title: 'Error', message: "Error updating contact email: " + err.message, type: 'error' });
                     }
                   }}
                   className="w-full text-left px-3.5 py-2 text-[13px] text-blue-600 dark:text-[#00a884] hover:bg-blue-50/50 dark:hover:bg-[#00a884]/10 flex items-center gap-2 font-semibold border-b border-slate-100 dark:border-slate-700/50"

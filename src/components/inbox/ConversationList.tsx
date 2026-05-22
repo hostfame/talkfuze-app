@@ -254,13 +254,16 @@ export default function ConversationList({
             <div 
               key={conv.id}
               onClick={() => onSelect(conv.id)}
-              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 dark:border-[#222e35]/40 transition-all duration-200 ease-in-out ${
+              className={`flex items-start gap-3 px-5 py-3.5 cursor-pointer border-b border-slate-100/50 dark:border-[#222e35]/40 transition-all duration-200 ease-in-out relative ${
                 isSelected 
-                  ? 'bg-[#E5F1FF]/50 dark:bg-[#2a3942] relative' 
-                  : 'bg-white dark:bg-[#111b21] hover:bg-slate-50 dark:hover:bg-[#202c33]'
+                  ? 'bg-[#E5F1FF]/50 dark:bg-[#2a3942]' 
+                  : isUnread
+                    ? 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50/80 dark:hover:bg-blue-900/20'
+                    : 'bg-white dark:bg-[#111b21] hover:bg-slate-50 dark:hover:bg-[#202c33]'
               }`}
             >
               {isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600"></div>}
+              {isUnread && !isSelected && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 rounded-r-md"></div>}
               
               {/* Avatar */}
               <div className="relative">
@@ -296,7 +299,7 @@ export default function ConversationList({
                   <div className="flex items-center gap-2 truncate">
                     <span className={`text-[14.5px] truncate ${
                       isUnread 
-                        ? 'font-extrabold text-slate-900 dark:text-white' 
+                        ? 'font-bold text-black dark:text-white' 
                         : isSelected 
                           ? 'font-semibold text-slate-900 dark:text-[#e9edef]' 
                           : 'font-medium text-slate-800 dark:text-[#d1d7db]'
@@ -346,7 +349,7 @@ export default function ConversationList({
                     ) : (
                       <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${
                         isUnread
-                          ? 'text-slate-900 dark:text-white font-bold'
+                          ? 'text-black dark:text-white font-bold'
                           : lastMessage?.sender_type === 'agent' 
                             ? 'text-slate-400 dark:text-[#8696a0]' 
                             : 'text-slate-600 dark:text-[#8696a0] font-medium'
