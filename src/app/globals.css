@@ -147,21 +147,20 @@
   100% { transform: translateX(100%); }
 }
 
-/* Outer wrapper: thick animated gradient border that bleeds inward */
+/* Outer wrapper: thick animated gradient that bleeds inward */
 .ai-composer-active {
   position: relative;
   border-color: transparent !important;
-  background: linear-gradient(278deg, rgb(0, 40, 160), rgb(0, 20, 80), rgb(0, 50, 180), rgb(0, 25, 100)) !important;
+  background: linear-gradient(135deg, #007FFF, #2A52BE, #007FFF, #2A52BE) !important;
   background-size: 300% 300% !important;
   animation: ai-gradient-flow 3s ease infinite !important;
   padding: 2.5px !important;
   box-shadow:
-    0 0 15px rgba(0, 40, 160, 0.3),
-    0 0 30px rgba(0, 20, 80, 0.15),
-    inset 0 0 15px rgba(0, 40, 160, 0.1) !important;
+    0 0 12px rgba(0, 127, 255, 0.35),
+    0 0 24px rgba(42, 82, 190, 0.2) !important;
 }
 
-/* Inner content area sits on top with slight transparency to let gradient bleed through */
+/* Inner content area */
 .ai-composer-active > * {
   position: relative;
   z-index: 2;
@@ -176,7 +175,7 @@
   background: rgba(42, 57, 66, 0.97) !important;
 }
 
-/* Shimmer sweep that moves across the entire box */
+/* Shimmer sweep across entire box */
 .ai-composer-shimmer {
   position: relative;
   overflow: hidden;
@@ -198,10 +197,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 40, 160, 0.06) 20%,
-    rgba(0, 50, 200, 0.1) 40%,
-    rgba(59, 130, 246, 0.08) 60%,
-    rgba(0, 40, 160, 0.06) 80%,
+    rgba(0, 127, 255, 0.05) 20%,
+    rgba(42, 82, 190, 0.08) 50%,
+    rgba(0, 127, 255, 0.05) 80%,
     transparent 100%
   );
   animation: ai-shimmer-sweep 2s ease-in-out infinite;
@@ -211,15 +209,14 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 60, 200, 0.08) 20%,
-    rgba(59, 130, 246, 0.14) 40%,
-    rgba(0, 80, 220, 0.1) 60%,
-    rgba(0, 60, 200, 0.08) 80%,
+    rgba(0, 127, 255, 0.07) 20%,
+    rgba(42, 82, 190, 0.12) 50%,
+    rgba(0, 127, 255, 0.07) 80%,
     transparent 100%
   );
 }
 
 /* AI Bot icon glow */
 .ai-bot-glow {
-  filter: drop-shadow(0 0 4px rgba(0, 40, 160, 0.6));
+  filter: drop-shadow(0 0 5px rgba(0, 127, 255, 0.6));
 }
