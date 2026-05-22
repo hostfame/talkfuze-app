@@ -126,7 +126,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
 export async function POST(req: Request) {
   try {
-    const { contextMessages, contactName, orgId } = await req.json();
+    const { contextMessages, contactName, orgId, instruction } = await req.json();
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
@@ -182,6 +182,7 @@ FORMATTING & BREVITY:
 - Example structure: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
 - Keep response 3-4 short paragraphs max. Short bursts, not essays.
 ${fewShotBlock}${mistakesBlock}
+${instruction ? `\nCRITICAL AGENT INSTRUCTION:\nThe agent wants to reply with the following intent/instruction: "${instruction}"\nDraft the response strictly based on this instruction, expanding it into a complete, professional, and helpful reply in the appropriate language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}

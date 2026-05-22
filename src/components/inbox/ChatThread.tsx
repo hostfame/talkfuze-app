@@ -1691,7 +1691,7 @@ export default function ChatThread({
     }
   }
 
-  const handleAiDraft = async () => {
+  const handleAiDraft = async (instruction?: string) => {
     if (!conversationId) return
     setIsAiDrafting(true)
     aiDraftLogIdRef.current = null
@@ -1721,7 +1721,7 @@ export default function ChatThread({
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextMessages, contactName, orgId })
+        body: JSON.stringify({ contextMessages, contactName, orgId, instruction })
       })
 
       if (!res.ok) throw new Error('API failed')
@@ -1795,6 +1795,14 @@ export default function ChatThread({
     if ((!input.trim() && stagedAttachments.length === 0) || !conversationId) return
 
     const msgText = input.trim()
+    
+    // AI Copilot feature
+    if (msgText.startsWith('//') && msgText.length > 2) {
+      const instruction = msgText.substring(2).trim();
+      handleAiDraft(instruction);
+      return;
+    }
+
     const currentAttachments = [...stagedAttachments]
     
     if (editingMessage) {
@@ -3354,7 +3362,12 @@ export default function ChatThread({
                 } else if (e.key === 'Enter' && !e.shiftKey) {
                   if (e.nativeEvent.isComposing) return
                   e.preventDefault()
-                  handleSend()
+                  if (input.trim().startsWith('//') && input.trim().length > 2) {
+                    const instruction = input.trim().substring(2).trim();
+                    handleAiDraft(instruction);
+                  } else {
+                    handleSend()
+                  }
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
@@ -3388,7 +3401,7 @@ export default function ChatThread({
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
               </button>
               <button 
-                onClick={handleAiDraft}
+                onClick={() => handleAiDraft()}
                 disabled={isSending || isAiDrafting || isAiStreaming || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : (isAiDrafting || isAiStreaming) ? 'text-blue-500' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}

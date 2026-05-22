@@ -8,7 +8,7 @@
       "monthlyBreakdown": 249,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "2 Hosted Domains",
         "Unlimited Email Accounts",
         "2 MySQL Databases",
         "Latest Control Panel",
@@ -19,7 +19,9 @@
         "1 Core Hosting CPU",
         "1 GB Hosting RAM",
         "5 MBPS I/O Speed",
-        "10 EP (Entry Process)"
+        "10 EP (Entry Process)",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -30,7 +32,7 @@
       "monthlyBreakdown": 395,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "5 Hosted Domains",
         "Unlimited Email Accounts",
         "5 MySQL Databases",
         "Latest Control Panel",
@@ -41,7 +43,9 @@
         "2 Core Hosting CPU",
         "2 GB Hosting RAM",
         "15 MBPS I/O Speed",
-        "20 EP (Entry Process)"
+        "20 EP (Entry Process)",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -52,7 +56,7 @@
       "monthlyBreakdown": 599,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "Unlimited Hosted Domains",
         "Unlimited Email Accounts",
         "Unlimited MySQL Databases",
         "Latest Control Panel",
@@ -63,7 +67,9 @@
         "3 Core Hosting CPU",
         "3 GB Hosting RAM",
         "25 MBPS I/O Speed",
-        "50 EP (Entry Process)"
+        "50 EP (Entry Process)",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -74,7 +80,7 @@
       "monthlyBreakdown": 879,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "Unlimited Hosted Domains",
         "Unlimited Email Accounts",
         "Unlimited MySQL Databases",
         "Latest Control Panel",
@@ -85,7 +91,9 @@
         "4 Core Hosting CPU",
         "4 GB Hosting RAM",
         "50 MBPS I/O Speed",
-        "100 EP (Entry Process)"
+        "100 EP (Entry Process)",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -96,7 +104,7 @@
       "monthlyBreakdown": 799,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "2 Hosted Domains",
         "Unlimited Email Accounts",
         "2 MySQL Databases",
         "Latest Control Panel",
@@ -107,7 +115,9 @@
         "1 Core Hosting CPU",
         "1 GB Hosting RAM",
         "5 MBPS I/O Speed",
-        "10 EP (Entry Process)"
+        "10 EP (Entry Process)",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -118,7 +128,7 @@
       "monthlyBreakdown": 1499,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "5 Hosted Domains",
         "Unlimited Email Accounts",
         "5 MySQL Databases",
         "Latest Control Panel",
@@ -129,7 +139,9 @@
         "2 Core Hosting CPU",
         "2 GB Hosting RAM",
         "15 MBPS I/O Speed",
-        "20 EP (Entry Process)"
+        "20 EP (Entry Process)",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -140,7 +152,7 @@
       "monthlyBreakdown": 2499,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "Unlimited Hosted Domains",
         "Unlimited Email Accounts",
         "Unlimited MySQL Databases",
         "Latest Control Panel",
@@ -151,7 +163,9 @@
         "3 Core Hosting CPU",
         "3 GB Hosting RAM",
         "25 MBPS I/O Speed",
-        "50 EP (Entry Process)"
+        "50 EP (Entry Process)",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -162,7 +176,7 @@
       "monthlyBreakdown": 4999,
       "currency": "৳",
       "features": [
-        "Unlimited Subdomains",
+        "Unlimited Hosted Domains",
         "Unlimited Email Accounts",
         "Unlimited MySQL Databases",
         "Latest Control Panel",
@@ -173,7 +187,9 @@
         "4 Core Hosting CPU",
         "4 GB Hosting RAM",
         "50 MBPS I/O Speed",
-        "100 EP (Entry Process)"
+        "100 EP (Entry Process)",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -183,13 +199,17 @@
       "price": 3588,
       "monthlyBreakdown": 299,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "1 GB RAM",
         "2 Core Hosting CPU",
         "2 GB Hosting RAM",
         "15 MBPS I/O Speed",
-        "20 EP (Entry Process)"
+        "20 EP (Entry Process)",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -199,13 +219,17 @@
       "price": 5988,
       "monthlyBreakdown": 499,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "2 GB RAM",
         "3 Core Hosting CPU",
         "3 GB Hosting RAM",
         "25 MBPS I/O Speed",
-        "50 EP (Entry Process)"
+        "50 EP (Entry Process)",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -215,13 +239,17 @@
       "price": 11988,
       "monthlyBreakdown": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "4 GB RAM",
         "4 Core Hosting CPU",
         "4 GB Hosting RAM",
         "50 MBPS I/O Speed",
-        "100 EP (Entry Process)"
+        "100 EP (Entry Process)",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -231,13 +259,17 @@
       "price": 599,
       "monthlyBreakdown": 599,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "1 GB RAM",
         "2 Core Hosting CPU",
         "2 GB Hosting RAM",
         "15 MBPS I/O Speed",
-        "20 EP (Entry Process)"
+        "20 EP (Entry Process)",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -247,13 +279,17 @@
       "price": 999,
       "monthlyBreakdown": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "2 GB RAM",
         "3 Core Hosting CPU",
         "3 GB Hosting RAM",
         "25 MBPS I/O Speed",
-        "50 EP (Entry Process)"
+        "50 EP (Entry Process)",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -263,13 +299,17 @@
       "price": 1999,
       "monthlyBreakdown": 1999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "4 GB RAM",
         "4 Core Hosting CPU",
         "4 GB Hosting RAM",
         "50 MBPS I/O Speed",
-        "100 EP (Entry Process)"
+        "100 EP (Entry Process)",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -279,13 +319,17 @@
       "price": 3588,
       "monthlyBreakdown": 299,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "1 Core CPU",
         "1 GB RAM",
         "5 MBPS I/O",
-        "10 Entry Process"
+        "10 Entry Process",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -295,13 +339,17 @@
       "price": 5628,
       "monthlyBreakdown": 469,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "15 MBPS I/O",
-        "20 Entry Process"
+        "20 Entry Process",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -311,13 +359,17 @@
       "price": 8628,
       "monthlyBreakdown": 719,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "3 Core CPU",
         "3 GB RAM",
         "25 MBPS I/O",
-        "50 Entry Process"
+        "50 Entry Process",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -327,13 +379,17 @@
       "price": 12588,
       "monthlyBreakdown": 1049,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "50 MBPS I/O",
-        "80 Entry Process"
+        "80 Entry Process",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -343,13 +399,17 @@
       "price": 999,
       "monthlyBreakdown": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "1 Core CPU",
         "1 GB RAM",
         "5 MBPS I/O",
-        "10 Entry Process"
+        "10 Entry Process",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -359,13 +419,17 @@
       "price": 1999,
       "monthlyBreakdown": 1999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "15 MBPS I/O",
-        "20 Entry Process"
+        "20 Entry Process",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -375,13 +439,17 @@
       "price": 2999,
       "monthlyBreakdown": 2999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "3 Core CPU",
         "3 GB RAM",
         "25 MBPS I/O",
-        "50 Entry Process"
+        "50 Entry Process",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -391,13 +459,17 @@
       "price": 5999,
       "monthlyBreakdown": 5999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "50 MBPS I/O",
-        "80 Entry Process"
+        "80 Entry Process",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -407,13 +479,17 @@
       "price": 7188,
       "monthlyBreakdown": 599,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
-        "15 Entry Process"
+        "15 Entry Process",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -423,13 +499,17 @@
       "price": 11988,
       "monthlyBreakdown": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
-        "15 Entry Process"
+        "15 Entry Process",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -439,13 +519,17 @@
       "price": 17988,
       "monthlyBreakdown": 1499,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "3 Core CPU",
         "3 GB RAM",
         "20 MBPS I/O",
-        "30 Entry Process"
+        "30 Entry Process",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -455,13 +539,17 @@
       "price": 35988,
       "monthlyBreakdown": 2999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "40 MBPS I/O",
-        "50 Entry Process"
+        "50 Entry Process",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -471,13 +559,17 @@
       "price": 1999,
       "monthlyBreakdown": 1999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
-        "15 Entry Process"
+        "15 Entry Process",
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -487,13 +579,17 @@
       "price": 2999,
       "monthlyBreakdown": 2999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
-        "15 Entry Process"
+        "15 Entry Process",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -503,13 +599,17 @@
       "price": 4999,
       "monthlyBreakdown": 4999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "3 Core CPU",
         "3 GB RAM",
         "20 MBPS I/O",
-        "30 Entry Process"
+        "30 Entry Process",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -519,13 +619,17 @@
       "price": 8999,
       "monthlyBreakdown": 8999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "40 MBPS I/O",
-        "50 Entry Process"
+        "50 Entry Process",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -535,13 +639,16 @@
       "price": 11832,
       "monthlyBreakdown": 986,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "60 MBPS I/O",
-        "120 Entry Process"
+        "120 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -551,13 +658,16 @@
       "price": 15792,
       "monthlyBreakdown": 1316,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "6 Core CPU",
         "6 GB RAM",
         "70 MBPS I/O",
-        "150 Entry Process"
+        "150 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -567,13 +677,16 @@
       "price": 23712,
       "monthlyBreakdown": 1976,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "8 Core CPU",
         "8 GB RAM",
         "80 MBPS I/O",
-        "200 Entry Process"
+        "200 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -583,13 +696,16 @@
       "price": 39552,
       "monthlyBreakdown": 3296,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "10 Core CPU",
         "10 GB RAM",
         "100 MBPS I/O",
-        "250 Entry Process"
+        "250 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -599,13 +715,16 @@
       "price": 2499,
       "monthlyBreakdown": 2499,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "4 Core CPU",
         "4 GB RAM",
         "60 MBPS I/O",
-        "120 Entry Process"
+        "120 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -615,13 +734,16 @@
       "price": 3499,
       "monthlyBreakdown": 3499,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "6 Core CPU",
         "6 GB RAM",
         "70 MBPS I/O",
-        "150 Entry Process"
+        "150 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -631,13 +753,16 @@
       "price": 4999,
       "monthlyBreakdown": 4999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "8 Core CPU",
         "8 GB RAM",
         "80 MBPS I/O",
-        "200 Entry Process"
+        "200 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -647,13 +772,16 @@
       "price": 8999,
       "monthlyBreakdown": 8999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "99.9% Uptime",
         "10 Core CPU",
         "10 GB RAM",
         "100 MBPS I/O",
-        "250 Entry Process"
+        "250 Entry Process",
+        "SSH Access Included"
       ]
     },
     {
@@ -662,13 +790,16 @@
       "period": "monthly",
       "price": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
         "10 Entry Processes",
-        "50 Max Processes"
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -677,13 +808,16 @@
       "period": "monthly",
       "price": 1999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "3 Core CPU",
         "3 GB RAM",
         "25 MBPS I/O",
         "20 Entry Processes",
-        "100 Max Processes"
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -692,13 +826,16 @@
       "period": "monthly",
       "price": 2999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "4 Core CPU",
         "4 GB RAM",
         "50 MBPS I/O",
         "50 Entry Processes",
-        "150 Max Processes"
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -707,13 +844,16 @@
       "period": "monthly",
       "price": 5999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "6 Core CPU",
         "8 GB RAM",
         "100 MBPS I/O",
         "80 Entry Processes",
-        "200 Max Processes"
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -723,13 +863,16 @@
       "price": 6600,
       "monthlyBreakdown": 550,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "2 Hosted Domains"
+      ],
       "server": [
         "2 Core CPU",
         "2 GB RAM",
         "10 MBPS I/O",
         "10 Entry Processes",
-        "50 Max Processes"
+        "50 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -739,13 +882,16 @@
       "price": 7392,
       "monthlyBreakdown": 616,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "3 Core CPU",
         "3 GB RAM",
         "25 MBPS I/O",
         "20 Entry Processes",
-        "100 Max Processes"
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -755,13 +901,16 @@
       "price": 10296,
       "monthlyBreakdown": 858,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "4 Core CPU",
         "4 GB RAM",
         "50 MBPS I/O",
         "50 Entry Processes",
-        "150 Max Processes"
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -771,13 +920,16 @@
       "price": 19008,
       "monthlyBreakdown": 1584,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "6 Core CPU",
         "8 GB RAM",
         "100 MBPS I/O",
         "80 Entry Processes",
-        "200 Max Processes"
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -787,13 +939,17 @@
       "price": 999,
       "monthlyBreakdown": 999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "100 Max Processes",
+        "SSH Access Included"
       ]
     },
     {
@@ -803,13 +959,17 @@
       "price": 1499,
       "monthlyBreakdown": 1499,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "150 Max Processes",
+        "SSH Access Included"
       ]
     },
     {
@@ -819,13 +979,16 @@
       "price": 1999,
       "monthlyBreakdown": 1999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "SSH Access Included"
       ]
     },
     {
@@ -835,13 +998,16 @@
       "price": 4999,
       "monthlyBreakdown": 4999,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "SSH Access Included"
       ]
     },
     {
@@ -851,13 +1017,17 @@
       "price": 4740,
       "monthlyBreakdown": 395,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "100 Max Processes",
+        "SSH Access Included"
       ]
     },
     {
@@ -867,13 +1037,17 @@
       "price": 5928,
       "monthlyBreakdown": 494,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "150 Max Processes",
+        "SSH Access Included"
       ]
     },
     {
@@ -883,13 +1057,16 @@
       "price": 7116,
       "monthlyBreakdown": 593,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "SSH Access Included"
       ]
     },
     {
@@ -899,13 +1076,16 @@
       "price": 11868,
       "monthlyBreakdown": 989,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Automated Backups",
         "99.9% Uptime Guarantee",
-        "Global CDN"
+        "Global CDN",
+        "SSH Access Included"
       ]
     },
     {
@@ -914,13 +1094,17 @@
       "period": "monthly",
       "price": 319,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -929,13 +1113,16 @@
       "period": "monthly",
       "price": 479,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -944,13 +1131,17 @@
       "period": "monthly",
       "price": 879,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -959,13 +1150,17 @@
       "period": "monthly",
       "price": 1599,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -975,13 +1170,17 @@
       "price": 1549,
       "monthlyBreakdown": 129,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "5 Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "100 Max Processes",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -991,13 +1190,16 @@
       "price": 2549,
       "monthlyBreakdown": 212,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1007,13 +1209,17 @@
       "price": 4699,
       "monthlyBreakdown": 392,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "150 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -1023,13 +1229,17 @@
       "price": 8399,
       "monthlyBreakdown": 699,
       "currency": "৳",
-      "features": [],
+      "features": [
+        "Unlimited Hosted Domains"
+      ],
       "server": [
         "Auto SSL Renewal",
         "DDoS Protection",
         "Daily Backups",
         "99.9% Uptime SLA",
-        "PostgreSQL Database"
+        "PostgreSQL Database",
+        "200 Max Processes",
+        "SSH/Terminal Access Included"
       ]
     },
     {
@@ -1040,6 +1250,7 @@
       "monthlyBreakdown": 1599,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1054,7 +1265,8 @@
         "1 vCPU Core",
         "2 GB RAM",
         "25 GB NVMe Storage",
-        "500 GB Bandwidth"
+        "500 GB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1065,6 +1277,7 @@
       "monthlyBreakdown": 3199,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1079,7 +1292,8 @@
         "2 vCPU Cores",
         "4 GB RAM",
         "50 GB NVMe Storage",
-        "1 TB Bandwidth"
+        "1 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1090,6 +1304,7 @@
       "monthlyBreakdown": 5699,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1104,7 +1319,8 @@
         "4 vCPU Cores",
         "8 GB RAM",
         "100 GB NVMe Storage",
-        "2 TB Bandwidth"
+        "2 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1115,6 +1331,7 @@
       "monthlyBreakdown": 10999,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1129,7 +1346,8 @@
         "8 vCPU Cores",
         "16 GB RAM",
         "200 GB NVMe Storage",
-        "4 TB Bandwidth"
+        "4 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1140,6 +1358,7 @@
       "monthlyBreakdown": 21999,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1154,7 +1373,8 @@
         "16 vCPU Cores",
         "32 GB RAM",
         "400 GB NVMe Storage",
-        "8 TB Bandwidth"
+        "8 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1165,6 +1385,7 @@
       "monthlyBreakdown": 2759,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1179,7 +1400,8 @@
         "2 vCPU Cores",
         "4 GB RAM",
         "80 GB NVMe Storage",
-        "2 TB Bandwidth"
+        "2 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1190,6 +1412,7 @@
       "monthlyBreakdown": 5639,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1204,7 +1427,8 @@
         "4 vCPU Cores",
         "8 GB RAM",
         "160 GB NVMe Storage",
-        "4 TB Bandwidth"
+        "4 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1215,6 +1439,7 @@
       "monthlyBreakdown": 9599,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1229,7 +1454,8 @@
         "8 vCPU Cores",
         "16 GB RAM",
         "320 GB NVMe Storage",
-        "8 TB Bandwidth"
+        "8 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1240,6 +1466,7 @@
       "monthlyBreakdown": 13799,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1254,7 +1481,8 @@
         "12 vCPU Cores",
         "24 GB RAM",
         "480 GB NVMe Storage",
-        "12 TB Bandwidth"
+        "12 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1265,6 +1493,7 @@
       "monthlyBreakdown": 17999,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1279,7 +1508,8 @@
         "16 vCPU Cores",
         "32 GB RAM",
         "640 GB NVMe Storage",
-        "16 TB Bandwidth"
+        "16 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1290,6 +1520,7 @@
       "monthlyBreakdown": 1559,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1304,7 +1535,8 @@
         "2 vCPU Cores",
         "4 GB RAM",
         "80 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1315,6 +1547,7 @@
       "monthlyBreakdown": 2639,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1329,7 +1562,8 @@
         "4 vCPU Cores",
         "8 GB RAM",
         "160 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1340,6 +1574,7 @@
       "monthlyBreakdown": 4799,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1354,7 +1589,8 @@
         "8 vCPU Cores",
         "16 GB RAM",
         "320 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1365,6 +1601,7 @@
       "monthlyBreakdown": 7199,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1379,7 +1616,8 @@
         "12 vCPU Cores",
         "24 GB RAM",
         "480 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1390,6 +1628,7 @@
       "monthlyBreakdown": 10799,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1404,7 +1643,8 @@
         "16 vCPU Cores",
         "32 GB RAM",
         "640 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1415,6 +1655,7 @@
       "monthlyBreakdown": 1679,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1429,7 +1670,8 @@
         "2 vCPU Cores",
         "4 GB RAM",
         "80 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1440,6 +1682,7 @@
       "monthlyBreakdown": 2999,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1454,7 +1697,8 @@
         "4 vCPU Cores",
         "8 GB RAM",
         "160 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1465,6 +1709,7 @@
       "monthlyBreakdown": 5399,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1479,7 +1724,8 @@
         "8 vCPU Cores",
         "16 GB RAM",
         "320 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1490,6 +1736,7 @@
       "monthlyBreakdown": 8399,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1504,7 +1751,8 @@
         "12 vCPU Cores",
         "24 GB RAM",
         "480 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1515,6 +1763,7 @@
       "monthlyBreakdown": 11999,
       "currency": "৳",
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Tbps+ DDoS Protection",
@@ -1529,7 +1778,8 @@
         "16 vCPU Cores",
         "32 GB RAM",
         "640 GB NVMe Storage",
-        "20 TB Bandwidth"
+        "20 TB Bandwidth",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1541,6 +1791,7 @@
       "currency": "৳",
       "setupFee": 11440,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1551,7 +1802,8 @@
         "Intel Core i5-13500 (14 Cores)",
         "64 GB RAM",
         "1 TB NVMe",
-        "Setup Fee: ৳11440"
+        "Setup Fee: ৳11440",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1563,6 +1815,7 @@
       "currency": "৳",
       "setupFee": 11440,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1573,7 +1826,8 @@
         "Intel Core Ultra 7 265 (20 Cores)",
         "64 GB RAM",
         "2 TB NVMe",
-        "Setup Fee: ৳11440"
+        "Setup Fee: ৳11440",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1585,6 +1839,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1595,7 +1850,8 @@
         "Intel Xeon Gold 5412U (24 Cores)",
         "256 GB RAM",
         "3.84 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1607,6 +1863,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1617,7 +1874,8 @@
         "Intel Xeon Gold 5412U (24 Cores)",
         "128 GB RAM",
         "7.68 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1629,6 +1887,7 @@
       "currency": "৳",
       "setupFee": 0,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1639,7 +1898,8 @@
         "AMD Ryzen 5 3600 (6 Cores)",
         "64 GB RAM",
         "1 TB NVMe",
-        "Setup Fee: Free Setup"
+        "Setup Fee: Free Setup",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1651,6 +1911,7 @@
       "currency": "৳",
       "setupFee": 11440,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1661,7 +1922,8 @@
         "AMD Ryzen 7 PRO 8700GE (8 Cores)",
         "64 GB RAM",
         "1 TB NVMe",
-        "Setup Fee: ৳11440"
+        "Setup Fee: ৳11440",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1673,6 +1935,7 @@
       "currency": "৳",
       "setupFee": 11440,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1683,7 +1946,8 @@
         "AMD Ryzen 9 7950X3D (16 Cores)",
         "128 GB RAM",
         "3.84 TB NVMe",
-        "Setup Fee: ৳11440"
+        "Setup Fee: ৳11440",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1695,6 +1959,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1705,7 +1970,8 @@
         "AMD EPYC 9454P (48 Cores)",
         "256 GB RAM",
         "7.68 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1717,6 +1983,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1727,7 +1994,8 @@
         "AMD EPYC 9454P (48 Cores)",
         "128 GB RAM",
         "7.68 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1739,6 +2007,7 @@
       "currency": "৳",
       "setupFee": 11440,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1749,7 +2018,8 @@
         "AMD Ryzen 7 3700X (8 Cores)",
         "64 GB RAM",
         "88 TB HDD + 2 TB NVMe",
-        "Setup Fee: ৳11440"
+        "Setup Fee: ৳11440",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1761,6 +2031,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1771,7 +2042,8 @@
         "AMD Ryzen 9 3900 (12 Cores)",
         "128 GB RAM",
         "176 TB HDD + 3.84 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     },
     {
@@ -1783,6 +2055,7 @@
       "currency": "৳",
       "setupFee": 23010,
       "features": [
+        "Unlimited Domains",
         "Dedicated IP (IPv4 + IPv6)",
         "Full Root Access",
         "1 Gbit/s Port",
@@ -1793,7 +2066,8 @@
         "AMD EPYC 7502P (32 Cores)",
         "256 GB RAM",
         "308 TB HDD + 15.36 TB NVMe",
-        "Setup Fee: ৳23010"
+        "Setup Fee: ৳23010",
+        "No SSH/Terminal Access"
       ]
     }
   ],
