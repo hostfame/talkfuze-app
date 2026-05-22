@@ -3355,8 +3355,14 @@ export default function ChatThread({
                   const msgId = contextMenu.message.id;
                   setContextMenu(null);
                   try {
+                    // Optimistic delete
+                    if (conversationId) {
+                      const currentMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
+                      useInboxStore.getState().setMessages(conversationId, currentMsgs.filter(m => m.id !== msgId));
+                    }
                     await recallMessage(msgId);
                   } catch (err: any) {
+                    // Revert if it fails (optional, but alerts for now)
                     alert('Failed to delete: ' + err.message);
                   }
                 }}
