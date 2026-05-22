@@ -1696,23 +1696,34 @@ export default function ChatThread({
     setIsSending(true)
 
     // Complete AI draft log if this message came from an AI draft
-    // If logAiDraft hasn't resolved yet (fast send), await it first
-    if (aiDraftLogPromiseRef.current && !aiDraftLogIdRef.current) {
-      await aiDraftLogPromiseRef.current;
-    }
-    if (aiDraftLogIdRef.current && msgText) {
-      const contextMessages = allMessages
-        .filter(m => !m.is_internal && m.content_type !== 'system')
-        .slice(-20)
-        .map(m => {
-          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-          const name = isAgent ? 'Agent' : contactName
-          return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
-        }).join('\n')
+    // Process asynchronously so it doesn't block the UI
+    const processAiDraftLog = async (promise: Promise<string | null> | null, id: string | null, text: string) => {
+      try {
+        let finalId = id;
+        if (promise && !finalId) {
+          finalId = await promise;
+        }
+        if (finalId && text) {
+          const contextMessages = allMessages
+            .filter(m => !m.is_internal && m.content_type !== 'system')
+            .slice(-20)
+            .map(m => {
+              const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+              const name = isAgent ? 'Agent' : contactName
+              return `[${name}]: ${m.content_type === 'text' ? m.content : '[' + m.content_type + ']'}`
+            }).join('\n')
 
-      completeAiDraftLog(aiDraftLogIdRef.current, msgText, contextMessages).catch(() => {})
-      aiDraftLogIdRef.current = null
-      aiDraftLogPromiseRef.current = null
+          await completeAiDraftLog(finalId, text, contextMessages);
+        }
+      } catch (e) {
+        console.error("Failed to process AI draft log", e);
+      }
+    };
+
+    if (aiDraftLogPromiseRef.current || aiDraftLogIdRef.current) {
+      processAiDraftLog(aiDraftLogPromiseRef.current, aiDraftLogIdRef.current, msgText);
+      aiDraftLogIdRef.current = null;
+      aiDraftLogPromiseRef.current = null;
     }
 
     // Auto-join if not joined and sending a public reply
@@ -1742,13 +1753,13 @@ export default function ChatThread({
           status: 'sending',
           created_at: new Date().toISOString()
         })
-        try {
-          await replyToConversation(orgId, conversationId, msgText, isInternal, 'text', replyMeta ? { reply_to: replyMeta } : undefined)
-          markConfirmed(conversationId, tempId)
-        } catch (e: unknown) {
-          console.error(e)
-          markFailed(conversationId, tempId)
-        }
+        // Fire and forget so the UI is not blocked
+        replyToConversation(orgId, conversationId, msgText, isInternal, 'text', replyMeta ? { reply_to: replyMeta } : undefined)
+          .then(() => markConfirmed(conversationId, tempId))
+          .catch((e: unknown) => {
+            console.error(e)
+            markFailed(conversationId, tempId)
+          })
       }
 
       // Process attachments
