@@ -1680,7 +1680,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                             ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30' 
                             : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50'
                         }`}>
-                          {timeSpentStr === 'Current page' && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse"></div>}
                           {timeSpentStr}
                         </div>
                       )}
