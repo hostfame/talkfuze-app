@@ -2686,7 +2686,7 @@ export default function ChatThread({
 
             if (msg.content === 'Started a voice call') return null;
 
-            if (msg.content.includes("voice call")) {
+            if (msg.content.toLowerCase().includes("voice call")) {
               const isMissed = msg.content.includes("Missed");
               return (
                 <div key={msg.id || idx} className="flex justify-center my-4">

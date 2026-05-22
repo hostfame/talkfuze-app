@@ -274,7 +274,8 @@ export default function SipDialer() {
 
   // Bind underlying SIP session state transitions for 100% immediate real-time execution
   const bindSessionEvents = (session: any) => {
-    if (!session) return
+    if (!session || session._hasTalkfuzeListener) return
+    session._hasTalkfuzeListener = true
     
     // Monitor WebRTC PeerConnection ICE state dynamically
     const monitorWebRTC = () => {
