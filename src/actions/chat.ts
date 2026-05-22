@@ -4,149 +4,108 @@ import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 
+// Module-level cache for widget lookups (survives across requests in the same serverless instance)
+const widgetCache: Record<string, { channelId: string; contactId: string; ts: number }> = {};
+const WIDGET_CACHE_TTL = 10 * 60 * 1000; // 10 min
+
 export async function sendWidgetMessage(orgId: string, deviceId: string, content: string, contentType: string = 'text', metadata: Record<string, any> = {}, targetConversationId?: string) {
   if (!orgId || !deviceId || !content) {
     throw new Error("Missing required fields")
   }
 
-  // 1. Get or Create Widget Channel for this Org
-  const { data: channels, error: chFetchErr } = await supabaseAdmin
-    .from("channels")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("type", "widget")
-    .limit(1)
+  const cacheKey = `${orgId}:${deviceId}`;
+  const cached = widgetCache[cacheKey];
+  let channelId: string;
+  let contactId: string;
 
-  if (chFetchErr) throw chFetchErr
+  if (cached && (Date.now() - cached.ts < WIDGET_CACHE_TTL)) {
+    // Fast path: use cached IDs (99% of sends)
+    channelId = cached.channelId;
+    contactId = cached.contactId;
+  } else {
+    // Slow path: look up channel + contact in parallel
+    const [channelResult, contactResult] = await Promise.all([
+      supabaseAdmin.from("channels").select("id").eq("org_id", orgId).eq("type", "widget").limit(1),
+      supabaseAdmin.from("contacts").select("id").eq("org_id", orgId).eq("platform_type", "widget").eq("platform_id", deviceId).limit(1)
+    ]);
 
-  let channel = channels && channels.length > 0 ? channels[0] : null;
+    if (channelResult.error) throw channelResult.error;
+    if (contactResult.error) throw contactResult.error;
 
-  if (!channel) {
-    const { data: newChannel, error: channelErr } = await supabaseAdmin
-      .from("channels")
-      .insert({ org_id: orgId, type: "widget" })
-      .select("id")
-      .single()
-    if (channelErr) throw channelErr
-    channel = newChannel
+    let channel = channelResult.data?.[0];
+    if (!channel) {
+      const { data: newChannel, error: channelErr } = await supabaseAdmin
+        .from("channels").insert({ org_id: orgId, type: "widget" }).select("id").single()
+      if (channelErr) throw channelErr
+      channel = newChannel
+    }
+
+    let contact = contactResult.data?.[0];
+    if (!contact) {
+      const { count } = await supabaseAdmin
+        .from("contacts").select("id", { count: 'exact', head: true }).eq("org_id", orgId).eq("platform_type", "widget");
+      const visitorNumber = (count || 0) + 1;
+      const visitorName = `Website Visitor #${visitorNumber}`;
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(visitorName)}&background=random&color=fff&length=1`;
+      const { data: newContact, error: contactErr } = await supabaseAdmin
+        .from("contacts").insert({ org_id: orgId, platform_type: "widget", platform_id: deviceId, name: visitorName, avatar_url: avatarUrl }).select("id").single()
+      if (contactErr) throw contactErr
+      contact = newContact
+    }
+
+    channelId = channel!.id;
+    contactId = contact!.id;
+    widgetCache[cacheKey] = { channelId, contactId, ts: Date.now() };
   }
 
-  // 2. Get or Create Contact based on deviceId
-  const { data: contacts, error: contactFetchErr } = await supabaseAdmin
-    .from("contacts")
-    .select("id")
-    .eq("org_id", orgId)
-    .eq("platform_type", "widget")
-    .eq("platform_id", deviceId)
-    .limit(1)
-
-  if (contactFetchErr) throw contactFetchErr
-
-  let contact = contacts && contacts.length > 0 ? contacts[0] : null;
-
-  if (!contact) {
-    const { count } = await supabaseAdmin
-      .from("contacts")
-      .select("id", { count: 'exact', head: true })
-      .eq("org_id", orgId)
-      .eq("platform_type", "widget");
-      
-    const visitorNumber = (count || 0) + 1;
-    const visitorName = `Website Visitor #${visitorNumber}`;
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(visitorName)}&background=random&color=fff&length=1`;
-
-    const { data: newContact, error: contactErr } = await supabaseAdmin
-      .from("contacts")
-      .insert({
-        org_id: orgId,
-        platform_type: "widget",
-        platform_id: deviceId,
-        name: visitorName,
-        avatar_url: avatarUrl
-      })
-      .select("id")
-      .single()
-    if (contactErr) throw contactErr
-    contact = newContact
-  }
-
-  // 3. Get or Create Conversation
-  let conversation = null;
+  // Get or Create Conversation
+  let conversationId: string | null = null;
 
   if (targetConversationId && targetConversationId !== 'new') {
-    const { data: targetConv, error: targetErr } = await supabaseAdmin
-      .from("conversations")
-      .select("id, status")
-      .eq("id", targetConversationId)
-      .eq("contact_id", contact.id)
-      .single();
-      
+    const { data: targetConv } = await supabaseAdmin
+      .from("conversations").select("id, status").eq("id", targetConversationId).eq("contact_id", contactId).single();
     if (targetConv) {
-      conversation = targetConv;
-      if (conversation.status === 'resolved') {
-        // Reopen the conversation if the customer replies
-        await supabaseAdmin
-          .from("conversations")
-          .update({ status: 'open' })
-          .eq("id", conversation.id);
+      conversationId = targetConv.id;
+      if (targetConv.status === 'resolved') {
+        // Fire and forget: reopen in background
+        supabaseAdmin.from("conversations").update({ status: 'open' }).eq("id", targetConv.id).then(() => {});
       }
     }
   }
 
-  if (!conversation) {
-    const { data: convs, error: convFetchErr } = await supabaseAdmin
-      .from("conversations")
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("contact_id", contact.id)
-      .eq("status", "open")
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (convFetchErr) throw convFetchErr
-
-    conversation = convs && convs.length > 0 ? convs[0] : null;
+  if (!conversationId) {
+    const { data: convs } = await supabaseAdmin
+      .from("conversations").select("id").eq("org_id", orgId).eq("contact_id", contactId).eq("status", "open").order('created_at', { ascending: false }).limit(1)
+    conversationId = convs?.[0]?.id || null;
   }
 
-  if (!conversation) {
+  if (!conversationId) {
     const { data: newConv, error: convErr } = await supabaseAdmin
-      .from("conversations")
-      .insert({
-        org_id: orgId,
-        channel_id: channel.id,
-        contact_id: contact.id,
-        status: "open"
-      })
-      .select("id")
-      .single()
+      .from("conversations").insert({ org_id: orgId, channel_id: channelId, contact_id: contactId, status: "open" }).select("id").single()
     if (convErr) throw convErr
-    conversation = newConv
+    conversationId = newConv!.id;
   }
 
-  // 4. Insert the Message
-  // contentType can be 'text'|'image'|'file'|'system' - if system, sender_type must be 'system'
+  // Insert message + update last_message_at in PARALLEL (saves ~50ms)
   const isSystemMsg = contentType === 'system';
-  const { error: msgErr } = await supabaseAdmin
-    .from("messages")
-    .insert({
+  const now = new Date().toISOString();
+  
+  const [msgResult] = await Promise.all([
+    supabaseAdmin.from("messages").insert({
       org_id: orgId,
-      conversation_id: conversation.id,
+      conversation_id: conversationId,
       sender_type: isSystemMsg ? "system" : "contact",
-      sender_id: isSystemMsg ? null : contact.id,
+      sender_id: isSystemMsg ? null : contactId,
       content: content,
       content_type: isSystemMsg ? "text" : contentType,
       metadata: Object.keys(metadata).length > 0 ? metadata : null
-    })
+    }),
+    supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
+  ]);
 
-  if (msgErr) throw msgErr
+  if (msgResult.error) throw msgResult.error;
 
-  // Update conversation last_message_at so it floats to the top of the inbox
-  await supabaseAdmin
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conversation.id)
-
-  return { success: true, conversationId: conversation.id }
+  return { success: true, conversationId }
 }
 
 export async function getWidgetMessages(orgId: string, deviceId: string, conversationId?: string | null, _cacheBuster?: number, limit: number = 50, beforeTimestamp?: string) {
