@@ -401,3 +401,13 @@ export async function generateWHMCSControlPanelSsoToken(clientId: number, servic
     return { success: false, error: error.message || "Failed to generate token" }
   }
 }
+
+export async function unblockIP(ip: string, clientId: number) {
+  try {
+    const { unblockWhmcsIP } = await import('@/lib/whmcs')
+    return await unblockWhmcsIP(ip, clientId)
+  } catch (error: any) {
+    console.error("Failed to unblock IP:", error)
+    return { result: 'error', message: error.message || "Failed to unblock IP" }
+  }
+}

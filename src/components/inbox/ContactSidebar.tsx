@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken, unblockIP } from "@/actions/whmcs"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
 import ForwardButton from "./ForwardButton"
@@ -687,6 +687,9 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   const [isBanned, setIsBanned] = useState(false)
   const [isBanning, setIsBanning] = useState(false)
   const [portalTab, setPortalTab] = useState<'services' | 'domains' | 'tickets' | 'invoices'>('services')
+  
+  const [unblockIpInput, setUnblockIpInput] = useState("")
+  const [isUnblocking, setIsUnblocking] = useState(false)
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return
@@ -1171,14 +1174,33 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
               <div className="flex gap-2">
                 <input 
                   type="text" 
+                  value={unblockIpInput}
+                  onChange={(e) => setUnblockIpInput(e.target.value)}
                   placeholder="Enter IP Address..." 
                   className="w-full text-[12px] border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-blue-500"
                 />
                 <button 
-                  onClick={() => alert('IP Check trigger will be connected here.')}
-                  className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors"
+                  onClick={async () => {
+                    if (!unblockIpInput.trim() || isUnblocking) return;
+                    setIsUnblocking(true);
+                    try {
+                      const res = await unblockIP(unblockIpInput.trim(), whmcsClient?.id || 0);
+                      if (res && res.result === 'success') {
+                        alert(`Successfully unblocked IP!\n${Object.entries(res.details || {}).map(([s, result]) => `${s}: ${result}`).join('\n')}`);
+                        setUnblockIpInput('');
+                      } else {
+                        alert(res?.message || 'Failed to unblock IP');
+                      }
+                    } catch (e) {
+                      alert('An error occurred');
+                    } finally {
+                      setIsUnblocking(false);
+                    }
+                  }}
+                  disabled={isUnblocking || !unblockIpInput.trim()}
+                  className="bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap hover:bg-slate-800 dark:hover:bg-slate-300 transition-colors disabled:opacity-50"
                 >
-                  Unblock
+                  {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
                 </button>
               </div>
             </div>
