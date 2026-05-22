@@ -3423,6 +3423,7 @@ export default function ChatThread({
           }}
         >
           <div 
+            onClick={(e) => e.stopPropagation()}
             style={{ top: contextMenu.y, left: contextMenu.x }}
             className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[175px] animate-in fade-in zoom-in-95 duration-100"
           >
