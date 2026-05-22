@@ -135,57 +135,48 @@
   100% { background-position: -200% 0; }
 }
 
-/* AI generation border animation */
-@keyframes ai-border-rotate {
-  0% { --ai-angle: 0deg; }
-  100% { --ai-angle: 360deg; }
+/* AI generation, thick gradient glow that spreads into the box */
+@keyframes ai-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes ai-shimmer-sweep {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* AI composer wrapper with animated gradient border */
+/* Outer wrapper: thick animated gradient border that bleeds inward */
 .ai-composer-active {
   position: relative;
-  z-index: 0;
   border-color: transparent !important;
+  background: linear-gradient(278deg, rgb(0, 40, 160), rgb(0, 20, 80), rgb(0, 50, 180), rgb(0, 25, 100)) !important;
+  background-size: 300% 300% !important;
+  animation: ai-gradient-flow 3s ease infinite !important;
+  padding: 2.5px !important;
+  box-shadow:
+    0 0 15px rgba(0, 40, 160, 0.3),
+    0 0 30px rgba(0, 20, 80, 0.15),
+    inset 0 0 15px rgba(0, 40, 160, 0.1) !important;
 }
 
-.ai-composer-active::before {
-  content: '';
-  position: absolute;
-  inset: -1.5px;
-  z-index: -1;
-  border-radius: 13px;
-  background: conic-gradient(
-    from var(--ai-angle, 0deg),
-    #0070f3 0%,
-    #2563eb 20%,
-    #0ea5e9 40%,
-    #0070f3 60%,
-    #3b82f6 80%,
-    #0070f3 100%
-  );
-  animation: ai-border-rotate 3.5s linear infinite;
+/* Inner content area sits on top with slight transparency to let gradient bleed through */
+.ai-composer-active > * {
+  position: relative;
+  z-index: 2;
 }
 
-/* Inner mask, shows only the thin border */
-.ai-composer-active::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: 11px;
-  background: white;
+.ai-composer-inner {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-radius: 10px;
 }
 
-.dark .ai-composer-active::after {
-  background: #2a3942;
+.dark .ai-composer-inner {
+  background: rgba(42, 57, 66, 0.97) !important;
 }
 
-/* Inner shimmer sweep */
+/* Shimmer sweep that moves across the entire box */
 .ai-composer-shimmer {
   position: relative;
   overflow: hidden;
@@ -194,40 +185,41 @@
 .ai-composer-shimmer > .ai-shimmer-overlay {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.ai-composer-shimmer > .ai-shimmer-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 112, 243, 0.02) 30%,
-    rgba(0, 112, 243, 0.04) 50%,
-    rgba(0, 112, 243, 0.02) 70%,
+    rgba(0, 40, 160, 0.06) 20%,
+    rgba(0, 50, 200, 0.1) 40%,
+    rgba(59, 130, 246, 0.08) 60%,
+    rgba(0, 40, 160, 0.06) 80%,
     transparent 100%
   );
-  background-size: 200% 100%;
-  animation: ai-shimmer-sweep 2.5s ease-in-out infinite;
+  animation: ai-shimmer-sweep 2s ease-in-out infinite;
 }
 
-.dark .ai-composer-shimmer > .ai-shimmer-overlay {
+.dark .ai-composer-shimmer > .ai-shimmer-overlay::before {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(59, 130, 246, 0.04) 30%,
-    rgba(59, 130, 246, 0.06) 50%,
-    rgba(59, 130, 246, 0.04) 70%,
+    rgba(0, 60, 200, 0.08) 20%,
+    rgba(59, 130, 246, 0.14) 40%,
+    rgba(0, 80, 220, 0.1) 60%,
+    rgba(0, 60, 200, 0.08) 80%,
     transparent 100%
   );
-  background-size: 200% 100%;
-  animation: ai-shimmer-sweep 2.5s ease-in-out infinite;
-}
-
-@property --ai-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
 }
 
 /* AI Bot icon glow */
 .ai-bot-glow {
-  filter: drop-shadow(0 0 4px rgba(0, 112, 243, 0.5));
+  filter: drop-shadow(0 0 4px rgba(0, 40, 160, 0.6));
 }
