@@ -1290,6 +1290,15 @@ export default function ChatThread({
   const lastActivityTimeRef = useRef<number>(Date.now());
   const [isActivelyComposing, setIsActivelyComposing] = useState(false);
   const lastBroadcastRef = useRef<boolean>(false);
+  
+  const currentTypingAgents = activeAgents?.filter(a => a.activity === 'typing') || [];
+  const [displayTypingAgents, setDisplayTypingAgents] = useState<{ name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]>(currentTypingAgents);
+  const currentTypingAgentsLen = currentTypingAgents.length;
+  useEffect(() => {
+    if (currentTypingAgentsLen > 0) {
+      setDisplayTypingAgents(activeAgents?.filter(a => a.activity === 'typing') || []);
+    }
+  }, [currentTypingAgentsLen, activeAgents]);
 
   useEffect(() => {
     if (!conversationId || isInternal) {
@@ -1302,8 +1311,8 @@ export default function ChatThread({
       const isUploading = stagedAttachments.some(a => a.status === 'uploading');
       const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
       
-      // Consider "active" if AI is working, actively uploading, OR typed/changed something within last 3 seconds
-      const active = isAiWorking || isUploading || (timeSinceLastActivity < 3000 && input.trim().length > 0);
+      // Consider "active" if AI is working, actively uploading, OR typed/changed something within last 1.5 seconds
+      const active = isAiWorking || isUploading || (timeSinceLastActivity < 1500 && input.trim().length > 0);
       
       setIsActivelyComposing(active);
     };
@@ -3125,31 +3134,31 @@ export default function ChatThread({
 
       <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0b141a] relative">
         {/* Agent Typing Bubble (Floating above composer) */}
-        {activeAgents.filter(a => a.activity === 'typing').length > 0 && (
-          <div className="absolute bottom-[calc(100%+8px)] left-6 z-40 animate-in slide-in-from-bottom-2 fade-in duration-300 ease-out">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
-              <div className="flex -space-x-1.5">
-                {activeAgents.filter(a => a.activity === 'typing').slice(0, 3).map((agent, i) => (
-                  agent.avatar_url ? (
-                    <img key={i} src={agent.avatar_url} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
-                  ) : (
-                    <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
-                      {agent.name.charAt(0).toUpperCase()}
-                    </div>
-                  )
-                ))}
-              </div>
-              <div className="flex gap-[3px] items-center">
-                <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
-                <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1s" }}></span>
-                <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1s" }}></span>
-              </div>
-              <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300 tracking-tight truncate pr-1">
-                {activeAgents.filter(a => a.activity === 'typing').map(a => a.name.split(' ')[0]).join(', ')} {activeAgents.filter(a => a.activity === 'typing').length > 1 ? 'are' : 'is'} typing...
-              </span>
+        <div 
+          className={`absolute bottom-[calc(100%+8px)] left-6 z-40 transition-all duration-300 ease-out flex items-center ${currentTypingAgents.length > 0 ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}
+        >
+          <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
+            <div className="flex -space-x-1.5">
+              {displayTypingAgents.slice(0, 3).map((agent, i) => (
+                agent.avatar_url ? (
+                  <img key={i} src={agent.avatar_url} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
+                ) : (
+                  <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
+                    {agent.name.charAt(0).toUpperCase()}
+                  </div>
+                )
+              ))}
             </div>
+            <div className="flex gap-[3px] items-center">
+              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
+              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1s" }}></span>
+              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1s" }}></span>
+            </div>
+            <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300 tracking-tight truncate pr-1">
+              {displayTypingAgents.map(a => a.name.split(' ')[0]).join(', ')} {displayTypingAgents.length > 1 ? 'are' : 'is'} typing...
+            </span>
           </div>
-        )}
+        </div>
         {/* Actual composer - always shown, locked to whisper if not joined */}
         <div className={!isJoined ? "mt-4" : ""}>
         {/* Macro Menu */}
