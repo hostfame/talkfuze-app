@@ -19,21 +19,58 @@ export async function POST(req: NextRequest) {
     }
 
     const recording_url = recording ? `https://sip.talkfuze.com/recordings/${recording}` : null
+    
+    // Check if the frontend already logged this call (within the last 5 minutes)
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    
+    let matchQuery = supabaseAdmin
+      .from('call_logs')
+      .select('id')
+      .eq('org_id', org_id)
+      .is('recording_url', null)
+      .gte('created_at', fiveMinsAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
 
-    const { error } = await supabaseAdmin.from('call_logs').insert({
-      org_id,
-      direction,
-      from_number: from,
-      to_number: to,
-      duration_seconds: parseInt(duration) || 0,
-      status: status || 'UNKNOWN',
-      recording_url,
-      agent_name: agent_name || null
-    })
+    if (direction === 'outbound') {
+      matchQuery = matchQuery.eq('to_number', to)
+    } else {
+      matchQuery = matchQuery.eq('from_number', from)
+    }
 
-    if (error) {
-      console.error("Failed to insert call log:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    const { data: existingLogs } = await matchQuery
+
+    if (existingLogs && existingLogs.length > 0) {
+      // Update existing browser-initiated log with recording
+      const { error } = await supabaseAdmin.from('call_logs').update({
+        recording_url,
+        call_type: 'pbx',
+        duration_seconds: parseInt(duration) || 0,
+        status: status || 'UNKNOWN'
+      }).eq('id', existingLogs[0].id)
+      
+      if (error) {
+        console.error("Failed to update call log:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+    } else {
+      // Insert new log if not found (e.g., standard PBX call)
+      const { error } = await supabaseAdmin.from('call_logs').insert({
+        org_id,
+        direction,
+        from_number: from,
+        to_number: to,
+        duration_seconds: parseInt(duration) || 0,
+        status: status || 'UNKNOWN',
+        recording_url,
+        agent_name: agent_name || null,
+        call_type: 'pbx'
+      })
+
+      if (error) {
+        console.error("Failed to insert call log:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ success: true })
