@@ -3138,6 +3138,9 @@ export default function WidgetPage() {
                   // Hide the "Started a voice call" system message
                   if (msg.content === 'Started a voice call') return null;
 
+                  // Hide User Journey page_view messages
+                  if (safeMeta?.event === 'page_view' || msg.content.startsWith('Viewed:')) return null;
+
                   // 1. Premium pill representation for agent joining the chat
                   if (msg.content.includes('joined')) {
                     const agentName = msg.agent?.name || msg.content.split(' joined')[0] || 'Agent';

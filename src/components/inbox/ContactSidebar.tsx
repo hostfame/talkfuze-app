@@ -1603,7 +1603,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           </div>
           
           <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 space-y-4 py-2">
-            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => {
+            {messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => {
               const ua = msg.metadata?.userAgent || '';
               let browser = '';
               if (ua.includes('Chrome')) browser = 'Chrome';
@@ -1632,7 +1632,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
               </div>
             )})}
             
-            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).length === 0 && (
+            {messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).length === 0 && (
               <div className="mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
                  <p className="text-[12px] text-slate-500 text-center">No journey events tracked yet. Live events will appear here once the visitor navigates your site.</p>
               </div>
