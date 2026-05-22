@@ -164,8 +164,10 @@ export async function POST(req: Request) {
       : `LANGUAGE: Bengali. Reply 100% in Bengali script (বাংলা হরফে).
 - Write casual, natural WhatsApp-style Bengali, NOT bookish.
 - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
-- Transliterate tech terms: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, পেমেন্ট, ফিক্স, চেক.
-- Brand names in Bengali: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার".
+- TRANSLITERATE ALL ENGLISH WORDS to Bengali script (except URLs). Do NOT write any English letters.
+  * Correct: "গুড", "ফিক্স", "পেমেন্ট"
+  * Wrong: "Good", "Fix", "Payment"
+- Translaterate all plan & brand names: Basic Hosting = ব্যাসিক হোস্টিং, Starter = স্টার্টার, Pro = প্রো, Hostnin = হোষ্টনিন, Hostinger = হোষ্টিংগার.
 - ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
 - NO EMOJIS EVER. Do not use a single emoji.
 - NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
