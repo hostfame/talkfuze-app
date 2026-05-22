@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Archive,
   BookOpen,
-  RefreshCcw
+  RefreshCcw,
+  Play
 } from "lucide-react"
 
 interface TrainingLog {
@@ -28,6 +29,7 @@ export default function AITrainingDashboard() {
   const supabase = createClient()
   const [logs, setLogs] = useState<TrainingLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [testing, setTesting] = useState(false)
   const [stats, setStats] = useState({
     totalArchived: 0,
     successfullyTrained: 0,
@@ -59,6 +61,40 @@ export default function AITrainingDashboard() {
       })
     }
     setLoading(false)
+  }
+
+  const handleTestPipeline = async () => {
+    setTesting(true)
+    try {
+      // 1. Fetch an open conversation
+      const { data: convs, error: fetchErr } = await supabase
+        .from("conversations")
+        .select("id")
+        .neq("status", "closed")
+        .limit(1)
+
+      if (fetchErr || !convs || convs.length === 0) {
+        alert("No open conversations found to test with.")
+        setTesting(false)
+        return
+      }
+
+      // 2. Mark it as closed
+      const { error: updateErr } = await supabase
+        .from("conversations")
+        .update({ status: "closed" })
+        .eq("id", convs[0].id)
+
+      if (updateErr) {
+        alert("Failed to close conversation: " + updateErr.message)
+      }
+      
+      // Wait a moment for realtime to catch the insert
+      setTimeout(() => fetchLogs(), 1500)
+    } catch (e) {
+      console.error(e)
+    }
+    setTesting(false)
   }
 
   useEffect(() => {
@@ -95,12 +131,22 @@ export default function AITrainingDashboard() {
               Real-time monitoring of the continuous learning distillation pipeline.
             </p>
           </div>
-          <button 
-            onClick={fetchLogs}
-            className="p-2 rounded-lg bg-white dark:bg-[#202c33] border border-slate-200 dark:border-[#2a3942] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2a3942] transition-colors"
-          >
-            <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleTestPipeline}
+              disabled={testing}
+              className="px-4 py-2 flex items-center gap-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <Play size={16} />
+              {testing ? "Triggering..." : "Simulate 24h Auto-Archive"}
+            </button>
+            <button 
+              onClick={fetchLogs}
+              className="p-2 rounded-lg bg-white dark:bg-[#202c33] border border-slate-200 dark:border-[#2a3942] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2a3942] transition-colors"
+            >
+              <RefreshCcw size={18} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
 
         {/* Stats Grid */}
