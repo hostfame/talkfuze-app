@@ -2809,16 +2809,7 @@ export default function ChatThread({
                       {isMissed ? (
                         <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
                       ) : (
-                        (() => {
-                          const answeringAgentName = safeMeta.agent_name;
-                          const answeringAgent = answeringAgentName ? teamMembers.find(t => t.name === answeringAgentName) : null;
-                          if (answeringAgent?.avatar_url) {
-                            return <img src={answeringAgent.avatar_url} alt="" className="w-full h-full object-cover" />;
-                          } else if (answeringAgent) {
-                            return <span className="text-[11px] font-bold text-blue-600 dark:text-blue-300">{answeringAgent.name.charAt(0).toUpperCase()}</span>;
-                          }
-                          return <Phone size={14} className="text-blue-600 dark:text-blue-300" />;
-                        })()
+                        <Phone size={14} className="text-blue-600 dark:text-blue-300" />
                       )}
                     </div>
                   </div>
