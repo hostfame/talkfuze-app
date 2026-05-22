@@ -172,7 +172,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   }
   const showCallButton = isPhone(effectivePhoneId) && !isInstagram && !isMessenger
 
-  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse' | 'notes' | 'journey'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse' | 'journey'>('details')
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false)
   
   // Co-Browsing States
   const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined' | 'connection_lost'>('idle')
@@ -920,36 +921,30 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
 
   return (
     <div className="hidden md:flex flex-col h-full w-[260px] lg:w-[280px] xl:w-[340px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
-      <div className="flex justify-between border-b border-slate-200/80 dark:border-[#222e35] px-1 pt-3 h-[72px] items-end bg-slate-50/30 dark:bg-transparent overflow-x-auto hide-scrollbar w-full">
+      <div className="grid grid-cols-4 border-b border-slate-200/80 dark:border-[#222e35] h-[52px] bg-slate-50/30 dark:bg-transparent w-full">
         <button 
           onClick={() => setActiveTab('details')}
-          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'details' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Details
         </button>
         <button 
           onClick={() => setActiveTab('copilot')}
-          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'copilot' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Portal
         </button>
         <button 
           onClick={() => setActiveTab('cobrowse')}
-          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'cobrowse' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Remote
         </button>
         <button 
           onClick={() => setActiveTab('journey')}
-          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
+          className={`py-3 text-[12.5px] transition-colors border-b-2 text-center ${activeTab === 'journey' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
         >
           Journey
-        </button>
-        <button 
-          onClick={() => setActiveTab('notes')}
-          className={`px-2 py-3 text-[12px] transition-colors border-b-2 whitespace-nowrap ${activeTab === 'notes' ? 'font-semibold border-blue-600 dark:border-[#00a884] text-slate-900 dark:text-[#e9edef]' : 'font-medium text-slate-500 hover:text-slate-700 dark:text-[#8696a0] dark:hover:text-[#e9edef] border-transparent'}`}
-        >
-          Notes
         </button>
       </div>
 
@@ -1191,7 +1186,35 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                 >
                   {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
                 </button>
-              </div>
+            </div>
+            
+            {/* Sticky Notes Card (Expandable) */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <button 
+                onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+                className="w-full flex justify-between items-center text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <AlignLeft size={13} />
+                  Sticky Notes
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {isSavingNotes && <Loader2 size={11} className="animate-spin text-slate-400" />}
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${isNotesExpanded ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              
+              {isNotesExpanded && (
+                <div className="mt-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <textarea
+                    value={contactNotes}
+                    onChange={(e) => setContactNotes(e.target.value)}
+                    onBlur={handleSaveNotes}
+                    placeholder="Add context about this customer (visible to all agents)..."
+                    className="w-full h-24 text-[12.5px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-blue-500 rounded-lg resize-none shadow-sm transition-colors"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1544,27 +1567,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           </div>
         </div>
       )}
-      
-      {activeTab === 'notes' && (
-        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#111b21] p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              Sticky Notes
-            </h3>
-            {isSavingNotes && <Loader2 size={12} className="animate-spin text-slate-400" />}
-          </div>
-          <p className="text-[12px] text-slate-500 dark:text-slate-400 mb-3">
-            Add context about this customer. These notes are visible to all agents.
-          </p>
-          <textarea
-            value={contactNotes}
-            onChange={(e) => setContactNotes(e.target.value)}
-            onBlur={handleSaveNotes}
-            placeholder="e.g. VIP Client, usually asks for discounts..."
-            className="flex-1 w-full text-[13px] p-3 border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl focus:outline-none focus:border-blue-500 resize-none shadow-sm transition-colors"
-          />
-        </div>
-      )}
+
 
       {activeTab === 'journey' && (
         <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4">
