@@ -240,7 +240,16 @@ export default function ConversationList({
           const assigneeName = assignee?.name
           const isTyping = typingState[conv.id]
           const isOnline = contact ? onlineUsers.has(contact.id) : false
-          const lastMessage = (conv as any).matched_message || (conv.messages && conv.messages.length > 0 ? conv.messages[0] : null)
+
+          const validMessages = conv.messages?.filter((m: any) => {
+            let safeMeta = m.metadata;
+            try {
+              if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
+            } catch (e) {}
+            return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
+          }) || [];
+
+          const lastMessage = (conv as any).matched_message || (validMessages.length > 0 ? validMessages[0] : null)
           const isUnread = lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read'
 
           const getInitials = (name: string) => {

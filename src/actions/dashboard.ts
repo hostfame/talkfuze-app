@@ -89,7 +89,7 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     `)
     .eq("org_id", orgId)
     .order("created_at", { foreignTable: "messages", ascending: false })
-    .limit(1, { foreignTable: "messages" })
+    .limit(10, { foreignTable: "messages" })
     .order("last_message_at", { ascending: false });
 
   if (filter === 'archived') {
@@ -362,7 +362,7 @@ export async function searchConversations(orgId: string, query: string) {
     `)
     .eq("org_id", orgId)
     .order("created_at", { foreignTable: "messages", ascending: false })
-    .limit(1, { foreignTable: "messages" });
+    .limit(10, { foreignTable: "messages" });
     
   if (contactIds.length > 0 && msgConvIds.length > 0) {
     convQuery = convQuery.or(`contact_id.in.(${contactIds.join(',')}),id.in.(${msgConvIds.join(',')})`);
