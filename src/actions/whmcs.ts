@@ -284,9 +284,16 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       const senderType = isAgent ? 'agent' : 'contact'
       const senderName = isAgent ? (agentNames[msg.sender_id] || 'Agent') : contactName
 
+      let safeMeta: any = {}
+      if (typeof msg.metadata === 'string') {
+        try { safeMeta = JSON.parse(msg.metadata) } catch (e) {}
+      } else {
+        safeMeta = msg.metadata || {}
+      }
+
       // Extract the correct media URL from metadata.media_url if it's an image or audio
       const mediaUrl = (msg.content_type === 'image' || msg.content_type === 'audio')
-        ? ((msg.metadata as any)?.media_url || (msg.metadata as any)?.url || (msg.content && msg.content.startsWith('http') ? msg.content : null))
+        ? (safeMeta.media_url || safeMeta.url || (msg.content && msg.content.startsWith('http') ? msg.content : null))
         : null
 
       if (currentGroup && currentGroup.sender_type === senderType) {
