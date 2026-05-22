@@ -236,6 +236,7 @@ Draft a smart, helpful reply as the support agent.`;
         let buffer = '';
 
         try {
+          let firstChunk = true;
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -245,6 +246,14 @@ Draft a smart, helpful reply as the support agent.`;
             buffer = lines.pop() || '';
 
             for (const line of lines) {
+              if (firstChunk && line.startsWith("data: ")) {
+                // Debug: send first raw Anthropic event to help diagnose issues
+                const parsed = JSON.parse(line.slice(6));
+                if (parsed.type === 'error') {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown Anthropic error' })}\n\n`));
+                }
+                firstChunk = false;
+              }
               if (line.startsWith("data: ") && line !== "data: [DONE]") {
                 try {
                   const data = JSON.parse(line.slice(6));
@@ -259,6 +268,8 @@ Draft a smart, helpful reply as the support agent.`;
               }
             }
           }
+        } catch (streamErr: any) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream error: ' + (streamErr?.message || 'unknown') })}\n\n`));
         } finally {
           reader.releaseLock();
           controller.close();
