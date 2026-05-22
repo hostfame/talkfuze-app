@@ -1448,7 +1448,7 @@ export default function WidgetPage() {
           content, 
           'ai', 
           { auto_reply: true }, 
-          activeConversationId === 'new' ? undefined : activeConversationId
+          (!activeConversationId || activeConversationId === 'new') ? undefined : activeConversationId
         );
       } catch (e) {
         console.error("Failed to send busy auto-reply", e);
