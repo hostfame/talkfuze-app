@@ -1186,6 +1186,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                 >
                   {isUnblocking ? <Loader2 size={14} className="animate-spin" /> : 'Unblock'}
                 </button>
+              </div>
             </div>
             
             {/* Sticky Notes Card (Expandable) */}
