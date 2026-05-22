@@ -3463,14 +3463,14 @@ export default function WidgetPage() {
                         <button
                           type="button"
                           onClick={() => setIsIdentityModalOpen(false)}
-                          className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-semibold py-3.5 rounded-xl text-[14px] border border-slate-200 dark:border-slate-700 transition-all active:scale-[0.98] cursor-pointer"
+                          className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-semibold py-3 rounded-xl text-[13px] border border-slate-200 dark:border-slate-700 transition-all active:scale-[0.98] cursor-pointer"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={isUpdatingIdentity || !tempName.trim()}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
                         >
                           {isUpdatingIdentity ? (
                             <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Saving...</>
