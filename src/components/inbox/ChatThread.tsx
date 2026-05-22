@@ -375,24 +375,43 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
     return <span className="flex items-center gap-1"><Paperclip size={14} className="text-blue-500 shrink-0" /> Attachment</span>;
   }
 
-  const urlRegex = /((?:https?:\/\/|www\.)[^\s]+)/gi;
+  const urlRegex = /((?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
   const parts = text.split(urlRegex);
   const mentionRegex = /(@\d+)/g;
   
   return parts.map((part, i) => {
-    if (part.match(urlRegex)) {
-      const href = part.toLowerCase().startsWith('http') ? part : `https://${part}`;
+    const isUrl = urlRegex.test(part);
+    urlRegex.lastIndex = 0; // reset after test
+
+    if (isUrl) {
+      let cleanPart = part;
+      let trailing = "";
+      while (cleanPart.length > 0 && ['.', ',', '!', '?', ';', ')', '*'].includes(cleanPart.slice(-1))) {
+        trailing = cleanPart.slice(-1) + trailing;
+        cleanPart = cleanPart.slice(0, -1);
+      }
+      
+      let href = cleanPart;
+      const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanPart);
+      if (isEmail) {
+        href = `mailto:${cleanPart}`;
+      } else {
+        href = cleanPart.toLowerCase().startsWith('http') ? cleanPart : `https://${cleanPart}`;
+      }
+
       return (
-        <a 
-          key={i} 
-          href={href} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className={isAgent ? "underline underline-offset-2 hover:opacity-80 transition-opacity" : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 transition-all"}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {part}
-        </a>
+        <span key={i}>
+          <a 
+            href={href} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={isAgent ? "underline underline-offset-2 hover:opacity-80 transition-opacity" : "text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 transition-all"}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {cleanPart}
+          </a>
+          {trailing}
+        </span>
       );
     }
     
