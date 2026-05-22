@@ -3437,16 +3437,12 @@ export default function ChatThread({
           )}
           
           {aiDraftSources.length > 0 && input.trim().length > 0 && !isInternal && (
-            <div className="px-4 pb-2 pt-1 flex flex-wrap gap-1.5 z-[2] relative bg-white dark:bg-[#2a3942] animate-in fade-in duration-200">
-              <div className="flex items-center gap-1.5 mr-1">
-                <Database size={11} className="text-blue-500" />
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Knowledge Used:</span>
+            <div className="px-4 pb-2 pt-0 flex items-center gap-1.5 z-[2] relative bg-white dark:bg-[#2a3942] animate-in fade-in duration-200">
+              <Database size={10} className="text-slate-400 shrink-0" />
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">
+                <span className="font-semibold mr-1">AI used:</span>
+                {aiDraftSources.join(' • ')}
               </div>
-              {aiDraftSources.map((source, i) => (
-                <span key={i} className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shadow-sm">
-                  {source}
-                </span>
-              ))}
             </div>
           )}
 
