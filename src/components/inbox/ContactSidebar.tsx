@@ -1603,17 +1603,34 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           </div>
           
           <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 space-y-4 py-2">
-            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => (
+            {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => {
+              const ua = msg.metadata?.userAgent || '';
+              let browser = '';
+              if (ua.includes('Chrome')) browser = 'Chrome';
+              else if (ua.includes('Firefox')) browser = 'Firefox';
+              else if (ua.includes('Safari')) browser = 'Safari';
+              else if (ua.includes('Edge')) browser = 'Edge';
+              
+              const isDesktop = !ua.includes('Mobile');
+              
+              return (
               <div key={msg.id} className="relative group">
                 <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900 group-hover:bg-blue-500 transition-colors"></div>
                 <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200 truncate pr-2" title={msg.content}>
                   {msg.content.replace('Viewed: ', '')}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-[11px] text-slate-500">
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  {browser && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 dark:border-slate-700">
+                      {browser} {isDesktop ? 'Desktop' : 'Mobile'}
+                    </span>
+                  )}
+                </div>
               </div>
-            ))}
+            )})}
             
             {messages.filter((m: any) => m.content_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).length === 0 && (
               <div className="mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
