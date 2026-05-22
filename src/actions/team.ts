@@ -27,6 +27,53 @@ export async function getTeammates() {
   return data || []
 }
 
+export async function updateTeammateRole(targetUserId: string, newRole: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    // Check if current user is admin
+    const { data: currentUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("role, org_id")
+      .eq("id", user.id)
+      .single()
+
+    if (!currentUserProfile || currentUserProfile.role !== "admin") {
+      return { success: false, error: "Only admins can change roles" }
+    }
+
+    // Verify the target user is in the same org
+    const { data: targetUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("org_id")
+      .eq("id", targetUserId)
+      .single()
+
+    if (!targetUserProfile || targetUserProfile.org_id !== currentUserProfile.org_id) {
+      return { success: false, error: "User not found in your organization" }
+    }
+
+    // Update the role in public.users
+    const { error: dbError } = await supabaseAdmin
+      .from("users")
+      .update({ role: newRole.toLowerCase() })
+      .eq("id", targetUserId)
+
+    if (dbError) throw new Error(dbError.message)
+
+    await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+      user_metadata: { role: newRole.toLowerCase() }
+    })
+
+    return { success: true }
+  } catch (err: unknown) {
+    console.error("Error updating teammate role:", err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
 export async function addTeammate(name: string, email: string, role: string = "Agent") {
   try {
     // 1. Create the user in Supabase Auth using Admin API

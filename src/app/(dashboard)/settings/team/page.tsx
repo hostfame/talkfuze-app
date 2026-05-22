@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Plus, MoreHorizontal, X, Loader2 } from "lucide-react"
-import { getTeammates, addTeammate } from "@/actions/team"
+import { getTeammates, addTeammate, updateTeammateRole } from "@/actions/team"
 import type { UserProfile } from "@/lib/types"
 
 export default function TeamSettingsPage() {
@@ -10,6 +10,7 @@ export default function TeamSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   
   // Form State
   const [name, setName] = useState("")
@@ -60,6 +61,20 @@ export default function TeamSettingsPage() {
     setEmail("")
     setRole("Agent")
     fetchTeam()
+  }
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    setOpenMenuId(null)
+    const originalTeammates = [...teammates]
+    
+    // Optimistic UI update
+    setTeammates(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m))
+    
+    const result = await updateTeammateRole(userId, newRole)
+    if (!result.success) {
+      alert(result.error) // Fallback for admin panel errors
+      setTeammates(originalTeammates)
+    }
   }
 
   return (
@@ -133,10 +148,23 @@ export default function TeamSettingsPage() {
                       {member.status === 'online' ? 'Online' : member.status}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="px-6 py-4 text-right relative">
+                    <button 
+                      onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
                       <MoreHorizontal size={18} />
                     </button>
+                    {openMenuId === member.id && (
+                      <div className="absolute right-6 top-10 w-36 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-800 py-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100">
+                        <button
+                          onClick={() => handleRoleChange(member.id, member.role?.toLowerCase() === 'admin' ? 'agent' : 'admin')}
+                          className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left"
+                        >
+                          Make {member.role?.toLowerCase() === 'admin' ? 'Agent' : 'Admin'}
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))
