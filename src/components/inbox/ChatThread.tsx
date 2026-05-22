@@ -1511,7 +1511,7 @@ export default function ChatThread({
       supabase.channel(`typing:${orgId}`).send({
         type: 'broadcast',
         event: 'typingStatus',
-        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true }
+        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
       });
       
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -1520,7 +1520,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
         });
       }, 2000);
     }
@@ -1651,7 +1651,7 @@ export default function ChatThread({
       supabase.channel(`typing:${orgId}`).send({
         type: 'broadcast',
         event: 'typingStatus',
-        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true }
+        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
       });
     }
 
@@ -1711,7 +1711,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
         });
       }
 
@@ -1737,7 +1737,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false }
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
         });
       }
     }
@@ -1955,7 +1955,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'recordingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_recording: true }
+          payload: { conversation_id: conversationId, direction: 'agent', is_recording: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
         });
       }
 
@@ -1981,7 +1981,7 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'recordingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_recording: false }
+          payload: { conversation_id: conversationId, direction: 'agent', is_recording: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
         });
       }
     }
@@ -2316,21 +2316,37 @@ export default function ChatThread({
                 <button onClick={() => { setIsEditingName(false); setEditedName(contactName) }} className="text-slate-400 hover:text-slate-600 p-1"><X size={16} strokeWidth={2.5} /></button>
               </div>
             ) : (
-              <>
-                <h2 className="font-medium text-[16px] text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
-                  {contactName}
-                  {isCustomerOnline && (
-                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" title="Online now"></div>
-                  )}
-                </h2>
-                <button 
-                  onClick={() => setIsEditingName(true)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
-                  title="Edit Contact Name"
-                >
-                  <Pencil size={14} strokeWidth={2.5} />
-                </button>
-              </>
+              <div className="flex flex-col justify-center min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-medium text-[16px] text-slate-900 dark:text-[#e9edef] flex items-center gap-2 truncate">
+                    {contactName}
+                    {isCustomerOnline && (
+                      <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)] shrink-0" title="Online now"></div>
+                    )}
+                  </h2>
+                  <button 
+                    onClick={() => setIsEditingName(true)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 shrink-0"
+                    title="Edit Contact Name"
+                  >
+                    <Pencil size={14} strokeWidth={2.5} />
+                  </button>
+                </div>
+                
+                {/* Sleek Agent Typing Indicator underneath name */}
+                {activeAgents.filter(a => a.activity === 'typing').length > 0 && (
+                  <div className="flex items-center gap-1.5 animate-in fade-in duration-300 mt-0.5">
+                    <div className="flex gap-[2px] items-center mt-[1px]">
+                      <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                      <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                      <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-tight truncate">
+                      {activeAgents.filter(a => a.activity === 'typing').map(a => a.name.split(' ')[0]).join(' and ')} {activeAgents.filter(a => a.activity === 'typing').length > 1 ? 'are' : 'is'} typing...
+                    </span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -2950,22 +2966,7 @@ export default function ChatThread({
           }
         })}
         
-        {activeAgents.filter(a => a.activity === 'typing').length > 0 && (
-          <div className="flex flex-col gap-1.5 mb-4 animate-in fade-in slide-in-from-bottom-2">
-            {activeAgents.filter(a => a.activity === 'typing').map((agent, idx) => (
-              <div key={idx} className="flex items-center gap-2 self-center bg-blue-50/80 dark:bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-800/50">
-                <div className="flex gap-1 items-center mr-1">
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                </div>
-                <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
-                  {agent.name} is typing in this conversation...
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+
 
         {isCustomerTyping && (
           <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
