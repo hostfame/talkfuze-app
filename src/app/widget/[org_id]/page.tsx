@@ -507,6 +507,7 @@ export default function WidgetPage() {
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const voiceChannelRef = useRef<any>(null)
   const incomingAgentCallRef = useRef<{ offer: any } | null>(null)
+  const answeredByRef = useRef<{ agentId: string, agentName: string } | null>(null)
 
   const subscribeToVoiceCall = (convId: string) => {
     // Force remove existing call channel first to prevent duplicate channels
@@ -519,6 +520,12 @@ export default function WidgetPage() {
       .on('broadcast', { event: 'voice_call_answered' }, async (payload) => {
         try {
           setCallStatus('active')
+          if (payload.payload.agentId) {
+            answeredByRef.current = {
+              agentId: payload.payload.agentId,
+              agentName: payload.payload.agentName || 'Agent'
+            }
+          }
           const pc = voiceConnectionRef.current
           if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
@@ -537,8 +544,8 @@ export default function WidgetPage() {
               voiceBufferedCandidatesRef.current = [];
             }
           }
-          setCallDuration(0)
-          callDurationRef.current = 0
+          setCallDuration(1)
+          callDurationRef.current = 1
           if (callTimerRef.current) clearInterval(callTimerRef.current)
           callTimerRef.current = setInterval(() => {
             setCallDuration(d => d + 1)
@@ -834,7 +841,12 @@ export default function WidgetPage() {
     if (activeConversationId && activeConversationId !== 'new') {
       const duration = callDurationRef.current;
       if (duration > 0) {
-        sendWidgetMessage(org_id, deviceId, `Voice call ended`, 'system', { duration: formatCallDuration(duration) }, activeConversationId);
+        const metadata: any = { duration: formatCallDuration(duration) };
+        if (answeredByRef.current) {
+          metadata.agent_id = answeredByRef.current.agentId;
+          metadata.agent_name = answeredByRef.current.agentName;
+        }
+        sendWidgetMessage(org_id, deviceId, `Voice call ended`, 'system', metadata, activeConversationId);
       } else {
         sendWidgetMessage(org_id, deviceId, `Missed voice call`, 'system', {}, activeConversationId);
       }
@@ -853,6 +865,7 @@ export default function WidgetPage() {
     setCallStatus('idle')
     setCallDuration(0)
     callDurationRef.current = 0
+    answeredByRef.current = null
     setIsCallMuted(false)
 
     // Resubscribe to a fresh, clean conversation voice channel to listen for future agent-initiated calls

@@ -736,7 +736,11 @@ export default function ChatThread({
         await voiceChannelRef.current.send({
           type: 'broadcast',
           event: 'voice_call_answered',
-          payload: { answer }
+          payload: { 
+            answer,
+            agentId: currentUser?.id,
+            agentName: currentUser?.name
+          }
         })
       }
 
@@ -2707,11 +2711,18 @@ export default function ChatThread({
                       }`}>
                         {isMissed ? 'Missed Voice Call' : 'Voice Call'}
                       </span>
-                      <span className={`text-[11px] font-medium ${
-                        isMissed ? 'text-slate-400 dark:text-slate-500' : 'text-blue-500/70 dark:text-blue-400/70'
-                      }`}>
-                        {msgTime} {safeMeta.duration ? `\u2022 ${safeMeta.duration}` : ''}
-                      </span>
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        <span className={`text-[11px] font-medium ${
+                          isMissed ? 'text-slate-400 dark:text-slate-500' : 'text-blue-500/70 dark:text-blue-400/70'
+                        }`}>
+                          {msgTime} {safeMeta.duration ? `\u2022 ${safeMeta.duration}` : ''}
+                        </span>
+                        {!isMissed && safeMeta.agent_name && (
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            Answered by {safeMeta.agent_name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2737,12 +2748,19 @@ export default function ChatThread({
             let agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
             
             // Fallback for messages sent from phone/webhook (null sender_id)
-            if (!agent) {
+            if (!agent && msg.sender_type !== 'ai') {
               agent = currentUser ? teamMembers.find(t => t.id === currentUser.id) : teamMembers[0];
             }
             
-            const agentName = agent?.name || "Hostnin Support";
-            const agentInitial = agentName.charAt(0).toUpperCase();
+            let agentName = agent?.name || "Hostnin Support";
+            let agentInitial = agentName.charAt(0).toUpperCase();
+            let agentAvatar = agent?.avatar_url;
+
+            if (msg.sender_type === 'ai') {
+              agentName = "Nina";
+              agentInitial = "N";
+              agentAvatar = "/team/h.jpg";
+            }
 
             return (
               <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
@@ -2846,8 +2864,8 @@ export default function ChatThread({
                   
                   {/* Agent Avatar */}
                   <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
-                    {agent?.avatar_url ? (
-                      <img src={agent.avatar_url} alt={agentName} className="w-full h-full object-cover" />
+                    {agentAvatar ? (
+                      <img src={agentAvatar} alt={agentName} className="w-full h-full object-cover" />
                     ) : (
                       agentInitial
                     )}
