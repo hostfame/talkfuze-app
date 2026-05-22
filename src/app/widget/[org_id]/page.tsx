@@ -1438,9 +1438,12 @@ export default function WidgetPage() {
     const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && m.metadata?.auto_reply);
     if (hasBusyAutoReply) return;
 
+    const hasAgentReplied = messages.some(m => m.sender_type === 'agent');
+    const autoReplyDelay = hasAgentReplied ? 180000 : 60000;
+
     const typingTimer = setTimeout(() => {
       setIsAutoTyping(true);
-    }, 15000); // 15 seconds
+    }, autoReplyDelay - 45000); // 45 seconds before the auto-reply message
 
     const timer = setTimeout(async () => {
       setIsAutoTyping(false); // Stop typing right before sending
@@ -1469,7 +1472,7 @@ export default function WidgetPage() {
       } catch (e) {
         console.error("Failed to send busy auto-reply", e);
       }
-    }, 60000); // 1 minute
+    }, autoReplyDelay);
 
     return () => {
       clearTimeout(typingTimer);
