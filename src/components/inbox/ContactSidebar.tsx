@@ -1602,41 +1602,100 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
             <h3 className="text-[13px] font-medium text-slate-900 dark:text-slate-100">User Journey</h3>
           </div>
           
-          <div className="relative pl-3 border-l-2 border-slate-200 dark:border-slate-700 space-y-4 py-2">
-            {messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).map((msg: any) => {
-              const ua = msg.metadata?.userAgent || '';
-              let browser = '';
-              if (ua.includes('Chrome')) browser = 'Chrome';
-              else if (ua.includes('Firefox')) browser = 'Firefox';
-              else if (ua.includes('Safari')) browser = 'Safari';
-              else if (ua.includes('Edge')) browser = 'Edge';
+          <div className="space-y-0 py-2">
+            {(() => {
+              const journeyEvents = messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:')));
               
-              const isDesktop = !ua.includes('Mobile');
-              
-              return (
-              <div key={msg.id} className="relative group">
-                <div className="absolute -left-[17px] top-1 w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-slate-50 dark:ring-slate-900 group-hover:bg-blue-500 transition-colors"></div>
-                <p className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200 truncate pr-2" title={msg.content}>
-                  {msg.content.replace('Viewed: ', '')}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <p className="text-[11px] text-slate-500">
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                  {browser && (
-                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded border border-slate-200 dark:border-slate-700">
-                      {browser} {isDesktop ? 'Desktop' : 'Mobile'}
-                    </span>
+              if (journeyEvents.length === 0) {
+                return (
+                  <div className="mt-2 p-6 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl flex flex-col items-center justify-center text-center space-y-3 shadow-sm">
+                    <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                      <Globe size={24} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">No journey events yet</p>
+                      <p className="text-[12px] text-slate-500 mt-1 leading-relaxed">Live page navigation events will appear<br/>here once the visitor navigates your site.</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return journeyEvents.map((msg: any, index: number) => {
+                const ua = msg.metadata?.userAgent || '';
+                let browser = '';
+                if (ua.includes('Chrome')) browser = 'Chrome';
+                else if (ua.includes('Firefox')) browser = 'Firefox';
+                else if (ua.includes('Safari')) browser = 'Safari';
+                else if (ua.includes('Edge')) browser = 'Edge';
+                
+                const isDesktop = !ua.includes('Mobile');
+                
+                // Calculate time spent (difference with next event)
+                let timeSpentStr = '';
+                if (index < journeyEvents.length - 1) {
+                  const nextEvent = journeyEvents[index + 1];
+                  const diff = new Date(nextEvent.created_at).getTime() - new Date(msg.created_at).getTime();
+                  if (diff > 0) {
+                    const secs = Math.floor(diff / 1000);
+                    if (secs < 60) timeSpentStr = `${secs}s`;
+                    else {
+                      const mins = Math.floor(secs / 60);
+                      const remSecs = secs % 60;
+                      timeSpentStr = `${mins}m ${remSecs}s`;
+                    }
+                  } else {
+                    timeSpentStr = '< 1s';
+                  }
+                } else {
+                  timeSpentStr = 'Current page';
+                }
+                
+                return (
+                <div key={msg.id} className="relative group pl-6">
+                  {/* Beautiful timeline line */}
+                  {index < journeyEvents.length - 1 && (
+                    <div className="absolute left-[9px] top-[28px] bottom-[-16px] w-[2px] bg-gradient-to-b from-blue-500/30 to-blue-500/10 dark:from-[#00a884]/30 dark:to-transparent rounded-full z-0"></div>
                   )}
+                  {/* Node dot */}
+                  <div className={`absolute left-[5px] top-3.5 w-[10px] h-[10px] rounded-full ring-4 shadow-sm z-10 ${
+                    index === journeyEvents.length - 1 
+                      ? 'bg-blue-500 dark:bg-[#00a884] ring-blue-50 dark:ring-slate-900 animate-pulse'
+                      : 'bg-slate-300 dark:bg-slate-600 ring-slate-50 dark:ring-slate-900'
+                  }`}></div>
+                  
+                  <div className="bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 p-3.5 rounded-[14px] shadow-sm mb-4 transition-all hover:border-blue-200 dark:hover:border-[#00a884]/50 hover:shadow-md">
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 leading-snug line-clamp-2" title={msg.content}>
+                      {msg.content.replace('Viewed: ', '')}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 mt-2.5">
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <Clock size={12} className="text-slate-400 dark:text-slate-500" />
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      
+                      {timeSpentStr && (
+                        <div className={`flex items-center gap-1.5 text-[10.5px] font-semibold px-2 py-0.5 rounded-md ${
+                          index === journeyEvents.length - 1 
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30' 
+                            : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50'
+                        }`}>
+                          {timeSpentStr === 'Current page' && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse"></div>}
+                          {timeSpentStr}
+                        </div>
+                      )}
+                      
+                      {browser && index === 0 && (
+                        <div className="flex items-center gap-1.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400 px-2 py-0.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-md">
+                          <Monitor size={12} className="text-slate-400 dark:text-slate-500" />
+                          {browser} {isDesktop ? 'Desktop' : 'Mobile'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )})}
-            
-            {messages.filter((m: any) => m.sender_type === 'system' && (m.metadata?.event === 'page_view' || m.content.startsWith('Viewed:'))).length === 0 && (
-              <div className="mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
-                 <p className="text-[12px] text-slate-500 text-center">No journey events tracked yet. Live events will appear here once the visitor navigates your site.</p>
-              </div>
-            )}
+              )})}
+            })()}
           </div>
         </div>
       )}

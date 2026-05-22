@@ -2678,6 +2678,8 @@ export default function ChatThread({
               )
             }
 
+            if (safeMeta?.event === 'page_view' || msg.content.startsWith('Viewed:')) return null;
+
             if (msg.content === 'Started a voice call') return null;
 
             if (msg.content.includes("voice call")) {
