@@ -344,6 +344,7 @@ export default function WidgetPage() {
   const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
   const [isAgentTyping, setIsAgentTyping] = useState(false)
+  const [isAutoTyping, setIsAutoTyping] = useState(false)
   const [isAgentRecording, setIsAgentRecording] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isSending, setIsSending] = useState(false)
@@ -1418,7 +1419,10 @@ export default function WidgetPage() {
   // Auto-reply after 1 minute of inactivity
   useEffect(() => {
     const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-    if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') return;
+    if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') {
+      setIsAutoTyping(false);
+      return;
+    }
 
     // Check if auto-reply is enabled in settings
     if (settings?.widget_auto_reply_enabled === false) return;
@@ -1427,7 +1431,12 @@ export default function WidgetPage() {
     const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && m.metadata?.auto_reply);
     if (hasBusyAutoReply) return;
 
+    const typingTimer = setTimeout(() => {
+      setIsAutoTyping(true);
+    }, 15000); // 15 seconds
+
     const timer = setTimeout(async () => {
+      setIsAutoTyping(false); // Stop typing right before sending
       if (!org_id || !deviceId) return;
       const isBengali = messages.some(m => m.sender_type === 'contact' && /[\u0980-\u09FF]/.test(m.content || ''));
       const waNumber = settings?.whatsapp_number || '+8801325875955';
@@ -1455,7 +1464,11 @@ export default function WidgetPage() {
       }
     }, 60000); // 1 minute
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(typingTimer);
+      clearTimeout(timer);
+      setIsAutoTyping(false);
+    };
   }, [messages, org_id, deviceId, settings, activeConversationId]);
 
   useEffect(() => {
@@ -1575,7 +1588,7 @@ export default function WidgetPage() {
     } else {
       isUserScrolledUpRef.current = false;
     }
-  }, [messages, activeTab, isAgentTyping, isAgentRecording])
+  }, [messages, activeTab, isAgentTyping, isAutoTyping, isAgentRecording])
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setInput((prev) => prev + emojiData.emoji)
@@ -3193,9 +3206,7 @@ export default function WidgetPage() {
                       {msg.agent?.avatar_url ? (
                         <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full shrink-0 bg-[#0070f3] flex items-center justify-center text-white font-bold text-[11px]">
-                          {msg.agent?.name ? msg.agent.name.charAt(0).toUpperCase() : 'H'}
-                        </div>
+                        <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
                       )}
                       <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
                         {renderMessageContent(msg, false)}
@@ -3237,7 +3248,7 @@ export default function WidgetPage() {
               })}
               
               {/* Typing Indicator */}
-              {isAgentTyping && (
+              {(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in duration-300 mb-6" id="tf-typing-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
@@ -3251,7 +3262,7 @@ export default function WidgetPage() {
               )}
 
               {/* Voice Recording Indicator */}
-              {isAgentRecording && !isAgentTyping && (
+              {isAgentRecording && !(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300 mb-6" id="tf-recording-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
                     <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
