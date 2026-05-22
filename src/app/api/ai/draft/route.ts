@@ -209,7 +209,18 @@ Draft a smart, helpful reply as the support agent.`;
     });
 
     if (!anthropicResponse.ok) {
-      return NextResponse.json({ error: await anthropicResponse.text() }, { status: 500 });
+      const errorText = await anthropicResponse.text();
+      console.error('[AI Draft] Anthropic error:', anthropicResponse.status, errorText);
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `Anthropic ${anthropicResponse.status}: ${errorText.substring(0, 200)}` })}\n\n`));
+          controller.close();
+        }
+      });
+      return new Response(errorStream, {
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
+      });
     }
 
     // 6. Pipe Anthropic SSE stream directly to client
