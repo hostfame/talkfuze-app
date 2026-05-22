@@ -134,3 +134,108 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* Gemini-style AI generation border animation */
+@keyframes ai-border-rotate {
+  0% { --ai-angle: 0deg; }
+  100% { --ai-angle: 360deg; }
+}
+
+@keyframes ai-glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes ai-shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* The AI composer wrapper with animated conic gradient border */
+.ai-composer-active {
+  position: relative;
+  z-index: 0;
+  border-color: transparent !important;
+}
+
+.ai-composer-active::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 14px;
+  background: conic-gradient(
+    from var(--ai-angle, 0deg),
+    #3b82f6 0%,
+    #8b5cf6 15%,
+    #06b6d4 30%,
+    #3b82f6 45%,
+    #8b5cf6 60%,
+    #06b6d4 75%,
+    #3b82f6 90%,
+    #8b5cf6 100%
+  );
+  animation: ai-border-rotate 2.5s linear infinite;
+}
+
+/* Inner fill to mask the gradient, showing only the border */
+.ai-composer-active::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: 12px;
+  background: white;
+}
+
+.dark .ai-composer-active::after {
+  background: #2a3942;
+}
+
+/* Subtle inner shimmer glow overlay */
+.ai-composer-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-composer-shimmer > .ai-shimmer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.03) 25%,
+    rgba(139, 92, 246, 0.05) 50%,
+    rgba(6, 182, 212, 0.03) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-shimmer-sweep 2s ease-in-out infinite;
+}
+
+.dark .ai-composer-shimmer > .ai-shimmer-overlay {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.06) 25%,
+    rgba(139, 92, 246, 0.08) 50%,
+    rgba(6, 182, 212, 0.06) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-shimmer-sweep 2s ease-in-out infinite;
+}
+
+/* Support for CSS custom property animation */
+@property --ai-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* AI Bot button glow effect */
+.ai-bot-glow {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 12px rgba(139, 92, 246, 0.3));
+}

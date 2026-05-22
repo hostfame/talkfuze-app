@@ -2887,7 +2887,9 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${isAiStreaming ? 'bg-blue-50/30 dark:bg-blue-950/10 border-blue-400 dark:border-blue-600 ring-1 ring-blue-400/50 animate-pulse' : isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden focus-within:ring-1 transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer' : isInternal ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800 focus-within:border-amber-500 focus-within:ring-amber-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+          {/* AI shimmer overlay */}
+          {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
           {isRecording ? (
             <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
               <div className="flex items-center gap-3">
@@ -3058,12 +3060,12 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
               ></textarea>
             </div>
           )}
           
-          <div className={`flex justify-between items-center px-3 py-2 border-t ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -3091,12 +3093,10 @@ export default function ChatThread({
                 onClick={handleAiDraft}
                 disabled={isSending || isAiDrafting || isAiStreaming || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : isAiStreaming ? 'text-blue-500 animate-pulse' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : (isAiDrafting || isAiStreaming) ? 'text-blue-500' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
-                {isAiDrafting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : isAiStreaming ? (
-                  <Bot size={16} strokeWidth={2} className="text-blue-500" />
+                {(isAiDrafting || isAiStreaming) ? (
+                  <Bot size={16} strokeWidth={2} className="text-blue-500 ai-bot-glow animate-pulse" />
                 ) : aiDraftFailed ? (
                   <X size={16} strokeWidth={2} />
                 ) : (
