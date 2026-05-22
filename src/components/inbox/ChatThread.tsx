@@ -965,6 +965,7 @@ export default function ChatThread({
   }
 
   const [input, setInput] = useState("")
+  const [selectedText, setSelectedText] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -1586,12 +1587,15 @@ export default function ChatThread({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check cursor position to trigger quick reply menu
+  const [macroPrefix, setMacroPrefix] = useState('/');
+
   const checkMacroTrigger = (val: string, selectionStart: number) => {
     const textUpToCursor = val.slice(0, selectionStart);
-    const match = textUpToCursor.match(/(?:^|\s)\/([a-zA-Z0-9_-]*)$/);
+    const match = textUpToCursor.match(/(?:^|\s)(\/\/|\/)([a-zA-Z0-9_-]*)$/);
     if (match) {
       setShowMacroMenu(true);
-      setMacroFilter(match[1].toLowerCase());
+      setMacroPrefix(match[1]);
+      setMacroFilter(match[2].toLowerCase());
       setSelectedIndex(0);
     } else {
       setShowMacroMenu(false);
@@ -1606,42 +1610,41 @@ export default function ChatThread({
     lastActivityTimeRef.current = Date.now();
   };
 
-  const filteredMacros = quickReplies.filter(r => {
-    if (!macroFilter) return true;
-    const shortcutLower = r.shortcut.toLowerCase();
-    const titleLower = (r.title || '').toLowerCase();
-    
-    // Exact shortcut match or starts with shortcut prefix is highest priority
-    if (shortcutLower.startsWith(macroFilter) || titleLower.startsWith(macroFilter)) {
-      return true;
+  const filteredMacros = (() => {
+    if (macroPrefix === '//') {
+       const aiMacros = [
+         { id: 'ai-en', shortcut: 'en', title: 'Translate to English', content: '//translate-en' },
+         { id: 'ai-bn', shortcut: 'bn', title: 'Translate to Bangla', content: '//translate-bn' },
+         { id: 'ai-smart', shortcut: 't', title: 'Smart Translate (Auto)', content: '//translate-auto' }
+       ];
+       return aiMacros.filter(r => !macroFilter || r.shortcut.startsWith(macroFilter) || r.title.toLowerCase().includes(macroFilter));
     }
     
-    // Shortcut or title contains the filter word
-    if (shortcutLower.includes(macroFilter) || titleLower.includes(macroFilter)) {
-      return true;
-    }
-    
-
-    
-    return false;
-  }).sort((a, b) => {
-    if (!macroFilter) return a.shortcut.localeCompare(b.shortcut);
-    
-    const aShortcut = a.shortcut.toLowerCase();
-    const bShortcut = b.shortcut.toLowerCase();
-    
-    // Prioritize startsWith over contains
-    const aStartsWith = aShortcut.startsWith(macroFilter);
-    const bStartsWith = bShortcut.startsWith(macroFilter);
-    if (aStartsWith && !bStartsWith) return -1;
-    if (!aStartsWith && bStartsWith) return 1;
-    
-    // Prioritize exact match
-    if (aShortcut === macroFilter && bShortcut !== macroFilter) return -1;
-    if (bShortcut === macroFilter && aShortcut !== macroFilter) return 1;
-    
-    return aShortcut.localeCompare(bShortcut);
-  });
+    return quickReplies.filter(r => {
+      if (!macroFilter) return true;
+      const shortcutLower = r.shortcut.toLowerCase();
+      const titleLower = (r.title || '').toLowerCase();
+      
+      if (shortcutLower.startsWith(macroFilter) || titleLower.startsWith(macroFilter)) return true;
+      if (shortcutLower.includes(macroFilter) || titleLower.includes(macroFilter)) return true;
+      return false;
+    }).sort((a, b) => {
+      if (!macroFilter) return a.shortcut.localeCompare(b.shortcut);
+      
+      const aShortcut = a.shortcut.toLowerCase();
+      const bShortcut = b.shortcut.toLowerCase();
+      
+      const aStartsWith = aShortcut.startsWith(macroFilter);
+      const bStartsWith = bShortcut.startsWith(macroFilter);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      
+      if (aShortcut === macroFilter && bShortcut !== macroFilter) return -1;
+      if (bShortcut === macroFilter && aShortcut !== macroFilter) return 1;
+      
+      return aShortcut.localeCompare(bShortcut);
+    });
+  })();
 
   useEffect(() => {
     if (showMacroMenu) {
@@ -1653,6 +1656,37 @@ export default function ChatThread({
   }, [selectedIndex, showMacroMenu]);
 
   const applyMacro = (macroContent: string) => {
+    if (macroContent.startsWith('//translate-')) {
+      const mode = macroContent.split('-')[1]; // 'en', 'bn', or 'auto'
+      const val = input;
+      const textarea = textareaRef.current;
+      if (textarea) {
+        const textUpToCursor = val.slice(0, textarea.selectionStart);
+        const slashIndex = textUpToCursor.lastIndexOf('//');
+        const textToTranslate = (val.slice(0, slashIndex) + val.slice(textarea.selectionEnd)).trim();
+        
+        if (textToTranslate) {
+          let instruction = '';
+          if (mode === 'en') instruction = `Translate the following exactly to English: ${textToTranslate}`;
+          else if (mode === 'bn') instruction = `Translate the following exactly to Bengali: ${textToTranslate}`;
+          else instruction = `Translate the following exactly, auto-detecting language (Bangla <-> English): ${textToTranslate}`;
+          
+          handleAiDraft(instruction, true);
+        } else {
+          // If no text, just insert the //t 
+          const newValue = val.slice(0, slashIndex) + (mode === 'auto' ? '//t ' : `//translate to ${mode}: `) + val.slice(textarea.selectionEnd);
+          setInput(newValue);
+          setTimeout(() => {
+             textarea.focus();
+             const newCursorPos = slashIndex + (mode === 'auto' ? 4 : 17);
+             textarea.setSelectionRange(newCursorPos, newCursorPos);
+          }, 10);
+        }
+      }
+      setShowMacroMenu(false);
+      return;
+    }
+
     const val = input;
     const textarea = textareaRef.current;
     
@@ -1705,14 +1739,14 @@ export default function ChatThread({
     }
   }
 
-  const handleAiDraft = async (instruction?: string) => {
+  const handleAiDraft = async (instruction?: string, isTranslation = false, prefix = "", suffix = "") => {
     if (!conversationId) return
     setIsAiDrafting(true)
     setAiDraftSources([])
     aiDraftLogIdRef.current = null
     
-    // Format context messages - exclude whisper/internal messages
-    const contextMessages = allMessages
+    // Format context messages - exclude whisper/internal messages (skip context for translation to save tokens/time)
+    const contextMessages = isTranslation ? "" : allMessages
       .filter(m => !m.is_internal)
       .slice(-20)
       .map(m => {
@@ -1742,7 +1776,7 @@ export default function ChatThread({
       if (!res.ok) throw new Error('API failed')
       if (!res.body) throw new Error('No body')
 
-      setInput('')
+      if (!prefix && !suffix) setInput('')
       setIsInternal(false)
       setIsAiDrafting(false) // stop spinner, text is about to stream
       setIsAiStreaming(true) // show pulsing blue border while streaming
@@ -1767,7 +1801,7 @@ export default function ChatThread({
               }
               if (data.text) {
                 fullText += data.text
-                setInput(fullText)
+                setInput(prefix + fullText + suffix)
                 if (textareaRef.current) {
                   textareaRef.current.focus()
                   textareaRef.current.scrollTop = textareaRef.current.scrollHeight
@@ -3405,6 +3439,14 @@ export default function ChatThread({
                     stageAttachments(files);
                   }
                 }}
+                onSelect={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  if (target.selectionStart !== target.selectionEnd) {
+                    setSelectedText(target.value.substring(target.selectionStart, target.selectionEnd));
+                  } else {
+                    setSelectedText("");
+                  }
+                }}
               onKeyDown={(e) => {
                 if (showMacroMenu && filteredMacros.length > 0) {
                   if (e.key === 'ArrowDown') {
@@ -3422,7 +3464,10 @@ export default function ChatThread({
                 } else if (e.key === 'Enter' && !e.shiftKey) {
                   if (e.nativeEvent.isComposing) return
                   e.preventDefault()
-                  if (input.trim().startsWith('//') && input.trim().length > 2) {
+                  if (input.trim().startsWith('//t ') && input.trim().length > 4) {
+                    const text = input.trim().substring(4).trim();
+                    handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
+                  } else if (input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
                     const instruction = input.trim().substring(2).trim();
                     handleAiDraft(instruction);
                   } else {
@@ -3433,6 +3478,29 @@ export default function ChatThread({
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
                 className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-900 dark:text-amber-100 placeholder:text-amber-700/50 dark:placeholder:text-amber-500/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
               ></textarea>
+              
+              {/* Highlight Translation Menu */}
+              {selectedText && textareaRef.current && (
+                <div className="absolute top-2 right-4 z-[20] animate-in fade-in slide-in-from-bottom-1">
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const textarea = textareaRef.current;
+                      if (!textarea) return;
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const prefix = input.substring(0, start);
+                      const suffix = input.substring(end);
+                      handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${selectedText}`, true, prefix, suffix);
+                      setSelectedText("");
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xl text-[12px] font-medium transition-colors border border-slate-700/50"
+                  >
+                    <Bot size={14} className="text-blue-400" />
+                    Translate
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
