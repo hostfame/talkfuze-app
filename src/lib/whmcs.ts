@@ -1352,28 +1352,12 @@ export async function getClientByPhone(phoneStr: string) {
 
 
 export async function unblockWhmcsIP(ip: string, clientId: number) {
-  try {
-    const params = new URLSearchParams()
-    params.append('action', 'UnblockIP')
-    params.append('ip', ip)
-    params.append('clientid', clientId.toString())
-    
-    const response = await fetch(WHMCS_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString() + '&bridge_secret=' + WHMCS_BRIDGE_SECRET,
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data
-  } catch (error) {
-    console.error('Error unblocking IP:', error)
-    return { result: 'error', message: 'Failed to unblock IP' }
-  }
+    return whmcsRequest<{
+        result: 'success' | 'error';
+        message?: string;
+        details?: Record<string, string>;
+    }>('UnblockIP', {
+        ip: ip,
+        clientid: clientId,
+    }, 30000, 1, true);
 }

@@ -1251,7 +1251,6 @@ export default function ChatThread({
   const [editingMessage, setEditingMessage] = useState<any | null>(null)
 
   const handleContextMenu = (e: React.MouseEvent, message: any) => {
-    if (message.content_type !== 'text') return
     if (message.status === 'recalled' || message.status === 'deleted') return
     e.preventDefault()
     setContextMenu({
@@ -1953,14 +1952,14 @@ export default function ChatThread({
         content: '[Audio Voice Message]',
         content_type: 'audio',
         metadata: { media_url: localUrl },
-        is_internal: false,
+        is_internal: isInternal,
         status: 'sending',
         created_at: new Date().toISOString()
       })
       
       try {
         const meta = await uploadToStorage(file, false);
-        await replyToConversation(orgId, conversationId, '[Audio Voice Message]', false, 'audio', {
+        await replyToConversation(orgId, conversationId, '[Audio Voice Message]', isInternal, 'audio', {
           media_url: meta.url,
           mimetype: meta.type,
           filename: meta.name
@@ -3290,9 +3289,10 @@ export default function ChatThread({
               );
             })()}
 
-            {/* Reply - ALWAYS available for text messages */}
-            <button 
-              onClick={() => {
+            {/* Reply - ONLY available for text messages */}
+            {contextMenu.message.content_type === 'text' && (
+              <button 
+                onClick={() => {
                 setReplyToMessage(contextMenu.message);
                 setContextMenu(null);
                 setTimeout(() => {
@@ -3303,11 +3303,13 @@ export default function ChatThread({
             >
               <CornerUpLeft size={14} className="text-slate-400 dark:text-slate-500" />
               Reply
-            </button>
+              </button>
+            )}
 
-            {/* Copy - ALWAYS available for text messages */}
-            <button 
-              onClick={() => {
+            {/* Copy - ONLY available for text messages */}
+            {contextMenu.message.content_type === 'text' && (
+              <button 
+                onClick={() => {
                 navigator.clipboard.writeText(contextMenu.message.content).catch(() => {});
                 setContextMenu(null);
               }}
@@ -3315,22 +3317,24 @@ export default function ChatThread({
             >
               <Copy size={14} className="text-slate-400 dark:text-slate-500" />
               Copy
-            </button>
+              </button>
+            )}
 
-            {/* Edit - Available for all agent/AI messages */}
-            {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
+            {/* Edit - Available for all agent/AI text messages */}
+            {contextMenu.message.content_type === 'text' && (contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
               <button 
                 onClick={() => triggerEditMessage(contextMenu.message)}
                 className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
               >
                 <Pencil size={14} className="text-slate-400 dark:text-slate-500" />
                 Edit message
-              </button>
+                </button>
             )}
 
-            {/* Add shortcut - ALWAYS available for text messages */}
-            <button 
-              onClick={() => {
+            {/* Add shortcut - ONLY available for text messages */}
+            {contextMenu.message.content_type === 'text' && (
+              <button 
+                onClick={() => {
                 setQuickReplyContent(contextMenu.message.content);
                 setQuickReplyShortcut("");
                 setQuickReplyTitle("");
@@ -3341,9 +3345,10 @@ export default function ChatThread({
             >
               <Plus size={14} className="text-slate-400 dark:text-slate-500" />
               Add shortcut
-            </button>
+              </button>
+            )}
 
-            {/* Recall - Available for all agent/AI messages */}
+            {/* Delete - Available for all agent/AI messages */}
             {(contextMenu.message.sender_type === 'agent' || contextMenu.message.sender_type === 'ai') && (
               <button 
                 onClick={async () => {
@@ -3352,13 +3357,13 @@ export default function ChatThread({
                   try {
                     await recallMessage(msgId);
                   } catch (err: any) {
-                    alert('Failed to recall: ' + err.message);
+                    alert('Failed to delete: ' + err.message);
                   }
                 }}
                 className="w-full text-left px-3.5 py-2 text-[13px] text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 font-medium border-t border-slate-100 dark:border-slate-700/50"
               >
                 <Trash2 size={14} className="text-red-400 dark:text-red-500" />
-                Recall message
+                Delete message
               </button>
             )}
           </div>
