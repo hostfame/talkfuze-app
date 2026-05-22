@@ -123,10 +123,10 @@ const INTENT_PATTERNS: [Intent, RegExp][] = [
   // Generic web hosting (will be suppressed if a specific product matched)
   ['pricing_web', /web\s*host|shared\s*host|হোস্টিং\s*(দাম|প্রাইস|কত)|hosting\s*(price|cost|plan)/i],
   ['domain', /\bdomain\b|ডোমেইন|\.com\b|\.net\b|\.org\b|\.io\b|\.xyz\b|\.bd\b|\.online\b|\btld\b|transfer\s*domain/i],
-  ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill\b|\brefund\b|পেমেন্ট|বিল|টাকা|\brenew/i],
-  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bslow\b|\bbackup\b|\bip\s*block|আইপি\s*ব্লক/i],
-  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to|korte|kora)\b|\bmov(e|ing)\b.*\b(site|from|to)\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
-  ['comparison', /\bcompare\b|\bcomparison\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\s*(one|plan|hosting)|\bbetter\b/i],
+  ['billing', /\binvoice\b|\bpayment\b|\bbkash\b|বিকাশ|\bnagad\b|নগদ|\bpay\b|\bbill(ing)?\b|\brefund\b|পেমেন্ট|বিল|টাকা|\brenew/i],
+  ['technical', /\bcpanel\b|সিপ্যানেল|\bssl\b|\bdns\b|\bnameserver\b|\berror\b|এরর|\bdown\b|\bdowntime\b|\bslow\b|\bbackup\b|\bip\s*block|আইপি\s*ব্লক/i],
+  ['migration', /\bmigrat|\btransfer\b.*\b(site|hosting|from|to|korte|kora|my)\b|\bmov(e|ing)\b.*\b(site|from|to)\b|মাইগ্রেশন|ট্রান্সফার|\bshift\b/i],
+  ['comparison', /\bcompare\b|\bcomparison\b|\bvs\b|\bversus\b|\bdifference\b|কোনটা\s*ভালো|which\b.{0,30}\b(one|plan|hosting)\b|\bbetter\b/i],
 ];
 
 // Specific pricing intents (if any of these matched, suppress generic pricing_web)
@@ -149,7 +149,7 @@ function detectIntents(text: string): Intent[] {
   }
 
   // Generic pricing fallback (only if nothing specific matched)
-  if (intents.length === 0 && /\b(prices?|pricing|কত|দাম|প্রাইস|plan|package)\b/i.test(text)) {
+  if (intents.length === 0 && /\b(prices?|pricing|কত|দাম|প্রাইস|plan|package|dam|daam)\b/i.test(text)) {
     intents.push('pricing_web');
   }
   return [...new Set(intents)]; // deduplicate
