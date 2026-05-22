@@ -3137,6 +3137,7 @@ export default function ChatThread({
                 filteredMacros.map((macro, i) => (
                   <div 
                     key={macro.id} 
+                    onMouseEnter={() => setSelectedIndex(i)}
                     onClick={() => applyMacro(macro.content)}
                     className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 ${i === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   >
@@ -3317,6 +3318,7 @@ export default function ChatThread({
                 value={input}
                 onChange={handleInputChange}
                 onKeyUp={(e) => {
+                  if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) return;
                   const target = e.target as HTMLTextAreaElement;
                   checkMacroTrigger(target.value, target.selectionStart);
                 }}
