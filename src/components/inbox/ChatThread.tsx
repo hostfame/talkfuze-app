@@ -1628,12 +1628,16 @@ export default function ChatThread({
     
     // Format context messages - exclude whisper/internal messages
     const contextMessages = allMessages
-      .filter(m => !m.is_internal && m.content_type !== 'system')
+      .filter(m => !m.is_internal)
       .slice(-20)
       .map(m => {
-        const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-        const name = isAgent ? 'Agent' : contactName
-        let contentStr = m.content_type === 'text' ? m.content : `[${m.content_type}]`
+        let name = 'System'
+        if (m.content_type !== 'system') {
+          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+          name = isAgent ? 'Agent' : (contactName || 'Customer')
+        }
+        
+        let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
         if (m.content_type === 'audio') {
            const transcript = (m.metadata as any)?.transcript
            contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
@@ -1680,6 +1684,9 @@ export default function ChatThread({
           if (line.startsWith('data: ') && line !== 'data: [DONE]') {
             try {
               const data = JSON.parse(line.slice(6))
+              if (data.error) {
+                throw new Error(data.error)
+              }
               if (data.text) {
                 fullText += data.text
                 setInput(fullText)
@@ -1791,12 +1798,16 @@ export default function ChatThread({
         }
         if (finalId && text) {
           const contextMessages = allMessages
-            .filter(m => !m.is_internal && m.content_type !== 'system')
+            .filter(m => !m.is_internal)
             .slice(-20)
             .map(m => {
-              const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-              const name = isAgent ? 'Agent' : contactName
-              let contentStr = m.content_type === 'text' ? m.content : `[${m.content_type}]`
+              let name = 'System'
+              if (m.content_type !== 'system') {
+                const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+                name = isAgent ? 'Agent' : (contactName || 'Customer')
+              }
+              
+              let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
               if (m.content_type === 'audio') {
                  const transcript = (m.metadata as any)?.transcript
                  contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
