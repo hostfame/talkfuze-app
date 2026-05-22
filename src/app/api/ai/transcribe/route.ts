@@ -70,8 +70,8 @@ export async function POST(req: Request) {
     const blob = new Blob([new Uint8Array(buffer)], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' });
     formData.append("file", blob, filename);
     formData.append("model", "whisper-1");
-    // Providing a Bengali prompt anchors the model to output Bengali script natively
-    formData.append("prompt", "এটি একটি কাস্টমার সাপোর্ট মেসেজ। কাস্টমার বাংলায় কথা বলছে।");
+    // Providing comma-separated Bengali keywords anchors the model to Bengali without causing it to hallucinate/repeat full sentences
+    formData.append("prompt", "হ্যালো, ডোমেইন, হোস্টিং, ওয়েবসাইট, পেমেন্ট, সমস্যা, বিকাশ, টাকা, সাপোর্ট, হোসটিন, Hostnin, Cpanel");
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
