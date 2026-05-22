@@ -2689,11 +2689,11 @@ export default function ChatThread({
             if (msg.content.includes("voice call")) {
               const isMissed = msg.content.includes("Missed");
               return (
-                <div key={msg.id || idx} className="flex justify-center my-5">
-                  <div className={`flex items-center gap-3 border px-4 py-2 rounded-xl shadow-sm min-w-[200px] ${
+                <div key={msg.id || idx} className="flex justify-center my-4">
+                  <div className={`flex items-center gap-2.5 border px-3.5 py-2 rounded-[14px] shadow-sm ${
                     isMissed 
                       ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' 
-                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
+                      : 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
                   }`}>
                     <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${
                       isMissed

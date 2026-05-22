@@ -3200,9 +3200,8 @@ export default function WidgetPage() {
                   // Sleek, centered system messages with thin horizontal lines to match the admin panel styling perfectly
                   let displayContent = msg.content;
                   if (msg.content.includes('voice call') || msg.content.includes('Voice call')) {
-                    const isMissed = msg.content.toLowerCase().includes('missed');
                     const durationStr = safeMeta.duration ? ` (${safeMeta.duration})` : '';
-                    displayContent = isMissed ? 'Missed voice call' : `Voice call ended${durationStr}`;
+                    displayContent = `Voice call ended${durationStr}`;
                   } else if (msg.content.includes('Screen share session') || msg.content.includes('screen share')) {
                     const durationStr = safeMeta.duration ? ` (${safeMeta.duration})` : '';
                     displayContent = `Screen share ended${durationStr}`;
