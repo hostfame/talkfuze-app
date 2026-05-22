@@ -134,18 +134,27 @@ export async function POST(req: Request) {
     }
 
     // 1. Detect language (instant, no IO)
-    const customerLines = contextMessages.split('\n')
-      .map((line: string) => line.trim())
-      .filter((line: string) => line && !line.startsWith('[Agent]'));
+    let detectedLanguage = 'en';
+    
+    if (instruction) {
+      // If agent provides an explicit instruction (Copilot mode), strictly follow the script of the instruction
+      const hasBengaliScriptInstruction = /[\u0980-\u09FF]/.test(instruction);
+      detectedLanguage = hasBengaliScriptInstruction ? 'bn' : 'en';
+    } else {
+      // Fallback: detect language from the customer's recent messages
+      const customerLines = contextMessages.split('\n')
+        .map((line: string) => line.trim())
+        .filter((line: string) => line && !line.startsWith('[Agent]'));
 
-    const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
-    const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
-    const words = lastCustomerText.split(/[^a-zA-Z]+/);
-    let benglishWordsFound = 0;
-    for (const w of words) {
-      if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
+      const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
+      const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
+      const words = lastCustomerText.split(/[^a-zA-Z]+/);
+      let benglishWordsFound = 0;
+      for (const w of words) {
+        if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
+      }
+      detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
     }
-    const detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
     const knowledgeContext = buildKnowledgeContext(contextMessages);
