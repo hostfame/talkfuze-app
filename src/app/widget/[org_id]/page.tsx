@@ -2609,7 +2609,7 @@ export default function WidgetPage() {
             {/* Glowing Avatar Frame */}
             <div className={`w-[120px] h-[120px] rounded-full p-[3px] bg-gradient-to-tr ${isActive ? 'from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/20' : isRinging ? 'from-amber-500 to-red-500 shadow-lg shadow-amber-500/20' : 'from-[#0070f3] to-blue-400 shadow-lg shadow-blue-500/20'} relative z-20`}>
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                <img src={agentAvatar} className="w-full h-full object-cover" alt={agentName} />
+                <img src="/team/h.jpg" className="w-full h-full object-cover bg-white" alt="Hostnin Support" />
               </div>
               {/* Pulse status indicator dot */}
               <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-slate-950 flex items-center justify-center ${isActive ? 'bg-emerald-500' : isRinging ? 'bg-amber-500' : isCalling ? 'bg-blue-500' : 'bg-slate-500'}`}>
@@ -2627,7 +2627,6 @@ export default function WidgetPage() {
             <div className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl ${isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : isRinging ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse' : isCalling ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-slate-800 text-slate-400'} text-xs font-semibold tracking-wide`}>
               {isActive ? (
                 <>
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                   Connected • {formatCallDuration(callDuration)}
                 </>
               ) : isRinging ? (
@@ -2637,7 +2636,6 @@ export default function WidgetPage() {
                 </>
               ) : isCalling ? (
                 <>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
                   Connecting secure channel...
                 </>
               ) : isDeclined ? (
@@ -2987,15 +2985,10 @@ export default function WidgetPage() {
             {/* Compact Active Call Banner for Visitor */}
             {(callStatus === 'calling' || callStatus === 'active' || callStatus === 'declined') && (
               <div className="z-20 shrink-0 animate-in slide-in-from-top duration-200">
-                <div className={`mx-0 px-4 py-2.5 flex items-center justify-between ${callStatus === 'declined' ? 'bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50' : 'bg-slate-900 text-white border-b border-slate-800'}`}>
+                <div className={`mx-0 px-4 py-2.5 flex items-center justify-between ${callStatus === 'declined' ? 'bg-red-50 dark:bg-red-950/30 border-b border-red-100 dark:border-red-900/50' : 'bg-[#0070f3] text-white shadow-sm'}`}>
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {callStatus === 'active' ? (
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                    ) : callStatus === 'calling' ? (
-                      <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
-                    ) : null}
                     <span className={`text-[12px] font-semibold truncate ${callStatus === 'declined' ? 'text-red-600 dark:text-red-400' : ''}`}>
-                      {callStatus === 'calling' ? 'Ringing...' : callStatus === 'active' ? `${formatCallDuration(callDuration)}` : 'Call declined'}
+                      {callStatus === 'calling' ? 'Calling...' : callStatus === 'active' ? `Connected • ${formatCallDuration(callDuration)}` : 'Call declined'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
