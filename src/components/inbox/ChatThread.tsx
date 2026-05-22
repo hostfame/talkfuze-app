@@ -1216,6 +1216,7 @@ export default function ChatThread({
       } else {
         localStorage.removeItem(`draft_${conversationId}`)
         localStorage.removeItem(`draft_log_id_${conversationId}`)
+        setAiDraftSources([])
         aiDraftLogIdRef.current = null
       }
     }
@@ -1277,6 +1278,7 @@ export default function ChatThread({
   const [isAiDrafting, setIsAiDrafting] = useState(false)
   const [isAiStreaming, setIsAiStreaming] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
+  const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
   const audioChunksRef = useRef<BlobPart[]>([])
@@ -1706,6 +1708,7 @@ export default function ChatThread({
   const handleAiDraft = async (instruction?: string) => {
     if (!conversationId) return
     setIsAiDrafting(true)
+    setAiDraftSources([])
     aiDraftLogIdRef.current = null
     
     // Format context messages - exclude whisper/internal messages
@@ -1772,6 +1775,9 @@ export default function ChatThread({
               }
               if (data.language) {
                 lang = data.language
+              }
+              if (data.sources) {
+                setAiDraftSources(data.sources)
               }
             } catch (e) {}
           }
@@ -1855,6 +1861,7 @@ export default function ChatThread({
     setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
     localStorage.removeItem(`draft_log_id_${conversationId}`)
+    setAiDraftSources([])
     setIsSending(true)
 
     // Complete AI draft log if this message came from an AI draft
@@ -3429,6 +3436,20 @@ export default function ChatThread({
             </div>
           )}
           
+          {aiDraftSources.length > 0 && input.trim().length > 0 && !isInternal && (
+            <div className="px-4 pb-2 pt-1 flex flex-wrap gap-1.5 z-[2] relative bg-white dark:bg-[#2a3942] animate-in fade-in duration-200">
+              <div className="flex items-center gap-1.5 mr-1">
+                <Database size={11} className="text-blue-500" />
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Knowledge Used:</span>
+              </div>
+              {aiDraftSources.map((source, i) => (
+                <span key={i} className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shadow-sm">
+                  {source}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 

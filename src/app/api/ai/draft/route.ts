@@ -157,7 +157,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
-    const knowledgeContext = buildKnowledgeContext(contextMessages);
+    const { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
 
     // 3. Fetch learning data (cached, ~0ms on hit)
     const { fewShotBlock, mistakesBlock } = orgId
@@ -255,7 +255,7 @@ Draft a smart, helpful reply as the support agent.`;
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: detectedLanguage })}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: detectedLanguage, sources: knowledgeSources })}\n\n`));
 
         const reader = anthropicResponse.body?.getReader();
         const decoder = new TextDecoder("utf-8");

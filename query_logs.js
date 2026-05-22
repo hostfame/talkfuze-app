@@ -1,19 +1,13 @@
-const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function main() {
-  const { data, error } = await supabase
-    .from('call_logs')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(5);
-  
-  if (error) console.error(error);
-  else console.log(JSON.stringify(data, null, 2));
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+async function run() {
+  const { data, error, count } = await supabase
+    .from('ai_draft_logs')
+    .select('id', { count: 'exact' })
+    .eq('was_edited', true)
+    .not('correction_feedback', 'is', null);
+  if(error) console.error(error);
+  console.log("Corrections learned:", count);
 }
-main();
+run();

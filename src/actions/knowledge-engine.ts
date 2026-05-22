@@ -184,7 +184,7 @@ const cannedEntries: CannedEntry[] = Object.entries(
   ),
 }));
 
-export function getRelevantCannedResponses(userMessage: string, limit = 3): string[] {
+export function getRelevantCannedResponses(userMessage: string, limit = 3): { title: string, content: string }[] {
   const queryWords = userMessage
     .toLowerCase()
     .split(/[\s\u0964\u0965.,!?;:()\[\]{}"']+/)
@@ -213,13 +213,13 @@ export function getRelevantCannedResponses(userMessage: string, limit = 3): stri
       for (const word of queryWords) {
         if (titleLower.includes(word)) score += 2;
       }
-      return { content: entry.content, score };
+      return { title: entry.title, content: entry.content, score };
     })
     .filter(s => s.score > 1) // require at least 2 word overlap to reduce noise
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return scored.map(s => s.content);
+  return scored.map(s => ({ title: s.title, content: s.content }));
 }
 
 // ============================================================
@@ -239,25 +239,28 @@ const INTENT_TO_PRICING: Record<string, string> = {
   pricing_n8n: 'n8n',
 };
 
-export function buildKnowledgeContext(contextMessages: string): string {
+export function buildKnowledgeContext(contextMessages: string): { context: string, sources: string[] } {
   const intents = detectIntents(contextMessages);
 
   // Always include core info + policies (lean, ~400 tokens)
   const sections: string[] = [CORE, POLICIES];
+  const sources: string[] = ['Core Info', 'Policies'];
 
   // Inject only relevant pricing sections based on detected intent
   for (const intent of intents) {
     const pricingKey = INTENT_TO_PRICING[intent];
     if (pricingKey && PRICING[pricingKey]) {
       sections.push(PRICING[pricingKey]);
+      sources.push(`${pricingKey} Pricing`);
     }
-    if (intent === 'domain') sections.push(DOMAINS);
-    if (intent === 'comparison') sections.push(COMPARISONS);
+    if (intent === 'domain') { sections.push(DOMAINS); sources.push('Domain Pricing'); }
+    if (intent === 'comparison') { sections.push(COMPARISONS); sources.push('Hosting Comparisons'); }
     if (intent === 'pricing_objection') {
       // Force-inject the /expensive canned response as THE reference reply
       const expensiveReply = (knowledge as any).canned_responses?.['expensive'];
       if (expensiveReply) {
         sections.push(`## PRICING OBJECTION HANDLER (customer thinks we're expensive, use this as your primary reference)\n${expensiveReply}`);
+        sources.push('Canned Response: expensive');
       }
     }
   }
@@ -266,11 +269,12 @@ export function buildKnowledgeContext(contextMessages: string): string {
   const cannedMatches = getRelevantCannedResponses(contextMessages, 3);
   if (cannedMatches.length > 0) {
     sections.push(
-      `## Reference Responses (match this tone and style)\n${cannedMatches.join('\n---\n')}`
+      `## Reference Responses (match this tone and style)\n${cannedMatches.map(c => c.content).join('\n---\n')}`
     );
+    cannedMatches.forEach(c => sources.push(`Canned: ${c.title}`));
   }
 
-  return sections.filter(Boolean).join('\n\n');
+  return { context: sections.filter(Boolean).join('\n\n'), sources: [...new Set(sources)] };
 }
 
 // For debugging/monitoring
