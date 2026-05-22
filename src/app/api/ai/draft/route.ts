@@ -226,7 +226,7 @@ Output ONLY the translation in raw plain text.`;
 - NO EMOJIS EVER. Do not use a single emoji.
 - NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
 
-    const userMessage = `${languageRule}
+    userMessage = `${languageRule}
 
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
