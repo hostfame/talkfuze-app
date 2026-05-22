@@ -2719,7 +2719,9 @@ export default function ChatThread({
                         </span>
                         {!isMissed && safeMeta.agent_name && (
                           <span className="text-[10px] text-slate-400 font-medium">
-                            Answered by {safeMeta.agent_name}
+                            {safeMeta.direction === 'outbound' 
+                              ? `Called by ${safeMeta.agent_name}` 
+                              : `Answered by ${safeMeta.agent_name}`}
                           </span>
                         )}
                       </div>

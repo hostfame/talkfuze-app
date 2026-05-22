@@ -7,7 +7,7 @@ import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
-import { getLastCallForNumber, findConversationByPhone, saveCallNote } from '@/actions/calls'
+import { getLastCallForNumber, findConversationByPhone, saveCallNote, logSipCallDirect } from '@/actions/calls'
 import { ICE_SERVERS } from '@/lib/webrtc'
 
 const isPhoneNumber = (str: string) => {
@@ -66,6 +66,13 @@ export default function SipDialer() {
   const [noteSaved, setNoteSaved] = useState(false)
   const [lastCallInfo, setLastCallInfo] = useState<{ created_at: string; duration_seconds: number; direction: string; status: string } | null>(null)
   const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null)
+  const matchedConversationIdRef = useRef<string | null>(null)
+  
+  useEffect(() => {
+    matchedConversationIdRef.current = matchedConversationId
+  }, [matchedConversationId])
+
+  const callDurationRef = useRef<number>(0)
   const [bannerPos, setBannerPos] = useState<{ x: number; y: number } | null>(null)
   const isDraggingRef = useRef(false)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
@@ -141,9 +148,13 @@ export default function SipDialer() {
 
   const startTimer = () => {
     setCallDuration(0)
+    callDurationRef.current = 0
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
-      setCallDuration(prev => prev + 1)
+      setCallDuration(prev => {
+        callDurationRef.current = prev + 1
+        return prev + 1
+      })
     }, 1000)
   }
 
@@ -292,6 +303,26 @@ export default function SipDialer() {
         if (pc) {
           console.log(`[SIP] PeerConnection state at termination: ICE=${pc.iceConnectionState}, Connection=${pc.connectionState}, Signaling=${pc.signalingState}`)
         }
+        
+        // Log the call immediately
+        const duration = callDurationRef.current
+        const activeSess = activeCallSessionRef.current
+        const user = currentUserRef.current
+        const convId = matchedConversationIdRef.current
+        
+        if (activeSess && user?.org_id) {
+          logSipCallDirect({
+            orgId: user.org_id,
+            direction: activeSess.direction,
+            fromNumber: activeSess.direction === 'outbound' ? 'Browser Dialer' : activeSess.number,
+            toNumber: activeSess.direction === 'outbound' ? activeSess.number : 'Browser Dialer',
+            durationSeconds: duration,
+            status: duration > 0 ? 'ANSWERED' : 'CANCELLED',
+            agentName: user.name,
+            conversationId: convId || null
+          }).catch(console.error)
+        }
+
         setStatus('Registered')
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
@@ -682,6 +713,13 @@ export default function SipDialer() {
       setStatus('Dialing...')
       const cleanNumber = number.replace(/[^\d+]/g, '')
       setActiveCallSession({ number: cleanNumber, direction: 'outbound' })
+      
+      if (currentUserRef.current?.org_id) {
+        findConversationByPhone(currentUserRef.current.org_id, cleanNumber)
+          .then(convId => { if (convId) setMatchedConversationId(convId) })
+          .catch(() => {})
+      }
+
       await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
       
       // Bind session events to outbound session immediately
@@ -986,6 +1024,11 @@ export default function SipDialer() {
         if (userAgent && isRegistered) {
           try {
             setActiveCallSession({ number: dialTarget, direction: 'outbound' })
+            if (currentUserRef.current?.org_id) {
+              findConversationByPhone(currentUserRef.current.org_id, dialTarget)
+                .then(convId => { if (convId) setMatchedConversationId(convId) })
+                .catch(() => {})
+            }
             await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
             const session = (userAgent as any).session
             if (session) {

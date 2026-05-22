@@ -180,3 +180,62 @@ export async function saveCallNote(orgId: string, conversationId: string, note: 
     return { success: false, error: err.message }
   }
 }
+
+export async function logSipCallDirect(params: {
+  orgId: string
+  direction: string
+  fromNumber: string
+  toNumber: string
+  durationSeconds: number
+  status: string
+  agentName: string
+  conversationId: string | null
+}) {
+  try {
+    // Log to call history
+    await supabaseAdmin.from('call_logs').insert({
+      org_id: params.orgId,
+      direction: params.direction,
+      from_number: params.fromNumber,
+      to_number: params.toNumber,
+      duration_seconds: params.durationSeconds,
+      status: params.status,
+      recording_url: null,
+      agent_name: params.agentName,
+      call_type: 'sip',
+      conversation_id: params.conversationId
+    })
+
+    // If there is a conversation, log a badge in the chat thread
+    if (params.conversationId) {
+      const agentId = (await supabaseAdmin.from('users').select('id').eq('name', params.agentName).limit(1).maybeSingle()).data?.id;
+      const formattedDuration = params.durationSeconds >= 60 
+        ? `${Math.floor(params.durationSeconds / 60)}m ${params.durationSeconds % 60}s` 
+        : `${params.durationSeconds}s`;
+
+      await supabaseAdmin.from('messages').insert({
+        org_id: params.orgId,
+        conversation_id: params.conversationId,
+        sender_type: 'system',
+        sender_id: agentId || null,
+        content: `Voice call`,
+        content_type: 'system',
+        status: 'delivered',
+        metadata: JSON.stringify({ 
+          event: 'voice_call',
+          agent_name: params.agentName,
+          duration: formattedDuration,
+          status: params.status,
+          direction: params.direction
+        })
+      })
+      
+      await supabaseAdmin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', params.conversationId)
+    }
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('logSipCallDirect exception:', err)
+    return { success: false, error: err.message }
+  }
+}
