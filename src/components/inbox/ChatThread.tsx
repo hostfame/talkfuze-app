@@ -1475,6 +1475,16 @@ export default function ChatThread({
     }
   }
 
+  // Ringtone for unjoined chats
+  useEffect(() => {
+    if (!isJoined && conversationId) {
+      playIncomingRingtoneLoop();
+      return () => stopIncomingRingtoneLoop();
+    } else {
+      stopIncomingRingtoneLoop();
+    }
+  }, [isJoined, conversationId]);
+
   // Smart confirm: when real agent messages arrive, remove matching optimistic ones by content
   useEffect(() => {
     if (!conversationId) return;
@@ -3162,7 +3172,20 @@ export default function ChatThread({
           </div>
         </div>
         {/* Actual composer - always shown, locked to whisper if not joined */}
-        <div className={!isJoined ? "mt-4" : ""}>
+        <div className={`relative ${!isJoined ? "mt-4" : ""}`}>
+          {!isJoined && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/40 dark:bg-[#0b141a]/40 backdrop-blur-[3px] rounded-xl pointer-events-auto">
+              <button
+                onClick={handleJoinThread}
+                disabled={isJoining}
+                className="px-8 py-3 bg-[#0070f3] hover:bg-blue-600 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgba(0,112,243,0.39)] hover:shadow-[0_6px_20px_rgba(0,112,243,0.23)] hover:bg-[rgba(0,112,243,0.9)] transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95"
+              >
+                {isJoining ? <Loader2 size={18} className="animate-spin" /> : <MessageSquare size={18} />}
+                Join Chat
+              </button>
+            </div>
+          )}
+          <div className={`transition-all duration-300 ${!isJoined ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
@@ -3472,6 +3495,7 @@ export default function ChatThread({
               </button>
             </div>
           </div>
+        </div>
         </div>
         </div>
       </div>
