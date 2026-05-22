@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
 
     const recording_url = recording ? `https://sip.talkfuze.com/recordings/${recording}` : null
     
+    // Delay slightly to prevent race conditions where PBX webhook arrives before the frontend logs the final SIP call leg
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
     // Check if the frontend already logged this call (within the last 5 minutes)
     const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
     
@@ -30,7 +33,6 @@ export async function POST(req: NextRequest) {
       .is('recording_url', null)
       .gte('created_at', fiveMinsAgo)
       .order('created_at', { ascending: false })
-      .limit(1)
 
     if (direction === 'outbound') {
       matchQuery = matchQuery.eq('to_number', to)
@@ -41,13 +43,14 @@ export async function POST(req: NextRequest) {
     const { data: existingLogs } = await matchQuery
 
     if (existingLogs && existingLogs.length > 0) {
-      // Update existing browser-initiated log with recording
+      // Update ALL existing browser-initiated logs with recording (handles transfers where multiple legs exist)
+      const idsToUpdate = existingLogs.map(log => log.id)
       const { error } = await supabaseAdmin.from('call_logs').update({
         recording_url,
         call_type: 'pbx',
         duration_seconds: parseInt(duration) || 0,
         status: status || 'UNKNOWN'
-      }).eq('id', existingLogs[0].id)
+      }).in('id', idsToUpdate)
       
       if (error) {
         console.error("Failed to update call log:", error)
