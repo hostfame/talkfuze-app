@@ -212,96 +212,98 @@ export async function replyToConversation(
   const contactData = firstRelation(conv.contact as ConversationContactRelation);
   const recipientId = contactData?.platform_id;
 
-  // Auto-bind WHMCS if it's WhatsApp and contact has no email linked yet
-  if (channelType === 'whatsapp' && contactData?.id && !contactData?.email && recipientId) {
-    const rawNum = recipientId.includes('@') ? recipientId.split('@')[0] : recipientId;
-    const cleanNum = rawNum.replace(/\D/g, '');
-    if (cleanNum.length >= 8) {
-      try {
-        const whmcsClient = (await fetchWhmcsClient(cleanNum)) as any;
-        if (whmcsClient && whmcsClient.email) {
-          await supabaseAdmin.from('contacts').update({ email: whmcsClient.email }).eq('id', contactData.id);
-          if (!contactData.phone && whmcsClient.phonenumber && !whmcsClient.phonenumber.includes('@')) {
-            const cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
-            if (cleanPhoneNum.length >= 9) {
-              await supabaseAdmin.from('contacts').update({ phone: cleanPhoneNum }).eq('id', contactData.id);
+  // Kick off background routing and integration pipelines (non-blocking for extreme WhatsApp-like speed)
+  (async () => {
+    try {
+      // Auto-bind WHMCS if it's WhatsApp and contact has no email linked yet
+      if (channelType === 'whatsapp' && contactData?.id && !contactData?.email && recipientId) {
+        const rawNum = recipientId.includes('@') ? recipientId.split('@')[0] : recipientId;
+        const cleanNum = rawNum.replace(/\D/g, '');
+        if (cleanNum.length >= 8) {
+          try {
+            const whmcsClient = (await fetchWhmcsClient(cleanNum)) as any;
+            if (whmcsClient && whmcsClient.email) {
+              await supabaseAdmin.from('contacts').update({ email: whmcsClient.email }).eq('id', contactData.id);
+              if (!contactData.phone && whmcsClient.phonenumber && !whmcsClient.phonenumber.includes('@')) {
+                const cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
+                if (cleanPhoneNum.length >= 9) {
+                  await supabaseAdmin.from('contacts').update({ phone: cleanPhoneNum }).eq('id', contactData.id);
+                }
+              }
             }
+          } catch (e) {
+            console.error("Auto-binding in replyToConversation failed:", e);
           }
         }
-      } catch (e) {
-        console.error("Auto-binding in replyToConversation failed:", e);
       }
-    }
-  }
 
-  // Do not send to external platforms if it's an internal note
-  if (isInternal) {
-    return true;
-  }
-
-  if (channelType === 'messenger' || channelType === 'instagram') {
-    const pageAccessToken = channelConfig?.access_token;
-    if (!pageAccessToken) {
-      console.warn("No access_token found in channel config. Message saved in DB but not sent to Meta.");
-      return true;
-    }
-
-    try {
-      const contactData = firstRelation(conv.contact as ConversationContactRelation);
-      const recipientId = contactData?.platform_id;
-
-      // Standard endpoint for both Messenger and Instagram is /me/messages
-      const endpoint = `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipient: { id: recipientId },
-          message: { text: content },
-          messaging_type: "RESPONSE"
-        })
-      });
-
-      const responseData = await response.json();
-      if (!response.ok) {
-        console.error("Meta API Error:", responseData);
-        await supabaseAdmin
-          .from("messages")
-          .update({
-            status: "failed",
-            metadata: {
-              ...metadata,
-              delivery_error: responseData?.error?.message || "Meta API send failed",
-              delivery_failed_at: new Date().toISOString()
-            }
-          })
-          .eq("id", insertedMessage.id);
-      } else if (responseData?.message_id) {
-        await supabaseAdmin
-          .from("messages")
-          .update({
-            platform_message_id: responseData.message_id,
-            status: "delivered"
-          })
-          .eq("id", insertedMessage.id);
+      // Do not send to external platforms if it's an internal note
+      if (isInternal) {
+        return;
       }
-    } catch (e) {
-      console.error("Failed to send Meta reply:", e);
-      await supabaseAdmin
-        .from("messages")
-        .update({
-          status: "failed",
-          metadata: {
-            ...metadata,
-            delivery_error: e instanceof Error ? e.message : "Meta send failed",
-            delivery_failed_at: new Date().toISOString()
+
+      if (channelType === 'messenger' || channelType === 'instagram') {
+        const pageAccessToken = channelConfig?.access_token;
+        if (!pageAccessToken) {
+          console.warn("No access_token found in channel config. Message saved in DB but not sent to Meta.");
+          return;
+        }
+
+        try {
+          const endpoint = `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
+
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipient: { id: recipientId },
+              message: { text: content },
+              messaging_type: "RESPONSE"
+            })
+          });
+
+          const responseData = await response.json();
+          if (!response.ok) {
+            console.error("Meta API Error:", responseData);
+            await supabaseAdmin
+              .from("messages")
+              .update({
+                status: "failed",
+                metadata: {
+                  ...metadata,
+                  delivery_error: responseData?.error?.message || "Meta API send failed",
+                  delivery_failed_at: new Date().toISOString()
+                }
+              })
+              .eq("id", insertedMessage.id);
+          } else if (responseData?.message_id) {
+            await supabaseAdmin
+              .from("messages")
+              .update({
+                platform_message_id: responseData.message_id,
+                status: "delivered"
+              })
+              .eq("id", insertedMessage.id);
           }
-        })
-        .eq("id", insertedMessage.id);
+        } catch (e) {
+          console.error("Failed to send Meta reply:", e);
+          await supabaseAdmin
+            .from("messages")
+            .update({
+              status: "failed",
+              metadata: {
+                ...metadata,
+                delivery_error: e instanceof Error ? e.message : "Meta send failed",
+                delivery_failed_at: new Date().toISOString()
+              }
+            })
+            .eq("id", insertedMessage.id);
+        }
+      }
+    } catch (bgErr) {
+      console.error("Background routing execution failed:", bgErr);
     }
-  }
-  // If it's WhatsApp, the Baileys worker will automatically pick it up via Supabase Realtime
+  })();
 
   return true
 }
