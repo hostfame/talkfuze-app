@@ -163,8 +163,8 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       }
     }
 
-    // Helper function to download and convert image URLs to base64 for WHMCS attachments
-    async function fetchImageAsBase64(url: string): Promise<{ name: string; data: string } | null> {
+    // Helper function to download and convert media URLs to base64 for WHMCS attachments
+    async function fetchMediaAsBase64(url: string): Promise<{ name: string; data: string } | null> {
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
@@ -178,10 +178,17 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
         const base64Data = buffer.toString('base64')
         
         const urlParts = url.split('/')
-        let filename = urlParts[urlParts.length - 1] || 'attachment.jpg'
+        let filename = urlParts[urlParts.length - 1] || 'attachment.bin'
         // Clean query parameters from filename if any
         if (filename.includes('?')) {
           filename = filename.split('?')[0]
+        }
+        
+        // If it doesn't have an extension but it's an audio file, add .ogg
+        if (!filename.includes('.') && url.includes('audio')) {
+          filename += '.ogg'
+        } else if (!filename.includes('.')) {
+          filename += '.jpg'
         }
         
         return {
@@ -189,16 +196,16 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
           data: base64Data
         }
       } catch (err) {
-        console.error("Failed to fetch image for ticket attachment:", err)
+        console.error("Failed to fetch media for ticket attachment:", err)
         return null
       }
     }
 
     // Helper function to fetch multiple attachments
-    async function fetchAttachments(imageUrls: string[]): Promise<Array<{ name: string; data: string }>> {
+    async function fetchAttachments(mediaUrls: string[]): Promise<Array<{ name: string; data: string }>> {
       const attachments: Array<{ name: string; data: string }> = []
-      for (const url of imageUrls) {
-        const attachment = await fetchImageAsBase64(url)
+      for (const url of mediaUrls) {
+        const attachment = await fetchMediaAsBase64(url)
         if (attachment) {
           attachments.push(attachment)
         }
@@ -223,17 +230,17 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       const senderType = isAgent ? 'agent' : 'contact'
       const senderName = isAgent ? (agentNames[msg.sender_id] || 'Agent') : contactName
 
-      // Extract the correct image URL from metadata.media_url if it's an image
-      const imageUrl = msg.content_type === 'image' 
-        ? ((msg.metadata as any)?.media_url || (msg.content && msg.content.startsWith('http') ? msg.content : null))
+      // Extract the correct media URL from metadata.media_url if it's an image or audio
+      const mediaUrl = (msg.content_type === 'image' || msg.content_type === 'audio')
+        ? ((msg.metadata as any)?.media_url || (msg.metadata as any)?.url || (msg.content && msg.content.startsWith('http') ? msg.content : null))
         : null
 
       if (currentGroup && currentGroup.sender_type === senderType) {
-        if (imageUrl) {
-          currentGroup.imageUrls.push(imageUrl)
-          currentGroup.texts.push(`[Image Attachment]`)
+        if (mediaUrl) {
+          currentGroup.imageUrls.push(mediaUrl)
+          currentGroup.texts.push(msg.content_type === 'audio' ? `[Audio Attachment] (Listen: ${mediaUrl})` : `[Image Attachment]`)
           // Preserve caption if any
-          if (msg.content && msg.content !== '[Image]') {
+          if (msg.content && msg.content !== '[Image]' && msg.content !== '[Audio Voice Message]') {
             currentGroup.texts.push(msg.content)
           }
         } else if (msg.content) {
@@ -247,11 +254,11 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
           imageUrls: [],
           created_at: msg.created_at
         }
-        if (imageUrl) {
-          currentGroup.imageUrls.push(imageUrl)
-          currentGroup.texts.push(`[Image Attachment]`)
+        if (mediaUrl) {
+          currentGroup.imageUrls.push(mediaUrl)
+          currentGroup.texts.push(msg.content_type === 'audio' ? `[Audio Attachment] (Listen: ${mediaUrl})` : `[Image Attachment]`)
           // Preserve caption if any
-          if (msg.content && msg.content !== '[Image]') {
+          if (msg.content && msg.content !== '[Image]' && msg.content !== '[Audio Voice Message]') {
             currentGroup.texts.push(msg.content)
           }
         } else if (msg.content) {
