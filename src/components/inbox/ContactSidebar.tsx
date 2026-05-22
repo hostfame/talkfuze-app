@@ -89,7 +89,7 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
         <div className="flex flex-col pr-2">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{product.name}</p>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${product.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : product.status === 'Suspended' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-sm">
               {product.status}
             </span>
           </div>
@@ -1300,28 +1300,28 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
 
           {whmcsClient && (
             <div className="mt-2">
-              <div className="flex border-b border-slate-200 dark:border-slate-700 mb-4 overflow-x-auto hide-scrollbar">
+              <div className="flex w-full justify-between border-b border-slate-200 dark:border-slate-700 mb-4">
                 <button 
                   onClick={() => setPortalTab('services')}
-                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'services' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'services' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Services {whmcsServices?.products && `(${whmcsServices.products.filter((p: WhmcsProduct) => p.status === 'Active').length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('domains')}
-                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'domains' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'domains' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Domains {whmcsServices?.domains && `(${whmcsServices.domains.filter((d: WhmcsDomain) => d.status === 'Active').length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('tickets')}
-                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Tickets {whmcsTickets && `(${whmcsTickets.length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('invoices')}
-                  className={`px-4 py-2 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap ${portalTab === 'invoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'invoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Invoices {whmcsInvoices && `(${whmcsInvoices.length})`}
                 </button>
@@ -1376,7 +1376,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                               </a>
                             </div>
                             <div className="flex items-center justify-between mt-1">
-                              <span className={`inline-block text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${domain.status === 'Active' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : domain.status === 'Expired' ? 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{domain.status}</span>
+                              <span className="inline-block text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-sm">{domain.status}</span>
                               <p className="text-[11px] text-slate-400">Exp: {domain.expirydate}</p>
                             </div>
                           </div>
@@ -1423,7 +1423,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                               {ticket.subject}
                               <ExternalLink size={10} className="opacity-0 group-hover:opacity-100" />
                             </p>
-                            <span className={`text-[11px] font-semibold shrink-0 px-2.5 py-0.5 rounded-full ${ticket.status === 'Open' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ticket.status === 'Answered' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : ticket.status === 'Customer-Reply' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>{ticket.status}</span>
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-sm shrink-0">{ticket.status}</span>
                           </div>
                           <p className="text-[11px] text-slate-500">Dept: {ticket.deptname} • {ticket.lastreply}</p>
                         </a>
@@ -1470,7 +1470,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                             </div>
                             <div className="text-right">
                               <span className="text-[11px] font-bold text-red-600 dark:text-red-400 block mb-1">BDT {invoice.total}</span>
-                              <span className="text-[11px] font-semibold px-2.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">{invoice.status}</span>
+                              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md shadow-sm">{invoice.status}</span>
                             </div>
                           </div>
                           <button 

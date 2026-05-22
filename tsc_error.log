@@ -1,0 +1,18 @@
+error TS6053: File '/Users/imran/Documents/Talkfuze/.next/dev/types/cache-life.d.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/dev/types/**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
+error TS6053: File '/Users/imran/Documents/Talkfuze/.next/dev/types/routes.d.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/dev/types/**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
+error TS6053: File '/Users/imran/Documents/Talkfuze/.next/dev/types/validator.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '.next/dev/types/**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
+error TS6053: File '/Users/imran/Documents/Talkfuze/src/app/api/test_create/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
+error TS6053: File '/Users/imran/Documents/Talkfuze/src/app/api/test_ig/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
+error TS6053: File '/Users/imran/Documents/Talkfuze/src/app/api/test_msgs/route.ts' not found.
+  The file is in the program because:
+    Matched by include pattern '**/*.ts' in '/Users/imran/Documents/Talkfuze/tsconfig.json'
