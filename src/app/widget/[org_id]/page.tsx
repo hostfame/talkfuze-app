@@ -1441,7 +1441,7 @@ export default function WidgetPage() {
     if (activeTab === 'chat') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, activeTab])
+  }, [messages, activeTab, isAgentTyping, isAgentRecording])
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setInput((prev) => prev + emojiData.emoji)
