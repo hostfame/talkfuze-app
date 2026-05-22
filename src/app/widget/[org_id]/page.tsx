@@ -2785,7 +2785,7 @@ export default function WidgetPage() {
                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full z-40 translate-x-[2px] translate-y-[2px]"></div>
                        </div>
                        <div className="flex flex-col">
-                         <span className="font-bold text-[15px] text-slate-800 leading-tight tracking-tight">Hostnin</span>
+                         <span className="font-bold text-[15px] text-slate-800 leading-tight tracking-tight">Team Hostnin</span>
                          <span className="text-[12px] text-slate-500 leading-tight tracking-tight flex items-center gap-1 mt-0.5">
                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                            Replies within minutes
