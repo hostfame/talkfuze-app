@@ -1115,8 +1115,9 @@ export default function ChatThread({
           const platformId = rawPlatformId.includes('@') ? rawPlatformId.split('@')[0] : rawPlatformId
           const metadataPhone = (contact?.metadata as Record<string, any>)?.real_phone
           const displayPlatformId = metadataPhone || platformId
+          const contactEmail = contact?.email
           const contactPhone = contact?.phone
-          const effectivePhoneId = contactPhone || displayPlatformId
+          const effectivePhoneId = contactEmail || contactPhone || displayPlatformId
 
           const isEmail = effectivePhoneId.includes('@') && !effectivePhoneId.endsWith('@lid')
           const cleanPhone = isEmail ? effectivePhoneId : (effectivePhoneId.startsWith('+') ? effectivePhoneId : `+${effectivePhoneId}`)
