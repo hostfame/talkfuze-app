@@ -191,7 +191,14 @@ FORMATTING & BREVITY:
 - Example structure: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
 - Keep response 3-4 short paragraphs max. Short bursts, not essays.
 ${fewShotBlock}${mistakesBlock}
-${instruction ? `\nCRITICAL AGENT INSTRUCTION:\nThe agent wants to reply with the following intent/instruction: "${instruction}"\nDraft the response strictly based on this instruction, expanding it into a complete, professional, and helpful reply in the appropriate language.` : ''}
+${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
+The agent has explicitly requested you to write a message conveying the following exact meaning:
+>>> "${instruction}" <<<
+
+RULES FOR THIS INSTRUCTION:
+1. FOCUS ONLY ON THE INSTRUCTION. Do NOT bring up past topics from the conversation unless directly required.
+2. If the instruction is short (like "done", "fixed", "check now"), just write a brief, professional 1-2 sentence message (e.g., "I've completed this for you. Please check."). Do NOT hallucinate long explanations or repeat previous steps.
+3. Write the response strictly based on this instruction in the appropriate language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
