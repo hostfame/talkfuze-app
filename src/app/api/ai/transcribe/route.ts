@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     formData.append("file", blob, filename);
     formData.append("model", "whisper-1");
     // Providing comma-separated Bengali keywords anchors the model to Bengali without causing it to hallucinate/repeat full sentences
-    formData.append("prompt", "হ্যালো, ডোমেইন, হোস্টিং, ওয়েবসাইট, পেমেন্ট, সমস্যা, বিকাশ, টাকা, সাপোর্ট, হোসটিন, Hostnin, Cpanel");
+    formData.append("prompt", "হ্যালো, ডোমেইন, হোস্টিং, ওয়েবসাইট, পেমেন্ট, সমস্যা, বিকাশ, টাকা, সাপোর্ট, হোষ্টনিন, Hostnin, Cpanel");
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
