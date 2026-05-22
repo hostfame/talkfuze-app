@@ -1262,6 +1262,66 @@ export default function ChatThread({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null)
   const [editingMessage, setEditingMessage] = useState<any | null>(null)
 
+  // Unified Agent Activity Tracking
+  const lastActivityTimeRef = useRef<number>(Date.now());
+  const [isActivelyComposing, setIsActivelyComposing] = useState(false);
+  const lastBroadcastRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!conversationId || isInternal) {
+      setIsActivelyComposing(false);
+      return;
+    }
+
+    const checkActivity = () => {
+      const isAiWorking = isAiDrafting || isAiStreaming;
+      const isUploading = stagedAttachments.some(a => a.status === 'uploading');
+      const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
+      
+      // Consider "active" if AI is working, actively uploading, OR typed/changed something within last 3 seconds
+      const active = isAiWorking || isUploading || (timeSinceLastActivity < 3000 && input.trim().length > 0);
+      
+      setIsActivelyComposing(active);
+    };
+
+    const interval = setInterval(checkActivity, 1000);
+    return () => clearInterval(interval);
+  }, [conversationId, isInternal, isAiDrafting, isAiStreaming, stagedAttachments, input]);
+
+  useEffect(() => {
+    if (!conversationId || isInternal) return;
+
+    if (isActivelyComposing) {
+      if (!lastBroadcastRef.current) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+        });
+        lastBroadcastRef.current = true;
+      }
+      
+      const pingInterval = setInterval(() => {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+        });
+      }, 2500);
+      
+      return () => clearInterval(pingInterval);
+    } else {
+      if (lastBroadcastRef.current) {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
+        });
+        lastBroadcastRef.current = false;
+      }
+    }
+  }, [isActivelyComposing, conversationId, isInternal, orgId, currentUser]);
+
   const handleContextMenu = (e: React.MouseEvent, message: any) => {
     if (message.status === 'recalled' || message.status === 'deleted') return
     e.preventDefault()
@@ -1505,25 +1565,7 @@ export default function ChatThread({
     const val = e.target.value;
     setInput(val);
     checkMacroTrigger(val, e.target.selectionStart);
-
-    // Broadcast agent typing status
-    if (conversationId && !isInternal) {
-      supabase.channel(`typing:${orgId}`).send({
-        type: 'broadcast',
-        event: 'typingStatus',
-        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
-      });
-      
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      
-      typingTimeoutRef.current = setTimeout(() => {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
-        });
-      }, 2000);
-    }
+    lastActivityTimeRef.current = Date.now();
   };
 
   const filteredMacros = quickReplies.filter(r => {
@@ -1646,14 +1688,7 @@ export default function ChatThread({
         return `[${name}]: ${contentStr}`
       }).join('\n')
 
-    // Broadcast typing to widget so visitor sees typing indicator during AI draft
-    if (conversationId && !isInternal) {
-      supabase.channel(`typing:${orgId}`).send({
-        type: 'broadcast',
-        event: 'typingStatus',
-        payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
-      });
-    }
+
 
     try {
       const res = await fetch('/api/ai/draft', {
@@ -1706,14 +1741,7 @@ export default function ChatThread({
 
       setIsAiStreaming(false)
 
-      // Stop typing indicator on widget
-      if (conversationId && !isInternal) {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
-        });
-      }
+
 
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
@@ -1732,14 +1760,7 @@ export default function ChatThread({
       setTimeout(() => setAiDraftFailed(false), 3000)
       setIsAiDrafting(false)
       setIsAiStreaming(false)
-      // Stop typing indicator on error too
-      if (conversationId && !isInternal) {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
-        });
-      }
+
     }
   }
 
