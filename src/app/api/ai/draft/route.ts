@@ -58,7 +58,7 @@ interface CachedLearning {
   timestamp: number;
 }
 const learningCache: Record<string, CachedLearning> = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
+const CACHE_TTL = 15 * 1000; // 15 seconds (so agent corrections are learned almost instantly)
 
 async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; mistakesBlock: string }> {
   const now = Date.now();
@@ -158,14 +158,17 @@ export async function POST(req: Request) {
       ? `LANGUAGE: English. Reply 100% in English.
 - Use contractions: "I'll", "we've", "you're", "don't".
 - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
-- Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".`
+- Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
+- NO EMOJIS EVER. Do not use a single emoji.
+- NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.`
       : `LANGUAGE: Bengali. Reply 100% in Bengali script (বাংলা হরফে).
 - Write casual, natural WhatsApp-style Bengali, NOT bookish.
 - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
 - Transliterate tech terms: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, পেমেন্ট, ফিক্স, চেক.
 - Brand names in Bengali: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার".
 - ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
-- Emojis: 1-2 max: 😊 ✅ 👍`;
+- NO EMOJIS EVER. Do not use a single emoji.
+- NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
 
     const userMessage = `${languageRule}
 
