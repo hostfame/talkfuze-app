@@ -78,6 +78,8 @@ export default function SipDialer() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const ringOscillatorsRef = useRef<OscillatorNode[]>([])
   const ringIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null)
 
   // Draggable banner handlers
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -345,7 +347,10 @@ export default function SipDialer() {
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     // Claim active dialer status via BroadcastChannel to prevent multi-tab conflicts
-    const channel = new BroadcastChannel('talkfuze_dialer_lock')
+    if (!broadcastChannelRef.current) {
+      broadcastChannelRef.current = new BroadcastChannel('talkfuze_dialer_lock')
+    }
+    const channel = broadcastChannelRef.current
     channel.postMessage('dialer_claim_active')
     setIsTabConflict(false)
 
@@ -655,8 +660,11 @@ export default function SipDialer() {
       if (reconnectTimeout) clearTimeout(reconnectTimeout)
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('beforeunload', handleBeforeUnload)
-      channel.removeEventListener('message', handleChannelMessage)
-      channel.close()
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.removeEventListener('message', handleChannelMessage)
+        broadcastChannelRef.current.close()
+        broadcastChannelRef.current = null
+      }
       simpleUser.disconnect()
     }
   }, [sipUser?.sip_extension, sipUser?.sip_password])
@@ -825,9 +833,8 @@ export default function SipDialer() {
 
   const handleActivateDialer = async () => {
     setIsTabConflict(false)
-    if (typeof window !== 'undefined') {
-      const channel = new BroadcastChannel('talkfuze_dialer_lock')
-      channel.postMessage('dialer_claim_active')
+    if (typeof window !== 'undefined' && broadcastChannelRef.current) {
+      broadcastChannelRef.current.postMessage('dialer_claim_active')
     }
     if (userAgent) {
       try {
