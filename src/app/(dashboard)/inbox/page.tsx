@@ -244,6 +244,19 @@ export default function InboxPage() {
           setMessages(selectedId, currentMsgs.map(m => m.id === payload.new.id ? { ...m, ...(payload.new as Partial<AppMessage>) } : m))
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedId}`
+        },
+        (payload) => {
+          const currentMsgs = useInboxStore.getState().messagesMap[selectedId] || []
+          setMessages(selectedId, currentMsgs.filter(m => m.id !== payload.old.id))
+        }
+      )
       .subscribe()
 
     return () => {

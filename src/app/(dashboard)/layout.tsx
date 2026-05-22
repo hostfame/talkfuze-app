@@ -58,7 +58,7 @@ export default async function DashboardLayout({
             )}
           </div>
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">
-            <div className="w-11 h-11 flex items-center justify-center active:scale-95 transition-all" title={profile.name}>
+            <Link href="/settings/brand" prefetch={true} className="w-11 h-11 flex items-center justify-center rounded-2xl hover:bg-white dark:hover:bg-[#202c33] hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] active:scale-95 transition-all duration-200" title={`${profile.name} - Settings`}>
               {profile.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
@@ -70,9 +70,6 @@ export default async function DashboardLayout({
                   {profile.name.charAt(0).toUpperCase()}
                 </div>
               )}
-            </div>
-            <Link href="/settings/brand" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-              <Settings size={22} strokeWidth={2} />
             </Link>
             <form action={logout} className="w-full flex justify-center">
               <button 

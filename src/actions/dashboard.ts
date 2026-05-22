@@ -777,12 +777,10 @@ export async function recallMessage(messageId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { data, error } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('messages')
-    .update({ status: 'recalled' })
+    .delete()
     .eq('id', messageId)
-    .select()
-    .single()
 
   if (error) throw new Error(error.message)
   return { success: true }
