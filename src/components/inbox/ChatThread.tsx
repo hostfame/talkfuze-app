@@ -1243,6 +1243,7 @@ export default function ChatThread({
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  const [stagedAudio, setStagedAudio] = useState<{ url: string; file: File } | null>(null)
   
 
 
@@ -1967,6 +1968,21 @@ export default function ChatThread({
         }
       }
 
+      mediaRecorderRef.current.onstop = () => {
+        if (audioChunksRef.current.length > 0) {
+          const actualMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm'
+          const extension = actualMimeType.includes('mp4') ? 'mp4' : 
+                            actualMimeType.includes('ogg') ? 'ogg' :
+                            actualMimeType.includes('wav') ? 'wav' : 'webm'
+          const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
+          const file = new File([audioBlob], `voice-message.${extension}`, { type: actualMimeType })
+          const localUrl = URL.createObjectURL(audioBlob)
+          
+          setStagedAudio({ url: localUrl, file })
+        }
+        audioChunksRef.current = []
+      }
+
       mediaRecorderRef.current.start()
       setIsRecording(true)
       setRecordingDuration(0)
@@ -1995,7 +2011,6 @@ export default function ChatThread({
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
       if (timerRef.current) clearInterval(timerRef.current)
       setIsRecording(false)
-      setRecordingDuration(0)
 
       // Clear recording status broadcast
       if (conversationId) {
@@ -2009,54 +2024,64 @@ export default function ChatThread({
   }
 
   const cancelRecording = () => {
-    stopRecording()
+    if (isRecording && mediaRecorderRef.current) {
+      audioChunksRef.current = [] // clear chunks before stop so onstop won't stage it
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+    }
+    if (timerRef.current) clearInterval(timerRef.current)
+    setIsRecording(false)
+    setRecordingDuration(0)
+    setStagedAudio(null)
     audioChunksRef.current = []
+    if (conversationId) {
+      supabase.channel(`typing:${orgId}`).send({
+        type: 'broadcast',
+        event: 'recordingStatus',
+        payload: { conversation_id: conversationId, direction: 'agent', is_recording: false, agent_name: currentUser?.name, agent_id: currentUser?.id }
+      });
+    }
   }
 
   const sendRecording = () => {
-    if (!mediaRecorderRef.current || !conversationId) return
+    if (!stagedAudio || !conversationId) return
     
-    const actualMimeType = mediaRecorderRef.current.mimeType || 'audio/webm'
-    const extension = actualMimeType.includes('mp4') ? 'mp4' : 
-                      actualMimeType.includes('ogg') ? 'ogg' :
-                      actualMimeType.includes('wav') ? 'wav' : 'webm'
+    const { url, file } = stagedAudio;
+    const tempId = "temp-" + crypto.randomUUID()
     
-    mediaRecorderRef.current.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: actualMimeType })
-      const file = new File([audioBlob], `voice-message.${extension}`, { type: actualMimeType })
-      
-      const localUrl = URL.createObjectURL(audioBlob)
-      const tempId = "temp-" + crypto.randomUUID()
-      
-      addOptimisticMessage(conversationId, {
-        id: tempId,
-        sender_type: 'agent',
-        sender_id: currentUser?.id ?? null,
-        content: '[Audio Voice Message]',
-        content_type: 'audio',
-        metadata: { media_url: localUrl },
-        is_internal: isInternal,
-        status: 'sending',
-        created_at: new Date().toISOString()
-      })
-      
-      try {
-        const meta = await uploadToStorage(file, false);
+    addOptimisticMessage(conversationId, {
+      id: tempId,
+      sender_type: 'agent',
+      sender_id: currentUser?.id ?? null,
+      content: '[Audio Voice Message]',
+      content_type: 'audio',
+      metadata: { media_url: url },
+      is_internal: isInternal,
+      status: 'sending',
+      created_at: new Date().toISOString()
+    })
+    
+    try {
+      uploadToStorage(file, false).then(async (meta) => {
         await replyToConversation(orgId, conversationId, '[Audio Voice Message]', isInternal, 'audio', {
           media_url: meta.url,
           mimetype: meta.type,
           filename: meta.name
         });
-        removeOptimisticMessage(conversationId, tempId)  // Voice messages can remove immediately since they have unique content
-      } catch (err: unknown) {
+        removeOptimisticMessage(conversationId, tempId)
+      }).catch(err => {
         console.error("Upload failed:", err);
         markFailed(conversationId, tempId)
         setCustomAlert({ title: 'Upload Failed', message: `Failed to send voice message: ${getErrorMessage(err)}`, type: 'error' })
-      }
-      audioChunksRef.current = []
+      });
+    } catch (err: unknown) {
+      console.error("Upload failed:", err);
+      markFailed(conversationId, tempId)
+      setCustomAlert({ title: 'Upload Failed', message: `Failed to send voice message: ${getErrorMessage(err)}`, type: 'error' })
     }
     
-    stopRecording()
+    setStagedAudio(null)
+    setRecordingDuration(0)
   }
   
   const formatDuration = (seconds: number) => {
@@ -3093,6 +3118,26 @@ export default function ChatThread({
                   <X size={20} />
                 </button>
                 <button 
+                  onClick={stopRecording}
+                  className="p-2 text-red-600 bg-red-100 hover:bg-red-200 rounded-full shadow-sm transition-colors"
+                >
+                  <Square size={20} strokeWidth={2.5} className="fill-red-600" />
+                </button>
+              </div>
+            </div>
+          ) : stagedAudio ? (
+            <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-slate-50 dark:bg-[#202c33]">
+              <div className="flex-1 mr-4">
+                <CustomAudioPlayer url={stagedAudio.url} type={isInternal ? 'internal' : 'agent'} />
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={cancelRecording}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                >
+                  <Trash2 size={20} />
+                </button>
+                <button 
                   onClick={sendRecording}
                   className="p-2 text-white bg-blue-500 hover:bg-blue-600 rounded-full shadow-sm transition-colors"
                 >
@@ -3271,14 +3316,14 @@ export default function ChatThread({
               />
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isSending || isRecording}
+                disabled={isSending || isRecording || stagedAudio !== null}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 <Paperclip size={16} strokeWidth={2} />
               </button>
               <button 
                 onClick={isRecording ? stopRecording : startRecording}
-                disabled={isSending}
+                disabled={isSending || stagedAudio !== null}
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-600 hover:bg-amber-200/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
@@ -3316,7 +3361,7 @@ export default function ChatThread({
               
               <button 
                 onClick={handleSend}
-                disabled={(!input.trim() && stagedAttachments.length === 0) || isSending}
+                disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
                 className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isSending ? (
