@@ -2556,21 +2556,17 @@ export default function WidgetPage() {
       setShowTicketLogin(true); // Show modal for loading state
 
       try {
-        const res = await fetch('/api/widget/whmcs/tickets/new', {
+        const res = await fetch('/api/widget/whmcs/tickets/convert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
              clientId: whmcsUser.clientId, 
-             deptid: 1, // Default support dept
-             subject: subject, 
-             message: finalMessage,
-             conversationId,
-             orgId: org_id
+             conversationId
           })
         });
         const data = await res.json();
         if (data.success) {
-           setOtpTicketId(data.result?.tid || '');
+           setOtpTicketId(data.ticket?.tid || data.result?.tid || '');
            setOtpStep('success');
         } else {
            setOtpError('Failed to convert chat. Please try again.');

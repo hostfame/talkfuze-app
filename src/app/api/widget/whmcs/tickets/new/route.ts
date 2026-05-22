@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openTicket } from '@/lib/whmcs'
-import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { clientId, deptid, subject, message: ticketMessage, attachments, videoLinks, conversationId, orgId } = body
+    const { clientId, deptid, subject, message: ticketMessage, attachments, videoLinks } = body
 
     if (!clientId) {
       return NextResponse.json({ success: false, error: 'clientId is required.' }, { status: 400 })
@@ -35,23 +34,6 @@ export async function POST(req: NextRequest) {
     const safeAttachments = Array.isArray(attachments) ? attachments.slice(0, 3) : undefined;
 
     const result = await openTicket(clientId, deptid, subject, finalMessage, undefined, safeAttachments)
-
-    if (conversationId && orgId && result?.tid) {
-      await supabaseAdmin.from('messages').insert({
-        conversation_id: conversationId,
-        org_id: orgId,
-        sender_type: 'system',
-        sender_id: null,
-        content: `Your ticket is created: #${result.tid}`,
-        content_type: 'system',
-        is_internal: false,
-        status: 'delivered',
-      })
-      await supabaseAdmin.from('conversations').update({
-        status: 'resolved',
-        is_archived: true
-      }).eq('id', conversationId)
-    }
 
     return NextResponse.json({ success: true, result })
   } catch (error: unknown) {
