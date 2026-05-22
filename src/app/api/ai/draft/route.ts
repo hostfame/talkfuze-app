@@ -247,7 +247,7 @@ Draft a smart, helpful reply as the support agent.`;
 
             for (const line of lines) {
               if (firstChunk && line.startsWith("data: ")) {
-                // Debug: send first raw Anthropic event to help diagnose issues
+                // Detect Anthropic stream-level errors (model overloaded, rate limit, etc.)
                 const parsed = JSON.parse(line.slice(6));
                 if (parsed.type === 'error') {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown Anthropic error' })}\n\n`));
