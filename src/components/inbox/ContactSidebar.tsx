@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken } from "@/actions/whmcs"
 import { unblockIPFast } from "@/actions/server-ops"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
@@ -74,12 +74,11 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
     if (isLoggingIn) return;
     setIsLoggingIn(true);
     try {
-      const destination = `clientarea.php?action=productdetails&id=${product.id}`;
-      const url = await generateWHMCSSsoToken(clientId, destination);
-      if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
+      const res = await generateWHMCSControlPanelSsoToken(clientId, product.id);
+      if (res.success && res.redirect_url) {
+        window.open(res.redirect_url, '_blank', 'noopener,noreferrer');
       } else {
-        alert("Failed to generate login token.");
+        alert("Failed to generate login token: " + (res.error || "Unknown error"));
       }
     } catch (err) {
       console.error(err);
