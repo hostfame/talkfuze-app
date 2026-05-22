@@ -142,7 +142,7 @@ export async function POST(req: Request) {
       ? await getLearningData(orgId) 
       : { fewShotBlock: '', mistakesBlock: '' };
 
-    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING
+    const dynamicInstructions = `CRITICAL RULE 1: LANGUAGE MATCHING
 ${detectedLanguage === 'en' 
   ? `The customer is writing in English. You MUST reply 100% in English.
 - Do NOT use any Bengali script or words.
@@ -156,6 +156,14 @@ ${detectedLanguage === 'en'
 - Brand names: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার". Never write brand names in English letters inside Bengali script text.
 - Use direct, warm, respectful terms: ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার" or "তুই/তোর".
 - Emojis: Use sparingly (1-2 max): 😊 ✅ 👍`}
+
+CRITICAL RULE 2: FORMATTING & BREVITY (BITE-SIZED MESSAGING)
+- ALWAYS keep your response extremely short, concise, and bite-sized.
+- MAXIMUM 3 to 4 lines total.
+- NEVER write long paragraphs or 10-12 line essays. Humans chat in short bursts.
+- If the issue is complex and requires a long explanation, DO NOT write it all at once. Instead, give a short summary (1-2 lines) and ASK a question to guide the customer.
+- Example of good formatting: "Sure, the .COM price is 1650 BDT.\nAre you looking to buy a new one or transfer an existing one?"
+
 ${fewShotBlock}${mistakesBlock}`;
 
     // Fire Anthropic streaming request
