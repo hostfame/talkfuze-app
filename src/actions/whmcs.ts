@@ -212,7 +212,7 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
 
         const formData = new FormData()
         // Convert Buffer to File/Blob equivalent for FormData
-        const blob = new Blob([audioBuffer], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' })
+        const blob = new Blob([new Uint8Array(audioBuffer)], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' })
         formData.append('file', blob, filename)
         formData.append('model', 'whisper-1')
 
