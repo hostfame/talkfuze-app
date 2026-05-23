@@ -3558,7 +3558,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50/20 dark:bg-[#1a1712] border-amber-200/70 dark:border-amber-900/30 focus-within:ring-1 focus-within:border-amber-400/60 focus-within:ring-amber-400/30' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50 dark:bg-[#1f1d17] border-amber-300 dark:border-amber-900/40 focus-within:ring-1 focus-within:border-amber-400 focus-within:ring-amber-400/30' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
           {isRecording ? (
@@ -3845,7 +3845,7 @@ export default function ChatThread({
           
 
 
-          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200/55 dark:border-amber-900/20 bg-amber-50/30 dark:bg-[#1a1813]' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200/60 dark:border-amber-900/30 bg-amber-100/45 dark:bg-[#15130f]' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -3906,10 +3906,10 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border ${
+                className={`px-5 py-1.5 text-[14px] font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border ${
                   isInternal 
-                    ? 'bg-slate-900 text-white hover:bg-black border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white dark:border-slate-100 disabled:bg-slate-900/40 disabled:text-slate-400/80 disabled:border-slate-900/10 dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500/80 dark:disabled:border-slate-700/10'
-                    : 'bg-[#0070f3] text-white hover:bg-blue-600 border-[#0070f3] disabled:bg-blue-50 disabled:text-blue-300 disabled:border-blue-100 dark:disabled:bg-blue-950/20 dark:disabled:text-blue-900/30 dark:disabled:border-transparent'
+                    ? 'bg-slate-900 text-white border-slate-900 hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100 dark:hover:bg-white disabled:opacity-40 disabled:bg-slate-900 disabled:text-white disabled:border-slate-900 dark:disabled:bg-slate-100 dark:disabled:text-slate-900 dark:disabled:border-slate-100'
+                    : 'bg-[#0070f3] text-white border-[#0070f3] hover:bg-blue-600 disabled:opacity-50 disabled:bg-blue-300 disabled:text-white disabled:border-transparent'
                 }`}
               >
                 {isSending ? (
