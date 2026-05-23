@@ -271,33 +271,126 @@ Draft a smart, helpful reply as the support agent.`;
 
     // 5. Fire AI request (Gemini for Translation, Anthropic for Support Drafts)
     if (isTranslation) {
-      if (!process.env.GEMINI_API_KEY) {
-        return NextResponse.json({ error: "Missing Gemini API key" }, { status: 500 });
+      let useFallback = false;
+      let geminiResponse: Response | null = null;
+
+      try {
+        if (!process.env.GEMINI_API_KEY) {
+          throw new Error("Missing Gemini API key");
+        }
+
+        geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userMessage }] }],
+            generationConfig: { temperature: 0.1 }
+          }),
+        });
+
+        if (!geminiResponse.ok) {
+          const errorText = await geminiResponse.text();
+          console.error('[AI Translation] Gemini error:', geminiResponse.status, errorText);
+          useFallback = true;
+        }
+      } catch (geminiErr: any) {
+        console.error('[AI Translation] Gemini exception:', geminiErr.message);
+        useFallback = true;
       }
 
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: userMessage }] }],
-          generationConfig: { temperature: 0.1 }
-        }),
-      });
+      if (useFallback || !geminiResponse) {
+        console.log('[AI Translation] Falling back to Anthropic for translation...');
+        
+        const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-beta": "prompt-caching-2024-07-31",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 600,
+            stream: true,
+            system: [
+              {
+                type: "text",
+                text: "You are a highly accurate translation API. Your only job is to translate the provided text exactly as instructed, without adding any conversational filler, quotes, or support agent persona. Output ONLY the translation in raw plain text.",
+              }
+            ],
+            messages: [
+              { role: "user", content: userMessage },
+            ],
+          }),
+        });
 
-      if (!geminiResponse.ok) {
-        const errorText = await geminiResponse.text();
-        console.error('[AI Translation] Gemini error:', geminiResponse.status, errorText);
-        return NextResponse.json({ error: "Gemini Translation Failed" }, { status: 500 });
+        if (!anthropicResponse.ok) {
+          const errorText = await anthropicResponse.text();
+          console.error('[AI Translation Fallback] Anthropic error:', anthropicResponse.status, errorText);
+          return NextResponse.json({ error: "Translation Failed (Both Gemini and Anthropic failed)" }, { status: 500 });
+        }
+
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: 'en', sources: [] })}\n\n`));
+
+            const reader = anthropicResponse.body?.getReader();
+            const decoder = new TextDecoder("utf-8");
+            if (!reader) { controller.close(); return; }
+
+            let buffer = '';
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                    try {
+                      const data = JSON.parse(line.slice(6));
+                      if (data.type === "content_block_delta" && data.delta?.text) {
+                        controller.enqueue(
+                          encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`)
+                        );
+                      }
+                    } catch { }
+                  }
+                }
+              }
+            } catch (streamErr: any) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream error: ' + streamErr.message })}\n\n`));
+            } finally {
+              reader.releaseLock();
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+          },
+        });
       }
 
+      // Succeeded with Gemini
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: 'en', sources: [] })}\n\n`));
 
-          const reader = geminiResponse.body?.getReader();
+          const reader = geminiResponse!.body?.getReader();
           const decoder = new TextDecoder("utf-8");
           if (!reader) { controller.close(); return; }
 
