@@ -451,7 +451,10 @@ export async function createConversation(orgId: string, phone: string) {
     .eq("org_id", orgId)
     .eq("contact_id", contact.id)
     .eq("channel_id", channelId)
-    .single();
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (!conversation) {
     const { data: newConversation, error: insertConvError } = await supabaseAdmin
