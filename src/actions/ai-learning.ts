@@ -59,23 +59,21 @@ export async function logAiDraft(
  */
 async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, question: string, answer: string } | null> {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
+        system: "You are an expert AI CRM training engineer. You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'. You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.",
         messages: [
-          {
-            role: "system",
-            content: "You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'."
-          },
           {
             role: "user",
             content: `Compare the mistaken AI Draft with the Agent's Final Verified Message.
@@ -101,9 +99,14 @@ Output strictly in JSON: {"rule": "...", "question": "...", "answer": "..."}`
       })
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error("Anthropic learning extraction failed:", response.status, await response.text());
+      return null;
+    }
     const data = await response.json();
-    const result = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    const textContent = data.content?.[0]?.text || "";
+    const cleanJson = textContent.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(cleanJson);
     return (result.rule && result.question && result.answer) ? result : null;
   } catch (e) {
     console.error("extractLearningData error:", e);
