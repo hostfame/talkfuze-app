@@ -3,7 +3,20 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { getCannedReplies, createCannedReply, updateCannedReply, deleteCannedReply } from "@/actions/snippets"
-import { Plus, Search, Trash2, Edit2, X, Library, Loader2, CheckCircle2 } from "lucide-react"
+import { 
+  Plus, 
+  Search, 
+  Trash2, 
+  Edit2, 
+  X, 
+  Library, 
+  Loader2, 
+  MessageSquare, 
+  Sparkles, 
+  CreditCard, 
+  Terminal, 
+  AlertOctagon 
+} from "lucide-react"
 
 export default function SnippetsPage() {
   const user = useAuth()
@@ -39,12 +52,45 @@ export default function SnippetsPage() {
     loadSnippets()
   }, [user?.org_id])
 
-  const categories = ["all", ...Array.from(new Set(snippets.map(s => s.category || "general")))]
+  // Helper to map DB categories to curated Hostnin categories dynamically
+  const getStandardCategory = (cat: string): string => {
+    const c = (cat || "general").toLowerCase().trim()
+    if (["sales", "ads", "adsen", "adspend", "adrun", "marketing", "promo", "discount", "domain", "freedomain"].some(k => c.includes(k))) return "sales"
+    if (["billing", "invoice", "bkash", "bank-transfer", "payment", "refund", "bkash/nagad", "bkash-personal"].some(k => c.includes(k))) return "billing"
+    if (["ssl", "activessl", "addon", "cpanel", "nameserver", "dns", "technical", "migration", "email", "server", "ip", "whm"].some(k => c.includes(k))) return "tech"
+    if (["abuse", "suspension", "suspended", "terms", "spam"].some(k => c.includes(k))) return "abuse"
+    return "general"
+  }
+
+  const categoryMetadata: { [key: string]: { label: string, color: string, border: string, bg: string } } = {
+    general: { label: "General", color: "text-blue-600 dark:text-blue-400", border: "border-blue-100 dark:border-blue-900/30", bg: "bg-blue-50/50 dark:bg-blue-950/10" },
+    sales: { label: "Sales & Promos", color: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-100 dark:border-emerald-900/30", bg: "bg-emerald-50/50 dark:bg-emerald-950/10" },
+    billing: { label: "Billing & bkash", color: "text-amber-600 dark:text-amber-400", border: "border-amber-100 dark:border-amber-900/30", bg: "bg-amber-50/50 dark:bg-amber-950/10" },
+    tech: { label: "Technical", color: "text-violet-600 dark:text-violet-400", border: "border-violet-100 dark:border-violet-900/30", bg: "bg-violet-50/50 dark:bg-violet-950/10" },
+    abuse: { label: "Abuse & Terms", color: "text-rose-600 dark:text-rose-400", border: "border-rose-100 dark:border-rose-900/30", bg: "bg-rose-50/50 dark:bg-rose-950/10" },
+  }
+
+  const categories = [
+    { id: "all", label: "All Templates", icon: Library },
+    { id: "general", label: "General & Help", icon: MessageSquare },
+    { id: "sales", label: "Sales & Promos", icon: Sparkles },
+    { id: "billing", label: "Billing & bkash", icon: CreditCard },
+    { id: "tech", label: "Technical Support", icon: Terminal },
+    { id: "abuse", label: "Abuse & Terms", icon: AlertOctagon },
+  ]
+
+  const getCategoryCount = (catId: string) => {
+    if (catId === "all") return snippets.length
+    return snippets.filter(s => getStandardCategory(s.category) === catId).length
+  }
 
   const filteredSnippets = snippets.filter(s => {
-    const matchesSearch = s.shortcut.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          s.content.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || s.category === selectedCategory
+    const shortcut = s.shortcut || ""
+    const content = s.content || ""
+    const matchesSearch = shortcut.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          content.toLowerCase().includes(searchQuery.toLowerCase())
+    const snippetCategory = getStandardCategory(s.category)
+    const matchesCategory = selectedCategory === "all" || snippetCategory === selectedCategory
     return matchesSearch && matchesCategory
   })
 
@@ -110,7 +156,7 @@ export default function SnippetsPage() {
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b141a]">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222e35]">
+      <div className="flex items-center justify-between p-6 bg-white dark:bg-[#111b21] border-b border-slate-200/60 dark:border-[#222e35]">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-[#e9edef]">Canned Snippets</h1>
           <p className="text-sm text-slate-500 dark:text-[#8696a0]">Manage quick support templates and keyboard shortcuts</p>
@@ -124,109 +170,153 @@ export default function SnippetsPage() {
         </button>
       </div>
 
-      {/* Toolbar & Filters */}
-      <div className="p-6 pb-3 flex flex-col md:flex-row gap-4 justify-between items-center bg-white/50 dark:bg-transparent">
-        {/* Search */}
-        <div className="relative w-full md:w-80">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <Search size={15} />
+      {/* Dual Panel Body Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar Pane: Categories */}
+        <aside className="w-[260px] bg-white dark:bg-[#111b21] border-r border-slate-200/60 dark:border-[#222e35] flex flex-col p-4 shrink-0 overflow-y-auto custom-scrollbar">
+          <div className="mb-3 px-2">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Departments</span>
           </div>
-          <input
-            type="text"
-            className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 dark:placeholder-[#8696a0] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#202c33] transition-all"
-            placeholder="Search shortcut or content..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
 
-        {/* Category Filter */}
-        <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold border capitalize transition-all shrink-0 ${
-                selectedCategory === cat
-                  ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400'
-                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 dark:bg-[#111b21] dark:border-[#2a3942] dark:text-[#8696a0]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
+          <nav className="space-y-1">
+            {categories.map(cat => {
+              const Icon = cat.icon
+              const count = getCategoryCount(cat.id)
+              const isSelected = selectedCategory === cat.id
 
-      {/* Grid Content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <div className="w-full max-w-[1300px] mx-auto">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-44 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] animate-pulse" />
-              ))}
-            </div>
-          ) : filteredSnippets.length === 0 ? (
-            <div className="text-center py-20 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl">
-              <div className="w-14 h-14 bg-slate-50 dark:bg-[#182229] border border-slate-200 dark:border-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                <Library size={22} />
-              </div>
-              <h3 className="text-sm font-bold text-slate-700 dark:text-[#e9edef]">No snippets found</h3>
-              <p className="text-xs text-slate-500 dark:text-[#8696a0] mt-1">Create your first canned reply template to streamline support.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredSnippets.map(snippet => (
-                <div 
-                  key={snippet.id}
-                  className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
+                    isSelected 
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-semibold' 
+                      : 'text-slate-600 dark:text-[#8696a0] hover:bg-slate-50 dark:hover:bg-[#202c33] hover:text-slate-900 dark:hover:text-[#e9edef]'
+                  }`}
                 >
-                  <div className="space-y-3">
-                    {/* Top Row: Shortcut & Category */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 px-2.5 py-1 rounded-lg">
-                        {snippet.shortcut}
-                      </span>
-                      <span className="text-[11px] font-semibold text-slate-400 dark:text-[#8696a0] bg-slate-50 dark:bg-[#182229] border border-slate-100 dark:border-[#2a3942] px-2 py-0.5 rounded capitalize">
-                        {snippet.category || "general"}
-                      </span>
-                    </div>
-
-                    {/* Content Preview */}
-                    <p className="text-[13px] text-slate-600 dark:text-[#d1d7db] leading-relaxed line-clamp-4 whitespace-pre-wrap">
-                      {snippet.content}
-                    </p>
+                  <div className="flex items-center gap-2.5">
+                    <Icon size={16} className={isSelected ? 'text-blue-500' : 'text-slate-400 dark:text-[#8696a0]'} />
+                    <span>{cat.label}</span>
                   </div>
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full ${
+                    isSelected
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-bold'
+                      : 'bg-slate-100 text-slate-500 dark:bg-[#202c33] dark:text-[#8696a0]'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
 
-                  {/* Actions Row */}
-                  <div className="flex justify-end items-center gap-2 mt-5 pt-3 border-t border-slate-100 dark:border-[#222e35]">
-                    <button
-                      onClick={() => openEditModal(snippet)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-[#182229] transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(snippet.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+        {/* Right Main Grid Area */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-6 pb-4 bg-white/40 dark:bg-transparent border-b border-slate-100 dark:border-[#222e35] flex items-center justify-between">
+            {/* Search */}
+            <div className="relative w-full max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Search size={15} />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 dark:placeholder-[#8696a0] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white dark:bg-[#202c33] transition-all"
+                placeholder="Search shortcut or reply content..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          )}
-        </div>
+
+            <div className="text-[12px] text-slate-400 dark:text-[#8696a0] font-medium">
+              Showing {filteredSnippets.length} of {snippets.length} templates
+            </div>
+          </div>
+
+          {/* Grid Container */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-44 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200/60 dark:border-[#222e35] animate-pulse" />
+                ))}
+              </div>
+            ) : filteredSnippets.length === 0 ? (
+              <div className="text-center py-20 bg-white dark:bg-[#111b21] border border-slate-200/60 dark:border-[#222e35] rounded-2xl">
+                <div className="w-14 h-14 bg-slate-50 dark:bg-[#182229] border border-slate-200 dark:border-[#2a3942] rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                  <Library size={22} />
+                </div>
+                <h3 className="text-sm font-bold text-slate-700 dark:text-[#e9edef]">No snippets found</h3>
+                <p className="text-xs text-slate-500 dark:text-[#8696a0] mt-1">
+                  {searchQuery ? "Try adjusting your search terms." : "Create your first canned reply snippet to start typing /shortcut."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredSnippets.map(snippet => {
+                  const stdCat = getStandardCategory(snippet.category)
+                  const meta = categoryMetadata[stdCat] || categoryMetadata.general
+
+                  return (
+                    <div 
+                      key={snippet.id}
+                      className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200/60 dark:border-[#222e35] p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col justify-between group relative overflow-hidden"
+                    >
+                      <div className="space-y-3">
+                        {/* Top Row: Shortcut & Curated Category */}
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[13px] font-bold text-[#0070f3] bg-blue-50/80 dark:bg-blue-900/10 border border-blue-100/70 dark:border-blue-900/20 px-2.5 py-0.5 rounded-lg font-mono">
+                            {snippet.shortcut}
+                          </span>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${meta.color} ${meta.border} ${meta.bg}`}>
+                              {meta.label}
+                            </span>
+                            {snippet.category && snippet.category !== stdCat && (
+                              <span className="text-[10px] font-medium text-slate-400 dark:text-[#8696a0] px-1 bg-slate-50 dark:bg-[#182229] border border-slate-100 dark:border-[#2a3942] rounded">
+                                {snippet.category}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Content Preview */}
+                        <p className="text-[13px] text-slate-600 dark:text-[#d1d7db] leading-relaxed line-clamp-5 whitespace-pre-wrap">
+                          {snippet.content}
+                        </p>
+                      </div>
+
+                      {/* Actions Row */}
+                      <div className="flex justify-end items-center gap-2 mt-5 pt-3 border-t border-slate-100 dark:border-[#222e35]">
+                        <button
+                          onClick={() => openEditModal(snippet)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-[#182229] transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(snippet.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* Add / Edit Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#111b21] rounded-3xl border border-slate-200 dark:border-[#222e35] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-[#111b21] rounded-3xl border border-slate-200/60 dark:border-[#222e35] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 dark:border-[#222e35] flex items-center justify-between">
               <h3 className="font-bold text-slate-800 dark:text-[#e9edef]">
@@ -265,17 +355,21 @@ export default function SnippetsPage() {
                 <p className="text-[10px] text-slate-400">Short trigger code used in chat composer (e.g. typing <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">/dns</code>).</p>
               </div>
 
-              {/* Category Input */}
+              {/* Category Dropdown */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-[#8696a0] uppercase">Category</label>
-                <input
-                  type="text"
+                <label className="text-xs font-bold text-slate-500 dark:text-[#8696a0] uppercase">Category Department</label>
+                <select
                   required
-                  className="block w-full px-3.5 py-2 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 dark:bg-[#202c33]"
-                  placeholder="general, billing, technical..."
+                  className="block w-full px-3.5 py-2.5 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 dark:bg-[#202c33]"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                />
+                >
+                  <option value="general">General & Help</option>
+                  <option value="sales">Sales & Promos</option>
+                  <option value="billing">Billing & bkash</option>
+                  <option value="tech">Technical Support</option>
+                  <option value="abuse">Abuse & Terms</option>
+                </select>
               </div>
 
               {/* Content Input */}
@@ -283,7 +377,7 @@ export default function SnippetsPage() {
                 <label className="text-xs font-bold text-slate-500 dark:text-[#8696a0] uppercase">Canned Template Response</label>
                 <textarea
                   required
-                  rows={5}
+                  rows={6}
                   className="block w-full px-3.5 py-2 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 dark:bg-[#202c33] resize-none"
                   placeholder="Enter standard template reply..."
                   value={content}
