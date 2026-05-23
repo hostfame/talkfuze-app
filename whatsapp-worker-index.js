@@ -622,6 +622,47 @@ async function processMessage(msg) {
     const contactId = await upsertContact(conversationJid, (isGroup || fromMe) ? null : senderName);
     const conversationId = await upsertConversation(contactId, channelId);
 
+    // Smart Outbound WhatsApp Race Condition Deduplication
+    if (fromMe) {
+      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+      const cleanText = text ? text.replace(/^\*.*?\*\n/, '').trim() : '';
+      
+      const { data: matchedOutbound } = await supabase
+        .from('messages')
+        .select('id, content, content_type')
+        .eq('org_id', ORG_ID)
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', 'agent')
+        .is('platform_message_id', null)
+        .gte('created_at', fifteenSecondsAgo)
+        .order('created_at', { ascending: false });
+
+      if (matchedOutbound && matchedOutbound.length > 0) {
+        let bestMatch;
+        if (contentType === 'text') {
+          bestMatch = matchedOutbound.find(m => m.content_type === 'text' && (m.content || '').trim() === cleanText);
+        } else {
+          bestMatch = matchedOutbound.find(m => m.content_type === contentType);
+        }
+        
+        if (!bestMatch) {
+          bestMatch = matchedOutbound[0];
+        }
+        
+        console.log(`[MSG] Found matching outbound agent message: ${bestMatch.id}. Associating with msgId: ${msgId}`);
+        
+        await supabase
+          .from('messages')
+          .update({
+            platform_message_id: msgId,
+            status: 'delivered'
+          })
+          .eq('id', bestMatch.id);
+          
+        return; // Complete match, prevent duplicate insertion!
+      }
+    }
+
     // Build metadata
     const metadata = {
       participant_jid: isGroup ? senderJid : null,
