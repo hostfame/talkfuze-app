@@ -3903,10 +3903,8 @@ export default function ChatThread({
                 {isSending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>{isInternal ? 'Whispering...' : 'Sending...'}</span>
+                    <span>Sending...</span>
                   </>
-                ) : isInternal ? (
-                  <span>Whisper</span>
                 ) : (
                   'Send'
                 )}
