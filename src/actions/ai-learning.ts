@@ -340,10 +340,13 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
 
     for (const row of data) {
       if (!row.correction_feedback) continue;
-      const normalized = row.correction_feedback.toLowerCase().trim();
+      // Strip the verbose STYLE analysis block - only inject the concise factual rule into prompts
+      // The full style data stays in the DB for the dashboard, style patterns are learned via vector DB examples
+      const ruleOnly = row.correction_feedback.split(' | STYLE:')[0].trim();
+      const normalized = ruleOnly.toLowerCase();
       if (!seenNormalized.has(normalized)) {
         seenNormalized.add(normalized);
-        uniqueCorrections.push(row.correction_feedback);
+        uniqueCorrections.push(ruleOnly);
         if (uniqueCorrections.length >= 6) break;
       }
     }
