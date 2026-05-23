@@ -507,8 +507,8 @@ const VoiceCallWidget = ({ msg, isMissed, agent, safeMeta, msgTime }: any) => {
   useEffect(() => {
     if (showPlayer && widgetRef.current) {
       setTimeout(() => {
-        widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 100);
+        widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
     }
   }, [showPlayer]);
 
