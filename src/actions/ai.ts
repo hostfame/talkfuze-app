@@ -1,6 +1,7 @@
 "use server";
 import knowledge from './hostnin-knowledge.json';
 import { getApprovedExamples, getRecentCorrections } from './ai-learning';
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
   try {
@@ -165,5 +166,121 @@ Determine the language of the customer's messages:
   } catch (error: any) {
     console.error("AI Draft Generation failed:", error);
     return { success: false, error: error.message || "An unexpected error occurred." };
+  }
+}
+
+/**
+ * Validates a learning rule in real-time by generating a new draft under active rules,
+ * then uses Claude 4.5 Sonnet to score and critique the improvement.
+ */
+export async function validateRuleEffectiveness(logId: string): Promise<{
+  success: boolean;
+  newDraft?: string;
+  score?: number;
+  verdict?: string;
+  error?: string;
+}> {
+  try {
+    const { data: log, error: fetchErr } = await supabaseAdmin
+      .from("ai_draft_logs")
+      .select("ai_draft, agent_sent, customer_context, org_id, correction_feedback")
+      .eq("id", logId)
+      .single();
+
+    if (fetchErr || !log) {
+      return { success: false, error: "Log not found." };
+    }
+
+    if (!log.customer_context) {
+      return { success: false, error: "Context messages are missing from this log." };
+    }
+
+    // 1. Generate a NEW draft under the current rules (includes the newly vector-embedded rules!)
+    const draftRes = await generateAiDraft(log.customer_context, "Customer", log.org_id);
+    if (!draftRes.success || !draftRes.text) {
+      return { success: false, error: draftRes.error || "Failed to generate new draft." };
+    }
+
+    const newDraft = draftRes.text;
+
+    // 2. Grade the new draft using Claude 4.5 Sonnet
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: "Anthropic key is not configured." };
+    }
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 1000,
+        system: "You are an expert AI CRM QA engineer. You evaluate how successfully a new AI draft resolved a past mistake by following a specific learning rule. You output valid JSON strictly containing two keys: 'score' (an integer from 0 to 100 representing how closely it adhered to the rule and matched/improved the agent's goal) and 'verdict' (a concise 1-sentence explanation of why the new draft successfully avoided the mistake and followed the rule, or how it failed). You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.",
+        messages: [
+          {
+            role: "user",
+            content: `Compare the Old Mistaken AI Draft, the Learning Rule, the Agent's Final Verified Target, and the New AI Draft.
+
+Customer Asked:
+"${log.customer_context}"
+
+Old Mistaken AI Draft:
+"${log.ai_draft}"
+
+Learning Rule:
+"${log.correction_feedback || 'Avoid generic templates and match target response'}"
+
+Agent's Target Reply:
+"${log.agent_sent}"
+
+New Live AI Draft (to validate):
+"${newDraft}"
+
+Evaluate if the New AI Draft successfully:
+1. Followed the Learning Rule.
+2. Avoided the Old Mistaken Draft's exact failure.
+3. Aligned with the Agent's Target tone/style.
+
+Output strictly in JSON: {"score": 95, "verdict": "..."}`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      return { success: false, error: "Failed to grade draft validation." };
+    }
+
+    const resData = await response.json();
+    const textContent = resData.content?.[0]?.text || "";
+    const cleanJson = textContent.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleanJson);
+
+    const score = typeof parsed.score === 'number' ? parsed.score : 0;
+    const verdict = parsed.verdict || "Successfully validated.";
+
+    // 3. Save validation metrics to database
+    await supabaseAdmin
+      .from("ai_draft_logs")
+      .update({
+        validation_draft: newDraft,
+        validation_score: score,
+        validation_verdict: verdict
+      })
+      .eq("id", logId);
+
+    return {
+      success: true,
+      newDraft,
+      score,
+      verdict
+    };
+  } catch (err: any) {
+    console.error("validateRuleEffectiveness error:", err);
+    return { success: false, error: err.message || "Unexpected validation error." };
   }
 }
