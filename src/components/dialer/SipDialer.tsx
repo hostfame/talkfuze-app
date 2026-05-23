@@ -613,7 +613,29 @@ export default function SipDialer() {
       },
       onCallCreated: () => {
         setStatus('Calling...')
-        setActiveCallSession(prev => prev || { number: number.replace(/[\s-]/g, ''), direction: 'outbound' })
+        const session = (simpleUser as any).session
+        if (session) {
+          const remoteUser = session.remoteIdentity?.uri?.user || number.replace(/[^\d+]/g, '')
+          setActiveCallSession(prev => prev || { number: remoteUser, direction: 'outbound' })
+          
+          console.log("[SIP] Outbound session created in delegate, binding events immediately");
+          const origDelegate = session.delegate || {};
+          session.delegate = {
+            ...origDelegate,
+            onProgress: (response: any) => {
+              if (origDelegate.onProgress) origDelegate.onProgress(response);
+              const statusCode = response.message?.statusCode;
+              console.log(`[SIP] Outbound progress: ${statusCode}`);
+              if (statusCode === 180 || statusCode === 183) {
+                setStatus('Ringing...');
+                playSynthesizedRing();
+              }
+            }
+          };
+          bindSessionEvents(session);
+        } else {
+          setActiveCallSession(prev => prev || { number: number.replace(/[\s-]/g, ''), direction: 'outbound' })
+        }
       },
       onCallAnswered: () => {
         console.log('[SIP] onCallAnswered delegate fired - call is established')
@@ -736,25 +758,6 @@ export default function SipDialer() {
       }
 
       await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
-      
-      // Bind session events to outbound session immediately
-      const session = (userAgent as any).session
-      if (session) {
-        const origDelegate = session.delegate || {};
-        session.delegate = {
-          ...origDelegate,
-          onProgress: (response: any) => {
-            if (origDelegate.onProgress) origDelegate.onProgress(response);
-            const statusCode = response.message?.statusCode;
-            console.log(`[SIP] Outbound progress: ${statusCode}`);
-            if (statusCode === 180 || statusCode === 183) {
-              setStatus('Ringing...');
-              playSynthesizedRing();
-            }
-          }
-        };
-        bindSessionEvents(session)
-      }
     } catch (e) {
       console.error("Dial failed", e)
       setStatus('Call Failed')
@@ -1058,23 +1061,6 @@ export default function SipDialer() {
                 .catch(() => {})
             }
             await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
-            const session = (userAgent as any).session
-            if (session) {
-              const origDelegate = session.delegate || {};
-              session.delegate = {
-                ...origDelegate,
-                onProgress: (response: any) => {
-                  if (origDelegate.onProgress) origDelegate.onProgress(response);
-                  const statusCode = response.message?.statusCode;
-                  console.log(`[SIP] Click-to-call progress: ${statusCode}`);
-                  if (statusCode === 180 || statusCode === 183) {
-                    setStatus('Ringing...');
-                    playSynthesizedRing();
-                  }
-                }
-              };
-              bindSessionEvents(session)
-            }
           } catch (e) {
             console.error('Click-to-call dial failed:', e)
             setStatus('Call Failed')
