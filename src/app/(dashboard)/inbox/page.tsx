@@ -61,13 +61,28 @@ export default function InboxPage() {
     if (currentUser) setCurrentUser(currentUser as UserProfile)
   }, [currentUser, setCurrentUser])
 
+  // Refetch conversations when activeFilter changes
+  useEffect(() => {
+    let mounted = true;
+    if (currentUser && ORG_ID) {
+      const currentFilter = activeFilter === 'mine' ? 'assigned' : activeFilter as any;
+      getConversations(ORG_ID, currentFilter, currentUser.id).then(data => {
+        if (mounted) {
+          setConversations((data || []) as ConversationWithDetails[]);
+        }
+      });
+    }
+    return () => { mounted = false };
+  }, [activeFilter, ORG_ID, currentUser?.id, setConversations]);
+
   const activeConversation = conversations.find(c => c.id === selectedId)
   const messages = selectedId ? (messagesMap[selectedId] || []) : []
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
+      const currentFilter = useInboxStore.getState().activeFilter === 'mine' ? 'assigned' : useInboxStore.getState().activeFilter as any;
       const [convosData, teamData] = await Promise.all([
-        getConversations(ORG_ID),
+        getConversations(ORG_ID, currentFilter, currentUser?.id),
         getTeammates()
       ])
       

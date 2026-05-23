@@ -116,8 +116,7 @@ Determine the language of the customer's messages:
      * "আপনার ডোমেইন লিংকটা দিন, আমি এখনই চেক করে দেখছি।"
      * "ওকে বুঝতে পেরেছি! আসলে ব্যাপারটা হলো..."
      * "কোন চিন্তা নাই, এটা আমি ফিক্স করে দিচ্ছি।"
-     * "জ্বী জ্বী, এটা আমরা করে দিতে পারবো।"`;
-${fewShotBlock}${mistakesBlock}`;
+     * "জ্বী জ্বী, এটা আমরা করে দিতে পারবো."${fewShotBlock}${mistakesBlock}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
