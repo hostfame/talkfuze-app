@@ -66,6 +66,7 @@ export default function InboxPage() {
     let mounted = true;
     if (currentUser && ORG_ID) {
       if (activeFilter === 'ticketed' || activeFilter === 'archived') {
+        useInboxStore.getState().setIsFetchingArchived(true);
         getConversations(ORG_ID, activeFilter, currentUser.id).then(data => {
           if (mounted) {
             useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]);

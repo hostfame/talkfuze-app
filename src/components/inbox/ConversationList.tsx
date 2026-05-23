@@ -207,28 +207,36 @@ export default function ConversationList({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111b21]">
-        {!isLoaded ? (
+        {(!isLoaded || (isArchivedFilter && useInboxStore.getState().isFetchingArchived)) ? (
           <div className="px-3 py-4 space-y-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="flex gap-3 animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0"></div>
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 shrink-0"></div>
                 <div className="flex-1 space-y-2 py-1">
                   <div className="flex justify-between items-center">
-                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-                    <div className="h-2 bg-slate-100 rounded w-8"></div>
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded w-8"></div>
                   </div>
-                  <div className="h-3 bg-slate-100 rounded w-3/4"></div>
+                  <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-3/4"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : displayedConversations.length === 0 && !isSearching ? (
-          <p className="text-[13px] text-slate-400 text-center mt-10">
-            {searchResults !== null ? "No matching conversations" : "No active conversations"}
-          </p>
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#111b21] mt-10">
+            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-800">
+              <MessageSquare size={24} className="text-slate-300 dark:text-slate-600" />
+            </div>
+            <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              {activeFilter === 'ticketed' ? 'No ticketed conversations' : activeFilter === 'archived' ? 'No archived conversations' : 'No active conversations'}
+            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-500 max-w-[200px]">
+              {activeFilter === 'ticketed' ? "Converted tickets will appear here." : activeFilter === 'archived' ? "Archived chats will appear here." : "When a new message arrives, it will appear here."}
+            </p>
+          </div>
         ) : null}
 
-        {isLoaded && displayedConversations
+        {(isLoaded && (!isArchivedFilter || !useInboxStore.getState().isFetchingArchived)) && displayedConversations
           .map((conv, i) => {
           const isSelected = conv.id === selectedId
           const contact = firstRelation(conv.contact)
