@@ -289,7 +289,7 @@ function CustomSoundUploadRow({
 export default function SoundsSettingsPage() {
   // ── Sound States ──
   const [unassignedVol, setUnassignedVol] = useState<number>(() => ls.getNum('talkfuze_unassigned_volume', 1.0))
-  const [unassignedPreset, setUnassignedPreset] = useState<UnassignedPreset>(() => (ls.get('talkfuze_unassigned_preset') as UnassignedPreset) || 'default')
+  const [unassignedPreset, setUnassignedPreset] = useState<UnassignedPreset>(() => (ls.get('talkfuze_unassigned_preset', 'default') as UnassignedPreset))
 
   const [msgPreset, setMsgPreset] = useState<SoundPreset>(() => getSelectedSound())
   const [msgVol, setMsgVol] = useState<number>(() => getSoundVolume())
