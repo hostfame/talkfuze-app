@@ -208,23 +208,25 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      const languageRule = detectedLanguage === 'en'
-      ? `LANGUAGE: English. Reply 100% in English.
-- Use contractions: "I'll", "we've", "you're", "don't".
-- Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
-- Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
-- NO EMOJIS EVER. Do not use a single emoji.
-- NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.`
-      : `LANGUAGE: Bengali. Reply 100% in Bengali script (বাংলা হরফে).
-- Write casual, natural WhatsApp-style Bengali, NOT bookish.
-- Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
-- THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
-  * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
-  * Example pattern: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
-  * The ONLY exception to this rule is URLs/Links.
-- ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
-- NO EMOJIS EVER. Do not use a single emoji.
-- NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
+      const languageRule = `CRITICAL LANGUAGE RULES:
+1. DETECT THE CUSTOMER's LANGUAGE from the conversation.
+2. If the customer wrote in English: Reply 100% in English.
+   - Use contractions: "I'll", "we've", "you're", "don't".
+   - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
+   - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
+   - NO EMOJIS EVER. Do not use a single emoji.
+   - NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
+3. If the customer wrote in Bengali script (বাংলা) OR Banglish (Bengali written with English letters): Reply 100% in Bengali script (বাংলা হরফে).
+   - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
+   - Write casual, natural WhatsApp-style Bengali, NOT bookish.
+   - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
+   - THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
+     * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
+     * Example pattern: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
+     * The ONLY exception to this rule is URLs/Links.
+   - ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
+   - NO EMOJIS EVER. Do not use a single emoji.
+   - NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
 
     userMessage = `${languageRule}
 

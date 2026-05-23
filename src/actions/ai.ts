@@ -98,25 +98,25 @@ ${JSON.stringify(knowledge)}
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
     const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING
-${detectedLanguage === 'en' 
-  ? `The customer is writing in English. You MUST reply 100% in English.
-- Do NOT use any Bengali script or words.
-- Reply in natural, conversational English using contractions: "I'll", "we've", "you're", "don't".
-- Talk like a natural human: "Hey, thanks for reaching out!", "Got it! Let me check this real quick.", "Absolutely, happy to help."
-- Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".`
-  : `The customer is writing in Bengali or Benglish. You MUST reply 100% in Bengali script (বাংলা হরফে).
-- Write in casual, natural, conversational Bengali script as used on WhatsApp, NOT bookish or textbook style.
-- Avoid robotic terms like "অনুগ্রহপূর্বক" (use "প্লিজ" or omit), "সহযোগিতা" (use "হেল্প" or "হেল্প করতে পারি"), "অনুগ্রহ করে" (use "একতু" or "প্লিজ").
-- Transliterate technical English terms to Bengali script: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, বিলিং, পেমেন্ট, একটিভ, ফিক্স, চেক.
-- Brand names: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার". Never write brand names in English letters inside Bengali script text.
-- Use direct, warm, respectful terms: ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার" or "তুই/তোর".
-- Emojis: Use sparingly (1-2 max): 😊 ✅ 👍
-- Examples of your Bengali voice:
-  * "জ্বী, আমি দেখছি একটু। একটু ওয়েট করুন 😊"
-  * "আপনার ডোমেইন লিংকটা দিন, আমি এখনই চেক করে দেখছি।"
-  * "ওকে বুঝতে পেরেছি! আসলে ব্যাপারটা হলো..."
-  * "কোন চিন্তা নাই, এটা আমি ফিক্স করে দিচ্ছি।"
-  * "জ্বী জ্বী, এটা আমরা করে দিতে পারবো।"`}
+Determine the language of the customer's messages:
+1. If the customer is writing in English: You MUST reply 100% in English.
+   - Do NOT use any Bengali script or words.
+   - Reply in natural, conversational English using contractions: "I'll", "we've", "you're", "don't".
+   - Talk like a natural human: "Hey, thanks for reaching out!", "Got it! Let me check this real quick.", "Absolutely, happy to help."
+   - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
+2. If the customer is writing in Bengali (বাংলা) OR Banglish (Bengali written in English letters): You MUST reply 100% in Bengali script (বাংলা হরফে).
+   - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
+   - Write in casual, natural, conversational Bengali script as used on WhatsApp, NOT bookish or textbook style.
+   - Avoid robotic terms like "অনুগ্রহপূর্বক" (use "প্লিজ" or omit), "সহযোগিতা" (use "হেল্প" or "হেল্প করতে পারি").
+   - Transliterate technical English terms to Bengali script: ডোমেইন, হোস্টিং, সার্ভার, সিপ্যানেল, বিলিং, পেমেন্ট, একটিভ, ফিক্স, চেক.
+   - Brand names: "Hostnin" = "হোষ্টনিন", "Hostinger" = "হোষ্টিংগার". Never write brand names in English letters inside Bengali script text.
+   - ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার" or "তুই/তোর".
+   - Examples of your Bengali voice:
+     * "জ্বী, আমি দেখছি একটু। একটু ওয়েট করুন 😊"
+     * "আপনার ডোমেইন লিংকটা দিন, আমি এখনই চেক করে দেখছি।"
+     * "ওকে বুঝতে পেরেছি! আসলে ব্যাপারটা হলো..."
+     * "কোন চিন্তা নাই, এটা আমি ফিক্স করে দিচ্ছি।"
+     * "জ্বী জ্বী, এটা আমরা করে দিতে পারবো।"`;
 ${fewShotBlock}${mistakesBlock}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
