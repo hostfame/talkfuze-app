@@ -646,6 +646,71 @@ export const stopAlertLoop = (): void => {
   }
 };
 
+// ---- Persistent loud ring loop for Unassigned incoming chats ----
+let unassignedRingIntervalId: ReturnType<typeof setInterval> | null = null;
+
+const playUnassignedChime = () => {
+  if (isDndActive()) return;
+  // Use the 'urgent' preset logic but louder
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const t = ctx.currentTime;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-3, t);
+    comp.knee.setValueAtTime(6, t);
+    comp.ratio.setValueAtTime(3, t);
+    comp.attack.setValueAtTime(0.003, t);
+    comp.release.setValueAtTime(0.08, t);
+    comp.connect(ctx.destination);
+
+    const ring = (freq: number, start: number, dur: number, gain: number) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(2500, t);
+      osc.connect(filt);
+      filt.connect(g);
+      g.connect(comp);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, t + start);
+      g.gain.setValueAtTime(0, t + start);
+      g.gain.linearRampToValueAtTime(gain, t + start + 0.01);
+      g.gain.setValueAtTime(gain, t + start + dur * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+      osc.start(t + start);
+      osc.stop(t + start + dur + 0.05);
+    };
+
+    // Loud "Tuck-Tuck" urgent pulse
+    ring(1200, 0, 0.1, 0.95);
+    ring(1200, 0.15, 0.1, 0.95);
+    ring(1200, 0.30, 0.1, 0.95);
+  } catch (err) {
+    console.error('Unassigned ring error:', err);
+  }
+};
+
+export const playUnassignedRingLoop = (): void => {
+  if (typeof window === 'undefined') return;
+  if (unassignedRingIntervalId !== null) return;
+
+  playUnassignedChime();
+  unassignedRingIntervalId = setInterval(playUnassignedChime, 2500); // Repeat every 2.5s
+};
+
+export const stopUnassignedRingLoop = (): void => {
+  if (unassignedRingIntervalId !== null) {
+    clearInterval(unassignedRingIntervalId);
+    unassignedRingIntervalId = null;
+  }
+};
+
 // ---- Persistent alert loop for outgoing calls (Ringback Tone) ----
 // Synthesizes a premium, beautiful modern telephone ringback tone (425Hz + 450Hz sine pulse)
 let ringbackIntervalId: ReturnType<typeof setInterval> | null = null;

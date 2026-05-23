@@ -11,7 +11,7 @@ import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
-import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash, playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
+import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash, playUnassignedRingLoop, stopUnassignedRingLoop, playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 
 export default function InboxPage() {
@@ -415,9 +415,9 @@ export default function InboxPage() {
     });
 
     if (hasUnpicked) {
-      playIncomingRingtoneLoop();
+      playUnassignedRingLoop();
     } else {
-      stopIncomingRingtoneLoop();
+      stopUnassignedRingLoop();
     }
   }, [conversations, messagesMap]);
 
