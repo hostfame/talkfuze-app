@@ -202,6 +202,7 @@ export default function CallsPage() {
   const { currentUser } = useInboxStore()
   const orgId = currentUser?.org_id || ""
   const isAdmin = currentUser?.role === 'admin'
+  const hasRecordingAccess = isAdmin || currentUser?.email === 'aisha@hostnin.com' || currentUser?.name === 'Aisha'
   
   const [logs, setLogs] = useState<CallLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -378,7 +379,7 @@ export default function CallsPage() {
                   <th className="py-3 px-6 whitespace-nowrap">Date</th>
                   <th className="py-3 px-6 whitespace-nowrap">Duration</th>
                   <th className="py-3 px-6 whitespace-nowrap">Status</th>
-                  {isAdmin && <th className="py-3 px-6 whitespace-nowrap">Recording</th>}
+                  {hasRecordingAccess && <th className="py-3 px-6 whitespace-nowrap">Recording</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -411,7 +412,7 @@ export default function CallsPage() {
                     <td className="py-4 px-6 whitespace-nowrap">
                       <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded w-16" />
                     </td>
-                    {isAdmin && (
+                    {hasRecordingAccess && (
                       <td className="py-4 px-6 whitespace-nowrap">
                         <div className="h-8 bg-slate-100 dark:bg-slate-800 rounded-full w-44" />
                       </td>
@@ -440,7 +441,7 @@ export default function CallsPage() {
                 <th className="py-3 px-6 whitespace-nowrap">Date</th>
                 <th className="py-3 px-6 whitespace-nowrap">Duration</th>
                 <th className="py-3 px-6 whitespace-nowrap">Status</th>
-                {isAdmin && <th className="py-3 px-6 whitespace-nowrap">Recording</th>}
+                {hasRecordingAccess && <th className="py-3 px-6 whitespace-nowrap">Recording</th>}
               </tr>
             </thead>
             <tbody className="text-[14px] divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -487,7 +488,7 @@ export default function CallsPage() {
                   <td className="py-3 px-6 whitespace-nowrap">
                     {getStatusBadge(log.status)}
                   </td>
-                  {isAdmin && (
+                  {hasRecordingAccess && (
                     <td className="py-3 px-6 w-64 whitespace-nowrap">
                       {(log.status === 'ANSWERED' || log.status === 'ANSWER') && log.duration_seconds > 0 && log.recording_url ? (
                         <CustomAudioPlayer src={log.recording_url} />

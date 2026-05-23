@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   MessagesSquare, 
   Zap, 
+  BrainCircuit,
   Phone, 
   Users, 
   Target, 
@@ -169,7 +170,7 @@ export default function LeaderboardPage() {
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
-                      <Zap size={14} /> AI Assisted
+                      <BrainCircuit size={14} /> AI Assisted
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.aiAssistedPercent}%</span>
                     <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
