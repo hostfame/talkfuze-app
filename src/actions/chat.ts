@@ -118,7 +118,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
 
   let msgResult;
   if (!isPageView) {
-    const convPromise = supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId);
+    const convPromise = supabaseAdmin.from("conversations").update({ last_message_at: now, is_archived: false }).eq("id", conversationId);
     const [msgRes] = await Promise.all([msgPromise, convPromise]);
     msgResult = msgRes;
   } else {
