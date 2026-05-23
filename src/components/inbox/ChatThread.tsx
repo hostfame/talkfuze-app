@@ -3342,20 +3342,16 @@ export default function ChatThread({
                 <button 
                   onClick={handleTranscribeAudio}
                   disabled={isTranscribingAudio}
-                  className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 disabled:opacity-50 disabled:hover:bg-transparent rounded-full transition-colors flex items-center justify-center gap-1 group relative"
-                  title="Convert to text"
+                  className="px-3 py-1.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 disabled:opacity-50 disabled:hover:bg-transparent rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
                 >
                   {isTranscribingAudio ? (
-                    <Loader2 size={20} className="animate-spin text-blue-500" />
-                  ) : (
                     <>
-                      <Type size={18} />
+                      <Loader2 size={14} className="animate-spin text-blue-500" />
+                      <span>Transcribing...</span>
                     </>
+                  ) : (
+                    <span>Voice to Text</span>
                   )}
-                  {/* Tooltip */}
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                    Voice to text
-                  </div>
                 </button>
                 <button 
                   onClick={cancelRecording}

@@ -6,18 +6,29 @@ async function fetchSupa(path, method = 'GET', body = null) {
     headers: {
       'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
       'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
     }
   };
   if (body) options.body = JSON.stringify(body);
   const res = await globalThis.fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/${path}`, options);
-  if (!res.ok) throw new Error(await res.text());
+  
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`HTTP ${res.status}: ${txt}`);
+  }
   if (res.status === 204) return null;
-  return res.json();
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 async function run() {
   const stuckLogs = await fetchSupa('ai_training_logs?status=eq.processing&select=id,conversation_id');
+  if (!stuckLogs) {
+    console.log("No stuck logs found or error fetching.");
+    return;
+  }
   console.log(`Found ${stuckLogs.length} stuck logs.`);
 
   for (const log of stuckLogs) {

@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     // OpenAI Whisper requires a filename with an extension
     openaiFormData.append("file", file, "audio.webm");
     openaiFormData.append("model", "whisper-1");
+    openaiFormData.append("prompt", "এটি একটি বাংলা এবং ইংরেজি কাস্টমার সাপোর্ট মেসেজ। ডোমেইন, হোস্টিং, ওয়েবসাইট, সমস্যা, পেমেন্ট সংক্রান্ত। This is a customer support message about hosting, domain, and websites.");
 
     // Using transcriptions endpoint to preserve original language (Bangla/English)
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
