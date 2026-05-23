@@ -100,11 +100,13 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
     const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING
 Determine the language of the customer's messages:
 1. If the customer is writing in English: You MUST reply 100% in English.
+   - ONLY use English if there are NO Bengali or Banglish words in the conversation.
    - Do NOT use any Bengali script or words.
    - Reply in natural, conversational English using contractions: "I'll", "we've", "you're", "don't".
    - Talk like a natural human: "Hey, thanks for reaching out!", "Got it! Let me check this real quick.", "Absolutely, happy to help."
    - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
-2. If the customer is writing in Bengali (বাংলা) OR Banglish (Bengali written in English letters): You MUST reply 100% in Bengali script (বাংলা হরফে).
+2. If the customer's message contains ANY Bengali script (বাংলা) OR ANY Banglish words (e.g., 'na', 'er', 'r', 'ek', 'kori', 'kemon', 'bhai', 'ki', 'ache', 'hoise', 'korbo', etc.): Treat the conversation as Banglish and You MUST reply 100% in Bengali script (বাংলা হরফে).
+   - Even if the customer mixes many English words with a few Banglish words (e.g., "Video er interface ek na"), you MUST reply entirely in Bengali script.
    - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
    - Write in casual, natural, conversational Bengali script as used on WhatsApp, NOT bookish or textbook style.
    - Avoid robotic terms like "অনুগ্রহপূর্বক" (use "প্লিজ" or omit), "সহযোগিতা" (use "হেল্প" or "হেল্প করতে পারি").

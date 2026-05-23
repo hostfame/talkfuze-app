@@ -12,7 +12,7 @@ async function retry() {
   const { data: logs, error } = await supabase
     .from('ai_training_logs')
     .select('*')
-    .in('status', ['pending', 'processing', 'failed'])
+    .eq('status', 'processing')
 
   if (error) {
     console.error(error)

@@ -205,12 +205,14 @@ Output ONLY the translation in raw plain text.`;
       const languageRule = `CRITICAL LANGUAGE RULES:
 1. DETECT THE CUSTOMER's LANGUAGE from the conversation.
 2. If the customer wrote in English: Reply 100% in English.
+   - ONLY use English if there are NO Bengali or Banglish words in the conversation.
    - Use contractions: "I'll", "we've", "you're", "don't".
    - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
    - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
    - NO EMOJIS EVER. Do not use a single emoji.
    - NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
-3. If the customer wrote in Bengali script (বাংলা) OR Banglish (Bengali written with English letters): Reply 100% in Bengali script (বাংলা হরফে).
+3. If the customer's message contains ANY Bengali script (বাংলা) OR ANY Banglish words (e.g., 'na', 'er', 'r', 'ek', 'kori', 'kemon', 'bhai', 'ki', 'ache', 'hoise', 'korbo', etc.): Treat the conversation as Banglish and Reply 100% in Bengali script (বাংলা হরফে).
+   - Even if the customer mixes many English words with a few Banglish words (e.g., "Video er interface ek na"), you MUST reply entirely in Bengali script.
    - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
    - Write casual, natural WhatsApp-style Bengali, NOT bookish.
    - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
