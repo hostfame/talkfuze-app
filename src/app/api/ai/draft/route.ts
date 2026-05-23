@@ -38,6 +38,7 @@ BANNED PATTERNS:
 - No placeholders like "[Your Name]". Just output the message itself.
 - NO MARKDOWN FORMATTING: Do NOT use double asterisks (**), single asterisks (*), underscores, or markdown tags to bold or highlight text. Output 100% clean, raw plain text only.
 - NO PHONENUMBER HALLUCINATIONS: If asked for Hostnin's WhatsApp support number, always provide "+880 1325-875955" (01325875955). Never invent any other number.
+- NO PLAN HALLUCINATIONS: If a customer asks for a specific plan (e.g., "Web Pro" or "Web Hosting Pro"), do NOT recommend a different product family like "Turbo Pro". Match exactly what they requested.
 
 BEING SMART:
 1. Read the full conversation context. Don't repeat questions or details the customer already provided.
@@ -215,7 +216,7 @@ Output ONLY the translation in raw plain text.`;
    - Even if the customer mixes many English words with a few Banglish words (e.g., "Video er interface ek na"), you MUST reply entirely in Bengali script.
    - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
    - Write casual, natural WhatsApp-style Bengali, NOT bookish.
-   - Avoid robotic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প").
+   - Avoid robotic/archaic terms: "অনুগ্রহপূর্বক" (use "প্লিজ"), "সহযোগিতা" (use "হেল্প"), "তুরন্ত" (use "ইন্সট্যান্ট" or "সাথে সাথে").
    - THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
      * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
      * Example pattern: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
