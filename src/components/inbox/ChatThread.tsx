@@ -3906,10 +3906,14 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border ${
+                className={`px-5 py-1.5 text-[14px] font-semibold rounded-lg transition-all flex items-center gap-1.5 shadow-sm border ${
                   isInternal 
-                    ? 'bg-slate-900 text-white border-slate-900 hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100 dark:hover:bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500 dark:disabled:border-slate-700/50'
-                    : 'bg-[#0070f3] text-white border-[#0070f3] hover:bg-blue-600 disabled:opacity-50 disabled:bg-blue-300 disabled:text-white disabled:border-transparent'
+                    ? ((!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null)
+                      ? 'bg-amber-100/50 text-amber-800/45 border-amber-200/40 dark:bg-amber-950/20 dark:text-amber-600/40 dark:border-amber-900/30 cursor-not-allowed'
+                      : 'bg-slate-900 text-white border-slate-900 hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100 dark:hover:bg-white'
+                    : ((!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null)
+                      ? 'bg-blue-50 text-blue-300 border-blue-100/50 dark:bg-blue-950/10 dark:text-blue-900/30 dark:border-transparent cursor-not-allowed'
+                      : 'bg-[#0070f3] text-white border-[#0070f3] hover:bg-blue-600'
                 }`}
               >
                 {isSending ? (
