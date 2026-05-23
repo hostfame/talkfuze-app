@@ -1693,10 +1693,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                             <button 
                               onClick={() => handleSendInvoiceLink(invoice.id)}
                               disabled={isSendingLink === invoice.id}
-                              className="flex-1 text-[11px] font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded disabled:opacity-50 flex items-center justify-center gap-1.5"
+                              className="flex-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-200/50 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors px-2 py-1.5 rounded disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                               {isSendingLink === invoice.id ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                              Push to Chat
+                              Push
                             </button>
                             <a 
                               href={`https://my.hostnin.com/root/invoices.php?action=edit&id=${invoice.id}`}
