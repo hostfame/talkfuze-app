@@ -38,6 +38,14 @@ export default function InboxPage() {
       if (window.innerWidth < 1200) {
         setIsRightSidebarOpen(false);
       }
+      
+      const params = new URLSearchParams(window.location.search);
+      const c = params.get("c");
+      if (c) {
+        setSelectedId(c);
+        useInboxStore.getState().setActiveFilter("all");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
     }
   }, [])
   const [recordingState, setRecordingState] = useState<Record<string, boolean>>({})
@@ -107,7 +115,17 @@ export default function InboxPage() {
       setConversations((convosData || []) as ConversationWithDetails[])
       setTeamMembers(teamData || [])
       
-      if (convosData && convosData.length > 0 && !useInboxStore.getState().selectedId) {
+      let hasUrlParam = false;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("c")) {
+          hasUrlParam = true;
+          setSelectedId(params.get("c")!);
+          useInboxStore.getState().setActiveFilter("all");
+        }
+      }
+
+      if (!hasUrlParam && convosData && convosData.length > 0 && !useInboxStore.getState().selectedId) {
         setSelectedId(convosData[0].id)
       }
 

@@ -32,7 +32,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   // 2. Get all messages in this period to count regular vs internal and calculate response time
   const { data: allMessages } = await supabaseAdmin
     .from('messages')
-    .select('id, sender_id, sender_type, conversation_id, created_at, is_internal')
+    .select('id, sender_id, sender_type, conversation_id, created_at, is_internal, content')
     .eq('org_id', orgId)
     .gte('created_at', startDate.toISOString())
     .order('created_at', { ascending: true });
@@ -69,7 +69,15 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       activeMinutes: 0,
       avgResponseTime: 0, // In minutes
       totalResponseTimeMs: 0,
-      responseTimeCount: 0
+      responseTimeCount: 0,
+      // Hosting-specific performance metrics:
+      firstResponseSlaPercent: 100, // Default to 100%
+      totalFirstResponses: 0,
+      firstResponsesUnder60s: 0,
+      emergencyResponseTime: 0, // In seconds
+      totalEmergencyResponseTimeMs: 0,
+      emergencyResponseTimeCount: 0,
+      escalatedTicketsCount: 0
     };
   });
 
@@ -120,16 +128,41 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
         if (!agentTimestamps[agentId]) agentTimestamps[agentId] = [];
         agentTimestamps[agentId].push(new Date(msg.created_at).getTime());
+      } else if (msg.sender_type === 'system' && msg.sender_id && statsMap[msg.sender_id]) {
+        // Track escalated tickets
+        const contentStr = (msg.content || '').toLowerCase();
+        if (contentStr.includes('ticket is created')) {
+          statsMap[msg.sender_id].escalatedTicketsCount++;
+        }
       }
     });
 
-    // Calculate response times
+    // Calculate response times & hosting SLAs
     Object.values(convMessages).forEach(msgs => {
+      // Check if conversation contains emergency keywords in customer messages
+      let isEmergency = false;
+      msgs.forEach(msg => {
+        if (msg.sender_type === 'contact') {
+          const contentLower = (msg.content || '').toLowerCase();
+          if (
+            contentLower.includes('down') ||
+            contentLower.includes('500') ||
+            contentLower.includes('502') ||
+            contentLower.includes('database') ||
+            contentLower.includes('nameserver') ||
+            contentLower.includes('critical') ||
+            contentLower.includes('error establishing')
+          ) {
+            isEmergency = true;
+          }
+        }
+      });
+
       let lastContactTime: number | null = null;
+      let isFirstResponse = true;
 
       msgs.forEach(msg => {
         if (msg.sender_type === 'contact') {
-          // If customer sent a message, record the time (only if we're not already waiting)
           if (lastContactTime === null) {
             lastContactTime = new Date(msg.created_at).getTime();
           }
@@ -143,6 +176,20 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
             if (diffMs > 0 && diffMs < 12 * 60 * 60 * 1000) {
               statsMap[agentId].totalResponseTimeMs += diffMs;
               statsMap[agentId].responseTimeCount++;
+
+              if (isEmergency) {
+                statsMap[agentId].totalEmergencyResponseTimeMs += diffMs;
+                statsMap[agentId].emergencyResponseTimeCount++;
+              }
+
+              // First response SLA check (<60 seconds)
+              if (isFirstResponse) {
+                statsMap[agentId].totalFirstResponses++;
+                if (diffMs < 60 * 1000) {
+                  statsMap[agentId].firstResponsesUnder60s++;
+                }
+                isFirstResponse = false;
+              }
             }
             
             // Reset contact time since agent replied
@@ -152,7 +199,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       });
     });
 
-    // Calculate active minutes & average response times
+    // Calculate active minutes, average response times, and hosting metrics
     Object.keys(statsMap).forEach(agentId => {
       const stats = statsMap[agentId];
 
@@ -162,7 +209,22 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
       if (stats.responseTimeCount > 0) {
         const avgMs = stats.totalResponseTimeMs / stats.responseTimeCount;
-        stats.avgResponseTime = Math.round((avgMs / (60 * 1000)) * 10) / 10; // 1 decimal place (mins)
+        stats.avgResponseTime = Math.round((avgMs / (60 * 1000)) * 10) / 10; // In minutes
+      }
+      
+      // First Response SLA Percent
+      if (stats.totalFirstResponses > 0) {
+        stats.firstResponseSlaPercent = Math.round((stats.firstResponsesUnder60s / stats.totalFirstResponses) * 100);
+      } else {
+        stats.firstResponseSlaPercent = 100;
+      }
+
+      // Emergency Response Time (in seconds)
+      if (stats.emergencyResponseTimeCount > 0) {
+        const avgEmergencyMs = stats.totalEmergencyResponseTimeMs / stats.emergencyResponseTimeCount;
+        stats.emergencyResponseTime = Math.round(avgEmergencyMs / 1000);
+      } else {
+        stats.emergencyResponseTime = 0;
       }
       
       if (agentTimestamps[agentId] && agentTimestamps[agentId].length > 0) {

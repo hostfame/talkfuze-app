@@ -14,7 +14,9 @@ import {
   X,
   Award,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert,
+  Wrench
 } from "lucide-react"
 
 export default function LeaderboardPage() {
@@ -151,7 +153,7 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
 
-                {/* Metrics Grid - Expanded to 4 Columns */}
+                {/* Metrics Grid - Expanded to 4 Columns with Hosting Metrics */}
                 <div className="flex-1 grid grid-cols-4 gap-4">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
@@ -167,19 +169,22 @@ export default function LeaderboardPage() {
                   
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
-                      <MessagesSquare size={14} /> Chats Handled
+                      <ShieldAlert size={14} className="text-[#0070f3]" /> First-Response SLA
                     </div>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.chatsCount}</span>
+                    <span className="text-2xl font-bold text-[#0070f3]">{agent.firstResponseSlaPercent}%</span>
+                    <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
+                      under 60s reply
+                    </span>
                   </div>
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
-                      <Phone size={14} /> Voice Calls
+                      <Phone size={14} /> Hotline Calls
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.callsCount}</span>
                     {agent.totalCallDuration > 0 && (
                       <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
-                        {formatCallDuration(agent.totalCallDuration)} call time
+                        {formatCallDuration(agent.totalCallDuration)} active
                       </span>
                     )}
                   </div>
@@ -190,7 +195,7 @@ export default function LeaderboardPage() {
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{formatActiveTime(agent.activeMinutes)}</span>
                     {agent.avgResponseTime > 0 ? (
-                      <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1 font-semibold">
+                      <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1 font-medium">
                         <Clock size={10} /> {agent.avgResponseTime}m avg response
                       </span>
                     ) : (
@@ -206,7 +211,7 @@ export default function LeaderboardPage() {
 
       {/* Premium Apple-Style Scorecard Modal Overlay */}
       {selectedAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedAgent(null)}>
           <div 
             className="bg-white dark:bg-[#111b21] rounded-3xl border border-slate-200 dark:border-[#222e35] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
@@ -281,27 +286,27 @@ export default function LeaderboardPage() {
 
               {/* Detailed Performance Scorecard Grid */}
               <div className="space-y-3">
-                <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Performance Scorecard</h3>
+                <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Hosting Performance Scorecard</h3>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Public Messages</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.messagesCount}</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">First-Response SLA</span>
+                    <span className="text-2xl font-bold text-[#0070f3]">{selectedAgent.firstResponseSlaPercent}%</span>
                   </div>
                   
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Internal Whispers</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.whispersCount}</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Emergency SLA Avg</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.emergencyResponseTime > 0 ? `${selectedAgent.emergencyResponseTime}s` : 'N/A'}</span>
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Conversations</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.chatsCount}</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Hotline Call Duration</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{formatCallDuration(selectedAgent.totalCallDuration)}</span>
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Phone Calls</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.callsCount}</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Sysadmin Escalations</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.escalatedTicketsCount} tickets</span>
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
@@ -310,72 +315,72 @@ export default function LeaderboardPage() {
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Avg Response Speed</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.avgResponseTime > 0 ? `${selectedAgent.avgResponseTime}m` : 'N/A'}</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Total Public Messages</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.messagesCount}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Achievements & Gamified Badges */}
+              {/* Achievements & Gamified Hosting Badges */}
               <div className="space-y-3">
-                <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Earned Badges</h3>
+                <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Earned Hosting Badges</h3>
                 
                 <div className="space-y-2">
-                  {selectedAgent.avgResponseTime > 0 && selectedAgent.avgResponseTime <= 2 && (
+                  {selectedAgent.firstResponseSlaPercent >= 85 && selectedAgent.totalFirstResponses > 0 && (
                     <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
                         <Clock size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Lightning Responder</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Maintained an average response speed under 2 minutes.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">LiteSpeed Responder</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Maintained outstanding under-60-seconds First Response SLA.</p>
                       </div>
                     </div>
                   )}
 
-                  {selectedAgent.whispersCount >= (period === 'daily' ? 2 : period === 'weekly' ? 10 : 40) && (
+                  {selectedAgent.emergencyResponseTime > 0 && selectedAgent.emergencyResponseTime <= 90 && (
                     <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
-                        <Users size={16} />
+                        <ShieldAlert size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Team Collaborator</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Highly active in internal whisper notes helping team members.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">NOC Incident Commander</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Slashed down-site and database outage response times under 90s.</p>
                       </div>
                     </div>
                   )}
 
-                  {selectedAgent.callsCount >= (period === 'daily' ? 1 : period === 'weekly' ? 5 : 20) && (
+                  {selectedAgent.callsCount >= 1 && (
                     <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
                         <Phone size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Voice Specialist</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Successfully resolved critical customer queries via voice calls.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Hotline Specialist</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Maintained critical telephone hotlines with active customer talk time.</p>
                       </div>
                     </div>
                   )}
 
-                  {selectedAgent.activeMinutes >= targets.activeMinutes && (
+                  {selectedAgent.escalatedTicketsCount >= 1 && (
                     <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
-                        <Flame size={16} className="animate-pulse" />
+                        <Wrench size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Active Workhorse</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Surpassed the target active hour limits for this period.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Sysadmin Escalation Pro</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Migrated complex customer server issues to WHMCS support tickets.</p>
                       </div>
                     </div>
                   )}
 
                   {/* Fallback if no badges earned yet */}
-                  {!(selectedAgent.avgResponseTime > 0 && selectedAgent.avgResponseTime <= 2) &&
-                    !(selectedAgent.whispersCount >= (period === 'daily' ? 2 : period === 'weekly' ? 10 : 40)) &&
-                    !(selectedAgent.callsCount >= (period === 'daily' ? 1 : period === 'weekly' ? 5 : 20)) &&
-                    !(selectedAgent.activeMinutes >= targets.activeMinutes) && (
+                  {!(selectedAgent.firstResponseSlaPercent >= 85 && selectedAgent.totalFirstResponses > 0) &&
+                    !(selectedAgent.emergencyResponseTime > 0 && selectedAgent.emergencyResponseTime <= 90) &&
+                    !(selectedAgent.callsCount >= 1) &&
+                    !(selectedAgent.escalatedTicketsCount >= 1) && (
                       <div className="text-center py-4 border border-dashed border-slate-200 dark:border-[#222e35] rounded-xl text-slate-400 text-xs">
-                        Keep grinding to unlock performance badges!
+                        Keep grinding to unlock Hostnin support badges!
                       </div>
                     )}
                 </div>
