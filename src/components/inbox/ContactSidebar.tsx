@@ -1792,11 +1792,11 @@ export default function ContactSidebar({
 
 
       {activeTab === 'cobrowse' && (
-        <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc] dark:bg-[#0b141a] p-4 space-y-4 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#111b21] p-6 overflow-y-auto custom-scrollbar">
 
           {(isWhatsApp || isMessenger || isInstagram) ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-[#111b21] border border-slate-200/60 dark:border-[#222e35] shadow-sm text-center">
-              <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-[#202c33] border border-slate-100 dark:border-[#2a3942] flex items-center justify-center text-slate-400 dark:text-[#8696a0] mb-4 shadow-sm">
+            <div className="flex-1 flex flex-col items-center justify-center text-center bg-transparent border-none shadow-none p-0">
+              <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-[#202c33] border border-slate-100 dark:border-[#2a3942] flex items-center justify-center text-slate-400 dark:text-[#8696a0] mb-4">
                 <Monitor size={20} strokeWidth={1.5} />
               </div>
               <h4 className="text-[13px] font-bold text-slate-800 dark:text-[#e9edef]">Remote Connection</h4>
@@ -1817,12 +1817,11 @@ export default function ContactSidebar({
           ) : (
             <>
               {coBrowseStatus === 'idle' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-[#111b21] border border-slate-200/60 dark:border-[#222e35] shadow-sm text-center">
+                <div className="flex-1 flex flex-col items-center justify-center text-center bg-transparent border-none shadow-none p-0">
                   <div className="relative mb-4">
                     <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-[#202c33] border border-slate-100 dark:border-[#2a3942] flex items-center justify-center text-slate-600 dark:text-[#e9edef] shadow-sm">
                       <Eye size={20} strokeWidth={1.5} />
                     </div>
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white dark:border-[#111b21] animate-pulse" />
                   </div>
                   <h4 className="text-[13px] font-bold text-slate-800 dark:text-[#e9edef]">Live Remote View</h4>
                   <p className="text-[11.5px] text-slate-400 dark:text-[#8696a0] mt-2 max-w-[190px] leading-relaxed">
@@ -1832,23 +1831,18 @@ export default function ContactSidebar({
                     onClick={handleRequestCoBrowse}
                     className="mt-5 w-full py-2 bg-[#0070f3] text-white hover:bg-blue-600 active:scale-[0.97] font-semibold text-[12px] rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
                   >
-                    <Monitor size={13} strokeWidth={2} />
                     Request Screen Share
                   </button>
                   <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-3 block">
-                    🔒 End-to-end encrypted session
+                    End-to-end encrypted session
                   </span>
                 </div>
               )}
 
               {coBrowseStatus === 'requested' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-[#111b21] border border-slate-200/60 dark:border-[#222e35] shadow-sm text-center">
-                  <div className="relative w-16 h-16 flex items-center justify-center mb-4">
-                    <div className="absolute inset-0 rounded-full border-2 border-[#0070f3]/10 animate-ping" style={{ animationDuration: '2s' }} />
-                    <div className="absolute inset-2 rounded-full border-2 border-[#0070f3]/25 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
-                    <div className="w-10 h-10 bg-slate-50 dark:bg-[#202c33] border border-slate-100 dark:border-[#2a3942] rounded-xl flex items-center justify-center shadow-md">
-                      <Monitor size={18} className="text-[#0070f3]" />
-                    </div>
+                <div className="flex-1 flex flex-col items-center justify-center text-center bg-transparent border-none shadow-none p-0">
+                  <div className="relative w-12 h-12 flex items-center justify-center mb-4">
+                    <div className="w-8 h-8 rounded-full border-2 border-slate-100 border-t-[#0070f3] animate-spin" />
                   </div>
                   <h4 className="text-[13px] font-bold text-slate-800 dark:text-[#e9edef]">Awaiting Approval</h4>
                   <p className="text-[11.5px] text-slate-400 dark:text-[#8696a0] mt-2 max-w-[195px] leading-relaxed">
@@ -1864,8 +1858,8 @@ export default function ContactSidebar({
               )}
 
               {coBrowseStatus === 'declined' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-6 rounded-2xl bg-rose-50/20 dark:bg-rose-950/5 border border-rose-100/60 dark:border-rose-950/20 text-center">
-                  <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-xl flex items-center justify-center mb-4 text-rose-500">
+                <div className="flex-1 flex flex-col items-center justify-center text-center bg-transparent border-none shadow-none p-0">
+                  <div className="w-10 h-10 bg-rose-50 dark:bg-rose-950/20 rounded-xl flex items-center justify-center mb-4 text-rose-500">
                     <X size={16} strokeWidth={2.5} />
                   </div>
                   <h4 className="text-[13px] font-bold text-rose-700 dark:text-rose-400">Request Declined</h4>
