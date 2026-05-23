@@ -386,13 +386,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
 
-              {/* Motivational Insight Banner */}
-              <div className="p-4 bg-slate-50 dark:bg-[#182229] border border-slate-200/60 dark:border-[#222e35] rounded-2xl flex items-start gap-3">
-                <CheckCircle2 size={16} className="text-[#0070f3] shrink-0 mt-0.5" />
-                <div className="text-xs text-slate-600 dark:text-[#8696a0] leading-relaxed">
-                  <span className="font-bold text-[#0070f3]">Imran says:</span> Response speed is revenue! To climb the leaderboard, reply to customer tickets within 2 minutes and log call notes cleanly. Keep pushing team!
-                </div>
-              </div>
+
 
             </div>
           </div>
