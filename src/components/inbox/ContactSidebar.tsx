@@ -620,11 +620,25 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
   const [copiedEmail, setCopiedEmail] = useState(false)
+  const [copiedContactEmail, setCopiedContactEmail] = useState(false)
+  const [copiedContactPhone, setCopiedContactPhone] = useState(false)
 
   const handleCopyEmail = (email: string) => {
     navigator.clipboard.writeText(email)
     setCopiedEmail(true)
     setTimeout(() => setCopiedEmail(false), 2000)
+  }
+
+  const handleCopyContactEmail = (email: string) => {
+    navigator.clipboard.writeText(email)
+    setCopiedContactEmail(true)
+    setTimeout(() => setCopiedContactEmail(false), 2000)
+  }
+
+  const handleCopyContactPhone = (phone: string) => {
+    navigator.clipboard.writeText(phone)
+    setCopiedContactPhone(true)
+    setTimeout(() => setCopiedContactPhone(false), 2000)
   }
 
   const [participants, setParticipants] = useState<any[]>([])
@@ -965,8 +979,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
         <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
           <>
         {/* Contact Header Block (AnyChat Style) */}
-        <div className="p-5 border-b border-slate-100 dark:border-[#222e35] flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] tracking-wide shrink-0 text-white bg-blue-600">
+        <div className="p-4 border-b border-slate-100 dark:border-[#222e35] flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-[13px] tracking-wide shrink-0 text-white bg-blue-600">
             {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
               <img src={contact.avatar_url} alt={contactName} className="w-full h-full object-cover rounded-full" />
             ) : (
@@ -994,16 +1008,26 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                 <button onClick={() => { setIsEditingName(false); setEditedName(contactName) }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={16} strokeWidth={2.5} /></button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 mb-0.5 group">
-                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-[#e9edef] truncate">{contactName}</h2>
+              <div className="flex items-center justify-between mb-0.5 group">
+                <div className="flex items-center gap-1.5 min-w-0 group/name">
+                  <h2 className="text-[14px] font-semibold text-slate-900 dark:text-[#e9edef] truncate">{contactName}</h2>
+                  <button 
+                    onClick={() => {
+                      setEditedName(contactName)
+                      setIsEditingName(true)
+                    }} 
+                    className="opacity-0 group-hover/name:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 shrink-0"
+                  >
+                    <Pencil size={12} strokeWidth={2.5} />
+                  </button>
+                </div>
                 <button 
-                  onClick={() => {
-                    setEditedName(contactName)
-                    setIsEditingName(true)
-                  }} 
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600"
+                  onClick={handleToggleBan}
+                  disabled={isBanning}
+                  className={`p-1 rounded-md transition-colors shrink-0 ${isBanned ? 'text-white bg-red-500 hover:bg-red-600' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'} ${isBanning ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                  title={isBanned ? "Unban this User" : "Ban this User"}
                 >
-                  <Pencil size={12} strokeWidth={2.5} />
+                  {isBanning ? <Loader2 size={13} className="animate-spin" /> : <Ban size={13} />}
                 </button>
               </div>
             )}
@@ -1032,19 +1056,36 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   <button onClick={() => { setIsEditingEmail(false); setEditedEmailValue(contactEmail || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 mt-1 group">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Mail size={12} className="text-slate-400 shrink-0" />
-                    <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
-                      {contactEmail ? contactEmail : <span className="italic text-slate-400 dark:text-slate-600">Link email</span>}
-                    </p>
+                <div className="flex items-start gap-1.5 mt-1 group">
+                  <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                    <Mail size={12} className="text-slate-400 shrink-0 mt-[3px]" />
+                    {contactEmail ? (
+                      <div 
+                        className="flex items-start gap-1.5 cursor-pointer group/copy min-w-0 w-full" 
+                        onClick={() => handleCopyContactEmail(contactEmail)}
+                        title="Click to copy"
+                      >
+                        <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] hover:text-blue-600 transition-colors break-all leading-snug">
+                          {contactEmail}
+                        </p>
+                        {copiedContactEmail ? (
+                          <Check size={12} className="text-emerald-500 shrink-0 mt-[2px]" />
+                        ) : (
+                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0 mt-[2px]" />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
+                        <span className="italic text-slate-400 dark:text-slate-600">Link email</span>
+                      </p>
+                    )}
                   </div>
                   <button 
                     onClick={() => {
                       setEditedEmailValue(contactEmail || "")
                       setIsEditingEmail(true)
                     }} 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0 mt-[2px]"
                     title="Edit Email"
                   >
                     <Pencil size={10} strokeWidth={2.5} />
@@ -1074,8 +1115,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   <button onClick={() => { setIsEditingPhone(false); setEditedPhoneValue(!isRawWidgetId(contactPhone) ? contactPhone || "" : "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 mt-1 group">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <div className="flex items-start gap-1.5 mt-1 group">
+                  <div className="flex items-start gap-1.5 min-w-0 flex-1">
                     {showCallButton && !isRawWidgetId(contactPhone) && contactPhone && (() => {
                       const hasCallAlert = isWhatsApp && conversation?.tags?.includes('alert') && conversation?.tags?.includes('automation');
                       
@@ -1090,7 +1131,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       };
 
                       return (
-                        <div className="relative group/call shrink-0">
+                        <div className="relative group/call shrink-0 self-start mt-[2px]">
                           <button 
                             onClick={handleCallClick}
                             className={`transition-colors cursor-pointer w-5 h-5 flex items-center justify-center rounded-md ${
@@ -1118,17 +1159,35 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                         </div>
                       );
                     })()}
-                    {(!showCallButton || isRawWidgetId(contactPhone) || !contactPhone) && <Phone size={12} className="text-slate-400 shrink-0" />}
-                    <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
-                      {!isRawWidgetId(contactPhone) && contactPhone ? contactPhone : <span className="italic text-slate-400 dark:text-slate-600">Link phone</span>}
-                    </p>
+                    {(!showCallButton || isRawWidgetId(contactPhone) || !contactPhone) && <Phone size={12} className="text-slate-400 shrink-0 mt-[3px]" />}
+                    
+                    {!isRawWidgetId(contactPhone) && contactPhone ? (
+                      <div 
+                        className="flex items-start gap-1.5 cursor-pointer group/copy min-w-0 w-full" 
+                        onClick={() => handleCopyContactPhone(contactPhone)}
+                        title="Click to copy"
+                      >
+                        <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] break-all leading-snug hover:text-blue-600 transition-colors">
+                          {contactPhone}
+                        </p>
+                        {copiedContactPhone ? (
+                          <Check size={12} className="text-emerald-500 shrink-0 mt-[2px]" />
+                        ) : (
+                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0 mt-[2px]" />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
+                        <span className="italic text-slate-400 dark:text-slate-600">Link phone</span>
+                      </p>
+                    )}
                   </div>
                   <button 
                     onClick={() => {
                       setEditedPhoneValue(!isRawWidgetId(contactPhone) ? contactPhone || "" : "")
                       setIsEditingPhone(true)
                     }} 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0 mt-[2px]"
                     title="Edit Phone"
                   >
                     <Pencil size={10} strokeWidth={2.5} />
@@ -1137,14 +1196,6 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
               )}
             </div>
           </div>
-          <button 
-            onClick={handleToggleBan}
-            disabled={isBanning}
-            className={`p-2 rounded-lg transition-colors ml-2 self-center shrink-0 ${isBanned ? 'text-white bg-red-500 hover:bg-red-600' : 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'} ${isBanning ? 'opacity-50 cursor-not-allowed' : ''}`} 
-            title={isBanned ? "Unban this User" : "Ban this User"}
-          >
-            {isBanning ? <Loader2 size={18} className="animate-spin" /> : <Ban size={18} />}
-          </button>
         </div>
 
         {/* Core Attributes */}
