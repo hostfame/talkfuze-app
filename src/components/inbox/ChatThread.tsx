@@ -3908,7 +3908,7 @@ export default function ChatThread({
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
                 className={`px-5 py-1.5 text-[14px] font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border ${
                   isInternal 
-                    ? 'bg-slate-900 text-white border-slate-900 hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100 dark:hover:bg-white disabled:opacity-40 disabled:bg-slate-900 disabled:text-white disabled:border-slate-900 dark:disabled:bg-slate-100 dark:disabled:text-slate-900 dark:disabled:border-slate-100'
+                    ? 'bg-slate-900 text-white border-slate-900 hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100 dark:hover:bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500 dark:disabled:border-slate-700/50'
                     : 'bg-[#0070f3] text-white border-[#0070f3] hover:bg-blue-600 disabled:opacity-50 disabled:bg-blue-300 disabled:text-white disabled:border-transparent'
                 }`}
               >
