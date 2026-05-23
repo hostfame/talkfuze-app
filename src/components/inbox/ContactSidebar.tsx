@@ -1368,25 +1368,25 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
               <div className="flex w-full justify-between border-b border-slate-200 dark:border-slate-700 mb-4">
                 <button 
                   onClick={() => setPortalTab('services')}
-                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'services' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-0.5 py-2 text-[10px] md:text-[11px] whitespace-nowrap flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'services' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Services {whmcsServices?.products && `(${whmcsServices.products.filter((p: WhmcsProduct) => p.status === 'Active').length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('domains')}
-                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'domains' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-0.5 py-2 text-[10px] md:text-[11px] whitespace-nowrap flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'domains' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Domains {whmcsServices?.domains && `(${whmcsServices.domains.filter((d: WhmcsDomain) => d.status === 'Active').length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('tickets')}
-                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-0.5 py-2 text-[10px] md:text-[11px] whitespace-nowrap flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Tickets {whmcsTickets && `(${whmcsTickets.length})`}
                 </button>
                 <button 
                   onClick={() => setPortalTab('invoices')}
-                  className={`px-1 py-2 text-[11px] md:text-[12px] flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'invoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                  className={`px-0.5 py-2 text-[10px] md:text-[11px] whitespace-nowrap flex-1 text-center font-medium border-b-2 transition-colors ${portalTab === 'invoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   Invoices {whmcsInvoices && `(${whmcsInvoices.length})`}
                 </button>
