@@ -123,6 +123,7 @@ export default function ConversationList({
   // Apply team management filters
   const displayedConversations = baseConversations.filter(conv => {
     if (activeFilter === 'archived') return conv.is_archived;
+    if (activeFilter === 'ticketed') return conv.is_archived && conv.tags?.includes('ticketed');
     if (conv.is_archived) return false;
 
     // Filter out snoozed conversations

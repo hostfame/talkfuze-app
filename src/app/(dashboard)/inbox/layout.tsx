@@ -18,7 +18,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
 
   const [isConnectionsExpanded, setIsConnectionsExpanded] = useState(true)
 
-  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'assigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts') => {
+  const handleFilterClick = (filter: 'mine' | 'all' | 'unassigned' | 'assigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts' | 'ticketed') => {
     setActiveFilter(filter)
     setSelectedId(null)
     if (pathname !== '/inbox') {
@@ -125,6 +125,16 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span className="hidden xl:block">Archived</span></div>
+          </div>
+
+          <div 
+            onClick={() => handleFilterClick('ticketed')}
+            title="Converted to Tickets"
+            className={`flex items-center justify-center xl:justify-between px-2 xl:px-3 py-2.5 xl:py-1.5 font-medium cursor-pointer rounded-md transition-all ${
+              activeFilter === 'ticketed' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+            }`}
+          >
+            <div className="flex items-center gap-2"><HelpCircle className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Ticketed</span></div>
           </div>
         </div>
 

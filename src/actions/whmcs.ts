@@ -380,10 +380,15 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       status: 'delivered',
     })
 
-    // 10. Automatically mark the conversation as resolved/archived so the next message starts a new incident
+    // 10. Automatically mark the conversation as resolved/archived and tag it as ticketed
+    const { data: convData } = await supabaseAdmin.from('conversations').select('tags').eq('id', conversationId).single()
+    const existingTags = convData?.tags || []
+    const newTags = Array.from(new Set([...existingTags, 'ticketed']))
+
     await supabaseAdmin.from('conversations').update({
       status: 'resolved',
-      is_archived: true
+      is_archived: true,
+      tags: newTags
     }).eq('id', conversationId)
 
     return { success: true, ticket: result }

@@ -76,7 +76,7 @@ export async function getCrmData(orgId: string, phone: string) {
   }
 }
 
-export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' | 'archived' = 'all', agentId?: string) {
+export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' | 'archived' | 'ticketed' | string = 'all', agentId?: string) {
   let query = supabaseAdmin
     .from("conversations")
     .select(`
@@ -94,6 +94,8 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
 
   if (filter === 'archived') {
     query = query.eq("is_archived", true);
+  } else if (filter === 'ticketed') {
+    query = query.eq("is_archived", true).contains("tags", ['ticketed']);
   } else {
     query = query.eq("is_archived", false);
     // Hide snoozed conversations unless snooze time has passed

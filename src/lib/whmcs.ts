@@ -787,10 +787,10 @@ export async function openTicket(
         params.noemail = noemail ? 'true' : 'false';
     }
 
-    // WHMCS expects attachments as base64-encoded JSON array of {filename, data}
+    // WHMCS expects attachments as base64-encoded JSON array of {name, data}
     if (attachments && attachments.length > 0) {
         const formatted = attachments.map(att => ({
-            filename: att.filename || att.name || 'attachment.jpg',
+            name: att.filename || att.name || 'attachment.jpg',
             data: att.data
         }));
         params.attachments = Buffer.from(JSON.stringify(formatted)).toString('base64');
@@ -822,7 +822,7 @@ export async function addTicketReply(
 
     if (attachments && attachments.length > 0) {
         const formatted = attachments.map(att => ({
-            filename: att.filename || att.name || 'attachment.jpg',
+            name: att.filename || att.name || 'attachment.jpg',
             data: att.data
         }));
         params.attachments = Buffer.from(JSON.stringify(formatted)).toString('base64');
