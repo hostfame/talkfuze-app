@@ -3031,7 +3031,7 @@ export default function ChatThread({
               <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end ${isGroupedWithNext ? 'mb-1' : 'mb-4'} ${msg.is_internal && !isGroupedWithPrev ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
                 {!isGroupedWithPrev && (
-                  <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
+                  <div className="text-[11px] text-slate-500 mr-9 mb-0.5">{agentName}</div>
                 )}
                 
                 <div className="flex items-end justify-end gap-2 max-w-[75%] min-w-0 relative group">

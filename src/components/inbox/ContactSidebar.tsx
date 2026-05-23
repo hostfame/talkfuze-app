@@ -1455,10 +1455,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     <button 
                       onClick={handleWhmcsLogin} 
                       disabled={isLoggingIn}
-                      className="ml-1 text-[11px] flex items-center gap-1 font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors disabled:opacity-50"
+                      className="ml-1 text-[11px] flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                     >
                       {isLoggingIn ? <Loader2 size={12} className="animate-spin" /> : <LogIn size={12} />}
-                      Login as Client
+                      Login
                     </button>
                   </div>
                 </div>
