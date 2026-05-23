@@ -116,16 +116,14 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     metadata: Object.keys(metadata).length > 0 ? metadata : null
   });
 
-  const promises: Promise<any>[] = [msgPromise];
-
+  let msgResult;
   if (!isPageView) {
-    promises.push(
-      supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
-    );
+    const convPromise = supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId);
+    const [msgRes] = await Promise.all([msgPromise, convPromise]);
+    msgResult = msgRes;
+  } else {
+    msgResult = await msgPromise;
   }
-
-  const results = await Promise.all(promises);
-  const msgResult = results[0];
 
   if (msgResult.error) throw msgResult.error;
 
