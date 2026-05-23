@@ -394,14 +394,13 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       status: 'delivered',
     })
 
-    // 10. Soft archive the conversation and tag it as ticketed
+    // 10. Tag the conversation as ticketed, but keep it open
     const { data: convData } = await supabaseAdmin.from('conversations').select('tags').eq('id', conversationId).single()
     const existingTags = convData?.tags || []
     const newTags = Array.from(new Set([...existingTags, 'ticketed']))
 
     await supabaseAdmin.from('conversations').update({
-      tags: newTags,
-      is_archived: true
+      tags: newTags
     }).eq('id', conversationId)
 
     return { success: true, ticket: result }
