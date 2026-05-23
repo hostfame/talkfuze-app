@@ -18,8 +18,8 @@ import knowledge from "@/actions/hostnin-knowledge.json";
 // ============================================================
 
 const CORE = `## Hostnin Support Info
-WhatsApp: +880 1325-875955 (01325875955)
-Email: support@hostnin.com, hello@hostnin.com (For sensitive/formal issues only. Use WhatsApp for general support.)
+WhatsApp: +880 1325-875955 (01325875955) (ONLY provide if explicitly asked. User is already chatting with us.)
+Email: support@hostnin.com, hello@hostnin.com (For highly sensitive/formal issues only. NEVER for general support.)
 Website: hostnin.com
 Payment: bKash, Nagad, Bank Transfer, Card (Stripe)
 Bank: ISLAMI BANK, SPOTLIGHT CREATIVE, Pahartali Branch, Acc: 20502020100506002`;
