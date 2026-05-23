@@ -2113,20 +2113,6 @@ export default function WidgetPage() {
       created_at: new Date().toISOString()
     }])
     
-    // Auto-prompt Identity Modal on first message
-    const isFirstMessage = messages.filter(m => m.sender_type === 'contact').length === 0;
-    if (isFirstMessage) {
-      getWidgetContact(org_id, deviceId).then(contact => {
-        if (!contact || !contact.name || !contact.phone) {
-          if (contact) {
-            setTempName(contact.name || "");
-            setTempPhone(contact.phone || "");
-          }
-          setIsIdentityModalOpen(true);
-        }
-      }).catch(console.error);
-    }
-
     setIsSending(true)
 
     try {
@@ -3406,8 +3392,8 @@ export default function WidgetPage() {
               
               {!hasProvidedContact && messages.filter(m => m.sender_type === 'contact').length > 0 && (
                 <div className="flex gap-2.5 my-3 relative animate-in slide-in-from-bottom-2 fade-in duration-300 select-none">
-                  <div className="w-7 h-7 rounded-full bg-[#0070f3] text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
-                    <span className="text-[12px] font-bold">H</span>
+                  <div className="w-7 h-7 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0 mt-1">
+                    <img src="/team/h.jpg" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex flex-col gap-1 w-full pr-8">
                     <div className="flex items-center gap-2">
