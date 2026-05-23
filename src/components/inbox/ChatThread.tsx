@@ -2077,6 +2077,9 @@ export default function ChatThread({
           const localUrl = URL.createObjectURL(audioBlob)
           
           setStagedAudio({ url: localUrl, file })
+          
+          // Auto-transcribe the audio immediately
+          handleTranscribeAudio(file)
         }
         audioChunksRef.current = []
       }
@@ -2181,12 +2184,13 @@ export default function ChatThread({
     setStagedAudio(null)
   }
 
-  const handleTranscribeAudio = async () => {
-    if (!stagedAudio) return;
+  const handleTranscribeAudio = async (fileToTranscribe?: File) => {
+    const file = (fileToTranscribe instanceof File || fileToTranscribe instanceof Blob) ? fileToTranscribe : stagedAudio?.file;
+    if (!file) return;
     setIsTranscribingAudio(true);
     try {
       const formData = new FormData();
-      formData.append("file", stagedAudio.file);
+      formData.append("file", file);
 
       const res = await fetch('/api/ai/speech-to-text', {
         method: 'POST',
@@ -3350,7 +3354,7 @@ export default function ChatThread({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button 
-                  onClick={handleTranscribeAudio}
+                  onClick={() => handleTranscribeAudio()}
                   disabled={isTranscribingAudio}
                   className="px-3 py-1.5 text-[13px] font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 disabled:opacity-50 disabled:hover:bg-transparent rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
                 >
