@@ -44,10 +44,15 @@ if (typeof window !== 'undefined') {
 // Sound Presets System
 // ─────────────────────────────────────────────
 
-export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud' | 'custom' | 'intercom';
+export type SoundPreset = 'default' | 'chime' | 'bell' | 'alert' | 'loud' | 'custom' | 'intercom' | 'smooth' | 'cute' | 'beautiful' | 'breeze' | 'magic';
 
 export const SOUND_PRESETS: { id: SoundPreset; name: string; description: string }[] = [
   { id: 'intercom', name: 'Intercom (Cute)', description: 'Beautiful soft intercom-style pop' },
+  { id: 'smooth', name: 'Smooth', description: 'Gentle swelling tone' },
+  { id: 'cute', name: 'Cute', description: 'Playful bubble pop' },
+  { id: 'beautiful', name: 'Beautiful', description: 'Harmonic chord swell' },
+  { id: 'breeze', name: 'Breeze', description: 'Airy soft sweep' },
+  { id: 'magic', name: 'Magic', description: 'Sparkling dust chime' },
   { id: 'default', name: 'Default', description: 'Subtle pop sound' },
   { id: 'chime', name: 'Chime', description: 'Two-tone rising chime' },
   { id: 'bell', name: 'Bell', description: 'Clear bell ring' },
@@ -67,8 +72,8 @@ export const setSelectedSound = (preset: SoundPreset): void => {
 };
 
 // Minimum volume floors - agents can't go below this
-export const MIN_SOUND_VOLUME = 0.30;
-export const MIN_RINGTONE_VOLUME = 0.40;
+export const MIN_SOUND_VOLUME = 0.0;
+export const MIN_RINGTONE_VOLUME = 0.0;
 
 export const getSoundVolume = (): number => {
   if (typeof window === 'undefined') return 1.0;
@@ -351,6 +356,51 @@ const playSynthPreset = (preset: SoundPreset, volumeMultiplier: number) => {
         // Urgent double-beep - hard square wave hits
         tone(1200, 0, 0.18, 0.90, 'square', 3000);
         tone(1200, 0.25, 0.18, 0.90, 'square', 3000);
+        break;
+
+      case 'smooth':
+        // Gentle swelling tone (sine wave with slow attack)
+        tone(659, 0, 0.4, 0.6, 'sine', 1500); // E5
+        tone(880, 0.1, 0.4, 0.5, 'sine', 1500); // A5
+        break;
+
+      case 'cute': {
+        // Playful bubble pop (pitch envelope)
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g);
+        g.connect(comp);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.8 * vol, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.2);
+        break;
+      }
+
+      case 'beautiful':
+        // Harmonic chord swell (Major 7th)
+        tone(523.25, 0, 0.6, 0.4, 'sine', 2000); // C5
+        tone(659.25, 0.05, 0.55, 0.35, 'sine', 2000); // E5
+        tone(783.99, 0.1, 0.5, 0.3, 'sine', 2000); // G5
+        tone(987.77, 0.15, 0.45, 0.25, 'sine', 2000); // B5
+        break;
+
+      case 'breeze':
+        // Airy soft sweep
+        tone(1046.50, 0, 0.4, 0.5, 'triangle', 1200); // C6 soft
+        tone(1318.51, 0.15, 0.4, 0.4, 'sine', 1200); // E6
+        break;
+
+      case 'magic':
+        // Sparkling dust chime (very fast arpeggio)
+        tone(1046.5, 0, 0.15, 0.5); // C6
+        tone(1318.5, 0.05, 0.15, 0.5); // E6
+        tone(1567.9, 0.1, 0.15, 0.5); // G6
+        tone(2093.0, 0.15, 0.2, 0.5); // C7
         break;
 
       default:
