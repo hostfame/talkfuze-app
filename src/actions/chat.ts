@@ -105,25 +105,26 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   const now = new Date().toISOString();
   
   const isPageView = metadata?.event === 'page_view' || content?.startsWith('Viewed:');
-  const queries = [
-    supabaseAdmin.from("messages").insert({
-      org_id: orgId,
-      conversation_id: conversationId,
-      sender_type: senderType,
-      sender_id: finalSenderId,
-      content: content,
-      content_type: finalContentType,
-      metadata: Object.keys(metadata).length > 0 ? metadata : null
-    })
-  ];
+  
+  const msgPromise = supabaseAdmin.from("messages").insert({
+    org_id: orgId,
+    conversation_id: conversationId,
+    sender_type: senderType,
+    sender_id: finalSenderId,
+    content: content,
+    content_type: finalContentType,
+    metadata: Object.keys(metadata).length > 0 ? metadata : null
+  });
+
+  const promises: Promise<any>[] = [msgPromise];
 
   if (!isPageView) {
-    queries.push(
+    promises.push(
       supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
     );
   }
 
-  const results = await Promise.all(queries);
+  const results = await Promise.all(promises);
   const msgResult = results[0];
 
   if (msgResult.error) throw msgResult.error;
