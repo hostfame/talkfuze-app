@@ -213,7 +213,7 @@ const VideoIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
+const renderMessageContent = (msg: WidgetMessage, isDark: boolean, setLightboxImage: (url: string) => void) => {
   const meta = (msg.metadata || {}) as any;
   const url = meta.url || meta.media_url || "";
   const filename = meta.filename || "";
@@ -3308,7 +3308,7 @@ export default function WidgetPage() {
                         <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
                       )}
                       <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
-                        {renderMessageContent(msg, false)}
+                        {renderMessageContent(msg, false, setLightboxImage)}
                         {msg.metadata?.auto_reply && (
                           <button
                             onClick={handleWhatsAppHandoff}
@@ -3331,7 +3331,7 @@ export default function WidgetPage() {
                   return (
                     <div key={idx} className="flex flex-col gap-0.5 items-end mb-1">
                       <div className={msg.content_type === 'text' ? "bg-[#64748b] rounded-[18px] rounded-br-[4px] py-3 px-4 text-[15px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
-                        {renderMessageContent(msg, true)}
+                        {renderMessageContent(msg, true, setLightboxImage)}
                       </div>
                       <div className="flex items-center gap-1 mr-0.5">
                         {msgTime && <span className="text-[11px] text-slate-400">{msgTime}</span>}

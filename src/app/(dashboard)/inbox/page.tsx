@@ -160,8 +160,12 @@ export default function InboxPage() {
               setConversations(next);
            } else {
               // It's a brand new conversation, fetch it quietly
+              // Always refresh 'all' to maintain badge counts
+              getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
               const currentFilter = useInboxStore.getState().activeFilter as any;
-              getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
+              if (currentFilter === 'archived' || currentFilter === 'ticketed') {
+                getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+              }
            }
         }
         
