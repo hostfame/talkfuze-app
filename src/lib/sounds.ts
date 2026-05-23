@@ -660,13 +660,21 @@ const playUnassignedChime = () => {
     }
 
     const t = ctx.currentTime;
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.setValueAtTime(-3, t);
-    comp.knee.setValueAtTime(6, t);
-    comp.ratio.setValueAtTime(3, t);
-    comp.attack.setValueAtTime(0.003, t);
-    comp.release.setValueAtTime(0.08, t);
-    comp.connect(ctx.destination);
+    
+    // Waveshaper for soft-clipping saturation to allow 3x volume without harsh digital distortion
+    const waveshaper = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const x = (i * 2) / 256 - 1;
+      curve[i] = (Math.PI + 3.5) * x / (Math.PI + 3.5 * Math.abs(x));
+    }
+    waveshaper.curve = curve;
+    waveshaper.oversample = '2x';
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(3.0, t); // 3x volume multiplier
+    masterGain.connect(waveshaper);
+    waveshaper.connect(ctx.destination);
 
     const ring = (freq: number, start: number, dur: number, gain: number) => {
       const osc = ctx.createOscillator();
@@ -676,7 +684,7 @@ const playUnassignedChime = () => {
       filt.frequency.setValueAtTime(2500, t);
       osc.connect(filt);
       filt.connect(g);
-      g.connect(comp);
+      g.connect(masterGain);
       osc.type = 'square';
       osc.frequency.setValueAtTime(freq, t + start);
       g.gain.setValueAtTime(0, t + start);

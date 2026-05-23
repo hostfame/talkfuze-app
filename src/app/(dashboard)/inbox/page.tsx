@@ -443,7 +443,7 @@ export default function InboxPage() {
       else if ((c as any).latestMessage) msgs = (c as any).latestMessage;
       else if (c.messages) msgs = c.messages;
       
-      const hasAgentReply = msgs.some((m: any) => m.sender_type === 'agent' || m.sender_type === 'system');
+      const hasAgentReply = msgs.some((m: any) => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content && m.content.includes('joined the conversation')));
       const hasAgentParticipant = c.participants && c.participants.length > 0;
       return !hasAgentReply && !hasAgentParticipant;
     });
