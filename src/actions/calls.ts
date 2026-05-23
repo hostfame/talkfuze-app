@@ -215,12 +215,19 @@ export async function logSipCallDirect(params: {
 
       // DEDUPLICATION: Prevent multiple agents in a ring group from spamming the chat
       // with identical call records (e.g., 4 agents ringing -> 3 cancelled, 1 answered)
+      // The CANCELLED event from other agents happened exactly when this call was ANSWERED.
+      // So if this call took 'durationSeconds', the CANCELLED event is roughly 'durationSeconds' ago.
+      const targetTimeMs = Date.now() - (params.durationSeconds * 1000);
+      const windowStart = new Date(targetTimeMs - 60000).toISOString();
+      const windowEnd = new Date(targetTimeMs + 60000).toISOString();
+
       const { data: recentMsgs } = await supabaseAdmin
         .from('messages')
         .select('id, metadata, content')
         .eq('conversation_id', params.conversationId)
         .in('content', ['Voice call', 'Missed voice call'])
-        .gte('created_at', new Date(Date.now() - 30000).toISOString())
+        .gte('created_at', windowStart)
+        .lte('created_at', windowEnd)
         .order('created_at', { ascending: false })
         .limit(1);
         
