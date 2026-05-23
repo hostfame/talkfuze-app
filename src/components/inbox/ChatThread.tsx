@@ -3558,7 +3558,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-slate-50/60 dark:bg-[#1a242d] border-slate-300 dark:border-[#374248] focus-within:ring-1 focus-within:border-slate-400 focus-within:ring-slate-400/50' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50/20 dark:bg-[#1a1712] border-amber-200/70 dark:border-amber-900/30 focus-within:ring-1 focus-within:border-amber-400/60 focus-within:ring-amber-400/30' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
           {isRecording ? (
@@ -3815,7 +3815,7 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-slate-800 dark:text-slate-200 placeholder:text-slate-500/70 dark:placeholder:text-slate-400/50' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-950 dark:text-amber-100 placeholder:text-amber-700/55 dark:placeholder:text-amber-500/40' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
               ></textarea>
               
               {/* Highlight Translation Menu */}
@@ -3845,7 +3845,7 @@ export default function ChatThread({
           
 
 
-          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-slate-200 dark:border-[#2a3942]/60 bg-slate-100/60 dark:bg-[#202c33]/90' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200/55 dark:border-amber-900/20 bg-amber-50/30 dark:bg-[#1a1813]' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -3858,14 +3858,14 @@ export default function ChatThread({
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isSending || isRecording || stagedAudio !== null}
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-slate-500 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-700/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isInternal ? 'text-amber-800 hover:bg-amber-100/50 dark:text-amber-400 dark:hover:bg-amber-950/40' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 <Paperclip size={16} strokeWidth={2} />
               </button>
               <button 
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isSending || stagedAudio !== null}
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-slate-500 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-700/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${isRecording ? 'text-red-500 hover:bg-red-50' : isInternal ? 'text-amber-800 hover:bg-amber-100/50 dark:text-amber-400 dark:hover:bg-amber-950/40' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {isRecording ? <Square size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
               </button>
@@ -3873,7 +3873,7 @@ export default function ChatThread({
                 onClick={() => handleAiDraft()}
                 disabled={isSending || isAiDrafting || isAiStreaming || allMessages.length === 0}
                 title="AI Auto-Reply Draft"
-                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : (isAiDrafting || isAiStreaming) ? 'text-blue-500' : isInternal ? 'text-slate-500 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-700/50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
+                className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : (isAiDrafting || isAiStreaming) ? 'text-blue-500' : isInternal ? 'text-amber-800 hover:bg-amber-100/50 dark:text-amber-400 dark:hover:bg-amber-950/40' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {(isAiDrafting || isAiStreaming) ? (
                   <Bot size={16} strokeWidth={2} className="text-blue-500 ai-bot-glow animate-pulse" />
@@ -3906,7 +3906,11 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:bg-slate-900 border border-slate-900 dark:border-slate-700' : 'bg-[#0070f3] text-white hover:bg-blue-600 disabled:bg-blue-300'}`}
+                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border ${
+                  isInternal 
+                    ? 'bg-slate-900 text-white hover:bg-black border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white dark:border-slate-100 disabled:bg-slate-900/40 disabled:text-slate-400/80 disabled:border-slate-900/10 dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500/80 dark:disabled:border-slate-700/10'
+                    : 'bg-[#0070f3] text-white hover:bg-blue-600 border-[#0070f3] disabled:bg-blue-50 disabled:text-blue-300 disabled:border-blue-100 dark:disabled:bg-blue-950/20 dark:disabled:text-blue-900/30 dark:disabled:border-transparent'
+                }`}
               >
                 {isSending ? (
                   <>
