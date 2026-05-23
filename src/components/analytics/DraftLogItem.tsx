@@ -99,9 +99,24 @@ export default function DraftLogItem({ log }: { log: any }) {
              <span className="font-semibold text-slate-800 dark:text-slate-100">{customerName}</span>
              <span className="text-slate-400 text-xs">· {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
            </div>
-           <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-             View Chat
-           </Link>
+           <div className="flex items-center gap-2">
+             <button
+               onClick={() => {
+                 const code = log.id.slice(0, 8);
+                 navigator.clipboard.writeText(code);
+                 const btn = document.getElementById(`copy-${log.id}`);
+                 if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = code; }, 1500); }
+               }}
+               id={`copy-${log.id}`}
+               title="Click to copy Log ID for quality override"
+               className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#2a3942] hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors cursor-pointer"
+             >
+               {log.id.slice(0, 8)}
+             </button>
+             <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+               View Chat
+             </Link>
+           </div>
         </div>
 
         {/* Customer Asked */}
