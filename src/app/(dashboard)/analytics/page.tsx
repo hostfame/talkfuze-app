@@ -26,8 +26,23 @@ export default async function AnalyticsPage() {
     redirect("/inbox"); // Agents don't have access to analytics
   }
 
-  // Fetch AI Draft Logs
-  const { data: logs, error } = await supabase
+  // Fetch overall counts for accurate metrics
+  const [
+    { count: totalDrafts },
+    { count: totalSent },
+    { count: sentAsIs },
+    { count: edited }
+  ] = await Promise.all([
+    supabase.from("ai_draft_logs").select("*", { count: "exact", head: true }).eq("org_id", profile.org_id),
+    supabase.from("ai_draft_logs").select("*", { count: "exact", head: true }).eq("org_id", profile.org_id).not("agent_sent", "is", null),
+    supabase.from("ai_draft_logs").select("*", { count: "exact", head: true }).eq("org_id", profile.org_id).not("agent_sent", "is", null).eq("was_edited", false),
+    supabase.from("ai_draft_logs").select("*", { count: "exact", head: true }).eq("org_id", profile.org_id).not("agent_sent", "is", null).eq("was_edited", true)
+  ]);
+
+  const accuracy = (totalSent && totalSent > 0) ? Math.round(((sentAsIs || 0) / totalSent) * 100) : 0;
+
+  // Fetch recent AI Draft Logs for the table (latest 100)
+  const { data: logs } = await supabase
     .from("ai_draft_logs")
     .select("id, ai_draft, agent_sent, was_edited, correction_feedback, created_at, language")
     .eq("org_id", profile.org_id)
@@ -35,16 +50,6 @@ export default async function AnalyticsPage() {
     .limit(100);
 
   const safeLogs = logs || [];
-
-  // Calculate Metrics
-  const totalDrafts = safeLogs.length;
-  const sentDrafts = safeLogs.filter(l => l.agent_sent !== null);
-  const totalSent = sentDrafts.length;
-  
-  const sentAsIs = sentDrafts.filter(l => l.was_edited === false).length;
-  const edited = sentDrafts.filter(l => l.was_edited === true).length;
-  
-  const accuracy = totalSent > 0 ? Math.round((sentAsIs / totalSent) * 100) : 0;
   
   // Fetch Learned Rules separately so they don't disappear if they fall outside the last 100 drafts
   const { data: rulesData } = await supabase
@@ -54,7 +59,7 @@ export default async function AnalyticsPage() {
     .eq("was_edited", true)
     .not("correction_feedback", "is", null)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(50);
 
   const rulesLearned = rulesData || [];
 
@@ -84,8 +89,8 @@ export default async function AnalyticsPage() {
               </div>
               <span className="font-medium">Total Drafts</span>
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{totalDrafts}</div>
-            <p className="text-xs text-slate-500 mt-2">Generated in last 100 requests</p>
+            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{totalDrafts || 0}</div>
+            <p className="text-xs text-slate-500 mt-2">All-time generated drafts</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
@@ -95,8 +100,8 @@ export default async function AnalyticsPage() {
               </div>
               <span className="font-medium">Sent As-Is</span>
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs}</div>
-            <p className="text-xs text-slate-500 mt-2">Approved without edits</p>
+            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs || 0}</div>
+            <p className="text-xs text-slate-500 mt-2">All-time approved without edits</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
@@ -106,8 +111,8 @@ export default async function AnalyticsPage() {
               </div>
               <span className="font-medium">Edited by Agent</span>
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{edited}</div>
-            <p className="text-xs text-slate-500 mt-2">Required manual correction</p>
+            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{edited || 0}</div>
+            <p className="text-xs text-slate-500 mt-2">All-time required manual correction</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
@@ -138,19 +143,20 @@ export default async function AnalyticsPage() {
               <BrainCircuit className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Self-Learned Rules</h2>
             </div>
-            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
               {rulesLearned.length === 0 ? (
                 <div className="p-6 text-center text-slate-500 text-sm">
                   No correction rules generated yet.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 dark:divide-[#222e35]">
-                  {rulesLearned.slice(0, 8).map((log) => (
-                    <div key={log.id} className="p-4 hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                <div className="divide-y divide-slate-100 dark:divide-[#222e35] overflow-y-auto custom-scrollbar flex-1">
+                  {rulesLearned.map((log) => (
+                    <div key={log.id} className="p-5 hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors">
+                      <p className="text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-[#202c33] p-3 rounded-lg border border-slate-100 dark:border-[#2a363d]">
                         "{log.correction_feedback}"
                       </p>
-                      <p className="text-xs text-slate-400 mt-2">
+                      <p className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5" />
                         Learned {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                       </p>
                     </div>
@@ -162,9 +168,9 @@ export default async function AnalyticsPage() {
 
           {/* Recent Drafts Log */}
           <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Recent AI Drafts</h2>
-            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Recent AI Drafts ({safeLogs.length})</h2>
+            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
+              <div className="overflow-y-auto custom-scrollbar flex-1">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 dark:bg-[#1a2329] text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#222e35]">
                     <tr>
@@ -174,8 +180,8 @@ export default async function AnalyticsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-[#222e35]">
-                    {safeLogs.slice(0, 15).map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors">
+                    {safeLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors align-top">
                         <td className="px-4 py-3 whitespace-nowrap">
                           {!log.agent_sent ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-[#202c33] dark:text-slate-400">
@@ -191,14 +197,18 @@ export default async function AnalyticsPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="text-slate-700 dark:text-slate-300 max-w-md truncate" title={log.ai_draft}>
+                        <td className="px-4 py-4 min-w-[300px]">
+                          <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm">
                             {log.ai_draft}
                           </div>
-                          {log.was_edited && log.agent_sent && (
-                            <div className="text-slate-600 dark:text-slate-400 mt-1 truncate max-w-md text-xs" title={log.agent_sent}>
-                              <span className="font-semibold mr-1">↳ Sent:</span>
-                              {log.agent_sent}
+                          {log.agent_sent && (
+                            <div className="text-slate-600 dark:text-slate-400 mt-4 whitespace-pre-wrap leading-relaxed text-[13px] bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30 shadow-sm relative">
+                              <div className="absolute -top-3 left-3 bg-blue-50 dark:bg-[#111b21] px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
+                                ↳ Final Sent Message
+                              </div>
+                              <div className="mt-1">
+                                {log.agent_sent}
+                              </div>
                             </div>
                           )}
                         </td>
