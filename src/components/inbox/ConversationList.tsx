@@ -142,6 +142,9 @@ export default function ConversationList({
     if (isAlert) return false;
 
     if (activeFilter === 'unread') {
+      const channel = firstRelation(conv.channels);
+      if (channel?.type !== 'whatsapp' && channel?.type !== 'widget') return false;
+
       const validMsgs = conv.messages?.filter((m: any) => {
         let safeMeta = m.metadata;
         try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
@@ -217,24 +220,61 @@ export default function ConversationList({
 
       {/* Pill Filters */}
       <div className="px-5 py-2 flex items-center gap-2 overflow-x-auto shrink-0 bg-white dark:bg-[#111b21] border-b border-slate-100 dark:border-[#222e35]/50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-        {[
-          { id: 'all', label: 'All' },
-          { id: 'unread', label: 'Unread' },
-          { id: 'mine', label: 'Mine' },
-          { id: 'ticketed', label: 'Tickets' }
-        ].map((pill) => (
-          <button
-            key={pill.id}
-            onClick={() => useInboxStore.getState().setActiveFilter(pill.id as any)}
-            className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors border ${
-              activeFilter === pill.id
-                ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#111b21] dark:border-[#2a3942] dark:text-[#8696a0] dark:hover:bg-[#202c33]'
-            }`}
-          >
-            {pill.label}
-          </button>
-        ))}
+        {(() => {
+          const getPillCount = (id: string) => {
+            if (id === 'all') return conversations.filter(c => !c.tags?.includes('alert') && !c.is_archived).length;
+            if (id === 'unread') return conversations.filter(c => {
+              if (c.is_archived || c.tags?.includes('alert')) return false;
+              const channel = firstRelation(c.channels);
+              if (channel?.type !== 'whatsapp' && channel?.type !== 'widget') return false;
+              const validMsgs = c.messages?.filter((m: any) => {
+                let safeMeta = m.metadata;
+                try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
+                return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
+              }) || [];
+              const lastMsg = (c as any).matched_message || (validMsgs.length > 0 ? validMsgs[0] : null);
+              return lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read' && lastMsg.content_type !== 'system';
+            }).length;
+            if (id === 'pinned') return conversations.filter(c => c.is_pinned && !c.tags?.includes('alert') && !c.is_archived).length;
+            if (id === 'mine') return conversations.filter(c => firstRelation(c.assignee)?.id === currentUser?.id && !c.is_archived && !c.tags?.includes('alert')).length;
+            if (id === 'alerts') return conversations.filter(c => c.tags?.includes('alert') && !c.is_archived).length;
+            return 0;
+          };
+
+          return [
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread' },
+            { id: 'pinned', label: 'Pinned' },
+            { id: 'mine', label: 'Mine' },
+            { id: 'alerts', label: 'Out' },
+            { id: 'archived', label: 'Bin' }
+          ].map((pill) => {
+            const count = getPillCount(pill.id);
+            const isActive = activeFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => useInboxStore.getState().setActiveFilter(pill.id as any)}
+                className={`flex items-center whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors border ${
+                  isActive
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#111b21] dark:border-[#2a3942] dark:text-[#8696a0] dark:hover:bg-[#202c33]'
+                }`}
+              >
+                {pill.label}
+                {count > 0 && (
+                  <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                    isActive 
+                      ? 'bg-blue-200/50 text-blue-700 dark:bg-blue-800/50 dark:text-blue-300' 
+                      : 'bg-slate-100 text-slate-500 dark:bg-[#2a3942] dark:text-[#8696a0]'
+                  }`}>
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
+              </button>
+            )
+          })
+        })()}
       </div>
 
       {/* List */}

@@ -7,6 +7,7 @@ import { logout } from "@/actions/auth"
 import { AuthProvider } from "@/lib/auth-context"
 import SipDialer from "@/components/dialer/SipDialer"
 import LogoutButton from "@/components/auth/LogoutButton"
+import SidebarCallsButton from "@/components/ui/SidebarCallsButton"
 
 export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
 
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
             <Link href="/inbox" prefetch={true} className="w-11 h-11 flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-900/30 transition-all duration-200 active:scale-95">
               <Inbox size={22} strokeWidth={2.5} />
             </Link>
+            <SidebarCallsButton />
             {!isAgent && (
               <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
                 <Users size={22} strokeWidth={2} />
