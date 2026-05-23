@@ -3558,7 +3558,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50/60 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50 focus-within:ring-1 focus-within:border-amber-400 focus-within:ring-amber-400/50' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-slate-50/60 dark:bg-[#1a242d] border-slate-300 dark:border-[#374248] focus-within:ring-1 focus-within:border-slate-400 focus-within:ring-slate-400/50' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
           {isRecording ? (
@@ -3853,7 +3853,7 @@ export default function ChatThread({
             </div>
           )}
 
-          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200/60 dark:border-amber-800/40 bg-amber-100/40 dark:bg-amber-900/20' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-slate-200 dark:border-[#2a3942]/60 bg-slate-100/60 dark:bg-[#202c33]/90' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -3904,7 +3904,7 @@ export default function ChatThread({
                 </button>
                 <button 
                   onClick={() => setIsInternal(true)}
-                  className={`px-3.5 py-1 text-[12px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold shadow-sm border border-amber-500/20 dark:border-amber-500/10' : 'text-slate-500 dark:text-[#8696a0] hover:text-amber-600 dark:hover:text-amber-500'}`}
+                  className={`px-3.5 py-1 text-[12px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-slate-900 text-white border-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 shadow-sm border font-bold' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
                 >
                   <Lock size={13} strokeWidth={2.5} />
                   Whisper
@@ -3914,7 +3914,7 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-amber-400 text-amber-950 hover:bg-amber-500 disabled:bg-amber-200 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-600 dark:disabled:bg-amber-800' : 'bg-[#0070f3] text-white hover:bg-blue-600 disabled:bg-blue-300'}`}
+                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:bg-slate-900 border border-slate-900 dark:border-slate-700' : 'bg-[#0070f3] text-white hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isSending ? (
                   <>
