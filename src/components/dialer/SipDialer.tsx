@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
 import { getLastCallForNumber, findConversationByPhone, saveCallNote, logSipCallDirect } from '@/actions/calls'
 import { ICE_SERVERS } from '@/lib/webrtc'
+import { getTeammates } from '@/actions/team'
 
 const isPhoneNumber = (str: string) => {
   if (!str) return false
@@ -67,6 +68,7 @@ export default function SipDialer() {
   const [lastCallInfo, setLastCallInfo] = useState<{ created_at: string; duration_seconds: number; direction: string; status: string } | null>(null)
   const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null)
   const matchedConversationIdRef = useRef<string | null>(null)
+  const [teammates, setTeammates] = useState<any[]>([])
   
   useEffect(() => {
     matchedConversationIdRef.current = matchedConversationId
@@ -353,6 +355,18 @@ export default function SipDialer() {
       }
     })
   }
+
+  // Load teammates for transfer options
+  useEffect(() => {
+    if (isRegistered) {
+      getTeammates()
+        .then(data => {
+          const validTeammates = data.filter((t: any) => t.sip_extension && t.id !== sipUser?.id)
+          setTeammates(validTeammates)
+        })
+        .catch(err => console.error("Failed to load teammates for transfer:", err))
+    }
+  }, [isRegistered, sipUser?.id])
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1153,13 +1167,98 @@ export default function SipDialer() {
             )}
           </div>
 
-          {/* Action Row - 5 Circular Buttons */}
-          <div className="flex items-center justify-between px-6 pb-5 pt-1.5">
+          {/* Collapsible Call Transfer / Forwarding Card */}
+          {showTransferInput && (
+            <div className="mx-5 mb-3 p-3 bg-black/40 border border-white/[0.08] rounded-2xl flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">Forward Call To</span>
+              
+              {/* Combine input and confirm button */}
+              <div className="flex items-center gap-1.5 p-2 bg-white/5 rounded-xl border border-white/10 focus-within:border-blue-500/30 transition-all animate-none">
+                <input
+                  type="text"
+                  value={transferNumber}
+                  onChange={(e) => setTransferNumber(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleBlindTransfer() }}
+                  placeholder="Extension or phone number..."
+                  className="flex-1 text-[11px] bg-transparent outline-none text-white placeholder-white/25"
+                  autoFocus
+                />
+                {transferNumber.trim() && (
+                  <button
+                    onClick={handleBlindTransfer}
+                    className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Transfer
+                  </button>
+                )}
+              </div>
+
+              {/* Agent List */}
+              {teammates.length > 0 ? (
+                <div className="max-h-[120px] overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                  {teammates
+                    .filter(t => {
+                      if (!transferNumber.trim()) return true;
+                      const q = transferNumber.toLowerCase();
+                      return t.name.toLowerCase().includes(q) || (t.sip_extension && t.sip_extension.includes(q));
+                    })
+                    .map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTransferNumber(t.sip_extension || '')}
+                        onDoubleClick={() => {
+                          setTransferNumber(t.sip_extension || '');
+                          setTimeout(() => {
+                            handleBlindTransfer();
+                          }, 50);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${
+                          transferNumber === t.sip_extension
+                            ? 'bg-blue-600/10 border border-blue-500/30 text-white'
+                            : 'bg-white/[0.02] border border-transparent text-white/80 hover:bg-white/[0.06] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {t.avatar_url ? (
+                              <img src={t.avatar_url} alt={t.name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              t.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[11.5px] font-semibold truncate leading-none mb-0.5">{t.name}</span>
+                            <span className="text-[9px] text-white/40 leading-none">Ext: {t.sip_extension}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            t.status === 'online' ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]' :
+                            t.status === 'busy' ? 'bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.4)]' :
+                            'bg-slate-500'
+                          }`} />
+                          <span className="text-[9px] text-white/50 capitalize font-medium">{t.status || 'offline'}</span>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-2 text-[10px] text-white/30 animate-none">
+                  No other active agents with extensions.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Row - 6 Circular Buttons */}
+          <div className="flex items-center justify-between px-6 pb-5 pt-1.5 gap-1">
             {/* Keypad Grid Toggle */}
             <button
               onClick={() => setShowInCallKeypad(!showInCallKeypad)}
               disabled={status === 'Incoming Call...'}
-              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
                 showInCallKeypad
                   ? 'bg-white text-neutral-900 border-white shadow-lg'
                   : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
@@ -1173,7 +1272,7 @@ export default function SipDialer() {
             <button
               onClick={handleHold}
               disabled={status === 'Incoming Call...'}
-              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
                 isOnHold
                   ? 'bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-500/20'
                   : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
@@ -1187,7 +1286,7 @@ export default function SipDialer() {
             <button
               onClick={handleMicMute}
               disabled={status === 'Incoming Call...'}
-              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
                 isMicMuted
                   ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/20'
                   : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
@@ -1197,10 +1296,24 @@ export default function SipDialer() {
               {isMicMuted ? <MicOff size={18} strokeWidth={2.5} /> : <Mic size={18} strokeWidth={2.5} />}
             </button>
 
+            {/* Transfer Call */}
+            <button
+              onClick={() => setShowTransferInput(!showTransferInput)}
+              disabled={status === 'Incoming Call...'}
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
+                showTransferInput
+                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
+                  : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+              title="Transfer Call"
+            >
+              <PhoneForwarded size={18} strokeWidth={2.5} />
+            </button>
+
             {/* Expand / Chevron Down details */}
             <button
               onClick={() => setIsClientExpanded(!isClientExpanded)}
-              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+              className={`w-[42px] h-[42px] rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
                 isClientExpanded
                   ? 'bg-white text-neutral-900 border-white shadow-lg'
                   : 'bg-white/10 border-white/5 text-white hover:bg-white/20 active:scale-95'
@@ -1257,27 +1370,7 @@ export default function SipDialer() {
           {isClientExpanded && (whmcsClientInfo || lastCallInfo) && (
             <div className="border-t border-white/10 bg-black/40 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               
-              {/* Transfer Input Overlay inside tray */}
-              {showTransferInput && (
-                <div className="flex items-center gap-1.5 p-2 bg-white/5 rounded-lg border border-white/10 focus-within:border-emerald-500/30 transition-all">
-                  <input
-                    type="text"
-                    value={transferNumber}
-                    onChange={(e) => setTransferNumber(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleBlindTransfer() }}
-                    placeholder="Transfer number..."
-                    className="flex-1 text-[11.5px] bg-transparent outline-none text-white placeholder-white/30"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleBlindTransfer}
-                    disabled={!transferNumber.trim()}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded bg-[#34c759] text-white hover:bg-[#30b351] active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
-                  >
-                    Transfer
-                  </button>
-                </div>
-              )}
+
 
               {/* In-Call DTMF Mini Keypad inside tray */}
               {showInCallKeypad && sessionState === SessionState.Established && (
