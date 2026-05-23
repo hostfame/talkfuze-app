@@ -52,18 +52,17 @@ export async function logAiDraft(
  */
 async function generateCorrectionFeedback(context: string, aiDraft: string, agentSent: string): Promise<string | null> {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "gpt-4o-mini",
         max_tokens: 150,
         messages: [
           {
@@ -98,7 +97,7 @@ Output ONLY the 1-sentence actionable rule/insight. No labels, no prefixes.`
     }
     
     const data = await response.json();
-    return data.content?.[0]?.text?.trim() || null;
+    return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (e) {
     console.error("generateCorrectionFeedback error:", e);
     return null;
