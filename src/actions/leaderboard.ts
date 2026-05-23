@@ -77,7 +77,9 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       emergencyResponseTime: 0, // In seconds
       totalEmergencyResponseTimeMs: 0,
       emergencyResponseTimeCount: 0,
-      escalatedTicketsCount: 0
+      escalatedTicketsCount: 0,
+      aiDraftCount: 0,
+      aiAssistedPercent: 0
     };
   });
 
@@ -252,6 +254,32 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       }
     });
   }
+
+  // 5. Query AI draft usage per agent in this period
+  try {
+    const { data: aiDrafts } = await supabaseAdmin
+      .from('ai_draft_logs')
+      .select('agent_id')
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString());
+
+    if (aiDrafts) {
+      aiDrafts.forEach(draft => {
+        if (draft.agent_id && statsMap[draft.agent_id]) {
+          statsMap[draft.agent_id].aiDraftCount++;
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Error fetching AI draft stats:", err);
+  }
+
+  // Calculate AI assisted percentage
+  Object.values(statsMap).forEach((stats: any) => {
+    if (stats.messagesCount > 0) {
+      stats.aiAssistedPercent = Math.round((stats.aiDraftCount / stats.messagesCount) * 100);
+    }
+  });
 
   // Sort by public messagesCount descending
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);

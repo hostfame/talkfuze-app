@@ -154,7 +154,7 @@ export default function LeaderboardPage() {
                 </div>
 
                 {/* Metrics Grid - Expanded to 4 Columns with Hosting Metrics */}
-                <div className="flex-1 grid grid-cols-4 gap-4">
+                <div className="flex-1 grid grid-cols-5 gap-4">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
                       <MessageSquare size={14} /> Messages
@@ -165,6 +165,16 @@ export default function LeaderboardPage() {
                         +{agent.whispersCount} whispers
                       </span>
                     )}
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
+                      <Zap size={14} /> AI Assisted
+                    </div>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.aiAssistedPercent}%</span>
+                    <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
+                      {agent.aiDraftCount} drafts used
+                    </span>
                   </div>
                   
                   <div className="flex flex-col">
