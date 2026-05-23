@@ -1283,6 +1283,7 @@ export default function ChatThread({
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
+  const autoTranscribeRef = useRef<boolean>(false)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
@@ -1612,7 +1613,7 @@ export default function ChatThread({
       const newVal = val.replace(/(^|\s|\n)\/\/v$/, '').trim();
       setInput(newVal);
       setShowMacroMenu(false);
-      startRecording();
+      startRecording(true);
       return;
     }
 
@@ -2054,7 +2055,9 @@ export default function ChatThread({
       setIsSending(false)
     }
   }
-  const startRecording = async () => {
+  const startRecording = async (isAutoTranscribe: boolean | any = false) => {
+    const shouldAutoTranscribe = typeof isAutoTranscribe === 'boolean' ? isAutoTranscribe : false;
+    autoTranscribeRef.current = shouldAutoTranscribe;
     try {
       const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS)
       mediaRecorderRef.current = new MediaRecorder(stream)
@@ -2078,8 +2081,10 @@ export default function ChatThread({
           
           setStagedAudio({ url: localUrl, file })
           
-          // Auto-transcribe the audio immediately
-          handleTranscribeAudio(file)
+          // Auto-transcribe the audio immediately only if triggered by //v
+          if (autoTranscribeRef.current) {
+            handleTranscribeAudio(file)
+          }
         }
         audioChunksRef.current = []
       }
