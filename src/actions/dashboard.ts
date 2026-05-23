@@ -233,7 +233,12 @@ export async function replyToConversation(
             if (whmcsClient && whmcsClient.email) {
               await supabaseAdmin.from('contacts').update({ email: whmcsClient.email }).eq('id', contactData.id);
               if (!contactData.phone && whmcsClient.phonenumber && !whmcsClient.phonenumber.includes('@')) {
-                const cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
+                let cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
+                if (cleanPhoneNum.length === 10 && cleanPhoneNum.startsWith('1')) {
+                  cleanPhoneNum = '880' + cleanPhoneNum;
+                } else if (cleanPhoneNum.length === 11 && cleanPhoneNum.startsWith('01')) {
+                  cleanPhoneNum = '88' + cleanPhoneNum;
+                }
                 if (cleanPhoneNum.length >= 9) {
                   await supabaseAdmin.from('contacts').update({ phone: cleanPhoneNum }).eq('id', contactData.id);
                 }
@@ -440,6 +445,7 @@ export async function createConversation(orgId: string, phone: string) {
         org_id: orgId,
         platform_type: "whatsapp",
         platform_id: cleanPhone,
+        phone: cleanPhone,
         name: cleanPhone,
         status: "active"
       })

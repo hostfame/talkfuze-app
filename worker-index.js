@@ -285,6 +285,17 @@ async function upsertContact(jid, name) {
     }
   }
 
+  // ── Step 1.5: Ensure canonicalJid uses correct BD country prefix ──
+  if (!isGroup) {
+    let cleanJidNum = canonicalJid.split('@')[0].replace(/[^0-9]/g, '');
+    if (cleanJidNum.length === 10 && cleanJidNum.startsWith('1')) {
+      cleanJidNum = '880' + cleanJidNum;
+    } else if (cleanJidNum.length === 11 && cleanJidNum.startsWith('01')) {
+      cleanJidNum = '88' + cleanJidNum;
+    }
+    canonicalJid = `${cleanJidNum}@s.whatsapp.net`;
+  }
+
   // ── Step 2: Look up existing contact by canonical JID ──
   let { data: existing } = await supabase
     .from('contacts')
@@ -352,6 +363,25 @@ async function upsertContact(jid, name) {
       console.log(`[UPSERT-CONTACT] Upgrading platform_id from ${existing.platform_id} to ${canonicalJid}`);
     }
 
+    // Ensure existing contact's platform_id and phone field are normalized with prefix
+    if (!isGroup) {
+      if (existing.platform_id !== canonicalJid) {
+        updates.platform_id = canonicalJid;
+      }
+      
+      let cleanExistPhone = (existing.phone || '').replace(/\D/g, '');
+      if (cleanExistPhone) {
+        if (cleanExistPhone.length === 10 && cleanExistPhone.startsWith('1')) {
+          cleanExistPhone = '880' + cleanExistPhone;
+        } else if (cleanExistPhone.length === 11 && cleanExistPhone.startsWith('01')) {
+          cleanExistPhone = '88' + cleanExistPhone;
+        }
+        if (existing.phone !== cleanExistPhone) {
+          updates.phone = cleanExistPhone;
+        }
+      }
+    }
+
     // Automatically clear whatsapp_invalid flag if they successfully sent us a message/activity
     if (metaUpdates.whatsapp_invalid) {
       delete metaUpdates.whatsapp_invalid;
@@ -361,7 +391,13 @@ async function upsertContact(jid, name) {
 
     // Update phone field if missing
     if (resolvedPhone && !existing.phone) {
-      updates.phone = resolvedPhone;
+      let cleanResolved = resolvedPhone.replace(/\D/g, '');
+      if (cleanResolved.length === 10 && cleanResolved.startsWith('1')) {
+        cleanResolved = '880' + cleanResolved;
+      } else if (cleanResolved.length === 11 && cleanResolved.startsWith('01')) {
+        cleanResolved = '88' + cleanResolved;
+      }
+      updates.phone = cleanResolved;
     }
 
     if (needsMetaUpdate) updates.metadata = metaUpdates;
@@ -375,7 +411,15 @@ async function upsertContact(jid, name) {
   }
 
   // ── Step 5: Create new contact ──
-  const phoneNumber = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+  const rawPhoneNumber = resolvedPhone || canonicalJid.split('@')[0].replace(/\D/g, '');
+  let phoneNumber = rawPhoneNumber;
+  if (!isGroup) {
+    if (phoneNumber.length === 10 && phoneNumber.startsWith('1')) {
+      phoneNumber = '880' + phoneNumber;
+    } else if (phoneNumber.length === 11 && phoneNumber.startsWith('01')) {
+      phoneNumber = '88' + phoneNumber;
+    }
+  }
   const displayName = name || phoneNumber.slice(-10);
   const metadata = {};
   if (phoneNumber.length >= 9 && !isGroup) {
