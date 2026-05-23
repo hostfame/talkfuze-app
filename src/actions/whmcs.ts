@@ -109,7 +109,7 @@ export async function fetchWhmcsUnpaidInvoices(clientId: number) {
 
 export async function convertChatToTicket(conversationId: string, clientId: number, deptId: number = 1, agentId?: string) {
   try {
-    // 1. Fetch last 30 minutes of messages from the latest message
+    // 1. Fetch last 60 minutes of messages from the latest message
     const { data: latestMsg } = await supabaseAdmin
       .from("messages")
       .select("created_at")
@@ -122,13 +122,13 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       return { success: false, error: "No messages found to convert." }
     }
 
-    const thirtyMinutesBeforeLatest = new Date(new Date(latestMsg.created_at).getTime() - 30 * 60 * 1000).toISOString()
+    const sixtyMinutesBeforeLatest = new Date(new Date(latestMsg.created_at).getTime() - 60 * 60 * 1000).toISOString()
 
     const { data: messages, error } = await supabaseAdmin
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
-      .gte("created_at", thirtyMinutesBeforeLatest)
+      .gte("created_at", sixtyMinutesBeforeLatest)
       .order("created_at", { ascending: false })
 
     if (error || !messages || messages.length === 0) {
