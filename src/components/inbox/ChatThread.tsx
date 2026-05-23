@@ -131,7 +131,7 @@ const SafeImage = ({
   );
 };
 
-const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, type: 'agent' | 'customer' | 'internal', messageId?: string, transcript?: string }) => {
+const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, type: 'agent' | 'customer' | 'internal' | 'system', messageId?: string, transcript?: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { currentSrc, isPlaying: globalIsPlaying, currentTime: globalCurrentTime, play, seek } = useGlobalAudioStore();
   const isPlaying = currentSrc === url && globalIsPlaying;
@@ -241,6 +241,7 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
   const isAgent = type === 'agent';
   const isInternal = type === 'internal';
   const isCustomer = type === 'customer';
+  const isSystem = type === 'system';
 
   // Standard premium minimalist audio card design (default for Agent/Customer)
   let containerBg = 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-2xl rounded-br-sm p-3 shadow-sm';
@@ -259,6 +260,13 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
     activeWaveColor = '#d97706'; // Amber 600
     inactiveWaveColor = 'rgba(217,119,6,0.15)';
     playheadColor = '#d97706';
+  } else if (isSystem) {
+    containerBg = 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-2xl p-3 shadow-sm';
+    buttonStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+    timeStyle = 'text-slate-400 dark:text-slate-500';
+    activeWaveColor = '#475569'; // slate-600
+    inactiveWaveColor = 'rgba(71,85,105,0.15)';
+    playheadColor = '#475569';
   }
 
   // Wave bar heights (22 bars)
@@ -559,7 +567,7 @@ const VoiceCallWidget = ({ msg, isMissed, agent, safeMeta, msgTime }: any) => {
             isMissed ? 'border-slate-200/50 dark:border-slate-700/50' : 'border-blue-200/50 dark:border-blue-700/50'
           }`} onClick={(e) => e.stopPropagation()}>
             <div className="w-full scale-95 origin-left">
-              <CustomAudioPlayer url={safeMeta.recording_url} type="internal" />
+              <CustomAudioPlayer url={safeMeta.recording_url} type="system" />
             </div>
           </div>
         )}

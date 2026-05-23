@@ -3,7 +3,7 @@
 import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
-import CallsPage from "@/components/inbox/CallsPage"
+import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore } from "@/lib/store"
 import { Bell } from "lucide-react"
@@ -581,13 +581,7 @@ export default function InboxPage() {
 
   // activeConversation is defined above now
 
-  if (activeFilter === 'calls') {
-    return (
-      <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900">
-        <CallsPage />
-      </div>
-    )
-  }
+  // activeConversation is defined above now
 
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden bg-white dark:bg-slate-900 relative">
