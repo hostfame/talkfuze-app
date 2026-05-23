@@ -276,25 +276,8 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      const languageStyleRules = detectedLanguage === 'en'
-        ? `LANGUAGE STYLE RULES (English):
-- Use natural conversational English contractions: "I'll", "we've", "you're", "don't".
-- Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
-- NO EMOJIS EVER. Do not use a single emoji.
-- NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
-- Do NOT write any Bengali script characters. English only.`
-        : `LANGUAGE STYLE RULES (Bengali):
-- Write in modern, conversational Bengali as spoken on WhatsApp (e.g., use transliterated words like 'প্লিজ', 'সাপোর্ট', 'ইন্সট্যান্ট', 'চেক' instead of archaic Sanskrit words).
-- THE BENGALI FONT PATTERN (CRITICAL): The ENTIRE message must be in Bengali alphabet. Do NOT use any English letters (A-Z).
-  * Transliterate English words: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
-  * The ONLY exception is URLs/Links.
-- ALWAYS use "আপনি/আপনার". NEVER use "তুমি/তোমার".
-- NO EMOJIS EVER. Do not use a single emoji.
-- NEVER address the customer as "Bhai", "Bhaiya", "Bon", "ভাই", "আপু", "বোন".`;
-
-    userMessage = `REMINDER: Reply ONLY in ${detectedLanguage === 'en' ? 'English' : 'Bengali script'}. This was determined from the customer's latest message: "${latestCustomerMessageCleaned}"
-
-${languageStyleRules}
+    userMessage = `The customer's latest message is: "${latestCustomerMessageCleaned}"
+Match the language of this message in your reply.
 
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
