@@ -91,6 +91,7 @@ Agent's Final Verified Message:
 
 Tasks:
 1. 'rule': A concise 1-sentence actionable rule (in English) describing exactly why the agent edited the draft and what mistake to avoid.
+   - CRITICAL: If the AI Draft was written in Bengali (বাংলা) but the Agent changed the reply entirely to English (or vice versa), the rule MUST explicitly instruct to respect and match the active conversational language (e.g., "Draft strictly in English when the agent/conversation has shifted to English").
 2. 'question': A clean, standalone 1-sentence summary of the customer's intent/problem.
 3. 'answer': The agent's verified final message (exactly as written, but remove specific personal greetings).
 
