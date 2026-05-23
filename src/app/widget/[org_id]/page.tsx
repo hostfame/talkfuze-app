@@ -1528,8 +1528,14 @@ export default function WidgetPage() {
     const hasBusyAutoReply = messages.some(m => m.sender_type === 'ai' && m.metadata?.auto_reply);
     if (hasBusyAutoReply) return;
 
+    // Only auto-reply if no agent has replied in this conversation yet
     const hasAgentReplied = messages.some(m => m.sender_type === 'agent');
-    const autoReplyDelay = hasAgentReplied ? 180000 : 60000;
+    if (hasAgentReplied) {
+      setIsAutoTyping(false);
+      return;
+    }
+
+    const autoReplyDelay = 60000;
 
     const typingTimer = setTimeout(() => {
       setIsAutoTyping(true);
