@@ -3396,17 +3396,7 @@ export default function ChatThread({
           </div>
         </div>
         {/* Actual composer - always shown, locked to whisper if not picked up */}
-        {(conversation?.is_archived || conversation?.status === 'resolved') ? (
-          <div className="flex flex-col items-center justify-center p-6 mx-4 mt-2 mb-4 bg-slate-50 dark:bg-[#111b21] border border-slate-200 dark:border-slate-800 rounded-xl">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 text-center">
-              Resolved chats aren't available for reply
-            </p>
-            <p className="text-[13px] text-slate-400 dark:text-slate-500 text-center mt-1">
-              This conversation is read-only for historical purposes.
-            </p>
-          </div>
-        ) : (
-          <div className={`relative ${!isPickedUp ? "mt-4" : ""}`}>
+        <div className={`relative ${!isPickedUp ? "mt-4" : ""}`}>
             {!isPickedUp && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/40 dark:bg-[#0b141a]/40 backdrop-blur-[3px] rounded-xl pointer-events-auto">
               <button
@@ -3845,7 +3835,6 @@ export default function ChatThread({
         </div>
         </div>
         </div>
-        )}
       </div>
       {/* Custom Context Menu */}
       {contextMenu && typeof document !== 'undefined' && createPortal(

@@ -109,13 +109,27 @@ export async function fetchWhmcsUnpaidInvoices(clientId: number) {
 
 export async function convertChatToTicket(conversationId: string, clientId: number, deptId: number = 1, agentId?: string) {
   try {
-    // 1. Fetch last 20 messages to cover the full context of the active chat session
+    // 1. Fetch last 30 minutes of messages from the latest message
+    const { data: latestMsg } = await supabaseAdmin
+      .from("messages")
+      .select("created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!latestMsg) {
+      return { success: false, error: "No messages found to convert." }
+    }
+
+    const thirtyMinutesBeforeLatest = new Date(new Date(latestMsg.created_at).getTime() - 30 * 60 * 1000).toISOString()
+
     const { data: messages, error } = await supabaseAdmin
       .from("messages")
       .select("*")
       .eq("conversation_id", conversationId)
+      .gte("created_at", thirtyMinutesBeforeLatest)
       .order("created_at", { ascending: false })
-      .limit(20)
 
     if (error || !messages || messages.length === 0) {
       return { success: false, error: "No messages found to convert." }
@@ -380,14 +394,12 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       status: 'delivered',
     })
 
-    // 10. Automatically mark the conversation as resolved/archived and tag it as ticketed
+    // 10. Tag the conversation as ticketed, but keep it open
     const { data: convData } = await supabaseAdmin.from('conversations').select('tags').eq('id', conversationId).single()
     const existingTags = convData?.tags || []
     const newTags = Array.from(new Set([...existingTags, 'ticketed']))
 
     await supabaseAdmin.from('conversations').update({
-      status: 'resolved',
-      is_archived: true,
       tags: newTags
     }).eq('id', conversationId)
 
