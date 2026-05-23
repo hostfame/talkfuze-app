@@ -141,6 +141,16 @@ export default function ConversationList({
     }
     if (isAlert) return false;
 
+    if (activeFilter === 'unread') {
+      const validMsgs = conv.messages?.filter((m: any) => {
+        let safeMeta = m.metadata;
+        try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
+        return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
+      }) || [];
+      const lastMsg = (conv as any).matched_message || (validMsgs.length > 0 ? validMsgs[0] : null);
+      return lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read' && lastMsg.content_type !== 'system';
+    }
+
     if (activeFilter === 'all') return true;
     
     const assignee = firstRelation(conv.assignee);
@@ -203,6 +213,28 @@ export default function ConversationList({
         >
            <Plus size={18} strokeWidth={2} />
         </button>
+      </div>
+
+      {/* Pill Filters */}
+      <div className="px-5 py-2 flex items-center gap-2 overflow-x-auto shrink-0 bg-white dark:bg-[#111b21] border-b border-slate-100 dark:border-[#222e35]/50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+        {[
+          { id: 'all', label: 'All' },
+          { id: 'unread', label: 'Unread' },
+          { id: 'mine', label: 'Mine' },
+          { id: 'ticketed', label: 'Tickets' }
+        ].map((pill) => (
+          <button
+            key={pill.id}
+            onClick={() => useInboxStore.getState().setActiveFilter(pill.id as any)}
+            className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-colors border ${
+              activeFilter === pill.id
+                ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#111b21] dark:border-[#2a3942] dark:text-[#8696a0] dark:hover:bg-[#202c33]'
+            }`}
+          >
+            {pill.label}
+          </button>
+        ))}
       </div>
 
       {/* List */}
