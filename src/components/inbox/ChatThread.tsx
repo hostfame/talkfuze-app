@@ -1933,6 +1933,14 @@ export default function ChatThread({
     setAiDraftSources([])
     aiDraftLogIdRef.current = null
     
+    // Find the latest customer-sent image attachment in the message history to pass for vision/multimodal analysis
+    const lastCustomerImageMsg = [...allMessages]
+      .reverse()
+      .find(m => m.sender_type === 'contact' && m.content_type === 'image');
+    const imageUrl = lastCustomerImageMsg
+      ? ((lastCustomerImageMsg.metadata as any)?.media_url || (lastCustomerImageMsg.metadata as any)?.url) as string
+      : null;
+
     // Format context messages - exclude whisper/internal messages (skip context for translation to save tokens/time)
     const contextMessages = isTranslation ? "" : allMessages
       .filter(m => !m.is_internal)
@@ -1958,7 +1966,7 @@ export default function ChatThread({
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextMessages, contactName, orgId, instruction, isTranslation })
+        body: JSON.stringify({ contextMessages, contactName, orgId, instruction, isTranslation, imageUrl })
       })
 
       if (!res.ok) throw new Error('API failed')

@@ -174,11 +174,33 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
 export async function POST(req: Request) {
   try {
-    const { contextMessages, contactName, orgId, instruction, isTranslation } = await req.json();
+    const { contextMessages, contactName, orgId, instruction, isTranslation, imageUrl } = await req.json();
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
+    }
+
+    // Fetch and encode image if present
+    let imageBlock: { base64Data: string; mediaType: string } | null = null;
+    if (imageUrl && !isTranslation) {
+      try {
+        const imgRes = await fetch(imageUrl);
+        if (imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+          let mediaType = "image/jpeg";
+          if (contentType.includes("png")) mediaType = "image/png";
+          else if (contentType.includes("gif")) mediaType = "image/gif";
+          else if (contentType.includes("webp")) mediaType = "image/webp";
+
+          const buffer = await imgRes.arrayBuffer();
+          const base64Data = Buffer.from(buffer).toString("base64");
+          imageBlock = { base64Data, mediaType };
+          console.log(`[AI Draft] Vision block constructed from customer attachment: ${mediaType}, Size: ${base64Data.length} chars.`);
+        }
+      } catch (err: any) {
+        console.error("[AI Draft] Image fetch or base64 conversion failed:", err.message);
+      }
     }
 
     // 1. Detect language (instant, no IO)
@@ -305,6 +327,10 @@ Customer Name: ${contactName}
 
 Conversation:
 ${contextMessages}
+
+${imageBlock ? `\nCRITICAL MULTIMODAL/VISION INSTRUCTION:
+The customer has uploaded an image/screenshot (attached to this message). 
+You MUST analyze the contents of this image (such as server error logs, pricing tables, CPGuard notifications, or cPanel interface screenshots) and directly address what is shown in your reply. Explain the issue shown in the image and state how we are fixing it or what it means.` : ''}
 
 Draft a smart, helpful reply as the support agent.`;
     }
@@ -495,7 +521,25 @@ Draft a smart, helpful reply as the support agent.`;
           }
         ],
         messages: [
-          { role: "user", content: userMessage },
+          {
+            role: "user",
+            content: imageBlock 
+              ? [
+                  {
+                    type: "image",
+                    source: {
+                      type: "base64",
+                      media_type: imageBlock.mediaType,
+                      data: imageBlock.base64Data
+                    }
+                  },
+                  {
+                    type: "text",
+                    text: userMessage
+                  }
+                ]
+              : userMessage
+          },
         ],
       }),
     });
