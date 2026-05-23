@@ -105,6 +105,7 @@ export const useMessageStore = create<MessageStore>((set) => ({
 
 interface InboxState {
   conversations: ConversationWithDetails[]
+  archivedConversations: ConversationWithDetails[]
   teamMembers: UserProfile[]
   isLoaded: boolean
   selectedId: string | null
@@ -117,6 +118,7 @@ interface InboxState {
   convertingTickets: Record<string, boolean>
   isFetchingMessages: Record<string, boolean>
   setConversations: (conversations: ConversationWithDetails[]) => void
+  setArchivedConversations: (archivedConversations: ConversationWithDetails[]) => void
   setTeamMembers: (members: UserProfile[]) => void
   setSelectedId: (id: string | null) => void
   setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'assigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts' | 'ticketed') => void
@@ -135,6 +137,7 @@ interface InboxState {
 
 export const useInboxStore = create<InboxState>((set) => ({
   conversations: [],
+  archivedConversations: [],
   teamMembers: [],
   isLoaded: false,
   selectedId: null,
@@ -147,6 +150,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   convertingTickets: {},
   isFetchingMessages: {},
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
+  setArchivedConversations: (archivedConversations) => set({ archivedConversations }),
   setTeamMembers: (teamMembers) => set({ teamMembers }),
   setSelectedId: (selectedId) => set({ selectedId }),
   setActiveFilter: (activeFilter) => set({ activeFilter }),

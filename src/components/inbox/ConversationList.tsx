@@ -118,7 +118,9 @@ export default function ConversationList({
     }
   };
 
-  const baseConversations = debouncedQuery && searchResults !== null ? searchResults : conversations;
+  const isArchivedFilter = activeFilter === 'archived' || activeFilter === 'ticketed';
+  const sourceConversations = isArchivedFilter ? useInboxStore.getState().archivedConversations : conversations;
+  const baseConversations = debouncedQuery && searchResults !== null ? searchResults : sourceConversations;
   
   // Apply team management filters
   const displayedConversations = baseConversations.filter(conv => {

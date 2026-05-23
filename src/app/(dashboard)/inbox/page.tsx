@@ -61,28 +61,29 @@ export default function InboxPage() {
     if (currentUser) setCurrentUser(currentUser as UserProfile)
   }, [currentUser, setCurrentUser])
 
-  // Refetch conversations when activeFilter changes
+  // Refetch conversations when activeFilter changes to an archived state
   useEffect(() => {
     let mounted = true;
     if (currentUser && ORG_ID) {
-      const currentFilter = activeFilter === 'mine' ? 'assigned' : activeFilter as any;
-      getConversations(ORG_ID, currentFilter, currentUser.id).then(data => {
-        if (mounted) {
-          setConversations((data || []) as ConversationWithDetails[]);
-        }
-      });
+      if (activeFilter === 'ticketed' || activeFilter === 'archived') {
+        getConversations(ORG_ID, activeFilter, currentUser.id).then(data => {
+          if (mounted) {
+            useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]);
+          }
+        });
+      }
     }
     return () => { mounted = false };
-  }, [activeFilter, ORG_ID, currentUser?.id, setConversations]);
+  }, [activeFilter, ORG_ID, currentUser?.id]);
 
-  const activeConversation = conversations.find(c => c.id === selectedId)
+  const activeConversation = (activeFilter === 'ticketed' || activeFilter === 'archived' ? useInboxStore.getState().archivedConversations : conversations).find(c => c.id === selectedId)
   const messages = selectedId ? (messagesMap[selectedId] || []) : []
 
   useEffect(() => {
     const fetchConvosAndTeam = async () => {
-      const currentFilter = useInboxStore.getState().activeFilter === 'mine' ? 'assigned' : useInboxStore.getState().activeFilter as any;
+      // Always fetch 'all' for the main conversations store so counts remain intact
       const [convosData, teamData] = await Promise.all([
-        getConversations(ORG_ID, currentFilter, currentUser?.id),
+        getConversations(ORG_ID, 'all', currentUser?.id),
         getTeammates()
       ])
       
