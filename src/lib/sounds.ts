@@ -103,8 +103,8 @@ export const RINGTONE_PRESETS: { id: RingtonePreset; name: string; description: 
 ];
 
 export const getSelectedRingtone = (): RingtonePreset => {
-  if (typeof window === 'undefined') return 'siren';
-  return (localStorage.getItem('talkfuze_ringtone_preset') as RingtonePreset) || 'siren';
+  if (typeof window === 'undefined') return 'classic';
+  return (localStorage.getItem('talkfuze_ringtone_preset') as RingtonePreset) || 'classic';
 };
 
 export const setSelectedRingtone = (preset: RingtonePreset): void => {
@@ -113,9 +113,9 @@ export const setSelectedRingtone = (preset: RingtonePreset): void => {
 };
 
 export const getRingtoneVolume = (): number => {
-  if (typeof window === 'undefined') return 1.0;
+  if (typeof window === 'undefined') return 0.5;
   const stored = localStorage.getItem('talkfuze_ringtone_volume');
-  const val = stored ? parseFloat(stored) : 1.0;
+  const val = stored ? parseFloat(stored) : 0.5;
   return Math.max(MIN_RINGTONE_VOLUME, val);
 };
 
