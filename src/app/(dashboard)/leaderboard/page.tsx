@@ -241,7 +241,7 @@ export default function LeaderboardPage() {
                   </span>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-[#8696a0] mt-0.5 flex items-center gap-1 font-medium">
-                  <Award size={14} className="text-amber-500" /> Currently Rank #{selectedAgent.rank} on {period} board
+                  <Award size={14} className="text-slate-400 dark:text-[#8696a0]" /> Currently Rank #{selectedAgent.rank} on {period} board
                 </p>
               </div>
             </div>
@@ -327,8 +327,8 @@ export default function LeaderboardPage() {
                 
                 <div className="space-y-2">
                   {selectedAgent.firstResponseSlaPercent >= 85 && selectedAgent.totalFirstResponses > 0 && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
                         <Clock size={16} />
                       </div>
                       <div>
@@ -339,8 +339,8 @@ export default function LeaderboardPage() {
                   )}
 
                   {selectedAgent.emergencyResponseTime > 0 && selectedAgent.emergencyResponseTime <= 90 && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
                         <ShieldAlert size={16} />
                       </div>
                       <div>
@@ -351,8 +351,8 @@ export default function LeaderboardPage() {
                   )}
 
                   {selectedAgent.callsCount >= 1 && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
                         <Phone size={16} />
                       </div>
                       <div>
@@ -363,8 +363,8 @@ export default function LeaderboardPage() {
                   )}
 
                   {selectedAgent.escalatedTicketsCount >= 1 && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
                         <Wrench size={16} />
                       </div>
                       <div>
