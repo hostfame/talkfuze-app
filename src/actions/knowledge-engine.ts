@@ -35,6 +35,8 @@ const POLICIES = `## Key Policies
 - Domain transfer needs EPP/Auth code, must be 60+ days old, not expired.
 - VPS: Self-managed by default, full root access. Locations: Bangladesh (BDIX), Singapore, Germany, Finland, USA.
 - Dedicated Servers: Full dedicated hardware, most have setup fees (except Value AMD = Free Setup).
+- MySQL/Database: External MySQL connections are NOT allowed on standard Web/Cloud Hosting or BDIX VPS for security reasons. We DO allow external MySQL connections on Node.js Hosting.
+- Pricing Confusion (e.g., 549tk plan): If a user asks for a "549tk plan", it DOES exist. It refers to the 3-year discounted monthly breakdown price of plans like Turbo Starter or Web Pro. Always check the '3-Years' column before saying a plan doesn't exist.
 - If customer asks for a domain extension not in our list, say: "Check availability and price at https://hostnin.com/domain"
 - Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.
 - Nameservers: ns1.stackdns.com, ns2.stackdns.com (for shared/cloud/turbo/bdix hosting).
