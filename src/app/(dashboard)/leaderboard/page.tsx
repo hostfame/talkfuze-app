@@ -47,6 +47,17 @@ export default function LeaderboardPage() {
     return `${h}h ${m}m`
   }
 
+  const formatCallDuration = (seconds: number) => {
+    if (!seconds || seconds <= 0) return "0s"
+    const minutes = Math.round(seconds / 60)
+    if (minutes < 60) {
+      return `${minutes}m`
+    }
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return `${h}h ${m}m`
+  }
+
   // Get goals targets based on active period
   const getPeriodTargets = (p: 'daily' | 'weekly' | 'monthly') => {
     if (p === 'daily') {
@@ -89,9 +100,9 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Max width expanded to 1300px to solve white space on sides */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-        <div className="max-w-4xl mx-auto space-y-4">
+        <div className="w-full max-w-[1300px] mx-auto space-y-4">
           
           {loading ? (
             <div className="flex flex-col gap-4">
@@ -132,7 +143,7 @@ export default function LeaderboardPage() {
                 </div>
 
                 {/* Agent Info */}
-                <div className="flex items-center gap-4 w-1/3 min-w-[200px]">
+                <div className="flex items-center gap-4 w-1/4 min-w-[200px]">
                   {agent.avatar_url ? (
                     <img src={agent.avatar_url} alt={agent.name} className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-[#222e35]" />
                   ) : (
@@ -148,8 +159,8 @@ export default function LeaderboardPage() {
                   </div>
                 </div>
 
-                {/* Metrics Grid */}
-                <div className="flex-1 grid grid-cols-3 gap-4">
+                {/* Metrics Grid - Expanded to 4 Columns */}
+                <div className="flex-1 grid grid-cols-4 gap-4">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
                       <MessageSquare size={14} /> Messages
@@ -167,9 +178,16 @@ export default function LeaderboardPage() {
                       <MessagesSquare size={14} /> Chats Handled
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.chatsCount}</span>
-                    {agent.callsCount > 0 && (
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
+                      <Phone size={14} /> Voice Calls
+                    </div>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.callsCount}</span>
+                    {agent.totalCallDuration > 0 && (
                       <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
-                        +{agent.callsCount} voice calls
+                        {formatCallDuration(agent.totalCallDuration)} call time
                       </span>
                     )}
                   </div>
@@ -180,14 +198,8 @@ export default function LeaderboardPage() {
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{formatActiveTime(agent.activeMinutes)}</span>
                     {agent.avgResponseTime > 0 ? (
-                      <span className={`text-[11px] font-semibold mt-0.5 flex items-center gap-1 ${
-                        agent.avgResponseTime <= 2 
-                          ? 'text-emerald-600 dark:text-emerald-500' 
-                          : agent.avgResponseTime <= 5 
-                          ? 'text-amber-600 dark:text-amber-500' 
-                          : 'text-slate-500 dark:text-[#8696a0]'
-                      }`}>
-                        <Zap size={10} className="fill-current" /> {agent.avgResponseTime}m avg response
+                      <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1 font-semibold">
+                        <Clock size={10} /> {agent.avgResponseTime}m avg response
                       </span>
                     ) : (
                       <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">No replies yet</span>
@@ -268,7 +280,7 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-[#202c33] h-2 rounded-full overflow-hidden">
                     <div 
-                      className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
+                      className="bg-slate-400 dark:bg-slate-500 h-full rounded-full transition-all duration-500" 
                       style={{ width: `${Math.min(100, (selectedAgent.chatsCount / targets.chats) * 100)}%` }} 
                     />
                   </div>
@@ -318,49 +330,49 @@ export default function LeaderboardPage() {
                 
                 <div className="space-y-2">
                   {selectedAgent.avgResponseTime > 0 && selectedAgent.avgResponseTime <= 2 && (
-                    <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <Zap size={16} className="fill-current" />
+                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                        <Clock size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Lightning Responder</h4>
-                        <p className="text-xs text-emerald-600/90 dark:text-emerald-400/90">Maintained an average response speed under 2 minutes.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Lightning Responder</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Maintained an average response speed under 2 minutes.</p>
                       </div>
                     </div>
                   )}
 
                   {selectedAgent.whispersCount >= (period === 'daily' ? 2 : period === 'weekly' ? 10 : 40) && (
-                    <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-[#0070f3] flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
                         <Users size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300">Team Collaborator</h4>
-                        <p className="text-xs text-blue-600/90 dark:text-blue-400/90">Highly active in internal whisper notes helping team members.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Team Collaborator</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Highly active in internal whisper notes helping team members.</p>
                       </div>
                     </div>
                   )}
 
                   {selectedAgent.callsCount >= (period === 'daily' ? 1 : period === 'weekly' ? 5 : 20) && (
-                    <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
                         <Phone size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-indigo-800 dark:text-indigo-300">Voice Specialist</h4>
-                        <p className="text-xs text-indigo-600/90 dark:text-indigo-400/90">Successfully resolved critical customer queries via voice calls.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Voice Specialist</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Successfully resolved critical customer queries via voice calls.</p>
                       </div>
                     </div>
                   )}
 
                   {selectedAgent.activeMinutes >= targets.activeMinutes && (
-                    <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                        <Flame size={16} className="fill-current animate-pulse" />
+                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/50 dark:border-blue-900/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-blue-950/30 text-[#0070f3] flex items-center justify-center shrink-0">
+                        <Flame size={16} className="animate-pulse" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300">Active Workhorse</h4>
-                        <p className="text-xs text-amber-600/90 dark:text-amber-400/90">Surpassed the target active hour limits for this period.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Active Workhorse</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Surpassed the target active hour limits for this period.</p>
                       </div>
                     </div>
                   )}
