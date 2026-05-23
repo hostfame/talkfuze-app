@@ -23,15 +23,30 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     
   if (!agents) return [];
 
-  // 2. Get messages sent by agents in this period
-  const { data: messages } = await supabaseAdmin
+  // 2. Get all messages in this period to count regular vs internal and calculate response time
+  const { data: allMessages } = await supabaseAdmin
     .from('messages')
-    .select('id, sender_id, conversation_id, created_at')
+    .select('id, sender_id, sender_type, conversation_id, created_at, is_internal')
     .eq('org_id', orgId)
-    .eq('sender_type', 'agent')
-    .gte('created_at', startDate.toISOString());
+    .gte('created_at', startDate.toISOString())
+    .order('created_at', { ascending: true });
 
-  // 3. Process stats per agent
+  // 3. Get call logs in this period
+  let calls: any[] = [];
+  try {
+    const { data: callLogs } = await supabaseAdmin
+      .from('call_logs')
+      .select('agent_name, duration_seconds')
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString());
+    if (callLogs) {
+      calls = callLogs;
+    }
+  } catch (err) {
+    console.error("Error fetching call logs for leaderboard:", err);
+  }
+
+  // 4. Process stats per agent
   const statsMap: Record<string, any> = {};
   
   agents.forEach(agent => {
@@ -41,39 +56,108 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       avatar_url: agent.avatar_url,
       role: agent.role,
       messagesCount: 0,
+      whispersCount: 0,
       chatsCount: 0,
-      activeMinutes: 0
+      callsCount: 0,
+      totalCallDuration: 0,
+      activeMinutes: 0,
+      avgResponseTime: 0, // In minutes
+      totalResponseTimeMs: 0,
+      responseTimeCount: 0
     };
   });
 
-  if (messages && messages.length > 0) {
+  // Match calls by agent name
+  if (calls.length > 0) {
+    calls.forEach(call => {
+      if (!call.agent_name) return;
+      const matchedAgent = agents.find(a => a.name.toLowerCase() === call.agent_name.toLowerCase());
+      if (matchedAgent) {
+        const stats = statsMap[matchedAgent.id];
+        stats.callsCount++;
+        stats.totalCallDuration += call.duration_seconds || 0;
+      }
+    });
+  }
+
+  if (allMessages && allMessages.length > 0) {
     const agentChats: Record<string, Set<string>> = {};
     const agentTimestamps: Record<string, number[]> = {};
+    
+    // Group messages by conversation to calculate response times
+    const convMessages: Record<string, typeof allMessages> = {};
 
-    messages.forEach(msg => {
-      const agentId = msg.sender_id;
-      if (!agentId || !statsMap[agentId]) return;
+    allMessages.forEach(msg => {
+      // 1. Group for response time
+      if (!convMessages[msg.conversation_id]) {
+        convMessages[msg.conversation_id] = [];
+      }
+      convMessages[msg.conversation_id].push(msg);
 
-      statsMap[agentId].messagesCount++;
-      
-      if (!agentChats[agentId]) agentChats[agentId] = new Set();
-      agentChats[agentId].add(msg.conversation_id);
+      // 2. Count messages sent by agents
+      if (msg.sender_type === 'agent') {
+        const agentId = msg.sender_id;
+        if (!agentId || !statsMap[agentId]) return;
 
-      if (!agentTimestamps[agentId]) agentTimestamps[agentId] = [];
-      agentTimestamps[agentId].push(new Date(msg.created_at).getTime());
+        if (msg.is_internal) {
+          statsMap[agentId].whispersCount++;
+        } else {
+          statsMap[agentId].messagesCount++;
+        }
+        
+        if (!agentChats[agentId]) agentChats[agentId] = new Set();
+        agentChats[agentId].add(msg.conversation_id);
+
+        if (!agentTimestamps[agentId]) agentTimestamps[agentId] = [];
+        agentTimestamps[agentId].push(new Date(msg.created_at).getTime());
+      }
     });
 
-    // Calculate chats and proxy active time
+    // Calculate response times
+    Object.values(convMessages).forEach(msgs => {
+      let lastContactTime: number | null = null;
+
+      msgs.forEach(msg => {
+        if (msg.sender_type === 'contact') {
+          // If customer sent a message, record the time (only if we're not already waiting)
+          if (lastContactTime === null) {
+            lastContactTime = new Date(msg.created_at).getTime();
+          }
+        } else if (msg.sender_type === 'agent' && !msg.is_internal) {
+          const agentId = msg.sender_id;
+          if (agentId && lastContactTime !== null && statsMap[agentId]) {
+            const replyTime = new Date(msg.created_at).getTime();
+            const diffMs = replyTime - lastContactTime;
+            
+            // Only count reasonable response times (< 12 hours) to avoid off-hours skewing stats
+            if (diffMs > 0 && diffMs < 12 * 60 * 60 * 1000) {
+              statsMap[agentId].totalResponseTimeMs += diffMs;
+              statsMap[agentId].responseTimeCount++;
+            }
+            
+            // Reset contact time since agent replied
+            lastContactTime = null;
+          }
+        }
+      });
+    });
+
+    // Calculate active minutes & average response times
     Object.keys(statsMap).forEach(agentId => {
+      const stats = statsMap[agentId];
+
       if (agentChats[agentId]) {
-        statsMap[agentId].chatsCount = agentChats[agentId].size;
+        stats.chatsCount = agentChats[agentId].size;
+      }
+
+      if (stats.responseTimeCount > 0) {
+        const avgMs = stats.totalResponseTimeMs / stats.responseTimeCount;
+        stats.avgResponseTime = Math.round((avgMs / (60 * 1000)) * 10) / 10; // 1 decimal place (mins)
       }
       
       if (agentTimestamps[agentId] && agentTimestamps[agentId].length > 0) {
-        // Sort timestamps
         agentTimestamps[agentId].sort((a, b) => a - b);
         
-        // Calculate active time: we consider an agent active if messages are sent within 30 mins of each other
         let totalActiveMs = 0;
         let sessionStart = agentTimestamps[agentId][0];
         let lastMsgTime = agentTimestamps[agentId][0];
@@ -83,22 +167,20 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
         for (let i = 1; i < agentTimestamps[agentId].length; i++) {
           const t = agentTimestamps[agentId][i];
           if (t - lastMsgTime > SESSION_TIMEOUT) {
-            // End of a session
             totalActiveMs += (lastMsgTime - sessionStart);
-            sessionStart = t; // New session
+            sessionStart = t;
           }
           lastMsgTime = t;
         }
         
-        // Add final session (give it at least 5 mins minimum if only one message)
         const finalSessionDur = (lastMsgTime - sessionStart);
         totalActiveMs += finalSessionDur > 0 ? finalSessionDur : (5 * 60 * 1000); 
 
-        statsMap[agentId].activeMinutes = Math.round(totalActiveMs / (60 * 1000));
+        stats.activeMinutes = Math.round(totalActiveMs / (60 * 1000));
       }
     });
   }
 
-  // Sort by messagesCount descending
+  // Sort by public messagesCount descending
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
 }
