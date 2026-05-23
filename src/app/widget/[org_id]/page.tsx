@@ -326,8 +326,53 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
           </div>
         </a>
       );
-    default:
-      return <span className="break-words">{msg.content}</span>;
+    default: {
+      const text = msg.content || "";
+      const urlRegex = /((?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
+      const parts = text.split(urlRegex);
+      
+      return (
+        <span className="break-words whitespace-pre-wrap">
+          {parts.map((part, i) => {
+            const isUrl = urlRegex.test(part);
+            urlRegex.lastIndex = 0; // reset after test
+
+            if (isUrl) {
+              let cleanPart = part;
+              let trailing = "";
+              while (cleanPart.length > 0 && ['.', ',', '!', '?', ';', ')', '*'].includes(cleanPart.slice(-1))) {
+                trailing = cleanPart.slice(-1) + trailing;
+                cleanPart = cleanPart.slice(0, -1);
+              }
+              
+              let href = cleanPart;
+              const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(cleanPart);
+              if (isEmail) {
+                href = `mailto:${cleanPart}`;
+              } else {
+                href = cleanPart.toLowerCase().startsWith('http') ? cleanPart : `https://${cleanPart}`;
+              }
+
+              return (
+                <span key={i}>
+                  <a 
+                    href={href} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className={`${isDark ? 'text-white underline font-semibold' : 'text-blue-600 hover:text-blue-700 underline font-semibold'} transition-colors break-all`}
+                  >
+                    {cleanPart}
+                  </a>
+                  {trailing}
+                </span>
+              );
+            }
+
+            return <span key={i}>{part}</span>;
+          })}
+        </span>
+      );
+    }
   }
 };
 
