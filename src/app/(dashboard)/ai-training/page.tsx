@@ -39,6 +39,31 @@ export default function AITrainingDashboard() {
 
   const fetchLogs = async () => {
     setLoading(true)
+    
+    // 1. Fetch real stats using separate queries
+    const getCount = async (status: string | null) => {
+      let query = supabase.from("ai_training_logs").select("*", { count: 'exact', head: true })
+      if (status) query = query.eq('status', status)
+      const { count } = await query
+      return count || 0
+    }
+
+    const [total, trained, processing, pending, failed] = await Promise.all([
+      getCount(null),
+      getCount('completed'),
+      getCount('processing'),
+      getCount('pending'),
+      getCount('failed')
+    ])
+
+    setStats({
+      totalArchived: total,
+      successfullyTrained: trained,
+      pending: processing + pending,
+      failed: failed
+    })
+
+    // 2. Fetch the latest 50 for the table
     const { data, error } = await supabase
       .from("ai_training_logs")
       .select("*")
@@ -47,18 +72,6 @@ export default function AITrainingDashboard() {
 
     if (data) {
       setLogs(data)
-      
-      // Calculate simple stats based on loaded data (in production, use aggregation)
-      const trained = data.filter(l => l.status === "completed").length
-      const pend = data.filter(l => l.status === "pending" || l.status === "processing").length
-      const fail = data.filter(l => l.status === "failed").length
-      
-      setStats({
-        totalArchived: data.length, // Simplified for this view
-        successfullyTrained: trained,
-        pending: pend,
-        failed: fail
-      })
     }
     setLoading(false)
   }
