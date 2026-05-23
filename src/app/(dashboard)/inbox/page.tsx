@@ -30,6 +30,16 @@ export default function InboxPage() {
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true)
+
+  // Auto-collapse sidebar on smaller screens (portrait monitors, small laptops) on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (window.innerWidth < 1200) {
+        setIsRightSidebarOpen(false);
+      }
+    }
+  }, [])
   const [recordingState, setRecordingState] = useState<Record<string, boolean>>({})
   const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, avatar_url?: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
@@ -680,11 +690,15 @@ export default function InboxPage() {
           currentUser={currentUser as UserProfile}
           isFetching={selectedId ? isFetchingMessages[selectedId] : false}
           onBackToList={handleBackToList}
+          isRightSidebarOpen={isRightSidebarOpen}
+          onToggleRightSidebar={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
         />
         <ContactSidebar 
           conversation={activeConversation}
           orgId={ORG_ID}
           messages={messages}
+          isOpen={isRightSidebarOpen}
+          onClose={() => setIsRightSidebarOpen(false)}
         />
       </div>
     </div>

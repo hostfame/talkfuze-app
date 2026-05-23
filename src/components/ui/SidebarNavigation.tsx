@@ -1,0 +1,90 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit } from "lucide-react"
+
+interface SidebarNavigationProps {
+  isAgent: boolean
+}
+
+export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
+  const pathname = usePathname()
+
+  const navItems = [
+    {
+      href: "/inbox",
+      label: "Inbox",
+      icon: Inbox,
+      isActive: pathname.startsWith("/inbox"),
+      visible: true
+    },
+    {
+      href: "/calls",
+      label: "Calls",
+      icon: Phone,
+      isActive: pathname.startsWith("/calls"),
+      visible: true
+    },
+    {
+      href: "/contacts",
+      label: "Contacts",
+      icon: Users,
+      isActive: pathname.startsWith("/contacts"),
+      visible: !isAgent
+    },
+    {
+      href: "/analytics",
+      label: "Analytics",
+      icon: BarChart3,
+      isActive: pathname.startsWith("/analytics"),
+      visible: !isAgent
+    },
+    {
+      href: "/leaderboard",
+      label: "Leaderboard",
+      icon: Trophy,
+      isActive: pathname.startsWith("/leaderboard"),
+      visible: true,
+      activeColor: "text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30",
+      hoverColor: "hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10"
+    },
+    {
+      href: "/ai-training",
+      label: "AI Observer",
+      icon: BrainCircuit,
+      isActive: pathname.startsWith("/ai-training"),
+      visible: !isAgent,
+      activeColor: "text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
+      hoverColor: "hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+    }
+  ]
+
+  return (
+    <div className="flex-1 space-y-3 w-full px-2 flex flex-col items-center">
+      {navItems
+        .filter((item) => item.visible)
+        .map((item) => {
+          const Icon = item.icon
+          const customActive = item.activeColor || "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30"
+          const customHover = item.hoverColor || "hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] hover:border-slate-200 dark:hover:border-[#2a3942]"
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch={true}
+              title={item.label}
+              className={`w-11 h-11 flex items-center justify-center rounded-2xl hover:shadow-sm hover:border transition-all duration-200 active:scale-95 ${
+                item.isActive
+                  ? `${customActive} shadow-sm border`
+                  : `text-slate-400 ${customHover} border-transparent border`
+              }`}
+            >
+              <Icon size={22} strokeWidth={item.isActive ? 2.5 : 2} />
+            </Link>
+          )
+        })}
+    </div>
+  )
+}

@@ -140,7 +140,19 @@ function ServiceItem({ product, clientId }: { product: WhmcsProduct, clientId: n
   )
 }
 
-export default function ContactSidebar({ conversation, orgId, messages = [] }: { conversation?: ConversationWithDetails | null, orgId: string, messages?: any[] }) {
+export default function ContactSidebar({ 
+  conversation, 
+  orgId, 
+  messages = [],
+  isOpen = true,
+  onClose
+}: { 
+  conversation?: ConversationWithDetails | null, 
+  orgId: string, 
+  messages?: any[],
+  isOpen?: boolean,
+  onClose?: () => void
+}) {
   const { triggerDial, convertingTickets, setConvertingTicket } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
@@ -970,8 +982,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
     setIsDrafting(false)
   }
 
+  if (!isOpen) return null;
+
   return (
-    <div className="hidden md:flex flex-col h-full w-[240px] lg:w-[250px] xl:w-[280px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden">
+    <div className="hidden md:flex flex-col h-full w-[240px] lg:w-[250px] xl:w-[280px] shrink-0 bg-white dark:bg-[#111b21] border-l border-slate-200 dark:border-[#222e35] z-10 overflow-hidden animate-in slide-in-from-right duration-250">
       <div className="grid grid-cols-3 border-b border-slate-200/80 dark:border-[#222e35] h-[52px] bg-slate-50/30 dark:bg-transparent w-full">
         <button 
           onClick={() => setActiveTab('details')}

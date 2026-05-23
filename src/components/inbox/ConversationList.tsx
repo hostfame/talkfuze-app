@@ -278,7 +278,7 @@ export default function ConversationList({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111b21]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white dark:bg-[#111b21]">
         {(!isLoaded || (isArchivedFilter && useInboxStore.getState().isFetchingArchived)) ? (
           <div className="px-3 py-4 space-y-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (

@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -244,28 +244,28 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript, fullWidth = false
   const isSystem = type === 'system';
 
   // Standard premium minimalist audio card design (default for Agent/Customer)
-  let containerBg = 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-2xl rounded-br-sm p-3 shadow-sm';
-  let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2]';
-  let timeStyle = 'text-slate-400 dark:text-slate-500';
+  let containerBg = 'bg-slate-50/90 dark:bg-[#202c33]/90 border border-slate-200/60 dark:border-[#2a3942]/60 text-slate-800 dark:text-slate-100 rounded-2xl p-3.5 shadow-md shadow-slate-100/50 dark:shadow-none';
+  let buttonStyle = 'bg-[#0070f3] text-white hover:bg-blue-600';
+  let timeStyle = 'text-slate-500 dark:text-[#8696a0] font-semibold';
   let activeWaveColor = '#0070f3';
-  let inactiveWaveColor = 'rgba(0,112,243,0.15)';
+  let inactiveWaveColor = 'rgba(0,112,243,0.18)';
   let playheadColor = '#0070f3';
 
   if (isCustomer) {
-    containerBg = 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-2xl rounded-bl-sm p-3 shadow-sm';
+    containerBg = 'bg-slate-50/90 dark:bg-[#202c33]/90 border border-slate-200/60 dark:border-[#2a3942]/60 text-slate-800 dark:text-slate-100 rounded-2xl p-3.5 shadow-md shadow-slate-100/50 dark:shadow-none';
   } else if (isInternal) {
-    containerBg = 'bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 rounded-2xl rounded-br-sm p-3 shadow-sm';
-    buttonStyle = 'bg-amber-600 text-white hover:bg-amber-700';
-    timeStyle = 'text-amber-650/80 dark:text-amber-400/80';
+    containerBg = 'bg-amber-50/90 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl p-3.5 shadow-md shadow-amber-500/5 backdrop-blur-sm';
+    buttonStyle = 'bg-amber-500 hover:bg-amber-600 text-amber-950';
+    timeStyle = 'text-amber-700/80 dark:text-amber-400/80 font-semibold';
     activeWaveColor = '#d97706'; // Amber 600
-    inactiveWaveColor = 'rgba(217,119,6,0.15)';
+    inactiveWaveColor = 'rgba(217,119,6,0.2)';
     playheadColor = '#d97706';
   } else if (isSystem) {
-    containerBg = 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-2xl p-3 shadow-sm';
-    buttonStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
-    timeStyle = 'text-slate-400 dark:text-slate-500';
+    containerBg = 'bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-850 text-slate-800 dark:text-slate-100 rounded-2xl p-3.5 shadow-md shadow-slate-100/50 dark:shadow-none';
+    buttonStyle = 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800';
+    timeStyle = 'text-slate-400 dark:text-slate-500 font-semibold';
     activeWaveColor = '#475569'; // slate-600
-    inactiveWaveColor = 'rgba(71,85,105,0.15)';
+    inactiveWaveColor = 'rgba(71,85,105,0.18)';
     playheadColor = '#475569';
   }
 
@@ -599,6 +599,8 @@ type ChatThreadProps = {
   currentUser?: UserProfile | null
   isFetching?: boolean
   onBackToList?: () => void
+  isRightSidebarOpen?: boolean
+  onToggleRightSidebar?: () => void
 }
 
 export default function ChatThread({ 
@@ -613,7 +615,9 @@ export default function ChatThread({
   conversation = null,
   currentUser,
   isFetching = false,
-  onBackToList
+  onBackToList,
+  isRightSidebarOpen = true,
+  onToggleRightSidebar
 }: ChatThreadProps) {
   const contact = firstRelation(conversation?.contact)
   const contactName = contact?.name || 'Contact'
@@ -2753,9 +2757,19 @@ export default function ChatThread({
             </button>
           ) : null}
 
+          {onToggleRightSidebar && (
+            <button 
+              onClick={onToggleRightSidebar}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
+              title={isRightSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isRightSidebarOpen ? <PanelRightClose size={18} strokeWidth={2} /> : <PanelRightOpen size={18} strokeWidth={2} />}
+            </button>
+          )}
+
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
           >
             <MoreVertical size={18} strokeWidth={2} />
           </button>
@@ -3883,14 +3897,16 @@ export default function ChatThread({
               <div className="flex bg-slate-100 dark:bg-[#2a3942] p-0.5 rounded-lg border border-slate-200 dark:border-[#2a3942]">
                 <button 
                   onClick={() => setIsInternal(false)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${!isInternal ? 'bg-white dark:bg-[#111b21] text-slate-900 dark:text-[#e9edef] shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
+                  className={`px-3.5 py-1 text-[12px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${!isInternal ? 'bg-white dark:bg-[#111b21] text-slate-900 dark:text-[#e9edef] shadow-sm border border-slate-200/50 dark:border-slate-800' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
                 >
+                  <MessageSquare size={13} strokeWidth={2.5} />
                   Reply
                 </button>
                 <button 
                   onClick={() => setIsInternal(true)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-amber-600 dark:hover:text-amber-500'}`}
+                  className={`px-3.5 py-1 text-[12px] font-semibold rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-bold shadow-sm border border-amber-500/20 dark:border-amber-500/10' : 'text-slate-500 dark:text-[#8696a0] hover:text-amber-600 dark:hover:text-amber-500'}`}
                 >
+                  <Lock size={13} strokeWidth={2.5} />
                   Whisper
                 </button>
               </div>

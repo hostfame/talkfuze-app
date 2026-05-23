@@ -7,7 +7,7 @@ import { logout } from "@/actions/auth"
 import { AuthProvider } from "@/lib/auth-context"
 import SipDialer from "@/components/dialer/SipDialer"
 import LogoutButton from "@/components/auth/LogoutButton"
-import SidebarCallsButton from "@/components/ui/SidebarCallsButton"
+import SidebarNavigation from "@/components/ui/SidebarNavigation"
 
 export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
 
@@ -46,26 +46,7 @@ export default async function DashboardLayout({
             <img src="/talkfuze-logo.png" alt="TalkFuze Logo" className="w-full h-full object-contain rounded-xl" />
           </div>
           
-          <div className="flex-1 space-y-3 w-full px-2 flex flex-col items-center">
-            <Link href="/inbox" prefetch={true} className="w-11 h-11 flex items-center justify-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-900/30 transition-all duration-200 active:scale-95">
-              <Inbox size={22} strokeWidth={2.5} />
-            </Link>
-            <SidebarCallsButton />
-            <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-              <Users size={22} strokeWidth={2} />
-            </Link>
-            <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-              <BarChart3 size={22} strokeWidth={2} />
-            </Link>
-            <Link href="/leaderboard" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95" title="Leaderboard">
-              <Trophy size={22} strokeWidth={2} />
-            </Link>
-            {!isAgent && (
-              <Link href="/ai-training" prefetch={true} title="AI Observer Dashboard" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-                <BrainCircuit size={22} strokeWidth={2} />
-              </Link>
-            )}
-          </div>
+          <SidebarNavigation isAgent={isAgent} />
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">
             <Link href="/settings/brand" prefetch={true} className="w-11 h-11 flex items-center justify-center rounded-2xl hover:bg-white dark:hover:bg-[#202c33] hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] active:scale-95 transition-all duration-200" title={`${profile.name} - Settings`}>
               {profile.avatar_url ? (
