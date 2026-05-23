@@ -3211,7 +3211,6 @@ export default function ChatThread({
         {/* Actual composer - always shown, locked to whisper if not picked up */}
         {(conversation?.is_archived || conversation?.status === 'resolved') ? (
           <div className="flex flex-col items-center justify-center p-6 mx-4 mt-2 mb-4 bg-slate-50 dark:bg-[#111b21] border border-slate-200 dark:border-slate-800 rounded-xl">
-            <Archive size={24} className="text-slate-400 dark:text-slate-500 mb-2" />
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 text-center">
               Resolved chats aren't available for reply
             </p>
