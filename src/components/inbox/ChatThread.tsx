@@ -1594,7 +1594,7 @@ export default function ChatThread({
 
   const checkMacroTrigger = (val: string, selectionStart: number) => {
     const textUpToCursor = val.slice(0, selectionStart);
-    const match = textUpToCursor.match(/(?:^|\s)(\/\/|\/)([a-zA-Z0-9_-]*)$/);
+    const match = textUpToCursor.match(/(?:^|\s)(\/)([a-zA-Z0-9_-]*)$/);
     if (match) {
       setShowMacroMenu(true);
       setMacroPrefix(match[1]);
@@ -1624,14 +1624,6 @@ export default function ChatThread({
   };
 
   const filteredMacros = (() => {
-    if (macroPrefix === '//') {
-       const aiMacros = [
-         { id: 'ai-en', shortcut: 'en', title: 'Translate to English', content: '//translate-en' },
-         { id: 'ai-bn', shortcut: 'bn', title: 'Translate to Bangla', content: '//translate-bn' },
-         { id: 'ai-smart', shortcut: 't', title: 'Smart Translate (Auto)', content: '//translate-auto' }
-       ];
-       return aiMacros.filter(r => !macroFilter || r.shortcut.startsWith(macroFilter) || r.title.toLowerCase().includes(macroFilter));
-    }
     
     return quickReplies.filter(r => {
       if (!macroFilter) return true;

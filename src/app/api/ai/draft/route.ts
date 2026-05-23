@@ -255,7 +255,79 @@ ${contextMessages}
 Draft a smart, helpful reply as the support agent.`;
     }
 
-    // 5. Fire Anthropic streaming request
+    // 5. Fire AI request (Gemini for Translation, Anthropic for Support Drafts)
+    if (isTranslation) {
+      if (!process.env.GEMINI_API_KEY) {
+        return NextResponse.json({ error: "Missing Gemini API key" }, { status: 500 });
+      }
+
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: userMessage }] }],
+          generationConfig: { temperature: 0.1 }
+        }),
+      });
+
+      if (!geminiResponse.ok) {
+        const errorText = await geminiResponse.text();
+        console.error('[AI Translation] Gemini error:', geminiResponse.status, errorText);
+        return NextResponse.json({ error: "Gemini Translation Failed" }, { status: 500 });
+      }
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: 'en', sources: [] })}\n\n`));
+
+          const reader = geminiResponse.body?.getReader();
+          const decoder = new TextDecoder("utf-8");
+          if (!reader) { controller.close(); return; }
+
+          let buffer = '';
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+                    }
+                  } catch { }
+                }
+              }
+            }
+          } catch (streamErr: any) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream error: ' + streamErr.message })}\n\n`));
+          } finally {
+            reader.releaseLock();
+            controller.close();
+          }
+        }
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
+
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
