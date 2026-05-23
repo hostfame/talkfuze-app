@@ -434,7 +434,7 @@ export default function SoundsSettingsPage() {
   }
 
   return (
-    <div className="max-w-[640px]">
+    <div className="w-full">
 
       {/* Page Header */}
       <div className="mb-8">
