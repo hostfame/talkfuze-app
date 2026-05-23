@@ -3,6 +3,16 @@ import knowledge from './hostnin-knowledge.json';
 import { getApprovedExamples, getRecentCorrections } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+
+function detectSalam(text: string): boolean {
+  const normalized = text.toLowerCase().trim();
+  // Match Bengali Salam variants
+  const bSalam = /(আসসালামু|আস\-সালামু|আসালামু|সালাম)/.test(normalized);
+  // Match English/Latin Salam variants
+  const eSalam = /\b(salam|slm|assalam|asalam|assalamu|asalamu|alaikum|alaykum)\b/.test(normalized);
+  return bSalam || eSalam;
+}
+
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -58,6 +68,12 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     
     const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
 
+    const hasCustomerSaidSalam = detectSalam(lastCustomerText);
+    const greetingRule = hasCustomerSaidSalam 
+      ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST begin your reply with the exact Bengali response "ওয়ালাইকুম আসসালাম।" (and unto you peace) in the very first line of your message before anything else.`
+      : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or any religious greeting. Start your reply directly, warm, and naturally (e.g. starting directly with "জ্বী, ..." or "হ্যালো, ..." or another helpful response).`;
+
+
     // 1. Detect if customer used Bengali script
     const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
     
@@ -98,7 +114,7 @@ ${JSON.stringify(knowledge)}
 
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
-    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING
+    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING${greetingRule}
 Determine the language of the customer's messages:
 1. If the customer is writing in English: You MUST reply 100% in English.
    - ONLY use English if there are NO Bengali or Banglish words in the conversation.
