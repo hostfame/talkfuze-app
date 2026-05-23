@@ -3428,7 +3428,7 @@ export default function WidgetPage() {
                           />
                           <button
                             type="submit"
-                            disabled={isUpdatingIdentity || !tempName.trim() || tempPhone.trim().length < 10}
+                            disabled={isUpdatingIdentity || !tempName.trim() || tempPhone.trim().length < 11}
                             className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold px-4 py-2 rounded-xl text-[13px] transition-all shadow-sm active:scale-[0.98] shrink-0"
                           >
                             {isUpdatingIdentity ? 'Saving...' : 'Save'}
@@ -3579,6 +3579,8 @@ export default function WidgetPage() {
                           <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Your Name</label>
                           <input
                             type="text"
+                            name="name"
+                            autoComplete="name"
                             required
                             value={tempName}
                             onChange={e => setTempName(e.target.value)}
@@ -3591,10 +3593,12 @@ export default function WidgetPage() {
                           <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
                           <input
                             type="tel"
+                            name="tel"
+                            autoComplete="tel"
                             required
                             value={tempPhone}
                             onChange={e => setTempPhone(e.target.value)}
-                            placeholder="e.g., +8801700000000"
+                            placeholder="e.g., 01700000000"
                             className="w-full bg-[#f9fafb] dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-850 dark:text-slate-150"
                           />
                         </div>
@@ -3610,7 +3614,7 @@ export default function WidgetPage() {
                         </button>
                         <button
                           type="submit"
-                          disabled={isUpdatingIdentity || !tempName.trim()}
+                          disabled={isUpdatingIdentity || !tempName.trim() || tempPhone.trim().length < 11}
                           className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(30,41,59,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
                         >
                           {isUpdatingIdentity ? (
