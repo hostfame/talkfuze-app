@@ -42,6 +42,12 @@ export default function InboxPage() {
     contactName: string
   } | null>(null)
 
+  const [mentionNotification, setMentionNotification] = useState<{
+    conversationId: string
+    senderName: string
+    content: string
+  } | null>(null)
+
   useEffect(() => {
     if (assignedNotification) {
       const timer = setTimeout(() => {
@@ -50,6 +56,15 @@ export default function InboxPage() {
       return () => clearTimeout(timer);
     }
   }, [assignedNotification]);
+
+  useEffect(() => {
+    if (mentionNotification) {
+      const timer = setTimeout(() => {
+        setMentionNotification(null);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [mentionNotification]);
 
   const handleOpenAssigned = (conversationId: string) => {
     setSelectedId(conversationId);
@@ -196,6 +211,28 @@ export default function InboxPage() {
            if (typingTimeoutRefs.current[newMsg.conversation_id]) {
              clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
            }
+        }
+
+        // Check for Mentions in internal whispers
+        const currentStoreState = useInboxStore.getState();
+        const activeUser = currentStoreState.currentUser;
+        
+        if (newMsg && newMsg.sender_type === 'agent' && newMsg.is_internal && newMsg.sender_id !== activeUser?.id) {
+          if (activeUser && activeUser.name && newMsg.content) {
+             const mentionTag = `@${activeUser.name.replace(/\s+/g, '')}`;
+             if (newMsg.content.toLowerCase().includes(mentionTag.toLowerCase())) {
+               playUISound('receive');
+               const senderName = currentStoreState.teamMembers.find(t => t.id === newMsg.sender_id)?.name || 'An agent';
+               
+               setMentionNotification({
+                 conversationId: newMsg.conversation_id,
+                 senderName,
+                 content: newMsg.content
+               });
+               
+               sendDesktopNotification(`Mentioned by ${senderName}`, newMsg.content);
+             }
+          }
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
@@ -587,6 +624,40 @@ export default function InboxPage() {
               </button>
               <button 
                 onClick={() => setAssignedNotification(null)}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mention Notification Banner */}
+      {mentionNotification && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-amber-500/35 dark:border-amber-500/25 px-4 py-3 rounded-2xl shadow-xl shadow-amber-500/10 max-w-sm sm:max-w-md">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
+                Mentioned by <span className="text-amber-600 dark:text-amber-400">{mentionNotification.senderName}</span>
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                {mentionNotification.content}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => {
+                  setSelectedId(mentionNotification.conversationId);
+                  setMobileView('chat');
+                  setMentionNotification(null);
+                }}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs rounded-lg transition-all active:scale-95 shadow-sm shadow-amber-500/20"
+              >
+                View
+              </button>
+              <button 
+                onClick={() => setMentionNotification(null)}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
