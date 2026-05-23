@@ -2190,7 +2190,7 @@ export default function ChatThread({
   }
 
   const handleTranscribeAudio = async (fileToTranscribe?: File) => {
-    const file = (fileToTranscribe instanceof File || fileToTranscribe instanceof Blob) ? fileToTranscribe : stagedAudio?.file;
+    const file = fileToTranscribe || stagedAudio?.file;
     if (!file) return;
     setIsTranscribingAudio(true);
     try {
