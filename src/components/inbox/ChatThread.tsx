@@ -1624,7 +1624,7 @@ export default function ChatThread({
       return;
     }
     const textUpToCursor = val.slice(0, selectionStart);
-    const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_ -]*)$/);
+    const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_-]*)$/);
     if (match) {
       setShowMentionMenu(true);
       setMentionFilter(match[2].toLowerCase());
@@ -1784,7 +1784,7 @@ export default function ChatThread({
       const textUpToCursor = val.slice(0, selectionStart);
       const textAfterCursor = val.slice(selectionEnd);
       
-      const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_ -]*)$/);
+      const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_-]*)$/);
       if (match) {
         const atIndex = textUpToCursor.lastIndexOf('@');
         const mentionText = `@${member.name.replace(/\s+/g, '')} `; // Usually mentions don't have spaces, but we can just use the name without spaces or keep spaces if we want. Let's keep the name as is but remove spaces so it matches. Actually wait, if we use name, we can just do @Name
