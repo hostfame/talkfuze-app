@@ -626,8 +626,8 @@ export default function InboxPage() {
 
       {/* Mention Notification Banner */}
       {mentionNotification && (
-        <div className="absolute top-4 right-4 z-50 animate-in fade-in slide-in-from-top-4 slide-in-from-right-4 duration-300">
-          <div className="flex items-center gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-amber-500/35 dark:border-amber-500/25 px-4 py-3 rounded-2xl shadow-xl shadow-amber-500/10 max-w-sm">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-amber-500/35 dark:border-amber-500/25 px-4 py-3 rounded-2xl shadow-xl shadow-amber-500/10 max-w-sm sm:max-w-md">
             <div className="flex-1 min-w-0 pr-2">
               <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">
                 Mentioned by <span className="text-amber-600 dark:text-amber-400">{mentionNotification.senderName}</span>
