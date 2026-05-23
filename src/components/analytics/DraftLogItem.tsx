@@ -1,10 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Edit2, Cpu, Coins, Thermometer, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+
+function calculateApproxCost(model: string, tokens: number): string {
+  if (!tokens || tokens <= 0) return "0.000¢";
+  
+  const m = model.toLowerCase();
+  let costPer1KTokensInCents = 0.16; // default to haiku
+  
+  if (m.includes("sonnet") || m.includes("claude-3-5-sonnet")) {
+    costPer1KTokensInCents = 0.60;
+  } else if (m.includes("haiku") || m.includes("claude-3-5-haiku")) {
+    costPer1KTokensInCents = 0.16;
+  } else if (m.includes("flash") || m.includes("gemini")) {
+    costPer1KTokensInCents = 0.015;
+  } else if (m.includes("gpt-4o")) {
+    costPer1KTokensInCents = 0.50;
+  } else if (m.includes("gpt-4")) {
+    costPer1KTokensInCents = 3.00;
+  }
+  
+  const cost = (tokens / 1000) * costPer1KTokensInCents;
+  
+  if (cost < 0.01) {
+    return `${cost.toFixed(4)}¢`;
+  }
+  return `${cost.toFixed(3)}¢`;
+}
 
 export default function DraftLogItem({ log }: { log: any }) {
   const [isEditingRule, setIsEditingRule] = useState(false);
@@ -51,8 +76,7 @@ export default function DraftLogItem({ log }: { log: any }) {
              <span className="font-semibold text-slate-800 dark:text-slate-100">{customerName}</span>
              <span className="text-slate-400 text-xs">· {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
            </div>
-           <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1a2329] hover:text-slate-600 dark:hover:text-slate-300 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium">
-             <Info className="w-4 h-4" />
+           <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
              View Chat
            </Link>
         </div>
@@ -83,7 +107,7 @@ export default function DraftLogItem({ log }: { log: any }) {
         {log.agent_sent && (
           <div className="relative pt-3">
             <div className="absolute -top-1 left-3 bg-blue-50 dark:bg-[#111b21] px-2 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
-              ↳ Final Sent Message
+              Final Sent Message
             </div>
             <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[13px] bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
               {log.agent_sent}
@@ -98,68 +122,84 @@ export default function DraftLogItem({ log }: { log: any }) {
         
         <div className="flex items-center gap-2 mb-1">
            {log.was_edited ? (
-             <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+             <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
                Manually Edited
              </span>
            ) : log.agent_sent ? (
-             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-               <CheckCircle2 className="w-3 h-3" />
+             <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
                Sent As-Is
              </span>
            ) : (
-             <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-500 dark:bg-[#202c33] dark:text-slate-400">
+             <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-500 dark:bg-[#202c33] dark:text-slate-400">
                Not Sent
              </span>
            )}
         </div>
 
-        {/* Extracted Rule */}
-        {log.was_edited && (
-          <div className="bg-slate-50 dark:bg-[#1a2329] p-4 rounded-xl border border-slate-200/60 dark:border-[#2a363d]">
-            <div className="flex justify-between items-center mb-2">
-               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Learned Rule</span>
-               {!isEditingRule && (
-                 <button onClick={() => setIsEditingRule(true)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors" title="Edit Rule">
-                   <Edit2 className="w-3.5 h-3.5" />
-                 </button>
-               )}
-            </div>
-            
-            {isEditingRule ? (
-              <div className="space-y-2">
-                <textarea 
-                  value={ruleText}
-                  onChange={(e) => setRuleText(e.target.value)}
-                  className="w-full text-[12px] bg-white dark:bg-[#111b21] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2a363d] rounded-lg p-2 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setIsEditingRule(false)} className="text-[11px] px-2 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
-                  <button onClick={handleSaveRule} disabled={isSaving} className="text-[11px] px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                    {isSaving ? "Saving..." : "Save Rule"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-[12px] text-slate-600 dark:text-slate-400 italic">
-                "{log.correction_feedback || "No rule extracted"}"
-              </p>
-            )}
+        {/* Learned Rule / Train AI Feedback */}
+        <div className="bg-slate-50 dark:bg-[#1a2329] p-4 rounded-xl border border-slate-200/60 dark:border-[#2a363d] mt-2">
+          <div className="flex justify-between items-center mb-2">
+             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+               {log.correction_feedback ? "AI Training Rule" : "Train AI Rule"}
+             </span>
+             {!isEditingRule && (
+               <button 
+                 onClick={() => setIsEditingRule(true)} 
+                 className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+               >
+                 {log.correction_feedback ? "Edit" : "Add Rule"}
+               </button>
+             )}
           </div>
-        )}
+          
+          {isEditingRule ? (
+            <div className="space-y-2">
+              <textarea 
+                value={ruleText}
+                onChange={(e) => setRuleText(e.target.value)}
+                placeholder="E.g., Always use formal greetings or mention pricing is per month."
+                className="w-full text-[12px] bg-white dark:bg-[#111b21] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2a363d] rounded-lg p-2 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <div className="flex gap-2 justify-end">
+                <button 
+                  onClick={() => setIsEditingRule(false)} 
+                  className="text-[11px] px-2 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveRule} 
+                  disabled={isSaving} 
+                  className="text-[11px] px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold"
+                >
+                  {isSaving ? "Saving..." : "Save Rule"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[12px] text-slate-600 dark:text-slate-400 italic">
+              {log.correction_feedback ? `"${log.correction_feedback}"` : "No specific rule active. Click Add Rule to teach the AI."}
+            </p>
+          )}
+        </div>
 
         {/* Technical Metrics */}
         <div className="space-y-2 pt-2">
            <div className="flex items-center justify-between text-[11px]">
-             <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5" /> Model</span>
-             <span className="font-medium text-slate-700 dark:text-slate-300">{log.model_used || "claude-3.5-haiku"}</span>
+             <span className="text-slate-500 dark:text-slate-400">Model</span>
+             <span className="font-semibold text-slate-700 dark:text-slate-300">{log.model_used || "claude-3-5-haiku"}</span>
            </div>
            <div className="flex items-center justify-between text-[11px]">
-             <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><Coins className="w-3.5 h-3.5" /> Tokens</span>
-             <span className="font-medium text-slate-700 dark:text-slate-300">{log.tokens_used ? log.tokens_used.toLocaleString() : "Unknown"}</span>
+             <span className="text-slate-500 dark:text-slate-400">Tokens</span>
+             <span className="font-semibold text-slate-700 dark:text-slate-300">{log.tokens_used ? log.tokens_used.toLocaleString() : "0"}</span>
            </div>
            <div className="flex items-center justify-between text-[11px]">
-             <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><Thermometer className="w-3.5 h-3.5" /> Temp</span>
-             <span className="font-medium text-slate-700 dark:text-slate-300">{log.temperature || "0.7"}</span>
+             <span className="text-slate-500 dark:text-slate-400">Temp</span>
+             <span className="font-semibold text-slate-700 dark:text-slate-300">{log.temperature || "0.7"}</span>
+           </div>
+           <div className="flex items-center justify-between text-[11px] border-t border-slate-100 dark:border-[#222e35]/30 pt-1.5 mt-1.5">
+             <span className="text-slate-500 dark:text-slate-400">Est. Cost</span>
+             <span className="font-bold text-blue-600 dark:text-blue-400">{calculateApproxCost(log.model_used || "claude-3-5-haiku", log.tokens_used || 0)}</span>
            </div>
         </div>
 

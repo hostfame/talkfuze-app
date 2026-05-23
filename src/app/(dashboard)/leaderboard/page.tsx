@@ -123,20 +123,12 @@ export default function LeaderboardPage() {
               >
                 {/* Rank Badge */}
                 <div className="w-12 h-12 flex items-center justify-center shrink-0">
-                  {index === 0 ? (
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-500 flex items-center justify-center font-bold text-lg border border-amber-200 dark:border-amber-800/50">
-                      1
-                    </div>
-                  ) : index === 1 ? (
-                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-lg border border-slate-200 dark:border-slate-700">
-                      2
-                    </div>
-                  ) : index === 2 ? (
-                    <div className="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-500 flex items-center justify-center font-bold text-lg border border-orange-200 dark:border-orange-900/30">
-                      3
+                  {index === 0 || index === 1 || index === 2 ? (
+                    <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 flex items-center justify-center font-semibold text-lg border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+                      {index + 1}
                     </div>
                   ) : (
-                    <div className="text-lg font-bold text-slate-400 dark:text-[#8696a0]">
+                    <div className="text-base font-semibold text-slate-400 dark:text-[#8696a0]">
                       #{index + 1}
                     </div>
                   )}

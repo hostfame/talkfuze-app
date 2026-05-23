@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
 import { logBrowserCall } from "@/actions/calls"
+import { submitCSATFeedback } from "@/actions/feedback"
 import { supabase } from "@/lib/supabase"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, isScreenShareSupported, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import type { AppMessage } from "@/lib/types"
@@ -482,6 +483,12 @@ export default function WidgetPage() {
   const [ticketLoading, setTicketLoading] = useState(false)
   const [ticketError, setTicketError] = useState("")
   
+  // CSAT States
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false)
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
+  const [feedbackComment, setFeedbackComment] = useState("")
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false)
   const [tempName, setTempName] = useState("")
   const [tempPhone, setTempPhone] = useState("01")
@@ -1565,6 +1572,9 @@ export default function WidgetPage() {
   }, [messages, org_id, deviceId, settings, activeConversationId]);
 
   useEffect(() => {
+    setHasSubmittedFeedback(false)
+    setFeedbackRating(null)
+    setFeedbackComment("")
     setMessages(prev => {
       const hasOldMessages = prev.some(m => m.conversation_id !== "" && m.conversation_id !== activeConversationId);
       if (hasOldMessages) {
@@ -1671,6 +1681,9 @@ export default function WidgetPage() {
             return prev;
           });
         }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, async (payload) => {
+        fetchConversations()
       })
       .subscribe()
 
@@ -2132,6 +2145,27 @@ export default function WidgetPage() {
       setTimeout(() => {
         textareaRef.current?.focus()
       }, 10)
+    }
+  }
+
+  const handleFeedbackSubmit = async (rating: number, commentStr: string = "") => {
+    const activeConv = conversations.find(c => c.id === activeConversationId)
+    if (!org_id || !activeConversationId || activeConversationId === 'new' || !activeConv) return
+
+    setFeedbackSubmitting(true)
+    try {
+      await submitCSATFeedback(
+        org_id,
+        activeConversationId,
+        activeConv.assigned_to || null,
+        rating,
+        commentStr || null
+      )
+      setHasSubmittedFeedback(true)
+    } catch (e) {
+      console.error("Failed to submit CSAT feedback:", e)
+    } finally {
+      setFeedbackSubmitting(false)
     }
   }
 
@@ -2817,6 +2851,8 @@ export default function WidgetPage() {
     )
   }
 
+  const activeConv = conversations.find(c => c.id === activeConversationId)
+
   return (
     <div className="h-full w-full flex flex-col bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xl overflow-hidden font-sans relative">
       
@@ -3461,14 +3497,86 @@ export default function WidgetPage() {
                     </div>
                   )}
 
-                  {isRecording ? (
+                  {activeConv && activeConv.status === 'resolved' ? (
+                     <div className="p-5 flex flex-col items-center justify-center text-center w-full">
+                        {!hasSubmittedFeedback ? (
+                           <>
+                              {feedbackRating === null ? (
+                                 <div className="flex flex-col items-center gap-1.5 w-full">
+                                    <h4 className="text-[15px] font-bold text-slate-800 tracking-tight">How was our support today?</h4>
+                                    <p className="text-[12px] text-slate-400">Click a number below to rate your conversation.</p>
+                                    
+                                    <div className="flex gap-2.5 my-3.5">
+                                       {[1, 2, 3, 4, 5].map((rating) => (
+                                          <button
+                                             key={rating}
+                                             onClick={() => setFeedbackRating(rating)}
+                                             className="w-10 h-10 rounded-full border border-slate-200 text-[14px] font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50/40 active:scale-95 transition-all duration-100"
+                                          >
+                                             {rating}
+                                          </button>
+                                       ))}
+                                    </div>
+                                    
+                                    <button
+                                       onClick={() => handleFeedbackSubmit(5, "Skipped comment")}
+                                       className="text-[12px] text-slate-400 hover:text-slate-650 underline font-medium transition-all"
+                                    >
+                                       Skip feedback
+                                    </button>
+                                 </div>
+                              ) : (
+                                 <div className="flex flex-col items-center gap-3 w-full">
+                                    <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">Any comments? (Optional)</h4>
+                                    
+                                    <textarea
+                                       value={feedbackComment}
+                                       onChange={(e) => setFeedbackComment(e.target.value)}
+                                       placeholder="Tell us what we did well or how we can improve..."
+                                       className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[13.5px] outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400 min-h-[70px] max-h-[120px] resize-none text-slate-800"
+                                       rows={2}
+                                    />
+                                    
+                                    <div className="flex items-center gap-2 w-full">
+                                       <button
+                                          onClick={() => setFeedbackRating(null)}
+                                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2 rounded-xl text-[13px] transition-all"
+                                       >
+                                          Back
+                                       </button>
+                                       <button
+                                          onClick={() => handleFeedbackSubmit(feedbackRating, feedbackComment)}
+                                          disabled={feedbackSubmitting}
+                                          className="flex-1 bg-[#0070f3] hover:bg-[#0062d2] text-white font-semibold py-2 rounded-xl text-[13px] transition-all shadow-sm disabled:opacity-50"
+                                       >
+                                          {feedbackSubmitting ? "Submitting..." : "Submit"}
+                                       </button>
+                                    </div>
+                                 </div>
+                              )}
+                           </>
+                        ) : (
+                           <div className="flex flex-col items-center gap-3 w-full py-1">
+                              <h4 className="text-[15px] font-bold text-slate-800 tracking-tight">Thank you for your rating!</h4>
+                              <p className="text-[12px] text-slate-400 max-w-[200px] leading-relaxed">Your feedback helps us provide a better support experience.</p>
+                              
+                              <button
+                                 onClick={() => setActiveConversationId('new')}
+                                 className="w-full bg-[#0070f3] hover:bg-[#0062d2] text-white font-semibold py-2.5 rounded-xl text-[13px] transition-all shadow-sm"
+                              >
+                                Start a new conversation
+                              </button>
+                           </div>
+                        )}
+                     </div>
+                  ) : isRecording ? (
                     <div className="flex items-center justify-between p-4 min-h-[52px]">
                       <div className="flex items-center gap-2 text-red-500 animate-pulse">
                         <Mic size={18} />
                         <span className="text-[14px] font-bold">{formatDuration(recordingDuration)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={cancelRecording} className="text-slate-400 hover:text-slate-600 text-[13px] font-medium px-2 py-1">Cancel</button>
+                        <button onClick={cancelRecording} className="text-slate-400 hover:text-slate-655 text-[13px] font-medium px-2 py-1">Cancel</button>
                         <button onClick={stopRecording} className="bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors">
                           <StopCircle size={20} />
                         </button>
@@ -3510,7 +3618,7 @@ export default function WidgetPage() {
                     ></textarea>
                   )}
                   
-                  {!isRecording && (
+                  {!isRecording && activeConv?.status !== 'resolved' && (
                      <div className="flex justify-between items-center px-2 pb-2 pt-1">
                        <input 
                          type="file" 

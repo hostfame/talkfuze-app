@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit } from "lucide-react"
+import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit, Library } from "lucide-react"
 
 interface SidebarNavigationProps {
   isAgent: boolean
@@ -11,7 +11,15 @@ interface SidebarNavigationProps {
 export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
   const pathname = usePathname()
 
-  const navItems = [
+  const navItems: {
+    href: string
+    label: string
+    icon: any
+    isActive: boolean
+    visible: boolean
+    activeColor?: string
+    hoverColor?: string
+  }[] = [
     {
       href: "/inbox",
       label: "Inbox",
@@ -45,18 +53,21 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
       label: "Leaderboard",
       icon: Trophy,
       isActive: pathname.startsWith("/leaderboard"),
-      visible: true,
-      activeColor: "text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30",
-      hoverColor: "hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10"
+      visible: true
+    },
+    {
+      href: "/snippets",
+      label: "Snippets",
+      icon: Library,
+      isActive: pathname.startsWith("/snippets"),
+      visible: true
     },
     {
       href: "/ai-training",
       label: "AI Observer",
       icon: BrainCircuit,
       isActive: pathname.startsWith("/ai-training"),
-      visible: !isAgent,
-      activeColor: "text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
-      hoverColor: "hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+      visible: !isAgent
     }
   ]
 

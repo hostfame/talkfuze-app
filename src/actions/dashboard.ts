@@ -678,13 +678,18 @@ export async function updateConversationStatus(conversationId: string, status: '
 export async function getQuickRepliesFromTable(orgId: string) {
   noStore();
   const { data, error } = await supabaseAdmin
-    .from('quick_replies')
-    .select('id, shortcut, title, content')
+    .from('canned_replies')
+    .select('id, shortcut, content, category')
     .eq('org_id', orgId)
     .order('shortcut', { ascending: true })
 
   if (error) return []
-  return data || []
+  return data?.map(d => ({
+    id: d.id,
+    shortcut: d.shortcut,
+    title: d.category || 'general',
+    content: d.content
+  })) || []
 }
 
 export async function createQuickReply(orgId: string, shortcut: string, title: string, content: string) {

@@ -408,6 +408,30 @@ export default function ConversationList({
                         {assigneeName}
                       </span>
                     )}
+                    {(() => {
+                      if (conv.status === 'resolved' || !lastMessage || lastMessage.sender_type !== 'contact') return null
+                      const lastMsgAt = new Date(conv.last_message_at).getTime()
+                      const minutesElapsed = Math.floor((Date.now() - lastMsgAt) / 60000)
+                      if (minutesElapsed < 2) {
+                        return (
+                          <span className="bg-slate-50 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 shrink-0">
+                            {minutesElapsed === 0 ? "new" : `${minutesElapsed}m wait`}
+                          </span>
+                        )
+                      } else if (minutesElapsed < 5) {
+                        return (
+                          <span className="bg-amber-50/50 dark:bg-amber-950/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-amber-100/50 dark:border-amber-950/20 shrink-0">
+                            {minutesElapsed}m SLA
+                          </span>
+                        )
+                      } else {
+                        return (
+                          <span className="bg-rose-50/50 dark:bg-rose-950/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-100/50 dark:border-rose-950/20 animate-pulse shrink-0">
+                            BREACH ({minutesElapsed}m)
+                          </span>
+                        )
+                      }
+                    })()}
                   </div>
                   <span className={`text-[11px] shrink-0 ml-2 ${
                     isUnread

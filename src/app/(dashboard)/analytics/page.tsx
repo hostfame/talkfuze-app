@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Bot, CheckCircle2, FileEdit, Zap, BrainCircuit, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import DraftLogItem from "@/components/analytics/DraftLogItem";
 
@@ -8,7 +7,17 @@ export const metadata = {
   title: "AI Analytics - TalkFuze",
 };
 
-export default async function AnalyticsPage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function AnalyticsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const pageStr = typeof searchParams.page === "string" ? searchParams.page : "1";
+  const page = parseInt(pageStr, 10) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -23,7 +32,7 @@ export default async function AnalyticsPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role === 'agent') {
+  if (!profile || profile.role === "agent") {
     redirect("/inbox"); // Agents don't have access to analytics
   }
 
@@ -40,20 +49,21 @@ export default async function AnalyticsPage() {
     supabase.from("ai_draft_logs").select("*", { count: "exact", head: true }).eq("org_id", profile.org_id).not("agent_sent", "is", null).eq("was_edited", true)
   ]);
 
+  const totalCount = totalDrafts || 0;
+  const totalPages = Math.ceil(totalCount / limit);
   const accuracy = (totalSent && totalSent > 0) ? Math.round(((sentAsIs || 0) / totalSent) * 100) : 0;
 
-  // Fetch recent AI Draft Logs for the table (latest 100)
-  // We use * to safely fetch customer_context if the column exists without crashing if it doesn't
+  // Fetch recent AI Draft Logs for the table with pagination
   const { data: logs } = await supabase
     .from("ai_draft_logs")
     .select("*")
     .eq("org_id", profile.org_id)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(offset, offset + limit - 1);
 
   const safeLogs = logs || [];
   
-  // Fetch Learned Rules separately so they don't disappear if they fall outside the last 100 drafts
+  // Fetch Learned Rules separately so they don't disappear if they fall outside the last drafts
   const { data: rulesData } = await supabase
     .from("ai_draft_logs")
     .select("id, correction_feedback, created_at")
@@ -72,8 +82,7 @@ export default async function AnalyticsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Bot className="w-7 h-7 text-blue-600 dark:text-blue-500" />
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
               AI Performance Analytics
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -85,44 +94,32 @@ export default async function AnalyticsPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Activity className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Total Drafts</span>
+            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+              Total Drafts
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{totalDrafts || 0}</div>
+            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{totalCount}</div>
             <p className="text-xs text-slate-500 mt-2">All-time generated drafts</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-slate-100 dark:bg-[#202c33] text-slate-600 dark:text-slate-300 rounded-lg">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Sent As-Is</span>
+            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+              Sent As-Is
             </div>
             <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs || 0}</div>
             <p className="text-xs text-slate-500 mt-2">All-time approved without edits</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-slate-400 rounded-lg">
-                <FileEdit className="w-5 h-5" />
-              </div>
-              <span className="font-medium">Edited by Agent</span>
+            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+              Edited by Agent
             </div>
             <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{edited || 0}</div>
             <p className="text-xs text-slate-500 mt-2">All-time required manual correction</p>
           </div>
 
           <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Zap className="w-5 h-5" />
-              </div>
-              <span className="font-medium">AI Accuracy</span>
+            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+              AI Accuracy
             </div>
             <div className="flex items-end gap-2">
               <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{accuracy}%</div>
@@ -141,9 +138,8 @@ export default async function AnalyticsPage() {
           
           {/* Active Learning Rules */}
           <div className="lg:col-span-1 space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BrainCircuit className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Self-Learned Rules</h2>
+            <div className="mb-2">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Self-Learned Rules</h2>
             </div>
             <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
               {rulesLearned.length === 0 ? (
@@ -157,8 +153,7 @@ export default async function AnalyticsPage() {
                       <p className="text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-[#202c33] p-3 rounded-lg border border-slate-100 dark:border-[#2a363d]">
                         "{log.correction_feedback}"
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-3 flex items-center gap-1.5">
-                        <Activity className="w-3.5 h-3.5" />
+                      <p className="text-[11px] text-slate-400 mt-3 font-medium">
                         Learned {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                       </p>
                     </div>
@@ -170,8 +165,10 @@ export default async function AnalyticsPage() {
 
           {/* Recent Drafts Log */}
           <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Recent AI Drafts ({safeLogs.length})</h2>
-            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
+            <div className="mb-2">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Recent AI Drafts</h2>
+            </div>
+            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden flex flex-col">
               <div className="overflow-y-auto custom-scrollbar flex-1 p-4 bg-slate-50 dark:bg-[#1a2329]">
                 {safeLogs.length > 0 ? (
                   safeLogs.map((log) => (
@@ -183,6 +180,46 @@ export default async function AnalyticsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Text-based Pagination Footer */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border-t border-slate-200 dark:border-[#222e35] bg-white dark:bg-[#111b21]">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Showing {offset + 1} - {Math.min(offset + limit, totalCount)} of {totalCount} drafts
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {page > 1 ? (
+                      <a 
+                        href={`/analytics?page=${page - 1}`}
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Previous Page
+                      </a>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-600 cursor-not-allowed">
+                        Previous Page
+                      </span>
+                    )}
+                    
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Page {page} of {totalPages}
+                    </span>
+
+                    {page < totalPages ? (
+                      <a 
+                        href={`/analytics?page=${page + 1}`}
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Next Page
+                      </a>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-400 dark:text-slate-600 cursor-not-allowed">
+                        Next Page
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
