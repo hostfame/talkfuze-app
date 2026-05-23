@@ -35,9 +35,13 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (direction === 'outbound') {
-      matchQuery = matchQuery.eq('to_number', to)
+      const cleanTo = to.replace(/\D/g, '')
+      const last10To = cleanTo.slice(-10)
+      matchQuery = matchQuery.like('to_number', `%${last10To}`)
     } else {
-      matchQuery = matchQuery.eq('from_number', from)
+      const cleanFrom = from.replace(/\D/g, '')
+      const last10From = cleanFrom.slice(-10)
+      matchQuery = matchQuery.like('from_number', `%${last10From}`)
     }
 
     const { data: existingLogs } = await matchQuery
