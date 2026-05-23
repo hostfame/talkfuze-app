@@ -1537,7 +1537,7 @@ export default function ChatThread({
         status: om.status === 'confirmed' ? 'sent' : om.status
       })) as unknown as AppMessage[]
     )
-  ]
+  ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
   // Safety net: auto-clean any confirmed optimistic messages older than 10s
   // This handles edge cases where real-time subscription misses the INSERT

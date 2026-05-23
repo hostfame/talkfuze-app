@@ -147,17 +147,27 @@ export default function InboxPage() {
 
         // Update conversation list locally instead of re-fetching everything
         if (newMsg && newMsg.conversation_id) {
+           let safeMeta = newMsg.metadata;
+           try {
+             if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
+           } catch (e) {}
+           const isPageView = safeMeta?.event === 'page_view' || newMsg.content?.startsWith('Viewed:');
+
            const prev = useInboxStore.getState().conversations;
            const next = [...(prev || [])];
            const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
            if (convIndex !== -1) {
               const conv = { ...next[convIndex] } as any;
-              conv.last_message_at = newMsg.created_at;
-              // Add latestMessage array mock if it doesn't exist
-              conv.latestMessage = [newMsg];
-              // Move to top
-              next.splice(convIndex, 1);
-              next.unshift(conv);
+              
+              if (!isPageView) {
+                conv.last_message_at = newMsg.created_at;
+                conv.latestMessage = [newMsg];
+                conv.messages = [newMsg, ...(conv.messages || [])];
+                // Move to top
+                next.splice(convIndex, 1);
+                next.unshift(conv);
+              }
+              
               setConversations(next);
            } else {
               // It's a brand new conversation, fetch it quietly
@@ -296,8 +306,8 @@ export default function InboxPage() {
 
       if (data && data.length > 0) {
         setMessages(selectedId, (data as AppMessage[]).reverse())
-      } else if (!hasCached) {
-        // Server action fallback only on first load if rpc returns empty
+      } else {
+        // ALWAYS fallback if RPC returns empty. The RPC might be failing or empty.
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
         setMessages(selectedId, (fallbackData || []) as AppMessage[])

@@ -104,7 +104,8 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
 
   const now = new Date().toISOString();
   
-  const [msgResult] = await Promise.all([
+  const isPageView = metadata?.event === 'page_view' || content?.startsWith('Viewed:');
+  const queries = [
     supabaseAdmin.from("messages").insert({
       org_id: orgId,
       conversation_id: conversationId,
@@ -113,9 +114,17 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
       content: content,
       content_type: finalContentType,
       metadata: Object.keys(metadata).length > 0 ? metadata : null
-    }),
-    supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
-  ]);
+    })
+  ];
+
+  if (!isPageView) {
+    queries.push(
+      supabaseAdmin.from("conversations").update({ last_message_at: now }).eq("id", conversationId)
+    );
+  }
+
+  const results = await Promise.all(queries);
+  const msgResult = results[0];
 
   if (msgResult.error) throw msgResult.error;
 
