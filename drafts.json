@@ -1,0 +1,93 @@
+◇ injected env (40) from .env.local // tip: ◈ encrypted .env [www.dotenvx.com]
+[
+  {
+    "id": "d30b2d41-0b2c-4fc7-bc83-dc0180532d66",
+    "created_at": "2026-05-23T11:06:48.864703+00:00",
+    "language": "en",
+    "ai_draft": "Hey Mohammad Imran Hossen, thanks for reaching out!\n\nI'm here to help. What would you like to know about site migration?",
+    "agent_sent": null,
+    "was_edited": false,
+    "correction_feedback": null
+  },
+  {
+    "id": "866f280d-ccef-422b-8e31-317867040158",
+    "created_at": "2026-05-23T11:06:21.11903+00:00",
+    "language": "en",
+    "ai_draft": "Hey Mohammad, great question!\n\nI've got you covered. We handle free site migration from any provider, and our team takes care of the entire process for you, so you don't have to worry about downtime or technical details.\n\nWhat's your current hosting provider, and roughly how large is your website? That'll help me give you the most accurate timeline and make sure everything goes smoothly.",
+    "agent_sent": "Sure, you can ask",
+    "was_edited": true,
+    "correction_feedback": "Avoid making assumptions about customer inquiries and focus on inviting questions instead."
+  },
+  {
+    "id": "aeabcde5-6b7b-48ba-b204-c0cba02ebcc8",
+    "created_at": "2026-05-23T11:01:12.355598+00:00",
+    "language": "bn",
+    "ai_draft": "আপনার অর্গানাইজেশনের জন্য আমাদের কাছে পারফেক্ট প্ল্যান আছে।\n\n200 ডেইলি ভিজিটর এর জন্য আমাদের স্টার্টার প্ল্যান দিয়ে শুরু করা যায়। এটা মাসিক ৳199 থেকে শুরু হয় এবং আনলিমিটেড ব্যান্ডউইথ, ফ্রি SSL, ডেইলি ব্যাকআপ সহ আসে।\n\nএছাড়াও আপনি যদি বছরের জন্য নিলেন তাহলে একটা ফ্রি .com অথবা .net ডোমেইন পাবেন।\n\nআপনি এই প্ল্যানে ইন্টারেস্টেড কিনা জানাবেন? আমি আপনার অর্ডার প্রসেস করতে পারি।",
+    "agent_sent": "বুঝতে পেরেছি, সেক্ষেত্রে আপনি আমাদের ওয়েব প্রো দিয়ে ব‍র্তমানে শুরু করতে পারেন",
+    "was_edited": true,
+    "correction_feedback": "Avoid making sales pitches or providing specific pricing details prematurely; focus on understanding the customer's needs first."
+  },
+  {
+    "id": "067ed63f-844b-40a8-8847-1eda26270e20",
+    "created_at": "2026-05-23T11:00:54.703234+00:00",
+    "language": "bn",
+    "ai_draft": "বুঝলাম, ২০০ ডেইলি ভিজিটর দিয়ে শুরু করছেন।\n\nআপনার অর্গানাইজেশনের ওয়েবসাইটের জন্য আমাদের Starter প্ল্যান পারফেক্ট হবে। এটিতে আছে আনলিমিটেড ডিস্ক স্পেস, আনলিমিটেড ব্যান্ডউইথ, ফ্রি এসএসএল, ফ্রি ডেইলি ব্যাকআপ এবং ৯৯.৯% আপটাইম গ্যারান্টি।\n\nআপনি কোন টপ লেভেল ডোমেইন চান, যেমন .com/.org/.net? আর হোস্টিং কত সময়ের জন্য নিতে চান?",
+    "agent_sent": null,
+    "was_edited": false,
+    "correction_feedback": null
+  },
+  {
+    "id": "5c4d5d46-7c88-44a8-be1d-1897c46dcfd8",
+    "created_at": "2026-05-23T10:59:03.172246+00:00",
+    "language": "bn",
+    "ai_draft": "আপনার সংস্থার জন্য ওয়েবসাইট লঞ্চ করতে চাইছেন, এটা খুবই ভালো।\n\nআমাদের কাছে ডোমেইন এবং হোস্টিং দুটোই আছে। বলুন তো, আপনার ওয়েবসাইটটি কী ধরনের হবে? এটা একটা কর্পোরেট সাইট, ই-কমার্স, ব্লগ, নাকি অন্য কিছু?\n\nএটা জানলে আমি আপনার জন্য পারফেক্ট প্ল্যান রিকমেন্ড করতে পারব।",
+    "agent_sent": "ডেইলি কি পরিমান ভিজিটর আসতে পারে আপনার সাইটে আমি কি জানতে পারি?",
+    "was_edited": true,
+    "correction_feedback": "Avoid making assumptions about the customer's needs; instead, ask clarifying questions to gain more specific information."
+  },
+  {
+    "id": "b02955fa-d8fb-4709-a951-04404f5f0baa",
+    "created_at": "2026-05-23T10:57:04.102694+00:00",
+    "language": "bn",
+    "ai_draft": "আপনাকে স্বাগতম রনি!\n\nআপনার অর্গানাইজেশনের ওয়েবসাইটের জন্য আমরা আপনাকে সাহায্য করতে প্রস্তুত। আমাদের কাছে বিভিন্ন ধরনের হোস্টিং প্ল্যান রয়েছে যা সব ধরনের প্রয়োজনের জন্য উপযুক্ত।\n\nআপনার ওয়েবসাইটটি কি ধরনের হবে বা কোন বিশেষ ফিচার প্রয়োজন তা একটু বলবেন? এরপর আমরা আপনার জন্য সবচেয়ে ভালো প্ল্যান এবং দামের তথ্য দিতে পারব।",
+    "agent_sent": "ডেইলি কি পরিমান ভিজিটর আসতে পারে আপনার সাইটে?",
+    "was_edited": true,
+    "correction_feedback": "Ask specific questions to gather essential information rather than offering generic assistance."
+  },
+  {
+    "id": "dfde2ac4-0833-4594-a921-fa860d0b2faa",
+    "created_at": "2026-05-23T10:54:29.04486+00:00",
+    "language": "bn",
+    "ai_draft": "হেই, থ্যাংকস ফর রিচিং আউট!\n\nআপনি যে স্পেসিফিকেশন শেয়ার করেছেন সেটা আমাদের ক্লাউড হোস্টিং প্ল্যানের একটা টপ টায়ার প্ল্যানের মতো দেখাচ্ছে। তবে আপনি ঠিক কোন প্ল্যানের কথা বলছেন সেটা কনফার্ম করতে পারলে আমি আপনাকে সঠিক প্রাইসিং দিতে পারব।\n\nআপনার ওয়েবসাইট কেমন ধরনের এবং কোন লোকেশনের জন্য সবচেয়ে ভালো পারফরম্যান্স দরকার?",
+    "agent_sent": "আপনি কি আমাদের ক্লাউড হোস্টিং প্রো এর কথা বলছেন? \n\nআমাদের দু্ই বছরের একসাথে প্যাকেজ নেই",
+    "was_edited": true,
+    "correction_feedback": "Avoid making assumptions about the specific hosting plan the customer is referring to and provide clear pricing information when it's not available."
+  },
+  {
+    "id": "aed1724f-f46c-4cb4-878f-a91c13d8bc2d",
+    "created_at": "2026-05-23T10:02:30.672696+00:00",
+    "language": "bn",
+    "ai_draft": "Thanks Istiak, we really appreciate it!\n\nWhenever you're ready, just let me know and I'll get you set up. Feel free to reach out if you have any other questions before you decide.\n\nLooking forward to hosting your madrasa website!",
+    "agent_sent": "Thanks Istiak, we really appreciate it!",
+    "was_edited": true,
+    "correction_feedback": "Avoid including unnecessary details in final responses; focus on concise communication."
+  },
+  {
+    "id": "410b6c37-8c5c-4ad2-8fff-14c3e2fa04b4",
+    "created_at": "2026-05-23T10:01:10.007933+00:00",
+    "language": "en",
+    "ai_draft": "Hey Istiak, great question!\n\nRenewal cost is the same as what you pay upfront, so ৳149/month on a 3-year renewal or ৳199/month on yearly renewal. No surprises, no price jumps.\n\nSince you're going with yearly, you'll get that free .edu.bd domain included both on purchase and renewal as well.",
+    "agent_sent": "Hey Istiak, great question!\n\nRenewal cost is the same as what you pay upfront, so ৳149/month on a 3-year renewal or ৳199/month on yearly renewal. No surprises, no price jumps.",
+    "was_edited": true,
+    "correction_feedback": "Avoid adding unnecessary information that is not directly related to the customer's question, such as details about free domain inclusion unless explicitly asked."
+  },
+  {
+    "id": "2e065357-bb01-4190-8450-2418cedd1a55",
+    "created_at": "2026-05-23T09:58:59.790027+00:00",
+    "language": "bn",
+    "ai_draft": "Hey Istiak, got it, that makes total sense!\n\nFor your madrasa website with that kind of traffic, our Web Starter plan is perfect for you. It's the most affordable option and handles everything you need, with unlimited bandwidth, free SSL, daily backups, and cPanel. No overkill, just what you actually need.\n\nWeb Starter is ৳149/month on a 3-year plan, or ৳199/month on yearly. Plus you get a free .edu.bd domain with the yearly plan.\n\nWant me to walk you through the pricing options, or do you have other questions?",
+    "agent_sent": "Hey Istiak, got it, that makes total sense!\n\nFor your madrasa website with that kind of traffic, our Web Starter plan is perfect for you. It's the most affordable option and handles everything you need, with unlimited bandwidth, free SSL, daily backups, and cPanel. No overkill, just what you actually need.",
+    "was_edited": true,
+    "correction_feedback": "Avoid including specific pricing details or additional services unless explicitly requested by the customer, as it may not align with their current needs or preferences."
+  }
+]

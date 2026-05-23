@@ -726,6 +726,19 @@ export default function SipDialer() {
       // Bind session events to outbound session immediately
       const session = (userAgent as any).session
       if (session) {
+        const origDelegate = session.delegate || {};
+        session.delegate = {
+          ...origDelegate,
+          onProgress: (response: any) => {
+            if (origDelegate.onProgress) origDelegate.onProgress(response);
+            const statusCode = response.message?.statusCode;
+            console.log(`[SIP] Outbound progress: ${statusCode}`);
+            if (statusCode === 180 || statusCode === 183) {
+              setStatus('Ringing...');
+              playSynthesizedRing();
+            }
+          }
+        };
         bindSessionEvents(session)
       }
     } catch (e) {
@@ -1013,7 +1026,7 @@ export default function SipDialer() {
 
   // === PHASE 1: CLICK-TO-CALL ===
   useEffect(() => {
-    if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Incoming Call...' && status !== 'Dialing...') {
+    if (pendingDialNumber && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Ringing...' && status !== 'Incoming Call...' && status !== 'Dialing...') {
       const dialTarget = pendingDialNumber.replace(/[^\d+]/g, '')
       setNumber(dialTarget)
       setStatus('Dialing...') // Optimistic lock to prevent rapid re-entry
@@ -1033,6 +1046,19 @@ export default function SipDialer() {
             await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
             const session = (userAgent as any).session
             if (session) {
+              const origDelegate = session.delegate || {};
+              session.delegate = {
+                ...origDelegate,
+                onProgress: (response: any) => {
+                  if (origDelegate.onProgress) origDelegate.onProgress(response);
+                  const statusCode = response.message?.statusCode;
+                  console.log(`[SIP] Click-to-call progress: ${statusCode}`);
+                  if (statusCode === 180 || statusCode === 183) {
+                    setStatus('Ringing...');
+                    playSynthesizedRing();
+                  }
+                }
+              };
               bindSessionEvents(session)
             }
           } catch (e) {
@@ -1373,7 +1399,7 @@ export default function SipDialer() {
           <div className={`px-4 py-1.5 text-xs font-medium text-center ${
             status === 'Connected' ? 'bg-blue-100 text-blue-700' :
             status === 'Registered' ? 'bg-blue-50 text-blue-600' :
-            status === 'Calling...' ? 'bg-amber-100 text-amber-700' :
+            status === 'Calling...' || status === 'Ringing...' ? 'bg-amber-100 text-amber-700' :
             'bg-slate-100 text-slate-500'
           }`}>
             {status === 'Connected' ? `Connected ${formatTime(callDuration)}` : status}
@@ -1404,7 +1430,7 @@ export default function SipDialer() {
                   onChange={(e) => setNumber(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      if (number && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...') {
+                      if (number && isRegistered && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Ringing...' && status !== 'Dialing...') {
                         handleDial();
                       }
                     }
@@ -1463,7 +1489,7 @@ export default function SipDialer() {
                         <Phone size={24} strokeWidth={2} className="animate-pulse" />
                       </button>
                     </div>
-                  ) : sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' ? (
+                  ) : sessionState === SessionState.Established || status === 'Calling...' || status === 'Dialing...' || status === 'Ringing...' ? (
                     <button
                       onClick={handleHangup}
                       className="w-[64px] h-[64px] rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
@@ -1481,7 +1507,7 @@ export default function SipDialer() {
                   )}
 
                   {/* Delete Button */}
-                  {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && status !== 'Incoming Call...' && (
+                  {number.length > 0 && sessionState !== SessionState.Established && status !== 'Calling...' && status !== 'Dialing...' && status !== 'Ringing...' && status !== 'Incoming Call...' && (
                     <button 
                       onClick={() => setNumber(prev => prev.slice(0, -1))}
                       onPointerDown={(e) => e.preventDefault()}
