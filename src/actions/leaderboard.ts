@@ -1,18 +1,24 @@
 "use server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { unstable_noStore as noStore } from "next/cache"
 
 export async function getLeaderboardStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+  noStore();
   if (!orgId) return [];
 
   const now = new Date();
-  let startDate = new Date();
   
-  if (period === 'daily') {
-    startDate.setHours(0, 0, 0, 0);
-  } else if (period === 'weekly') {
-    startDate.setDate(now.getDate() - 7);
+  // Bangladesh local midnight start date (UTC+6 offset)
+  const bdMidnight = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  bdMidnight.setUTCHours(0, 0, 0, 0);
+  const localMidnight = new Date(bdMidnight.getTime() - 6 * 60 * 60 * 1000);
+  
+  let startDate = new Date(localMidnight);
+  
+  if (period === 'weekly') {
+    startDate.setDate(localMidnight.getDate() - 7);
   } else if (period === 'monthly') {
-    startDate.setDate(now.getDate() - 30);
+    startDate.setDate(localMidnight.getDate() - 30);
   }
 
   // 1. Get all users
@@ -67,11 +73,15 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     };
   });
 
-  // Match calls by agent name
+  // Match calls by agent name - Fuzzy matching enabled (e.g. Asad matches Asad Ujjaman)
   if (calls.length > 0) {
     calls.forEach(call => {
       if (!call.agent_name) return;
-      const matchedAgent = agents.find(a => a.name.toLowerCase() === call.agent_name.toLowerCase());
+      const matchedAgent = agents.find(a => {
+        const agentName = a.name.toLowerCase();
+        const callName = call.agent_name.toLowerCase();
+        return agentName === callName || agentName.startsWith(callName) || callName.startsWith(agentName);
+      });
       if (matchedAgent) {
         const stats = statsMap[matchedAgent.id];
         stats.callsCount++;
