@@ -5,37 +5,40 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
   auth: { persistSession: false }
 });
 async function run() {
-  const { data: msg, error: err1 } = await supabase
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { data: messages, error } = await supabase
     .from('messages')
-    .select('id, conversation_id, content, metadata')
-    .eq('id', 'e217c714-f7e7-48ec-a5f2-0e9ef6f4a286')
-    .single();
-  if (err1) {
-    console.error(err1);
-    return;
-  }
-  console.log("MESSAGE DETAILS:", JSON.stringify(msg, null, 2));
+    .select('id, content, status, conversation_id, created_at')
+    .in('sender_type', ['agent', 'ai'])
+    .eq('status', 'sent')
+    .gt('created_at', twoHoursAgo);
 
-  const { data: conv, error: err2 } = await supabase
-    .from('conversations')
-    .select('id, contact_id, channel_id')
-    .eq('id', msg.conversation_id)
-    .single();
-  if (err2) {
-    console.error(err2);
+  if (error) {
+    console.error(error);
     return;
   }
-  console.log("CONVERSATION DETAILS:", JSON.stringify(conv, null, 2));
 
-  const { data: contact, error: err3 } = await supabase
-    .from('contacts')
-    .select('id, name, phone, platform_id, metadata')
-    .eq('id', conv.contact_id)
-    .single();
-  if (err3) {
-    console.error(err3);
-    return;
+  console.log(`PENDING 'sent' MESSAGES (Last 2h): ${messages.length}`);
+  for (const m of messages) {
+    // Fetch conversation & contact
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('contact_id')
+      .eq('id', m.conversation_id)
+      .single();
+
+    let contactName = 'Unknown';
+    if (conv) {
+      const { data: contact } = await supabase
+        .from('contacts')
+        .select('name, phone, platform_id, metadata')
+        .eq('id', conv.contact_id)
+        .single();
+      if (contact) {
+        contactName = `${contact.name} (${contact.phone}) [Platform JID: ${contact.platform_id}] Metadata: ${JSON.stringify(contact.metadata)}`;
+      }
+    }
+    console.log(`- MSG ID: ${m.id} | To: ${contactName} | Content: "${m.content.slice(0, 40)}..."`);
   }
-  console.log("CONTACT DETAILS:", JSON.stringify(contact, null, 2));
 }
 run();

@@ -1172,13 +1172,15 @@ async function processOutboundMessage(msg) {
 // Self-healing sweep for pending outbound messages sent while worker was restarting/offline
 async function sendPendingOutboundMessages() {
   try {
+    const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
     const { data: pending, error } = await supabaseRealtime
       .from('messages')
       .select('*')
       .eq('status', 'sent')
       .in('sender_type', ['agent', 'ai'])
       .is('platform_message_id', null)
-      .is('is_internal', false);
+      .is('is_internal', false)
+      .gt('created_at', oneHourAgo);
 
     if (error) {
       console.error('[SELF-HEAL] Failed to fetch pending messages:', error.message);

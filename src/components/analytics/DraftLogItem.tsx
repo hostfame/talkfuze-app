@@ -5,8 +5,8 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-function calculateApproxCost(model: string, tokens: number): string {
-  if (!tokens || tokens <= 0) return "৳0.00";
+function getDraftCostInBDT(model: string, tokens: number): number {
+  if (!tokens || tokens <= 0) return 0;
   
   const m = model.toLowerCase();
   let costPer1KTokensInCents = 0.16; // default to haiku
@@ -24,12 +24,34 @@ function calculateApproxCost(model: string, tokens: number): string {
   }
   
   const costInCents = (tokens / 1000) * costPer1KTokensInCents;
-  const costInBDT = costInCents * 1.25; // 1 USD = 125 BDT -> (Cents/100) * 125 = Cents * 1.25
-  
-  if (costInBDT < 0.01) {
-    return `৳${costInBDT.toFixed(4)}`;
+  return costInCents * 1.25; // 1 USD = 125 BDT -> (Cents/100) * 125 = Cents * 1.25
+}
+
+function getDraftCost(model: string, tokens: number): string {
+  const bdt = getDraftCostInBDT(model, tokens);
+  if (bdt === 0) return "৳0.00";
+  if (bdt < 0.01) return `৳${bdt.toFixed(4)}`;
+  return `৳${bdt.toFixed(2)}`;
+}
+
+function getTrainingCostInBDT(): number {
+  // 1,000 tokens of Claude 3.5 Sonnet comparison & rule generation: 0.54 cents
+  // 0.54 cents * 1.25 = 0.68 BDT
+  return 0.68;
+}
+
+function getTrainingCost(): string {
+  return `৳${getTrainingCostInBDT().toFixed(2)}`;
+}
+
+function getTotalCost(model: string, tokens: number, wasEdited: boolean): string {
+  let bdt = getDraftCostInBDT(model, tokens);
+  if (wasEdited) {
+    bdt += getTrainingCostInBDT();
   }
-  return `৳${costInBDT.toFixed(2)}`;
+  if (bdt === 0) return "৳0.00";
+  if (bdt < 0.01) return `৳${bdt.toFixed(4)}`;
+  return `৳${bdt.toFixed(2)}`;
 }
 
 export default function DraftLogItem({ log }: { log: any }) {
@@ -184,7 +206,7 @@ export default function DraftLogItem({ log }: { log: any }) {
           )}
         </div>
 
-        {/* Technical Metrics */}
+        {/* Technical Metrics & Cost Breakdown */}
         <div className="space-y-2 pt-2">
            <div className="flex items-center justify-between text-[11px]">
              <span className="text-slate-500 dark:text-slate-400">Model</span>
@@ -198,9 +220,23 @@ export default function DraftLogItem({ log }: { log: any }) {
              <span className="text-slate-500 dark:text-slate-400">Temp</span>
              <span className="font-semibold text-slate-700 dark:text-slate-300">{log.temperature || "0.7"}</span>
            </div>
-           <div className="flex items-center justify-between text-[11px] border-t border-slate-100 dark:border-[#222e35]/30 pt-1.5 mt-1.5">
-             <span className="text-slate-500 dark:text-slate-400">Est. Cost</span>
-             <span className="font-bold text-blue-600 dark:text-blue-400">{calculateApproxCost(log.model_used || "claude-3-5-haiku", log.tokens_used || 0)}</span>
+
+           {/* Cost breakdown */}
+           <div className="border-t border-slate-100 dark:border-[#222e35]/30 pt-1.5 mt-1.5 space-y-1.5">
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-slate-500 dark:text-slate-400">Draft Gen</span>
+               <span className="font-medium text-slate-700 dark:text-slate-300">{getDraftCost(log.model_used || "claude-3-5-haiku", log.tokens_used || 0)}</span>
+             </div>
+             {log.was_edited && (
+               <div className="flex items-center justify-between text-[11px]">
+                 <span className="text-slate-500 dark:text-slate-400 font-semibold text-amber-600 dark:text-amber-400">AI Training</span>
+                 <span className="font-semibold text-amber-600 dark:text-amber-400">{getTrainingCost()}</span>
+               </div>
+             )}
+             <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-dashed border-slate-200 dark:border-[#222e35]/40">
+               <span className="text-slate-600 dark:text-slate-300 font-bold">Total Cost</span>
+               <span className="font-bold text-blue-600 dark:text-blue-400">{getTotalCost(log.model_used || "claude-3-5-haiku", log.tokens_used || 0, log.was_edited)}</span>
+             </div>
            </div>
         </div>
 
