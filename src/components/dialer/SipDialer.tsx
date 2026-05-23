@@ -619,19 +619,6 @@ export default function SipDialer() {
           setActiveCallSession(prev => prev || { number: remoteUser, direction: 'outbound' })
           
           console.log("[SIP] Outbound session created in delegate, binding events immediately");
-          const origDelegate = session.delegate || {};
-          session.delegate = {
-            ...origDelegate,
-            onProgress: (response: any) => {
-              if (origDelegate.onProgress) origDelegate.onProgress(response);
-              const statusCode = response.message?.statusCode;
-              console.log(`[SIP] Outbound progress: ${statusCode}`);
-              if (statusCode === 180 || statusCode === 183) {
-                setStatus('Ringing...');
-                playSynthesizedRing();
-              }
-            }
-          };
           bindSessionEvents(session);
         } else {
           setActiveCallSession(prev => prev || { number: number.replace(/[\s-]/g, ''), direction: 'outbound' })
@@ -757,7 +744,24 @@ export default function SipDialer() {
           .catch(() => {})
       }
 
-      await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`)
+      const inviterOptions = {
+        sessionDescriptionHandlerOptions: {
+          constraints: { audio: true, video: false }
+        }
+      }
+      const inviterInviteOptions = {
+        requestDelegate: {
+          onProgress: (response: any) => {
+            const statusCode = response.message?.statusCode;
+            console.log(`[SIP] Outbound progress (handleDial): ${statusCode}`);
+            if (statusCode === 180 || statusCode === 183) {
+              setStatus('Ringing...');
+              playSynthesizedRing();
+            }
+          }
+        }
+      }
+      await userAgent.call(`sip:${cleanNumber}@sip.talkfuze.com`, inviterOptions, inviterInviteOptions)
     } catch (e) {
       console.error("Dial failed", e)
       setStatus('Call Failed')
@@ -1060,7 +1064,24 @@ export default function SipDialer() {
                 .then(convId => { if (convId) setMatchedConversationId(convId) })
                 .catch(() => {})
             }
-            await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`)
+            const inviterOptions = {
+              sessionDescriptionHandlerOptions: {
+                constraints: { audio: true, video: false }
+              }
+            }
+            const inviterInviteOptions = {
+              requestDelegate: {
+                onProgress: (response: any) => {
+                  const statusCode = response.message?.statusCode;
+                  console.log(`[SIP] Outbound progress (click-to-call): ${statusCode}`);
+                  if (statusCode === 180 || statusCode === 183) {
+                    setStatus('Ringing...');
+                    playSynthesizedRing();
+                  }
+                }
+              }
+            }
+            await userAgent.call(`sip:${dialTarget}@sip.talkfuze.com`, inviterOptions, inviterInviteOptions)
           } catch (e) {
             console.error('Click-to-call dial failed:', e)
             setStatus('Call Failed')
