@@ -55,8 +55,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'all' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">All</span></div>
-            <span className="hidden xl:block text-[12px] font-medium">{allChats}</span>
+            <div className="flex items-center gap-2 min-w-0"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">All</span></div>
+            <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{allChats}</span>
           </div>
           
           <div 
@@ -66,8 +66,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'assigned' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><User className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Assigned</span></div>
-            <span className="hidden xl:block text-[12px] font-medium">{assignedChats}</span>
+            <div className="flex items-center gap-2 min-w-0"><User className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">Assigned</span></div>
+            <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{assignedChats}</span>
           </div>
           
           <div 
@@ -77,8 +77,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'pinned' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Pin className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Pinned</span></div>
-            <span className="hidden xl:block text-[12px] font-medium">{pinnedChats}</span>
+            <div className="flex items-center gap-2 min-w-0"><Pin className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">Pinned</span></div>
+            <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{pinnedChats}</span>
           </div>
 
           <div 
@@ -88,7 +88,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'calls' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Phone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Calls</span></div>
+            <div className="flex items-center gap-2 min-w-0"><Phone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">Calls</span></div>
           </div>
 
           <div 
@@ -98,8 +98,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'alerts' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><Send className="w-[18px] h-[18px] xl:w-[14px] xl:h-[14px] -rotate-45 transform" strokeWidth={2.5} /><span className="hidden xl:block">Outbound</span></div>
-            <span className="hidden xl:block text-[12px] font-medium">{alertChats}</span>
+            <div className="flex items-center gap-2 min-w-0"><Send className="w-[18px] h-[18px] xl:w-[14px] xl:h-[14px] -rotate-45 transform shrink-0" strokeWidth={2.5} /><span className="hidden xl:block text-[13px] truncate">Outbound</span></div>
+            <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{alertChats}</span>
           </div>
 
           <div 
@@ -109,7 +109,7 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
               activeFilter === 'archived' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
-            <div className="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span className="hidden xl:block">Archived</span></div>
+            <div className="flex items-center gap-2 min-w-0"><svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg><span className="hidden xl:block text-[13px] truncate">Archived</span></div>
           </div>
 
         </div>
@@ -132,8 +132,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
                 activeFilter === 'messenger' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Messenger</span></div>
-              <span className="hidden xl:block text-[12px] font-medium">{messengerChats}</span>
+              <div className="flex items-center gap-2 min-w-0"><MessageSquare className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">Messenger</span></div>
+              <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{messengerChats}</span>
             </div>
             
             <div 
@@ -143,8 +143,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
                 activeFilter === 'whatsapp' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><MessageCircle className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">WhatsApp</span></div>
-              <span className="hidden xl:block text-[12px] font-medium">{whatsappChats}</span>
+              <div className="flex items-center gap-2 min-w-0"><MessageCircle className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">WhatsApp</span></div>
+              <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{whatsappChats}</span>
             </div>
 
             <div 
@@ -154,8 +154,8 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
                 activeFilter === 'instagram' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2"><Smartphone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2} /><span className="hidden xl:block">Instagram</span></div>
-              <span className="hidden xl:block text-[12px] font-medium">{instagramChats}</span>
+              <div className="flex items-center gap-2 min-w-0"><Smartphone className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" strokeWidth={2} /><span className="hidden xl:block text-[13px] truncate">Instagram</span></div>
+              <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{instagramChats}</span>
             </div>
 
             <div 
@@ -165,11 +165,11 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
                 activeFilter === 'widget' && pathname === '/inbox' ? 'bg-[#E5F1FF] text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                <span className="hidden xl:block">Website</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                <span className="hidden xl:block text-[13px] truncate">Website</span>
               </div>
-              <span className="hidden xl:block text-[12px] font-medium">{widgetChats}</span>
+              <span className="hidden xl:block text-[10px] font-bold bg-slate-200/70 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0">{widgetChats}</span>
             </div>
           </div>
         )}
