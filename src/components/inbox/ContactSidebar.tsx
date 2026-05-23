@@ -195,6 +195,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
+  const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
   
   // Co-Browsing States
   const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined' | 'connection_lost'>('idle')
@@ -1064,28 +1065,28 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   <button onClick={() => { setIsEditingEmail(false); setEditedEmailValue(contactEmail || "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
                 </div>
               ) : (
-                <div className="flex items-start gap-1.5 group">
-                  <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 group">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                       <Mail size={13} className="text-slate-400" />
                     </div>
                     {contactEmail ? (
                       <div 
-                        className="flex items-start gap-1.5 cursor-pointer group/copy min-w-0 w-full pt-[1px]" 
+                        className="flex items-center gap-1.5 cursor-pointer group/copy min-w-0 w-full" 
                         onClick={() => handleCopyContactEmail(contactEmail)}
                         title="Click to copy"
                       >
-                        <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] hover:text-blue-600 transition-colors break-all leading-snug">
+                        <p className={`text-slate-500 dark:text-[#8696a0] hover:text-blue-600 transition-colors truncate ${contactEmail.length > 32 ? 'text-[10px]' : contactEmail.length > 25 ? 'text-[11px]' : 'text-[12.5px]'}`}>
                           {contactEmail}
                         </p>
                         {copiedContactEmail ? (
-                          <Check size={12} className="text-emerald-500 shrink-0 mt-[1px]" />
+                          <Check size={12} className="text-emerald-500 shrink-0" />
                         ) : (
-                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0 mt-[1px]" />
+                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0" />
                         )}
                       </div>
                     ) : (
-                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0 pt-[1px]">
+                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
                         <span className="italic text-slate-400 dark:text-slate-600">Link email</span>
                       </p>
                     )}
@@ -1095,7 +1096,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       setEditedEmailValue(contactEmail || "")
                       setIsEditingEmail(true)
                     }} 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0 mt-[2px]"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0"
                     title="Edit Email"
                   >
                     <Pencil size={11} strokeWidth={2.5} />
@@ -1130,8 +1131,8 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   <button onClick={() => { setIsEditingPhone(false); setEditedPhoneValue(!isRawWidgetId(contactPhone) ? contactPhone || "" : "") }} className="text-slate-400 hover:text-slate-600 p-0.5"><X size={14} strokeWidth={2.5} /></button>
                 </div>
               ) : (
-                <div className="flex items-start gap-1.5 group">
-                  <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 group">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                       {showCallButton && !isRawWidgetId(contactPhone) && contactPhone ? (() => {
                         const hasCallAlert = isWhatsApp && conversation?.tags?.includes('alert') && conversation?.tags?.includes('automation');
@@ -1181,21 +1182,21 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     
                     {!isRawWidgetId(contactPhone) && contactPhone ? (
                       <div 
-                        className="flex items-start gap-1.5 cursor-pointer group/copy min-w-0 w-full pt-[1px]" 
+                        className="flex items-center gap-1.5 cursor-pointer group/copy min-w-0 w-full" 
                         onClick={() => handleCopyContactPhone(contactPhone)}
                         title="Click to copy"
                       >
-                        <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] break-all leading-snug hover:text-blue-600 transition-colors">
+                        <p className={`text-slate-500 dark:text-[#8696a0] hover:text-blue-600 transition-colors truncate ${contactPhone.length > 20 ? 'text-[11px]' : 'text-[12.5px]'}`}>
                           {contactPhone}
                         </p>
                         {copiedContactPhone ? (
-                          <Check size={12} className="text-emerald-500 shrink-0 mt-[1px]" />
+                          <Check size={12} className="text-emerald-500 shrink-0" />
                         ) : (
-                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0 mt-[1px]" />
+                          <Copy size={12} className="text-slate-400 opacity-0 group-hover/copy:opacity-100 transition-opacity shrink-0" />
                         )}
                       </div>
                     ) : (
-                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0 pt-[1px]">
+                      <p className="text-[12.5px] text-slate-500 dark:text-[#8696a0] truncate min-w-0">
                         <span className="italic text-slate-400 dark:text-slate-600">Link phone</span>
                       </p>
                     )}
@@ -1205,7 +1206,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                       setEditedPhoneValue(!isRawWidgetId(contactPhone) ? contactPhone || "" : "")
                       setIsEditingPhone(true)
                     }} 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0 mt-[2px]"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-blue-600 cursor-pointer shrink-0"
                     title="Edit Phone"
                   >
                     <Pencil size={11} strokeWidth={2.5} />
@@ -1336,30 +1337,35 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
 
         {/* Agents Joined Section */}
         <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
-          <div className="flex justify-between items-center px-5 mb-3 cursor-pointer group">
+          <div 
+            className="flex justify-between items-center px-5 mb-3 cursor-pointer group"
+            onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
+          >
             <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
               Agents Joined
             </h3>
-            <ChevronDown size={14} className="text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef]" />
+            <ChevronDown size={14} className={`text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef] transition-transform duration-200 ${isAgentsExpanded ? 'rotate-180' : ''}`} />
           </div>
-          <div className="px-5 space-y-2.5">
-            {participants.length > 0 ? (
-              participants.map((p, idx) => (
-                <div key={idx} className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                    {p.user?.avatar_url ? (
-                      <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      p.user?.name?.charAt(0).toUpperCase() || 'A'
-                    )}
+          {isAgentsExpanded && (
+            <div className="px-5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+              {participants.length > 0 ? (
+                participants.map((p, idx) => (
+                  <div key={idx} className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                      {p.user?.avatar_url ? (
+                        <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        p.user?.name?.charAt(0).toUpperCase() || 'A'
+                      )}
+                    </div>
+                    <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
                   </div>
-                  <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
-            )}
-          </div>
+                ))
+              ) : (
+                <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
+              )}
+            </div>
+          )}
         </div>
 
       </>
