@@ -2666,7 +2666,7 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Header */}
-      <div className="h-[72px] border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-6 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
+      <div className="h-[52px] border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-5 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           {/* Mobile back button */}
           {onBackToList && (
