@@ -204,45 +204,17 @@ export async function POST(req: Request) {
     }
 
     // 1. Detect language (instant, no IO)
-    let detectedLanguage = 'en';
-    
     // Split messages to check the most recent exchanges
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     
     // Filter to customer-only lines
     const customerLines = conversationLines.filter((line: string) => !line.startsWith('[Agent]') && !line.startsWith('[System]'));
     
-    // LATEST message first - prioritize the most recent customer message
-    const lastMessageOnly = customerLines.slice(-1).join(' ').toLowerCase();
-    const lastFewMessages = customerLines.slice(-4).join(' ').toLowerCase();
-    
-    const hasBengaliScriptLatest = /[\u0980-\u09FF]/.test(lastMessageOnly);
-    
-    // Count Benglish words in LATEST message
-    const latestWords = lastMessageOnly.split(/[^a-zA-Z]+/);
-    let latestBenglishCount = 0;
-    for (const w of latestWords) {
-      if (BENGLISH_WORDS.has(w)) latestBenglishCount++;
-    }
-    
-    // If latest message is clearly English (no Bengali script, no Benglish, >5 chars), use English
-    const latestIsPureEnglish = !hasBengaliScriptLatest && latestBenglishCount === 0 && lastMessageOnly.length > 5;
-    const latestIsBengali = hasBengaliScriptLatest || latestBenglishCount >= 1;
-    
-    if (latestIsPureEnglish) {
-      detectedLanguage = 'en';
-    } else if (latestIsBengali) {
-      detectedLanguage = 'bn';
-    } else {
-      // Ambiguous (short message like "hi", "ok") - fallback to last 4 messages
-      const hasBengaliScript = /[\u0980-\u09FF]/.test(lastFewMessages);
-      const words = lastFewMessages.split(/[^a-zA-Z]+/);
-      let benglishWordsFound = 0;
-      for (const w of words) {
-        if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
-      }
-      detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
-    }
+    // Extract customer's LATEST message exactly, stripping the name prefix (e.g. "[Name]: " -> "")
+    const lastCustomerLine = customerLines[customerLines.length - 1] || '';
+    const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
+
+    const detectedLanguage = /[\u0980-\u09FF]/.test(latestCustomerMessageCleaned) ? 'bn' : 'en';
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
@@ -296,18 +268,29 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      const languageDirection = detectedLanguage === 'bn'
-        ? `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking Bengali/Banglish. You MUST reply 100% in Bengali script (বাংলা হরফে). Do NOT write in English or Banglish.`
-        : `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking English. You MUST reply 100% in English. Do NOT write in Bengali script or use Bengali/Banglish words.`;
+      const languageDirection = `
+
+CRITICAL LANGUAGE CLASSIFICATION PROTOCOL (MANDATORY):
+You MUST draft your reply in the language the customer is currently speaking in their LATEST message.
+- Customer's LATEST message: "${latestCustomerMessageCleaned}"
+
+Step 1: Classify the language of this LATEST message:
+- If it is in Bengali script (বাংলা) OR clearly written in Banglish (Bengali words written in Latin letters, e.g., "vai", "apni", "hobe", "ki", "na", "bhai", "amader", "apnar", "taka"): Classify as BENGALI.
+- If it is written in English (e.g., "Are you there", "website link", "yes", "payment", "renewal"): Classify as ENGLISH.
+- Ignore historical messages or audio transcripts. Focus ONLY on this latest message to detect language switches.
+
+Step 2: Enforce the language:
+- If classified as BENGALI: You MUST reply 100% in Bengali script (বাংলা হরফে).
+- If classified as ENGLISH: You MUST reply 100% in English. Do NOT use any Bengali script or Banglish words.`;
 
       const languageRule = `CRITICAL LANGUAGE RULES:${languageDirection}
 
-1. If writing in English (as commanded above):
+1. If writing in English (as classified above):
    - Use natural conversational English contractions: "I'll", "we've", "you're", "don't".
    - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
    - NO EMOJIS EVER. Do not use a single emoji.
    - NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
-2. If writing in Bengali script (as commanded above):
+2. If writing in Bengali script (as classified above):
    - Write in modern, conversational Bengali as spoken on WhatsApp (e.g., use 'প্লিজ', 'সাপোর্ট', 'ইন্সট্যান্ট', 'চেক' transliterated instead of archaic Sanskrit words).
    - THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
      * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
