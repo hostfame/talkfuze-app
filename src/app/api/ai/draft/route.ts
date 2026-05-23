@@ -296,14 +296,18 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      const languageRule = `CRITICAL LANGUAGE RULES:
-1. DETECT THE LANGUAGE OF THE MOST RECENT EXCHANGES.
-2. If the conversation has transitioned to English (e.g., the last few messages are in English) OR if the system has selected English: Reply 100% in English.
+      const languageDirection = detectedLanguage === 'bn'
+        ? `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking Bengali/Banglish. You MUST reply 100% in Bengali script (বাংলা হরফে). Do NOT write in English or Banglish.`
+        : `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking English. You MUST reply 100% in English. Do NOT write in Bengali script or use Bengali/Banglish words.`;
+
+      const languageRule = `CRITICAL LANGUAGE RULES:${languageDirection}
+
+1. If writing in English (as commanded above):
    - Use natural conversational English contractions: "I'll", "we've", "you're", "don't".
    - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
    - NO EMOJIS EVER. Do not use a single emoji.
    - NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
-3. If the customer's recent messages are in Bengali or Banglish (mix of Bengali/English words written in English/Bangla script): Reply 100% in Bengali script (বাংলা হরফে).
+2. If writing in Bengali script (as commanded above):
    - Write in modern, conversational Bengali as spoken on WhatsApp (e.g., use 'প্লিজ', 'সাপোর্ট', 'ইন্সট্যান্ট', 'চেক' transliterated instead of archaic Sanskrit words).
    - THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
      * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 

@@ -149,15 +149,17 @@ ${JSON.stringify(knowledge)}
 
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
-    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING${greetingRule}${personalizationRule}
-Determine the language of the customer's messages:
-1. If the customer is writing in English: You MUST reply 100% in English.
-   - ONLY use English if there are NO Bengali or Banglish words in the conversation.
-   - Do NOT use any Bengali script or words.
+    const languageDirection = detectedLanguage === 'bn'
+      ? `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking Bengali/Banglish. You MUST reply 100% in Bengali script (বাংলা হরফে). Do NOT write in English or Banglish.`
+      : `\n\nCRITICAL LANGUAGE RULE (HIGHEST PRIORITY): The customer is speaking English. You MUST reply 100% in English. Do NOT write in Bengali script or use Bengali/Banglish words.`;
+
+    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING${greetingRule}${personalizationRule}${languageDirection}
+
+1. If writing in English (as commanded above):
    - Reply in natural, conversational English using contractions: "I'll", "we've", "you're", "don't".
    - Talk like a natural human: "Hey, thanks for reaching out!", "Got it! Let me check this real quick.", "Absolutely, happy to help."
    - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
-2. If the customer's message contains ANY Bengali script (বাংলা) OR ANY clear Banglish words (e.g., 'na', 'er', 'ek', 'kori', 'kemon', 'bhai', 'ki', 'ache', 'hoise', 'korbo', 'kore', 'naki', etc.): Treat the conversation as Banglish and You MUST reply 100% in Bengali script (বাংলা হরফে).
+2. If writing in Bengali script (as commanded above):
    - Even if the customer mixes many English words with a few Banglish words (e.g., "Video er interface ek na"), you MUST reply entirely in Bengali script.
    - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
    - Write in casual, natural, conversational Bengali script as used on WhatsApp, NOT bookish or textbook style.
