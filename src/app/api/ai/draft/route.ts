@@ -105,7 +105,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
         .eq("was_edited", true)
         .not("correction_feedback", "is", null)
         .order("created_at", { ascending: false })
-        .limit(6)
+        .limit(40)
     ]);
 
     if (examplesRes.data) {
