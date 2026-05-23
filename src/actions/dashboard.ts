@@ -812,7 +812,7 @@ export async function recallMessage(messageId: string) {
 
   const { error } = await supabaseAdmin
     .from('messages')
-    .delete()
+    .update({ status: 'recalled' })
     .eq('id', messageId)
 
   if (error) throw new Error(error.message)
