@@ -42,9 +42,10 @@ export default async function AnalyticsPage() {
   const accuracy = (totalSent && totalSent > 0) ? Math.round(((sentAsIs || 0) / totalSent) * 100) : 0;
 
   // Fetch recent AI Draft Logs for the table (latest 100)
+  // We use * to safely fetch customer_context if the column exists without crashing if it doesn't
   const { data: logs } = await supabase
     .from("ai_draft_logs")
-    .select("id, ai_draft, agent_sent, was_edited, correction_feedback, created_at, language")
+    .select("*")
     .eq("org_id", profile.org_id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -197,13 +198,30 @@ export default async function AnalyticsPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-4 min-w-[300px]">
-                          <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm">
-                            {log.ai_draft}
+                        <td className="px-4 py-4 min-w-[400px]">
+                          {log.customer_context && (
+                            <div className="mb-4 text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[13px] bg-slate-50 dark:bg-[#1a2329] p-3 rounded-lg border border-slate-200/60 dark:border-[#2a363d] shadow-sm relative">
+                              <div className="absolute -top-2.5 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-[#2a363d] rounded-full">
+                                Customer Asked
+                              </div>
+                              <div className="mt-1">
+                                {log.customer_context.split('\n').slice(-3).join('\n')}
+                              </div>
+                            </div>
+                          )}
+                          <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm relative">
+                            {log.customer_context && (
+                              <div className="absolute -top-2.5 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-[#222e35] rounded-full">
+                                AI Draft
+                              </div>
+                            )}
+                            <div className={log.customer_context ? "mt-1" : ""}>
+                              {log.ai_draft}
+                            </div>
                           </div>
                           {log.agent_sent && (
                             <div className="text-slate-600 dark:text-slate-400 mt-4 whitespace-pre-wrap leading-relaxed text-[13px] bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30 shadow-sm relative">
-                              <div className="absolute -top-3 left-3 bg-blue-50 dark:bg-[#111b21] px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
+                              <div className="absolute -top-2.5 left-3 bg-blue-50 dark:bg-[#111b21] px-2 py-0 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
                                 ↳ Final Sent Message
                               </div>
                               <div className="mt-1">

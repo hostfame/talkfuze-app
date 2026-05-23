@@ -157,14 +157,27 @@ export async function completeAiDraftLog(
       }
     }
 
-    await supabase
+    const updatePayload = {
+      agent_sent: agentSent,
+      was_edited: wasEdited,
+      correction_feedback: correctionFeedback
+    };
+
+    // Try to save customer context as well for the analytics dashboard
+    const { error: updateError } = await supabase
       .from("ai_draft_logs")
-      .update({
-        agent_sent: agentSent,
-        was_edited: wasEdited,
-        correction_feedback: correctionFeedback
-      })
+      .update({ ...updatePayload, customer_context: context })
       .eq("id", logId);
+
+    // If column doesn't exist yet (42703), fallback to normal payload
+    if (updateError && updateError.code === '42703') {
+      await supabase
+        .from("ai_draft_logs")
+        .update(updatePayload)
+        .eq("id", logId);
+    } else if (updateError) {
+      console.error("completeAiDraftLog update error:", updateError);
+    }
 
     // Invalidate cache since database was updated
     if (log.org_id) {
