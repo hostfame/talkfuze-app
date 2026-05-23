@@ -39,7 +39,7 @@ async function extractLearningData(context, aiDraft, agentSent) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 1000,
         system: "You are an expert AI CRM training engineer. You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'. You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.",
         messages: [
