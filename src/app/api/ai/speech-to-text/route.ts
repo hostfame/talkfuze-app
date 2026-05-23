@@ -17,12 +17,15 @@ export async function POST(req: Request) {
     }
 
     const openaiFormData = new FormData();
-    // OpenAI Whisper requires a filename with an extension
-    openaiFormData.append("file", file, "audio.webm");
+    // Extract extension or default to webm
+    const fileName = (file as File).name || "audio.webm";
+    openaiFormData.append("file", file, fileName);
     openaiFormData.append("model", "whisper-1");
-    openaiFormData.append("prompt", "এটি একটি বাংলা এবং ইংরেজি কাস্টমার সাপোর্ট মেসেজ। ডোমেইন, হোস্টিং, ওয়েবসাইট, সমস্যা, পেমেন্ট সংক্রান্ত। This is a customer support message about hosting, domain, and websites.");
+    openaiFormData.append("language", "bn");
+    openaiFormData.append("temperature", "0");
+    openaiFormData.append("prompt", "এটি একটি বাংলা কাস্টমার সাপোর্ট মেসেজ। ডোমেইন, হোস্টিং, ওয়েবসাইট, সমস্যা, পেমেন্ট সংক্রান্ত।");
 
-    // Using transcriptions endpoint to preserve original language (Bangla/English)
+    // Using transcriptions endpoint to preserve original language
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       headers: {
