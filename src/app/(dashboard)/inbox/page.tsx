@@ -454,21 +454,21 @@ export default function InboxPage() {
       
       if (hasAgentReply || hasAgentParticipant) return false;
 
-      // Only ring if the latest message is less than 5 minutes old
-      // This prevents old, ignored chats from ringing indefinitely
-      if (msgs.length > 0) {
-        const latestMsg = msgs[msgs.length - 1]; // or msgs[0] depending on sort, but let's check created_at
-        // Find the newest timestamp in msgs
-        let newestTime = 0;
-        msgs.forEach((m: any) => {
-          const t = new Date(m.created_at).getTime();
-          if (t > newestTime) newestTime = t;
-        });
-        
-        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-        if (newestTime < fiveMinutesAgo) {
-          return false; // Too old, stop ringing
-        }
+      // Ensure the contact actually sent a message! Don't ring just for automated system greetings on widget visit
+      const contactMsgs = msgs.filter((m: any) => m.sender_type === 'contact');
+      if (contactMsgs.length === 0) return false;
+
+      // Only ring if the latest contact message is less than 5 minutes old
+      // This prevents old, ignored spam chats from ringing indefinitely
+      let newestTime = 0;
+      contactMsgs.forEach((m: any) => {
+        const t = new Date(m.created_at).getTime();
+        if (t > newestTime) newestTime = t;
+      });
+      
+      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      if (newestTime < fiveMinutesAgo) {
+        return false; // Too old, stop ringing
       }
 
       return true;
