@@ -3,7 +3,6 @@
 import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
-import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore } from "@/lib/store"
 import { Bell } from "lucide-react"
