@@ -3890,7 +3890,6 @@ export default function ChatThread({
                   onClick={() => setIsInternal(true)}
                   className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-amber-600 dark:hover:text-amber-500'}`}
                 >
-                  <Lock size={12} className={isInternal ? 'text-amber-600 dark:text-amber-500' : 'text-slate-400'} />
                   Whisper
                 </button>
               </div>
@@ -3898,7 +3897,7 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 dark:bg-amber-600 dark:hover:bg-amber-700 dark:disabled:bg-amber-800' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
+                className={`px-5 py-1.5 text-[14px] font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-amber-400 text-amber-950 hover:bg-amber-500 disabled:bg-amber-200 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-600 dark:disabled:bg-amber-800' : 'bg-[#0070f3] text-white hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isSending ? (
                   <>
@@ -3906,10 +3905,7 @@ export default function ChatThread({
                     <span>{isInternal ? 'Whispering...' : 'Sending...'}</span>
                   </>
                 ) : isInternal ? (
-                  <>
-                    <Lock size={14} className="opacity-90" />
-                    <span>Whisper</span>
-                  </>
+                  <span>Whisper</span>
                 ) : (
                   'Send'
                 )}

@@ -6,7 +6,7 @@ import { getLeaderboardStats } from "@/actions/leaderboard"
 import { Trophy, Clock, MessageSquare, MessagesSquare, Medal } from "lucide-react"
 
 export default function LeaderboardPage() {
-  const { user } = useAuth()
+  const user = useAuth()
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [stats, setStats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
