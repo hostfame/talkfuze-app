@@ -595,7 +595,7 @@ export default function InboxPage() {
           </div>
         </div>
       )}
-      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[320px] shrink-0`}>
+      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[360px] shrink-0`}>
         <ConversationList 
           conversations={conversations} 
           selectedId={selectedId} 

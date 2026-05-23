@@ -42,13 +42,9 @@ export default function InboxLayout({ children }: { children: React.ReactNode })
   return (
     <>
       {/* Secondary Sidebar (Folders / Filters) - hidden on mobile, compact on tablet/small desktop */}
-      <aside className="hidden md:flex w-[68px] xl:w-[190px] flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto transition-all duration-300">
+      <aside className="hidden md:flex w-[68px] xl:w-[150px] flex-col bg-[#F9FAFB] dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 z-10 shrink-0 overflow-y-auto transition-all duration-300">
         <div className="p-3 xl:p-5 pb-2 flex flex-col xl:flex-row justify-center xl:justify-between items-center gap-3 xl:gap-0">
           <h2 className="hidden xl:block font-medium text-[15px] text-slate-900 dark:text-white">Inbox</h2>
-          <div className="flex flex-col xl:flex-row gap-3 xl:gap-1">
-            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors" title="Search"><Search className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2}/></button>
-            <button className="p-1 text-slate-500 hover:text-slate-800 transition-colors" title="New"><Plus className="w-[18px] h-[18px] xl:w-[15px] xl:h-[15px]" strokeWidth={2}/></button>
-          </div>
         </div>
 
         <div className="px-2 xl:px-3 space-y-1 xl:space-y-0.5 mt-2">
