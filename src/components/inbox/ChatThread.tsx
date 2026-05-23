@@ -1279,6 +1279,7 @@ export default function ChatThread({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
   const [isAiStreaming, setIsAiStreaming] = useState(false)
+  const [isWaitingForTranscript, setIsWaitingForTranscript] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
@@ -2194,6 +2195,7 @@ export default function ChatThread({
     
     if (isAuto) {
       setIsAiStreaming(true);
+      setIsWaitingForTranscript(true);
     } else {
       setIsTranscribingAudio(true);
     }
@@ -2213,6 +2215,7 @@ export default function ChatThread({
 
       const data = await res.json();
       if (data.transcript) {
+        setIsWaitingForTranscript(false);
         if (!isAuto) cancelRecording();
         
         setIsAiStreaming(true);
@@ -2239,6 +2242,7 @@ export default function ChatThread({
       console.error("Transcription error:", err);
       setCustomAlert({ title: 'Transcription Failed', message: 'Could not convert audio to text.', type: 'error' });
       setIsAiStreaming(false);
+      setIsWaitingForTranscript(false);
     } finally {
       if (!isAuto) {
         setIsTranscribingAudio(false);
@@ -3397,7 +3401,7 @@ export default function ChatThread({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="relative flex flex-col w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {stagedAttachments.length > 0 && (
                 <div className="px-4 pt-3 pb-1 flex gap-2 flex-wrap">
                   {stagedAttachments.map((item, idx) => (
@@ -3507,6 +3511,15 @@ export default function ChatThread({
                   >
                     <X size={16} />
                   </button>
+                </div>
+              )}
+              
+              {isWaitingForTranscript && (
+                <div className="absolute left-0 right-0 bottom-4 flex items-center justify-center pointer-events-none z-10 animate-in fade-in duration-200">
+                  <span className="text-[13px] font-medium text-blue-500/80 dark:text-blue-400/80 flex items-center gap-1.5 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-blue-100/50 dark:border-blue-500/20">
+                    <Loader2 size={14} className="animate-spin" />
+                    Transcribing<span className="animate-[pulse_1s_ease-in-out_infinite]">...</span>
+                  </span>
                 </div>
               )}
 
