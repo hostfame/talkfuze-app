@@ -70,7 +70,7 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1000,
         system: "You are an expert AI CRM training engineer. You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'. You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.",
         messages: [
@@ -124,10 +124,10 @@ export async function completeAiDraftLog(
   context: string
 ): Promise<void> {
   try {
-    const supabase = await createClient();
+    // Use supabaseAdmin to bypass RLS limits in background Server Actions
     
     // First get the original draft to compare
-    const { data: log } = await supabase
+    const { data: log } = await supabaseAdmin
       .from("ai_draft_logs")
       .select("ai_draft, org_id")
       .eq("id", logId)
@@ -174,14 +174,14 @@ export async function completeAiDraftLog(
     };
 
     // Try to save customer context as well for the analytics dashboard
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("ai_draft_logs")
       .update({ ...updatePayload, customer_context: context })
       .eq("id", logId);
 
     // If column doesn't exist yet (42703), fallback to normal payload
     if (updateError && updateError.code === '42703') {
-      await supabase
+      await supabaseAdmin
         .from("ai_draft_logs")
         .update(updatePayload)
         .eq("id", logId);
