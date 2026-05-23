@@ -251,9 +251,10 @@ const INTENT_TO_PRICING: Record<string, string> = {
 export function buildKnowledgeContext(contextMessages: string): { context: string, sources: string[] } {
   const intents = detectIntents(contextMessages);
 
-  // Always include core info + policies (lean, ~400 tokens)
-  const sections: string[] = [CORE, POLICIES];
-  const sources: string[] = ['Core Info', 'Policies'];
+  // Core info and policies are now permanently cached in SYSTEM_PROMPT.
+  // We only load dynamic, intent-specific RAG sections here.
+  const sections: string[] = [];
+  const sources: string[] = [];
 
   // Inject only relevant pricing sections based on detected intent
   for (const intent of intents) {
