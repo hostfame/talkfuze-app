@@ -3536,7 +3536,7 @@ export default function WidgetPage() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phone Number (with country code)</label>
+                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
                           <input
                             type="tel"
                             required
@@ -3559,7 +3559,7 @@ export default function WidgetPage() {
                         <button
                           type="submit"
                           disabled={isUpdatingIdentity || !tempName.trim()}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                          className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(30,41,59,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
                         >
                           {isUpdatingIdentity ? (
                             <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Saving...</>
