@@ -1041,6 +1041,15 @@ async function processOutboundMessage(msg) {
       }
     }
 
+    // Bulletproof: Normalize any final JID to ensure correct BD country code prefix
+    let cleanJidNumber = jid.split('@')[0].replace(/[^0-9]/g, '');
+    if (cleanJidNumber.length === 10 && cleanJidNumber.startsWith('1')) {
+      cleanJidNumber = '880' + cleanJidNumber;
+    } else if (cleanJidNumber.length === 11 && cleanJidNumber.startsWith('01')) {
+      cleanJidNumber = '88' + cleanJidNumber;
+    }
+    jid = `${cleanJidNumber}@s.whatsapp.net`;
+
     let quoted = null;
     try {
       const parentMessageId = msg.metadata?.reply_to?.message_id;

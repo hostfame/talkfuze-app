@@ -352,6 +352,13 @@ async function upsertContact(jid, name) {
       console.log(`[UPSERT-CONTACT] Upgrading platform_id from ${existing.platform_id} to ${canonicalJid}`);
     }
 
+    // Automatically clear whatsapp_invalid flag if they successfully sent us a message/activity
+    if (metaUpdates.whatsapp_invalid) {
+      delete metaUpdates.whatsapp_invalid;
+      needsMetaUpdate = true;
+      console.log(`[UPSERT-CONTACT] Cleared whatsapp_invalid flag for ${existing.id} due to inbound activity`);
+    }
+
     // Update phone field if missing
     if (resolvedPhone && !existing.phone) {
       updates.phone = resolvedPhone;
@@ -568,7 +575,7 @@ async function processMessage(msg) {
     }
 
     const channelId = await getOrCreateChannel();
-    const contactId = await upsertContact(conversationJid, isGroup ? null : senderName);
+    const contactId = await upsertContact(conversationJid, (isGroup || fromMe) ? null : senderName);
     const conversationId = await upsertConversation(contactId, channelId);
 
     // Build metadata
@@ -1034,6 +1041,15 @@ async function processOutboundMessage(msg) {
       }
     }
 
+    // Bulletproof: Normalize any final JID to ensure correct BD country code prefix
+    let cleanJidNumber = jid.split('@')[0].replace(/[^0-9]/g, '');
+    if (cleanJidNumber.length === 10 && cleanJidNumber.startsWith('1')) {
+      cleanJidNumber = '880' + cleanJidNumber;
+    } else if (cleanJidNumber.length === 11 && cleanJidNumber.startsWith('01')) {
+      cleanJidNumber = '88' + cleanJidNumber;
+    }
+    jid = `${cleanJidNumber}@s.whatsapp.net`;
+
     let quoted = null;
     try {
       const parentMessageId = msg.metadata?.reply_to?.message_id;
@@ -1119,7 +1135,14 @@ async function processOutboundMessage(msg) {
     if (contact) {
       let isInvalidNumber = false;
       try {
-        if (err.message.includes('exists":false') || err.message.includes('exists:false')) {
+        const errMsg = String(err.message).toLowerCase();
+        if (
+          errMsg.includes('"exists":false') || 
+          errMsg.includes('"exists": false') || 
+          errMsg.includes('exists:false') || 
+          errMsg.includes('exists: false') ||
+          errMsg.includes('not registered on whatsapp')
+        ) {
           isInvalidNumber = true;
         }
       } catch (_) {}
@@ -1184,7 +1207,8 @@ async function sendWhatsAppPresence(jid, presence) {
       },
       body: JSON.stringify({
         number: jid,
-        presence: presence
+        presence: presence,
+        delay: 1200
       })
     });
     if (!res.ok) {
@@ -1207,7 +1231,7 @@ async function markWhatsAppMessageAsRead(jid) {
       },
       body: JSON.stringify({
         number: jid,
-        read: true
+        readMessages: true
       })
     });
     if (!res.ok) {
@@ -1360,13 +1384,16 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
       console.log(`[EDIT] Editing message ${platformMessageId} to: "${editedText.slice(0, 40)}"`);
 
       const payload = {
-        number: jid,
-        text: editedText,
-        status: "EDITED",
-        messageId: platformMessageId
+        number: jid.split('@')[0],
+        key: {
+          remoteJid: jid,
+          fromMe: true,
+          id: platformMessageId
+        },
+        text: editedText
       };
 
-      const res = await fetch(`${EVOLUTION_API_URL}/message/updateMessageText/${EVOLUTION_INSTANCE}`, {
+      const res = await fetch(`${EVOLUTION_API_URL}/chat/updateMessage/${EVOLUTION_INSTANCE}`, {
         method: 'POST',
         headers: {
           'apikey': EVOLUTION_API_KEY,
@@ -1374,10 +1401,10 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
         },
         body: JSON.stringify(payload)
       });
-
+      
       if (!res.ok) {
         const err = await res.text();
-        throw new Error(`Evolution updateMessageText failed: ${err}`);
+        throw new Error(`Evolution updateMessage failed: ${err}`);
       }
 
       console.log(`[EDIT] Message ${platformMessageId} successfully updated on WhatsApp`);

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 function calculateApproxCost(model: string, tokens: number): string {
-  if (!tokens || tokens <= 0) return "0.000¢";
+  if (!tokens || tokens <= 0) return "৳0.00";
   
   const m = model.toLowerCase();
   let costPer1KTokensInCents = 0.16; // default to haiku
@@ -23,12 +23,13 @@ function calculateApproxCost(model: string, tokens: number): string {
     costPer1KTokensInCents = 3.00;
   }
   
-  const cost = (tokens / 1000) * costPer1KTokensInCents;
+  const costInCents = (tokens / 1000) * costPer1KTokensInCents;
+  const costInBDT = costInCents * 1.25; // 1 USD = 125 BDT -> (Cents/100) * 125 = Cents * 1.25
   
-  if (cost < 0.01) {
-    return `${cost.toFixed(4)}¢`;
+  if (costInBDT < 0.01) {
+    return `৳${costInBDT.toFixed(4)}`;
   }
-  return `${cost.toFixed(3)}¢`;
+  return `৳${costInBDT.toFixed(2)}`;
 }
 
 export default function DraftLogItem({ log }: { log: any }) {
