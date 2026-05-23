@@ -437,7 +437,7 @@ export default function InboxPage() {
     
     // If we are currently in a voice call, don't play chat ringtones
     const hasUnpicked = conversations.some(c => {
-      if (c.status !== 'open' || !c.is_unread) return false;
+      if (c.status !== 'open') return false;
       let msgs: any[] = [];
       if (messagesMap[c.id] && messagesMap[c.id].length > 0) msgs = messagesMap[c.id];
       else if ((c as any).latestMessage) msgs = (c as any).latestMessage;
