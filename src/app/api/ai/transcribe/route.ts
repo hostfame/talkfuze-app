@@ -16,9 +16,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "messageId is required" }, { status: 400 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "OPENAI_API_KEY is not set" }, { status: 500 });
+      return NextResponse.json({ error: "GEMINI_API_KEY is not set" }, { status: 500 });
     }
 
     // 1. Fetch message
@@ -66,32 +66,49 @@ export async function POST(req: Request) {
     if (filename.includes("?")) filename = filename.split("?")[0];
     if (!filename.includes(".")) filename += ".ogg";
 
-    const formData = new FormData();
-    const blob = new Blob([new Uint8Array(buffer)], { type: filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg' });
-    formData.append("file", blob, filename);
-    formData.append("model", "whisper-1");
-    // User requested English since Bengali transcription is too broken. 
-    // We use the translations endpoint which translates any language to English.
-    
-    const whisperRes = await fetch("https://api.openai.com/v1/audio/translations", {
+    const base64Data = buffer.toString("base64");
+    const mimeType = filename.endsWith('.mp3') ? 'audio/mp3' : 'audio/ogg';
+
+    const geminiPayload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: "Transcribe the following audio accurately in Bengali or English. If it is in Bangladeshi Bengali dialect, fix any phonetic or spelling mistakes to match how a Bangladeshi would naturally write it in the Bengali script. Return ONLY the transcribed text. Do not add any conversational filler, quotation marks, or explanations."
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1
+      }
+    };
+
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-      body: formData as any,
+      body: JSON.stringify(geminiPayload),
     });
 
-    if (!whisperRes.ok) {
-      const errText = await whisperRes.text();
-      console.error("Whisper error:", errText);
-      return NextResponse.json({ error: "Whisper transcription failed", details: errText }, { status: 500 });
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      console.error("Gemini error:", errText);
+      return NextResponse.json({ error: "Gemini transcription failed", details: errText }, { status: 500 });
     }
 
-    const whisperData = await whisperRes.json();
-    const transcript = whisperData.text;
+    const data = await geminiRes.json();
+    const transcript = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!transcript) {
-      return NextResponse.json({ error: "No transcript returned" }, { status: 500 });
+      return NextResponse.json({ error: "No transcript returned from Gemini" }, { status: 500 });
     }
 
     // 4. Update message in Supabase
