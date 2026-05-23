@@ -2079,11 +2079,10 @@ export default function ChatThread({
           const file = new File([audioBlob], `voice-message.${extension}`, { type: actualMimeType })
           const localUrl = URL.createObjectURL(audioBlob)
           
-          setStagedAudio({ url: localUrl, file })
-          
-          // Auto-transcribe the audio immediately only if triggered by //v
           if (autoTranscribeRef.current) {
-            handleTranscribeAudio(file)
+            handleTranscribeAudio(file, true)
+          } else {
+            setStagedAudio({ url: localUrl, file })
           }
         }
         audioChunksRef.current = []
@@ -2189,10 +2188,16 @@ export default function ChatThread({
     setStagedAudio(null)
   }
 
-  const handleTranscribeAudio = async (fileToTranscribe?: File) => {
+  const handleTranscribeAudio = async (fileToTranscribe?: File, isAuto: boolean = false) => {
     const file = fileToTranscribe || stagedAudio?.file;
     if (!file) return;
-    setIsTranscribingAudio(true);
+    
+    if (isAuto) {
+      setIsAiStreaming(true);
+    } else {
+      setIsTranscribingAudio(true);
+    }
+    
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -2208,7 +2213,8 @@ export default function ChatThread({
 
       const data = await res.json();
       if (data.transcript) {
-        cancelRecording();
+        if (!isAuto) cancelRecording();
+        
         setIsAiStreaming(true);
         
         setInput(prev => {
@@ -2232,8 +2238,11 @@ export default function ChatThread({
     } catch (err) {
       console.error("Transcription error:", err);
       setCustomAlert({ title: 'Transcription Failed', message: 'Could not convert audio to text.', type: 'error' });
+      setIsAiStreaming(false);
     } finally {
-      setIsTranscribingAudio(false);
+      if (!isAuto) {
+        setIsTranscribingAudio(false);
+      }
     }
   }
 
