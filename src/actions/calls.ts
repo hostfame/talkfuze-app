@@ -213,24 +213,70 @@ export async function logSipCallDirect(params: {
         ? `${Math.floor(params.durationSeconds / 60)}m ${params.durationSeconds % 60}s` 
         : `${params.durationSeconds}s`;
 
-      await supabaseAdmin.from('messages').insert({
-        org_id: params.orgId,
-        conversation_id: params.conversationId,
-        sender_type: 'system',
-        sender_id: agentId || null,
-        content: `Voice call`,
-        content_type: 'system',
-        status: 'delivered',
-        metadata: JSON.stringify({ 
-          event: 'voice_call',
-          agent_name: params.agentName,
-          duration: formattedDuration,
-          status: params.status,
-          direction: params.direction
+      // DEDUPLICATION: Prevent multiple agents in a ring group from spamming the chat
+      // with identical call records (e.g., 4 agents ringing -> 3 cancelled, 1 answered)
+      const { data: recentMsgs } = await supabaseAdmin
+        .from('messages')
+        .select('id, metadata, content')
+        .eq('conversation_id', params.conversationId)
+        .in('content', ['Voice call', 'Missed voice call'])
+        .gte('created_at', new Date(Date.now() - 30000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      const recentMsg = recentMsgs && recentMsgs.length > 0 ? recentMsgs[0] : null;
+
+      let shouldInsertMessage = true;
+      const contentStr = params.status === 'CANCELLED' ? 'Missed voice call' : 'Voice call';
+
+      if (recentMsg) {
+        const recentMeta = typeof recentMsg.metadata === 'string' ? JSON.parse(recentMsg.metadata) : (recentMsg.metadata || {});
+        
+        if (params.status === 'CANCELLED') {
+          // If we are cancelled, and there's ANY recent call message (answered or cancelled), skip our insert
+          shouldInsertMessage = false;
+        } else if (params.status === 'ANSWERED' && recentMeta.status === 'CANCELLED') {
+          // If we ANSWERED, but a CANCELLED message was already inserted (race condition),
+          // we should UPDATE the existing message to reflect the answered state!
+          await supabaseAdmin.from('messages').update({
+            sender_id: agentId || null,
+            content: contentStr,
+            metadata: JSON.stringify({ 
+              event: 'voice_call',
+              agent_name: params.agentName,
+              duration: formattedDuration,
+              status: params.status,
+              direction: params.direction
+            })
+          }).eq('id', recentMsg.id);
+          
+          shouldInsertMessage = false;
+        } else if (params.status === 'ANSWERED' && recentMeta.status === 'ANSWERED') {
+          // Unlikely, but if two agents somehow both answered (or same agent double fired)
+          shouldInsertMessage = false;
+        }
+      }
+
+      if (shouldInsertMessage) {
+        await supabaseAdmin.from('messages').insert({
+          org_id: params.orgId,
+          conversation_id: params.conversationId,
+          sender_type: 'system',
+          sender_id: agentId || null,
+          content: contentStr,
+          content_type: 'system',
+          status: 'delivered',
+          metadata: JSON.stringify({ 
+            event: 'voice_call',
+            agent_name: params.agentName,
+            duration: formattedDuration,
+            status: params.status,
+            direction: params.direction
+          })
         })
-      })
-      
-      await supabaseAdmin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', params.conversationId)
+        
+        await supabaseAdmin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', params.conversationId)
+      }
     }
 
     return { success: true }
