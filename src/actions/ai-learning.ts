@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // In-memory cache for approved examples and recent corrections to make AI draft generation super fast
 interface CacheEntry<T> {
@@ -50,7 +51,7 @@ export async function logAiDraft(
 /**
  * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
  */
-async function generateCorrectionFeedback(context: string, aiDraft: string, agentSent: string): Promise<string | null> {
+async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, question: string, answer: string } | null> {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return null;
@@ -63,43 +64,42 @@ async function generateCorrectionFeedback(context: string, aiDraft: string, agen
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        max_tokens: 150,
+        response_format: { type: "json_object" },
         messages: [
           {
+            role: "system",
+            content: "You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'."
+          },
+          {
             role: "user",
-            content: `You are an AI learning coordinator. Compare the following AI-generated support draft with the human agent's corrected message. 
-Identify exactly why the human agent edited the draft, focusing on the factual differences or protocol changes in the context of the customer's question.
-Write a concise, 1-sentence, highly actionable rule/insight (in English) describing the correction, to help the AI avoid repeating this mistake next time.
-
-Format example:
-"Avoid formal textbook words like 'অনুগ্রহপূর্বক'; the agent prefers casual terms like 'প্লিজ' or omitting them."
-"The agent corrected the .COM domain price to 1650tk; always use 1,650 BDT for .COM registrations."
-
-Conversation Context (What the customer was asking):
+            content: `Compare the mistaken AI Draft with the Agent's Final Verified Message.
+            
+Conversation Context (Customer asked):
 "${context}"
 
-AI Draft:
+Mistaken AI Draft:
 "${aiDraft}"
 
-Agent's Final Message:
+Agent's Final Verified Message:
 "${agentSent}"
 
-Output ONLY the 1-sentence actionable rule/insight. No labels, no prefixes.`
+Tasks:
+1. 'rule': A concise 1-sentence actionable rule (in English) describing exactly why the agent edited the draft and what mistake to avoid.
+2. 'question': A clean, standalone 1-sentence summary of the customer's intent/problem.
+3. 'answer': The agent's verified final message (exactly as written, but remove specific personal greetings).
+
+Output strictly in JSON: {"rule": "...", "question": "...", "answer": "..."}`
           }
         ]
       })
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Correction feedback API error:", err);
-      return null;
-    }
-    
+    if (!response.ok) return null;
     const data = await response.json();
-    return data.choices?.[0]?.message?.content?.trim() || null;
+    const result = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    return (result.rule && result.question && result.answer) ? result : null;
   } catch (e) {
-    console.error("generateCorrectionFeedback error:", e);
+    console.error("extractLearningData error:", e);
     return null;
   }
 }
@@ -130,8 +130,31 @@ export async function completeAiDraftLog(
     let correctionFeedback: string | null = null;
 
     if (wasEdited) {
-      // Generate self-correction insight in background/context
-      correctionFeedback = await generateCorrectionFeedback(context, log.ai_draft, agentSent);
+      // Generate both short-term rule and permanent Q&A pair
+      const learningData = await extractLearningData(context, log.ai_draft, agentSent);
+      
+      if (learningData) {
+        correctionFeedback = learningData.rule;
+
+        // Insert into permanent vector database (RAG)
+        try {
+          const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
+          });
+          const embData = await embeddingRes.json();
+          if (embData.data?.[0]?.embedding) {
+            await supabaseAdmin.from('ai_knowledge_base').insert({
+              question: learningData.question,
+              answer: learningData.answer,
+              embedding: embData.data[0].embedding
+            });
+          }
+        } catch (err) {
+          console.error("Vector insert error:", err);
+        }
+      }
     }
 
     await supabase
