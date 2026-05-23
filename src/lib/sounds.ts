@@ -909,13 +909,16 @@ const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
 
     const t = ctx.currentTime;
 
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.setValueAtTime(-3, t);
-    comp.knee.setValueAtTime(6, t);
-    comp.ratio.setValueAtTime(3, t);
-    comp.attack.setValueAtTime(0.003, t);
-    comp.release.setValueAtTime(0.08, t);
-    comp.connect(ctx.destination);
+    // Waveshaper for soft-clipping saturation to allow huge volume without harsh clipping
+    const waveshaper = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const x = (i * 2) / 256 - 1;
+      curve[i] = (Math.PI + 3.5) * x / (Math.PI + 3.5 * Math.abs(x));
+    }
+    waveshaper.curve = curve;
+    waveshaper.oversample = '2x';
+    waveshaper.connect(ctx.destination);
 
     const ring = (freq: number, start: number, dur: number, gain: number, wave: OscillatorType = 'sine', filterFreq: number = 4000) => {
       const osc = ctx.createOscillator();
@@ -925,7 +928,7 @@ const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
       filt.frequency.setValueAtTime(filterFreq, t);
       osc.connect(filt);
       filt.connect(g);
-      g.connect(comp);
+      g.connect(waveshaper);
       osc.type = wave;
       osc.frequency.setValueAtTime(freq, t + start);
       g.gain.setValueAtTime(0, t + start);
@@ -938,11 +941,11 @@ const playRingtoneChime = (preset: RingtonePreset, vol: number) => {
 
     switch (preset) {
       case 'classic':
-        // Traditional telephone ring: two bursts of 440+480Hz
-        ring(440, 0, 0.4, 0.70);
-        ring(480, 0, 0.4, 0.65);
-        ring(440, 0.5, 0.4, 0.70);
-        ring(480, 0.5, 0.4, 0.65);
+        // Traditional telephone ring: two bursts of 440+480Hz (15x louder as requested)
+        ring(440, 0, 0.4, 10.5, 'square', 3000);  // 0.70 * 15
+        ring(480, 0, 0.4, 9.75, 'square', 3000);  // 0.65 * 15
+        ring(440, 0.5, 0.4, 10.5, 'square', 3000);
+        ring(480, 0.5, 0.4, 9.75, 'square', 3000);
         break;
 
       case 'digital':
