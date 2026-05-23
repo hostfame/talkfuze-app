@@ -373,7 +373,13 @@ function formatWhatsAppMarkdown(text: string) {
   });
 }
 
-function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserProfile[] = [], metadataMentions?: Record<string, string>) {
+function renderTextWithLinks(
+  text: string, 
+  isAgent: boolean, 
+  teamMembers: UserProfile[] = [], 
+  metadataMentions?: Record<string, string>,
+  isInternal: boolean = false
+) {
   if (!text) return text;
   
   if (text === '[Audio Voice Message]') {
@@ -477,7 +483,13 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
         return (
           <span 
             key={`${i}-${j}`} 
-            className={`px-1.5 py-0.5 mx-0.5 rounded-md font-medium text-[0.9em] inline-block ${isAgent ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'}`}
+            className={`px-1.5 py-0.5 mx-0.5 rounded-md font-semibold text-[0.9em] inline-block ${
+              isInternal 
+                ? 'bg-amber-200/80 dark:bg-amber-950/60 text-black dark:text-amber-200 border border-amber-300/50 dark:border-amber-900/40' 
+                : isAgent 
+                  ? 'bg-white/20 text-white font-medium' 
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+            }`}
           >
             {displayName}
           </span>
@@ -3202,7 +3214,7 @@ export default function ChatThread({
                                   onClick={() => setZoomedImage((mediaUrl) as string)}
                                 />
                               </div>
-                              {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Attachment]' && msg.content !== '[Image]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>}
                             </div>
                           ) : msg.content_type === 'file' && (mediaUrl) ? (
                             <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
@@ -3212,7 +3224,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
                               <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
-                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
                             <div className="mb-2">
@@ -3220,10 +3232,10 @@ export default function ChatThread({
                                 <source src={(mediaUrl) as string} type={safeMeta.mimetype || 'video/mp4'} />
                                 Your browser does not support the video tag.
                               </video>
-                              {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Video]' && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>}
                             </div>
                           ) : (
-                            <div>{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions)}</div>
+                            <div>{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>
                           )}
                         </>
                       )}

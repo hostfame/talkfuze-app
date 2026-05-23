@@ -239,7 +239,7 @@ export default function InboxPage() {
           if (activeUser && activeUser.name && newMsg.content) {
              const mentionTag = `@${activeUser.name.replace(/\s+/g, '')}`;
              if (newMsg.content.toLowerCase().includes(mentionTag.toLowerCase())) {
-               playUISound('receive');
+               playUISound('receive', 'loud');
                const senderName = currentStoreState.teamMembers.find(t => t.id === newMsg.sender_id)?.name || 'An agent';
                
                setMentionNotification({
