@@ -1,4 +1,4 @@
-import { Search, Plus, X, Phone, Loader2, Mic, Image as ImageIcon, Video, Paperclip } from "lucide-react"
+import { Search, Plus, X, Phone, Loader2, Mic, Image as ImageIcon, Video, Paperclip, MessageSquare } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { searchConversations, createConversation } from "@/actions/dashboard"
