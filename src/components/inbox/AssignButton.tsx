@@ -69,9 +69,13 @@ export default function AssignButton({ conversation, orgId }: { conversation: Co
       >
         {assignee ? (
           <>
-            <div className="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
-              {assignee.name.charAt(0).toUpperCase()}
-            </div>
+            {assignee.avatar_url ? (
+              <img src={assignee.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 flex items-center justify-center text-[10px] font-semibold shrink-0">
+                {assignee.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             {assignee.name}
           </>
         ) : (
