@@ -190,3 +190,88 @@ export const useInboxStore = create<InboxState>((set) => ({
   }))
 }))
 
+interface GlobalAudioState {
+  currentSrc: string | null;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  speed: number;
+  play: (src: string) => void;
+  pause: () => void;
+  seek: (time: number) => void;
+  setSpeed: (speed: number) => void;
+  updateTime: (time: number) => void;
+  updateDuration: (duration: number) => void;
+  setPlayingState: (playing: boolean) => void;
+}
+
+export const globalAudioElement = typeof window !== 'undefined' ? new Audio() : null;
+
+export const useGlobalAudioStore = create<GlobalAudioState>((set, get) => ({
+  currentSrc: null,
+  isPlaying: false,
+  currentTime: 0,
+  duration: 0,
+  speed: 1,
+  
+  play: (src: string) => {
+    if (!globalAudioElement) return;
+    const { currentSrc, isPlaying } = get();
+    
+    if (currentSrc === src) {
+      if (isPlaying) {
+        globalAudioElement.pause();
+      } else {
+        globalAudioElement.play();
+      }
+    } else {
+      globalAudioElement.src = src;
+      globalAudioElement.playbackRate = get().speed;
+      globalAudioElement.play();
+      set({ currentSrc: src, currentTime: 0, isPlaying: true });
+    }
+  },
+  
+  pause: () => {
+    if (globalAudioElement) {
+      globalAudioElement.pause();
+    }
+  },
+  
+  seek: (time: number) => {
+    if (globalAudioElement && get().currentSrc) {
+      globalAudioElement.currentTime = time;
+      set({ currentTime: time });
+    }
+  },
+  
+  setSpeed: (speed: number) => {
+    if (globalAudioElement) {
+      globalAudioElement.playbackRate = speed;
+    }
+    set({ speed });
+  },
+  
+  updateTime: (time: number) => set({ currentTime: time }),
+  updateDuration: (duration: number) => set({ duration }),
+  setPlayingState: (playing: boolean) => set({ isPlaying: playing }),
+}));
+
+if (globalAudioElement) {
+  globalAudioElement.addEventListener('timeupdate', () => {
+    useGlobalAudioStore.getState().updateTime(globalAudioElement.currentTime);
+  });
+  globalAudioElement.addEventListener('loadedmetadata', () => {
+    useGlobalAudioStore.getState().updateDuration(globalAudioElement.duration);
+  });
+  globalAudioElement.addEventListener('play', () => {
+    useGlobalAudioStore.getState().setPlayingState(true);
+  });
+  globalAudioElement.addEventListener('pause', () => {
+    useGlobalAudioStore.getState().setPlayingState(false);
+  });
+  globalAudioElement.addEventListener('ended', () => {
+    useGlobalAudioStore.getState().setPlayingState(false);
+    useGlobalAudioStore.getState().updateTime(0);
+  });
+}

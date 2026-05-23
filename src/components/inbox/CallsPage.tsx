@@ -3,31 +3,33 @@
 import { useEffect, useState, useRef } from "react"
 import { PhoneIncoming, PhoneOutgoing, Clock, Search, Calendar, PhoneOff, X, Play, Pause, Phone, Globe } from "lucide-react"
 import { getCallLogs } from "@/actions/calls"
-import { useInboxStore } from "@/lib/store"
+import { useInboxStore, useGlobalAudioStore } from "@/lib/store"
 import { supabase } from "@/lib/supabase"
 
 function CustomAudioPlayer({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [speed, setSpeed] = useState(1)
+  
+  const { currentSrc, isPlaying: globalIsPlaying, currentTime: globalCurrentTime, play, seek, speed: globalSpeed, setSpeed: setGlobalSpeed } = useGlobalAudioStore()
+  const isPlaying = currentSrc === src && globalIsPlaying
+  
   const [isDragging, setIsDragging] = useState(false)
   const [duration, setDuration] = useState(0)
-  const [currentTime, setCurrentTime] = useState(0)
+  const [localCurrentTime, setLocalCurrentTime] = useState(0)
+  const [progress, setProgress] = useState(0)
   
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause()
-      else audioRef.current.play()
-      setIsPlaying(!isPlaying)
+  // Sync with global time if this is the active track
+  useEffect(() => {
+    if (currentSrc === src && !isDragging) {
+      setLocalCurrentTime(globalCurrentTime)
+      if (duration > 0) setProgress((globalCurrentTime / duration) * 100)
     }
-  }
+  }, [globalCurrentTime, currentSrc, src, isDragging, duration])
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current && !isDragging) {
-      const current = audioRef.current.currentTime
-      setCurrentTime(current)
-      if (duration > 0) setProgress((current / duration) * 100)
+  const togglePlay = () => {
+    play(src)
+    if (currentSrc !== src && localCurrentTime > 0) {
+      // Small delay to allow the global audio to load the new src before seeking
+      setTimeout(() => seek(localCurrentTime), 50)
     }
   }
 
@@ -38,18 +40,14 @@ function CustomAudioPlayer({ src }: { src: string }) {
   }
 
   const cycleSpeed = () => {
-    if (audioRef.current) {
-      const newSpeed = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1
-      audioRef.current.playbackRate = newSpeed
-      setSpeed(newSpeed)
+    const newSpeed = globalSpeed === 1 ? 1.5 : globalSpeed === 1.5 ? 2 : 1
+    if (currentSrc === src) {
+      setGlobalSpeed(newSpeed)
     }
   }
 
-  const handleEnded = () => {
-    setIsPlaying(false)
-    setProgress(0)
-    setCurrentTime(0)
-  }
+  // Use the global speed if active, otherwise local doesn't matter since it won't play
+  const displaySpeed = currentSrc === src ? globalSpeed : 1
 
   const formatTime = (time: number) => {
     if (!time || isNaN(time)) return "0:00";
@@ -60,13 +58,20 @@ function CustomAudioPlayer({ src }: { src: string }) {
 
   // Real-time seek drag/scrub mechanics
   const handleScrub = (clientX: number, currentTarget: HTMLDivElement) => {
-    if (!audioRef.current || !duration) return;
+    if (!duration) return;
     const rect = currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const percentage = x / rect.width;
-    audioRef.current.currentTime = percentage * duration;
+    const newTime = percentage * duration;
+    
+    setLocalCurrentTime(newTime);
     setProgress(percentage * 100);
-    setCurrentTime(percentage * duration);
+    
+    if (currentSrc === src) {
+      seek(newTime);
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -110,9 +115,9 @@ function CustomAudioPlayer({ src }: { src: string }) {
         <audio 
           ref={audioRef} 
           src={src} 
-          onTimeUpdate={handleTimeUpdate}
+          preload="metadata"
           onLoadedMetadata={handleLoadedMetadata}
-          onEnded={handleEnded}
+          className="hidden"
         />
         
         <button 
@@ -162,7 +167,7 @@ function CustomAudioPlayer({ src }: { src: string }) {
             </div>
           </div>
           <div className="text-[9px] font-semibold flex justify-between tracking-wide px-0.5 text-slate-400 dark:text-slate-500">
-            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(localCurrentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
@@ -171,7 +176,7 @@ function CustomAudioPlayer({ src }: { src: string }) {
           onClick={cycleSpeed}
           className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 shrink-0 w-6 text-center transition-colors bg-slate-200/50 dark:bg-slate-700/50 py-0.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
         >
-          {speed}x
+          {displaySpeed}x
         </button>
       </div>
     </div>

@@ -11,7 +11,7 @@ import { updateContactName, updateContactEmail, updateContactPhone } from "@/act
 import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
-import { useMessageStore, useInboxStore } from "@/lib/store"
+import { useMessageStore, useInboxStore, useGlobalAudioStore } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 // removed generateAiDraft import
 import { logAiDraft, completeAiDraftLog } from "@/actions/ai-learning"
@@ -133,10 +133,12 @@ const SafeImage = ({
 
 const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, type: 'agent' | 'customer' | 'internal', messageId?: string, transcript?: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const { currentSrc, isPlaying: globalIsPlaying, currentTime: globalCurrentTime, play, seek } = useGlobalAudioStore();
+  const isPlaying = currentSrc === url && globalIsPlaying;
+
   const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [localCurrentTime, setLocalCurrentTime] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
 
@@ -157,21 +159,18 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
     }
   }, [messageId, transcript]);
 
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+  // Sync with global time if this is the active track
+  useEffect(() => {
+    if (currentSrc === url && !isDragging) {
+      setLocalCurrentTime(globalCurrentTime);
+      if (duration > 0) setProgress((globalCurrentTime / duration) * 100);
     }
-  };
+  }, [globalCurrentTime, currentSrc, url, isDragging, duration]);
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current && !isDragging) {
-      setCurrentTime(audioRef.current.currentTime);
-      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+  const togglePlay = () => {
+    play(url);
+    if (currentSrc !== url && localCurrentTime > 0) {
+      setTimeout(() => seek(localCurrentTime), 50);
     }
   };
 
@@ -190,13 +189,20 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
 
   // Real-time seek drag/scrub mechanics
   const handleScrub = (clientX: number, currentTarget: HTMLDivElement) => {
-    if (!audioRef.current || !duration) return;
+    if (!duration) return;
     const rect = currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     const percentage = x / rect.width;
-    audioRef.current.currentTime = percentage * duration;
+    const newTime = percentage * duration;
+
+    setLocalCurrentTime(newTime);
     setProgress(percentage * 100);
-    setCurrentTime(percentage * duration);
+
+    if (currentSrc === url) {
+      seek(newTime);
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -264,9 +270,8 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
         <audio 
           ref={audioRef} 
           src={url} 
-          onTimeUpdate={handleTimeUpdate}
+          preload="metadata"
           onLoadedMetadata={handleLoadedMetadata}
-          onEnded={() => { setIsPlaying(false); setProgress(0); setCurrentTime(0); }}
           className="hidden" 
         />
         
@@ -323,7 +328,7 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
           </div>
           
           <div className={`text-[10px] font-bold tracking-wide flex justify-between ${timeStyle}`}>
-            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(localCurrentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
