@@ -451,7 +451,27 @@ export default function InboxPage() {
       
       const hasAgentReply = msgs.some((m: any) => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content && m.content.includes('joined the conversation')));
       const hasAgentParticipant = c.participants && c.participants.length > 0;
-      return !hasAgentReply && !hasAgentParticipant;
+      
+      if (hasAgentReply || hasAgentParticipant) return false;
+
+      // Only ring if the latest message is less than 5 minutes old
+      // This prevents old, ignored chats from ringing indefinitely
+      if (msgs.length > 0) {
+        const latestMsg = msgs[msgs.length - 1]; // or msgs[0] depending on sort, but let's check created_at
+        // Find the newest timestamp in msgs
+        let newestTime = 0;
+        msgs.forEach((m: any) => {
+          const t = new Date(m.created_at).getTime();
+          if (t > newestTime) newestTime = t;
+        });
+        
+        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+        if (newestTime < fiveMinutesAgo) {
+          return false; // Too old, stop ringing
+        }
+      }
+
+      return true;
     });
 
     if (hasUnpicked) {
