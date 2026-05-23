@@ -502,9 +502,18 @@ function getContentType(file: File | null) {
 const VoiceCallWidget = ({ msg, isMissed, agent, safeMeta, msgTime }: any) => {
   const [showPlayer, setShowPlayer] = useState(false);
   const hasRecording = !!safeMeta?.recording_url;
+  const widgetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showPlayer && widgetRef.current) {
+      setTimeout(() => {
+        widgetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }, [showPlayer]);
 
   return (
-    <div key={msg.id} className="flex justify-center my-4">
+    <div key={msg.id} className="flex justify-center my-4" ref={widgetRef}>
       <div 
         className={`flex flex-col gap-2 border px-3.5 py-2 rounded-[14px] shadow-sm transition-all duration-200 ${
           isMissed 
