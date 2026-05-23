@@ -394,40 +394,57 @@ Draft a smart, helpful reply as the support agent.`;
 
         let buffer = '';
 
-        try {
-          let firstChunk = true;
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          let inputTokens = 0;
+          let outputTokens = 0;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || '';
+          try {
+            let firstChunk = true;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            for (const line of lines) {
-              if (firstChunk && line.startsWith("data: ")) {
-                // Detect Anthropic stream-level errors (model overloaded, rate limit, etc.)
-                const parsed = JSON.parse(line.slice(6));
-                if (parsed.type === 'error') {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown Anthropic error' })}\n\n`));
-                }
-                firstChunk = false;
-              }
-              if (line.startsWith("data: ") && line !== "data: [DONE]") {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  if (data.type === "content_block_delta" && data.delta?.text) {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`)
-                    );
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (firstChunk && line.startsWith("data: ")) {
+                  // Detect Anthropic stream-level errors
+                  const parsed = JSON.parse(line.slice(6));
+                  if (parsed.type === 'error') {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown Anthropic error' })}\n\n`));
                   }
-                } catch {
-                  // incomplete JSON chunk
+                  firstChunk = false;
+                }
+                if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.type === "message_start" && data.message?.usage?.input_tokens) {
+                      inputTokens = data.message.usage.input_tokens;
+                    }
+                    if (data.type === "message_delta" && data.usage?.output_tokens) {
+                      outputTokens = data.usage.output_tokens;
+                    }
+                    if (data.type === "content_block_delta" && data.delta?.text) {
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`)
+                      );
+                    }
+                  } catch {
+                    // incomplete JSON chunk
+                  }
                 }
               }
             }
-          }
-        } catch (streamErr: any) {
+            
+            // Send final usage metrics
+            const totalTokens = inputTokens + outputTokens;
+            if (totalTokens > 0) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: "claude-3-5-haiku", temperature: 0.7 })}\n\n`)
+              );
+            }
+          } catch (streamErr: any) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream error: ' + (streamErr?.message || 'unknown') })}\n\n`));
         } finally {
           reader.releaseLock();

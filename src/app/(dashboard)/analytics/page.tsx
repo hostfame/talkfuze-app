@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Bot, CheckCircle2, FileEdit, Zap, BrainCircuit, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import DraftLogItem from "@/components/analytics/DraftLogItem";
 
 export const metadata = {
   title: "AI Analytics - TalkFuze",
@@ -171,79 +172,16 @@ export default async function AnalyticsPage() {
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Recent AI Drafts ({safeLogs.length})</h2>
             <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
-              <div className="overflow-y-auto custom-scrollbar flex-1">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 dark:bg-[#1a2329] text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#222e35]">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium">AI Draft</th>
-                      <th className="px-4 py-3 font-medium">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-[#222e35]">
-                    {safeLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors align-top">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {!log.agent_sent ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-[#202c33] dark:text-slate-400">
-                              Not Sent
-                            </span>
-                          ) : log.was_edited ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 dark:bg-[#202c33] dark:text-slate-400">
-                              Edited
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                              Sent As-Is
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 min-w-[400px]">
-                          {log.customer_context && (
-                            <div className="mb-4 text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[13px] bg-slate-50 dark:bg-[#1a2329] p-3 rounded-lg border border-slate-200/60 dark:border-[#2a363d] shadow-sm relative">
-                              <div className="absolute -top-2.5 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-[#2a363d] rounded-full">
-                                Customer Asked
-                              </div>
-                              <div className="mt-1">
-                                {log.customer_context.split('\n').slice(-3).join('\n')}
-                              </div>
-                            </div>
-                          )}
-                          <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm relative">
-                            {log.customer_context && (
-                              <div className="absolute -top-2.5 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-[#222e35] rounded-full">
-                                AI Draft
-                              </div>
-                            )}
-                            <div className={log.customer_context ? "mt-1" : ""}>
-                              {log.ai_draft}
-                            </div>
-                          </div>
-                          {log.agent_sent && (
-                            <div className="text-slate-600 dark:text-slate-400 mt-4 whitespace-pre-wrap leading-relaxed text-[13px] bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30 shadow-sm relative">
-                              <div className="absolute -top-2.5 left-3 bg-blue-50 dark:bg-[#111b21] px-2 py-0 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
-                                ↳ Final Sent Message
-                              </div>
-                              <div className="mt-1">
-                                {log.agent_sent}
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-slate-500 text-xs">
-                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                        </td>
-                      </tr>
-                    ))}
-                    {safeLogs.length === 0 && (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
-                          No AI drafts logged yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="overflow-y-auto custom-scrollbar flex-1 p-4 bg-slate-50 dark:bg-[#1a2329]">
+                {safeLogs.length > 0 ? (
+                  safeLogs.map((log) => (
+                    <DraftLogItem key={log.id} log={log} />
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-slate-500">
+                    No AI drafts logged yet.
+                  </div>
+                )}
               </div>
             </div>
           </div>

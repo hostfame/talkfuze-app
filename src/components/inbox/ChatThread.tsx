@@ -1968,6 +1968,9 @@ export default function ChatThread({
       const decoder = new TextDecoder()
       let fullText = ''
       let lang = 'en'
+      let usageTokens: number | undefined
+      let usageModel: string | undefined
+      let usageTemp: number | undefined
 
       while (true) {
         const { done, value } = await reader.read()
@@ -1996,6 +1999,15 @@ export default function ChatThread({
               if (data.sources) {
                 setAiDraftSources(data.sources)
               }
+              if (data.usage) {
+                usageTokens = data.usage.total
+              }
+              if (data.model) {
+                usageModel = data.model
+              }
+              if (data.temperature !== undefined) {
+                usageTemp = data.temperature
+              }
             } catch (e) {}
           }
         }
@@ -2007,7 +2019,16 @@ export default function ChatThread({
 
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
-        aiDraftLogPromiseRef.current = logAiDraft(orgId, conversationId, currentUser.id, fullText.trim(), lang)
+        aiDraftLogPromiseRef.current = logAiDraft(
+          orgId, 
+          conversationId, 
+          currentUser.id, 
+          fullText.trim(), 
+          lang, 
+          usageTokens, 
+          usageModel, 
+          usageTemp
+        )
           .then(logId => { 
             aiDraftLogIdRef.current = logId; 
             if (logId) {
@@ -2583,7 +2604,7 @@ export default function ChatThread({
     return (
       <div className="flex-1 flex flex-col h-full relative bg-white border-r border-slate-200 z-10 overflow-hidden">
         {/* Skeleton Header */}
-        <div className="h-[72px] border-b border-slate-100 px-6 flex items-center gap-4 bg-white shrink-0">
+        <div className="h-[52px] border-b border-slate-100 px-6 flex items-center gap-4 bg-white shrink-0">
           <div className="w-10 h-10 rounded-full bg-slate-100/80 animate-pulse shrink-0" />
           <div className="space-y-2 flex-1">
             <div className="h-4 bg-slate-100 rounded-md w-40 animate-pulse" />
@@ -2666,7 +2687,7 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       {/* Header */}
-      <div className="h-[52px] border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-5 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
+      <div className="h-12 border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-4 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
           {/* Mobile back button */}
           {onBackToList && (

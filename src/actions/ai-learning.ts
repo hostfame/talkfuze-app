@@ -21,7 +21,10 @@ export async function logAiDraft(
   conversationId: string,
   agentId: string,
   aiDraft: string,
-  language: string
+  language: string,
+  tokensUsed?: number,
+  modelUsed?: string,
+  temperature?: number
 ): Promise<string | null> {
   try {
     const supabase = await createClient();
@@ -33,6 +36,9 @@ export async function logAiDraft(
         agent_id: agentId,
         ai_draft: aiDraft,
         language,
+        tokens_used: tokensUsed,
+        model_used: modelUsed,
+        temperature,
       })
       .select("id")
       .single();
