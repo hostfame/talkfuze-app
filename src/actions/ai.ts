@@ -101,15 +101,15 @@ You MUST draft your reply in the language the customer is currently speaking in 
 - Customer's LATEST message: "${latestCustomerMessageCleaned}"
 
 Step 1: Classify the language of this LATEST message:
-- If it is in Bengali script (বাংলা) OR clearly written in Banglish (Bengali words written in Latin letters, e.g., "vai", "apni", "hobe", "ki", "na", "bhai", "amader", "apnar", "taka"): Classify as BENGALI.
-- If it is written in English (e.g., "Are you there", "website link", "yes", "payment", "renewal"): Classify as ENGLISH.
+- If it contains actual Bengali alphabetic letters OR is clearly written in Banglish (Bengali words written in Latin letters, e.g., "vai", "apni", "hobe", "ki", "na", "bhai", "amader", "apnar", "taka"): Classify as BENGALI.
+- If it is written in English (e.g., "Are you there", "website link", "yes", "payment", "renewal", "So I've to pay ৳299?"): Classify as ENGLISH. Note: A currency symbol like ৳ does NOT make a message Bengali. Look for actual Bengali letters or words.
 - Ignore historical messages or audio transcripts. Focus ONLY on this latest message to detect language switches.
 
 Step 2: Enforce the language:
 - If classified as BENGALI: You MUST reply 100% in Bengali script (বাংলা হরফে).
 - If classified as ENGLISH: You MUST reply 100% in English. Do NOT use any Bengali script or Banglish words.`;
 
-    const detectedLanguage = /[\u0980-\u09FF]/.test(latestCustomerMessageCleaned) ? 'bn' : 'en';
+    const detectedLanguage = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(latestCustomerMessageCleaned) ? 'bn' : 'en';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
 
