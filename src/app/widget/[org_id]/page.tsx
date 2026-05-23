@@ -2099,6 +2099,21 @@ export default function WidgetPage() {
       status: 'delivered', // Optimistically fake delivery for instant UX
       created_at: new Date().toISOString()
     }])
+    
+    // Auto-prompt Identity Modal on first message
+    const isFirstMessage = messages.filter(m => m.sender_type === 'contact').length === 0;
+    if (isFirstMessage) {
+      getWidgetContact(org_id, deviceId).then(contact => {
+        if (!contact || !contact.name || !contact.phone) {
+          if (contact) {
+            setTempName(contact.name || "");
+            setTempPhone(contact.phone || "");
+          }
+          setIsIdentityModalOpen(true);
+        }
+      }).catch(console.error);
+    }
+
     setIsSending(true)
 
     try {
@@ -3539,7 +3554,7 @@ export default function WidgetPage() {
                           onClick={() => setIsIdentityModalOpen(false)}
                           className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-semibold py-3 rounded-xl text-[13px] border border-slate-200 dark:border-slate-700 transition-all active:scale-[0.98] cursor-pointer"
                         >
-                          Cancel
+                          No Thanks
                         </button>
                         <button
                           type="submit"
