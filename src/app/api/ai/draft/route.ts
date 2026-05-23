@@ -105,7 +105,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
         .eq("was_edited", true)
         .not("correction_feedback", "is", null)
         .order("created_at", { ascending: false })
-        .limit(40)
+        .limit(1000)
     ]);
 
     if (examplesRes.data) {
@@ -124,8 +124,9 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
     if (correctionsRes.data) {
       const corrections = correctionsRes.data.map(r => r.correction_feedback).filter(Boolean);
-      if (corrections.length > 0) {
-        mistakesBlock = `\n\nCRITICAL: PAST MISTAKES TO AVOID:\n${corrections.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
+      const uniqueCorrections = Array.from(new Set(corrections)); // Deduplicate to create a summary of rules
+      if (uniqueCorrections.length > 0) {
+        mistakesBlock = `\n\nCRITICAL KNOWLEDGE (LEARNED FROM PAST MISTAKES):\n${uniqueCorrections.map((c) => `- ${c}`).join('\n')}`;
       }
     }
   } catch (e) {
