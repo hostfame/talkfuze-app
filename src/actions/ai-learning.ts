@@ -62,6 +62,13 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
 
+    // QUALITY GATE 1: Skip if context is missing or generic placeholder
+    const contextLower = context.toLowerCase().trim();
+    if (!context || contextLower === 'customer support inquiry' || contextLower.length < 15) {
+      console.log("Skipping learning extraction: insufficient customer context.");
+      return null;
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -107,6 +114,15 @@ Output strictly in JSON: {"rule": "...", "question": "...", "answer": "..."}`
     const textContent = data.content?.[0]?.text || "";
     const cleanJson = textContent.replace(/```json|```/g, "").trim();
     const result = JSON.parse(cleanJson);
+
+    // QUALITY GATE 2: Reject generic/low-quality extractions
+    const qLower = (result.question || '').toLowerCase();
+    const genericPatterns = ['general customer support', 'general support inquiry', 'without specifying', 'n/a', 'the core problem or question'];
+    if (genericPatterns.some(p => qLower.includes(p)) || qLower.length < 10) {
+      console.log("Skipping low-quality extraction: generic question detected.");
+      return null;
+    }
+
     return (result.rule && result.question && result.answer) ? result : null;
   } catch (e) {
     console.error("extractLearningData error:", e);
@@ -146,20 +162,31 @@ export async function completeAiDraftLog(
       if (learningData) {
         correctionFeedback = learningData.rule;
 
-        // Insert into permanent vector database (RAG)
+        // Insert into permanent vector database (RAG) with deduplication
         try {
-          const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
-          });
-          const embData = await embeddingRes.json();
-          if (embData.data?.[0]?.embedding) {
-            await supabaseAdmin.from('ai_knowledge_base').insert({
-              question: learningData.question,
-              answer: learningData.answer,
-              embedding: embData.data[0].embedding
+          // QUALITY GATE 3: Check for duplicate questions before inserting
+          const { data: existing } = await supabaseAdmin
+            .from('ai_knowledge_base')
+            .select('id')
+            .ilike('question', learningData.question.trim())
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            console.log("Skipping vector insert: duplicate question already exists.");
+          } else {
+            const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
             });
+            const embData = await embeddingRes.json();
+            if (embData.data?.[0]?.embedding) {
+              await supabaseAdmin.from('ai_knowledge_base').insert({
+                question: learningData.question,
+                answer: learningData.answer,
+                embedding: embData.data[0].embedding
+              });
+            }
           }
         } catch (err) {
           console.error("Vector insert error:", err);

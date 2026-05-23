@@ -79,7 +79,7 @@ Output strictly in JSON: {"rule": "...", "question": "...", "answer": "..."}`
 
 async function run() {
   console.log("Fetching edited drafts with null rules...");
-  const logs = await fetchSupa("ai_draft_logs?was_edited=eq.true&agent_sent=not.is.null&correction_feedback=is.null&order=created_at.desc&limit=15");
+  const logs = await fetchSupa("ai_draft_logs?was_edited=eq.true&agent_sent=not.is.null&correction_feedback=is.null&order=created_at.desc&limit=300");
 
   if (!logs || logs.length === 0) {
     console.log("No failed drafts found!");
