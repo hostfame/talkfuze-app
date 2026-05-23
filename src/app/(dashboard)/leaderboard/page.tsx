@@ -169,9 +169,9 @@ export default function LeaderboardPage() {
                   
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-[#8696a0] mb-1 font-medium">
-                      <ShieldAlert size={14} className="text-[#0070f3]" /> First-Response SLA
+                      First-Response SLA
                     </div>
-                    <span className="text-2xl font-bold text-[#0070f3]">{agent.firstResponseSlaPercent}%</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{agent.firstResponseSlaPercent}%</span>
                     <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
                       under 60s reply
                     </span>
@@ -291,7 +291,7 @@ export default function LeaderboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
                     <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">First-Response SLA</span>
-                    <span className="text-2xl font-bold text-[#0070f3]">{selectedAgent.firstResponseSlaPercent}%</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.firstResponseSlaPercent}%</span>
                   </div>
                   
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
