@@ -8,7 +8,8 @@ import {
 import {
   SOUND_PRESETS, getSelectedSound, setSelectedSound, getSoundVolume, setSoundVolume, previewSound, type SoundPreset,
   RINGTONE_PRESETS, getSelectedRingtone, setSelectedRingtone, getRingtoneVolume, setRingtoneVolume, previewRingtone, type RingtonePreset,
-  MIN_SOUND_VOLUME, MIN_RINGTONE_VOLUME, playUISound, playUnassignedRingLoop, stopUnassignedRingLoop
+  MIN_SOUND_VOLUME, MIN_RINGTONE_VOLUME, playUISound, playUnassignedRingLoop, stopUnassignedRingLoop,
+  UNASSIGNED_PRESETS, type UnassignedPreset
 } from "@/lib/sounds"
 
 // ─── Helpers ───
@@ -185,7 +186,7 @@ function PresetSelector<T extends string>({
 // ─── Section Card ───
 function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+    <div className="py-8 border-b border-slate-200/80 dark:border-slate-800 last:border-0 md:flex md:gap-x-12">
       {children}
     </div>
   )
@@ -193,35 +194,41 @@ function Section({ children }: { children: React.ReactNode }) {
 
 function SectionHeader({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className="p-5 pb-0">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-[10px] bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+    <div className="md:w-[320px] shrink-0 mb-6 md:mb-0">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-sm">
           {icon}
         </div>
-        <div>
-          <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white leading-tight">{title}</h3>
-          <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
+        <h3 className="text-[14.5px] font-semibold text-slate-900 dark:text-white leading-tight tracking-tight">{title}</h3>
+      </div>
+      <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed md:pr-6">{description}</p>
+    </div>
+  )
+}
+
+function SectionBody({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex-1 max-w-2xl">
+      <div className="bg-white dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-1">
+          {children}
         </div>
       </div>
     </div>
   )
 }
 
-function SectionBody({ children }: { children: React.ReactNode }) {
-  return <div className="p-5">{children}</div>
-}
-
-function SettingRow({ icon, label, description, children }: { icon: React.ReactNode; label: string; description?: string; children: React.ReactNode }) {
+function SettingRow({ icon, label, description, children, noBorder = false }: { icon: React.ReactNode; label: string; description?: string; children: React.ReactNode; noBorder?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-3.5 border-b border-slate-100/80 dark:border-slate-800/60 last:border-0">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <span className="text-slate-400 dark:text-slate-500">{icon}</span>
-        <div className="min-w-0">
-          <div className="text-[13.5px] font-medium text-slate-800 dark:text-slate-200">{label}</div>
-          {description && <div className="text-[11.5px] text-slate-400 dark:text-slate-500 mt-0.5">{description}</div>}
+    <div className={`flex items-center justify-between p-4 ${noBorder ? '' : 'border-b border-slate-100 dark:border-slate-800/60'}`}>
+      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+        <span className="text-slate-400 dark:text-slate-500 shrink-0">{icon}</span>
+        <div className="min-w-0 pr-4">
+          <div className="text-[13.5px] font-medium text-slate-800 dark:text-slate-200 truncate">{label}</div>
+          {description && <div className="text-[12.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{description}</div>}
         </div>
       </div>
-      <div className="shrink-0 ml-3">{children}</div>
+      <div className="shrink-0 ml-2">{children}</div>
     </div>
   )
 }
@@ -282,6 +289,7 @@ function CustomSoundUploadRow({
 export default function SoundsSettingsPage() {
   // ── Sound States ──
   const [unassignedVol, setUnassignedVol] = useState<number>(() => ls.getNum('talkfuze_unassigned_volume', 1.0))
+  const [unassignedPreset, setUnassignedPreset] = useState<UnassignedPreset>(() => (ls.get('talkfuze_unassigned_preset') as UnassignedPreset) || 'default')
 
   const [msgPreset, setMsgPreset] = useState<SoundPreset>(() => getSelectedSound())
   const [msgVol, setMsgVol] = useState<number>(() => getSoundVolume())
@@ -325,6 +333,7 @@ export default function SoundsSettingsPage() {
 
   // ── Handlers: Unassigned ──
   const handleUnassignedVol = (v: number) => { setUnassignedVol(v); persist('talkfuze_unassigned_volume', v) }
+  const handleUnassignedPreset = (p: UnassignedPreset) => { setUnassignedPreset(p); persist('talkfuze_unassigned_preset', p) }
 
   // ── Handlers: Message ──
   const handleMsgPreset = (p: SoundPreset) => {
@@ -435,7 +444,7 @@ export default function SoundsSettingsPage() {
         </p>
       </div>
 
-      <div className="space-y-5">
+      <div className="flex flex-col">
 
         {/* ───────────── UNASSIGNED CHAT SOUND ───────────── */}
         <Section>
@@ -445,24 +454,56 @@ export default function SoundsSettingsPage() {
             description="The loud continuous ring that plays when a new chat arrives until someone joins"
           />
           <SectionBody>
-            <div className="mb-2">
-              <VolumeSlider value={unassignedVol} min={0.0} onChange={handleUnassignedVol} />
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => playUnassignedRingLoop()}
-                className="w-fit flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] transition-all shadow-sm"
-              >
-                <Play size={13} fill="currentColor" />
-                Play Test Ring
-              </button>
-              <button
-                onClick={() => stopUnassignedRingLoop()}
-                className="w-fit flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-[13px] font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98] transition-all shadow-sm"
-              >
-                <BellOff size={13} fill="currentColor" />
-                Stop Sound
-              </button>
+            <div className="p-4 space-y-5">
+              <div>
+                <div className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 mb-3">Sound Variation</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {UNASSIGNED_PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleUnassignedPreset(p.id)}
+                      className={`text-left p-2.5 rounded-xl border ${
+                        unassignedPreset === p.id
+                          ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                          unassignedPreset === p.id ? 'border-blue-600 bg-blue-600' : 'border-slate-300 dark:border-slate-600'
+                        }`}>
+                          {unassignedPreset === p.id && <Check size={8} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <span className={`text-[13px] font-medium ${unassignedPreset === p.id ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {p.name}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="text-[12.5px] font-medium text-slate-700 dark:text-slate-300 mb-2">Volume Level</div>
+                <VolumeSlider value={unassignedVol} min={0.0} onChange={handleUnassignedVol} />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => playUnassignedRingLoop()}
+                  className="w-fit flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[12.5px] font-medium hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
+                >
+                  <Play size={14} fill="currentColor" />
+                  Test Ring
+                </button>
+                <button
+                  onClick={() => stopUnassignedRingLoop()}
+                  className="w-fit flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-[12.5px] font-medium hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98] transition-all"
+                >
+                  <BellOff size={14} fill="currentColor" />
+                  Stop Ring
+                </button>
+              </div>
             </div>
           </SectionBody>
         </Section>

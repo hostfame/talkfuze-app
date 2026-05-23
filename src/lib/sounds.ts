@@ -125,6 +125,20 @@ export const setRingtoneVolume = (vol: number): void => {
 };
 
 // ─────────────────────────────────────────────
+// Unassigned Chat Sound Presets
+// ─────────────────────────────────────────────
+
+export type UnassignedPreset = 'default' | 'radar' | 'sonar' | 'pulse' | 'echo';
+
+export const UNASSIGNED_PRESETS: { id: UnassignedPreset; name: string; description: string }[] = [
+  { id: 'default', name: 'Urgent Tuck', description: 'The original fast triple pulse' },
+  { id: 'radar', name: 'Radar Sweep', description: 'Continuous ascending radar blip' },
+  { id: 'sonar', name: 'Deep Sonar', description: 'Heavy deep submarine ping' },
+  { id: 'pulse', name: 'Digital Pulse', description: 'Modern digital repeating tone' },
+  { id: 'echo', name: 'Echoing Chime', description: 'Reverberating urgent bell' },
+];
+
+// ─────────────────────────────────────────────
 // Synthesized Sound Engine (fallback when mp3 blocked)
 // ─────────────────────────────────────────────
 
@@ -747,10 +761,40 @@ const playUnassignedChime = () => {
       osc.stop(t + start + dur + 0.05);
     };
 
-    // Loud "Tuck-Tuck" urgent pulse
-    ring(1200, 0, 0.1, 0.95);
-    ring(1200, 0.15, 0.1, 0.95);
-    ring(1200, 0.30, 0.1, 0.95);
+    const preset = (localStorage.getItem('talkfuze_unassigned_preset') as UnassignedPreset) || 'default';
+
+    switch (preset) {
+      case 'radar':
+        // Continuous ascending radar blip
+        ring(800, 0, 0.15, 0.8);
+        ring(1000, 0.2, 0.15, 0.9);
+        ring(1200, 0.4, 0.15, 1.0);
+        break;
+      case 'sonar':
+        // Heavy deep submarine ping
+        ring(400, 0, 0.4, 1.0);
+        ring(400, 0.6, 0.4, 0.8);
+        break;
+      case 'pulse':
+        // Modern digital repeating tone
+        ring(900, 0, 0.1, 0.9);
+        ring(900, 0.15, 0.1, 0.9);
+        ring(1500, 0.30, 0.1, 1.0);
+        break;
+      case 'echo':
+        // Reverberating urgent bell
+        ring(1400, 0, 0.1, 1.0);
+        ring(1400, 0.15, 0.1, 0.7);
+        ring(1400, 0.30, 0.1, 0.4);
+        ring(1400, 0.45, 0.1, 0.1);
+        break;
+      default:
+        // Loud "Tuck-Tuck" urgent pulse
+        ring(1200, 0, 0.1, 0.95);
+        ring(1200, 0.15, 0.1, 0.95);
+        ring(1200, 0.30, 0.1, 0.95);
+        break;
+    }
   } catch (err) {
     console.error('Unassigned ring error:', err);
   }
