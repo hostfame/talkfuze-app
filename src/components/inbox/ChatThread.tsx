@@ -1606,6 +1606,16 @@ export default function ChatThread({
   // Handle Input Change for Macro Menu
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+
+    // Quick Voice Record shortcut (//v)
+    if (val.trim() === '//v' || val.endsWith(' //v') || val.endsWith('\n//v')) {
+      const newVal = val.replace(/(^|\s|\n)\/\/v$/, '').trim();
+      setInput(newVal);
+      setShowMacroMenu(false);
+      startRecording();
+      return;
+    }
+
     setInput(val);
     checkMacroTrigger(val, e.target.selectionStart);
     lastActivityTimeRef.current = Date.now();
