@@ -136,25 +136,19 @@ export async function POST(req: Request) {
     // 1. Detect language (instant, no IO)
     let detectedLanguage = 'en';
     
-    if (instruction) {
-      // If agent provides an explicit instruction (Copilot mode), strictly follow the script of the instruction
-      const hasBengaliScriptInstruction = /[\u0980-\u09FF]/.test(instruction);
-      detectedLanguage = hasBengaliScriptInstruction ? 'bn' : 'en';
-    } else {
-      // Fallback: detect language from the customer's recent messages
-      const customerLines = contextMessages.split('\n')
-        .map((line: string) => line.trim())
-        .filter((line: string) => line && !line.startsWith('[Agent]'));
+    // Fallback: detect language from the customer's recent messages
+    const customerLines = contextMessages.split('\n')
+      .map((line: string) => line.trim())
+      .filter((line: string) => line && !line.startsWith('[Agent]'));
 
-      const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
-      const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
-      const words = lastCustomerText.split(/[^a-zA-Z]+/);
-      let benglishWordsFound = 0;
-      for (const w of words) {
-        if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
-      }
-      detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
+    const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
+    const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
+    const words = lastCustomerText.split(/[^a-zA-Z]+/);
+    let benglishWordsFound = 0;
+    for (const w of words) {
+      if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
     }
+    detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
@@ -243,7 +237,7 @@ The agent has explicitly requested you to write a message conveying the followin
 RULES FOR THIS INSTRUCTION:
 1. FOCUS ONLY ON THE INSTRUCTION. Do NOT bring up past topics from the conversation unless directly required.
 2. If the instruction is short (like "done", "fixed", "check now"), just write a brief, professional 1-2 sentence message (e.g., "I've completed this for you. Please check."). Do NOT hallucinate long explanations or repeat previous steps.
-3. Write the response strictly based on this instruction in the appropriate language.` : ''}
+3. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in. The instruction is just for you to know what to say, but you MUST translate that intent into the customer's language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
