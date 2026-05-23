@@ -123,7 +123,18 @@ export default function InboxPage() {
       .channel('inbox:conversations:list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
         const currentFilter = useInboxStore.getState().activeFilter as any
-        getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]))
+        
+        // Always refresh the main 'all' list to keep badge counts accurate
+        getConversations(ORG_ID, 'all', currentUser?.id).then(data => {
+          setConversations((data || []) as ConversationWithDetails[])
+        })
+        
+        // If we are currently viewing an archived state, also refresh that specific store
+        if (currentFilter === 'archived' || currentFilter === 'ticketed') {
+          getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => {
+            useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[])
+          })
+        }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as any;

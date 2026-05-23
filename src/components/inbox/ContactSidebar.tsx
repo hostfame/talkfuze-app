@@ -8,7 +8,7 @@ import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTic
 import { unblockIPFast } from "@/actions/server-ops"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
-import ForwardButton from "./ForwardButton"
+
 import SnoozeButton from "./SnoozeButton"
 import type { Contact, ConversationWithDetails, Relation } from "@/lib/types"
 import { useInboxStore } from "@/lib/store"
@@ -1116,7 +1116,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
         <div className="py-4 px-5 border-b border-slate-100 dark:border-slate-800 space-y-4">
           <AssignButton conversation={conversation} orgId={orgId} />
           <SnoozeButton conversation={conversation} orgId={orgId} />
-          <ForwardButton conversation={conversation} orgId={orgId} />
+
         </div>
 
         <div className="py-4 px-5 border-b border-slate-100 dark:border-[#222e35] space-y-2.5">
