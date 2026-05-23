@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     const fileName = (file as File).name || "audio.webm";
     openaiFormData.append("file", file, fileName);
     openaiFormData.append("model", "whisper-1");
-    openaiFormData.append("language", "bn");
     openaiFormData.append("temperature", "0");
     openaiFormData.append("prompt", "এটি একটি বাংলা কাস্টমার সাপোর্ট মেসেজ। ডোমেইন, হোস্টিং, ওয়েবসাইট, সমস্যা, পেমেন্ট সংক্রান্ত।");
 
