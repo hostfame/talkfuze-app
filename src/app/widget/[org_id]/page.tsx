@@ -486,6 +486,7 @@ export default function WidgetPage() {
   const [tempName, setTempName] = useState("")
   const [tempPhone, setTempPhone] = useState("")
   const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false)
+  const [hasProvidedContact, setHasProvidedContact] = useState(false)
   
   // Co-Browsing WebRTC State
   const [showCoBrowseRequest, setShowCoBrowseRequest] = useState(false)
@@ -1364,7 +1365,19 @@ export default function WidgetPage() {
             }
         }
     })
-  }, [org_id])
+
+    if (deviceId) {
+      getWidgetContact(org_id, deviceId).then(contact => {
+        if (contact && contact.name && contact.phone) {
+          setHasProvidedContact(true);
+        }
+        if (contact) {
+          setTempName(contact.name || "");
+          setTempPhone(contact.phone || "");
+        }
+      }).catch(console.error);
+    }
+  }, [org_id, deviceId])
 
   // Journey Tracking
   useEffect(() => {
@@ -2594,6 +2607,9 @@ export default function WidgetPage() {
       const res = await updateWidgetContactDetails(org_id, deviceId, tempName, tempPhone);
       if (res?.success) {
         setIsIdentityModalOpen(false);
+        if (tempName && tempPhone) {
+          setHasProvidedContact(true);
+        }
         // Refresh conversations so that the new name is updated instantly!
         fetchConversations();
       }
@@ -3060,7 +3076,7 @@ export default function WidgetPage() {
                    {isHeaderMenuOpen && (
                      <div className="absolute right-0 top-full mt-1 w-max bg-white border border-slate-100 rounded-xl shadow-lg z-50 py-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                        <button onClick={handleConvertToTicket} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Convert to Ticket</button>
-                       <button onClick={handleOpenIdentityModal} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Unlock Call & Callback Support</button>
+                       <button onClick={handleOpenIdentityModal} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Update Information</button>
                        <button onClick={handleDownloadTranscript} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Download Transcript</button>
                      </div>
                    )}
@@ -3388,6 +3404,51 @@ export default function WidgetPage() {
                 }
               `}</style>
               
+              {!hasProvidedContact && messages.filter(m => m.sender_type === 'contact').length > 0 && (
+                <div className="flex gap-2.5 my-3 relative animate-in slide-in-from-bottom-2 fade-in duration-300 select-none">
+                  <div className="w-7 h-7 rounded-full bg-[#0070f3] text-white flex items-center justify-center shrink-0 shadow-sm mt-1">
+                    <span className="text-[12px] font-bold">H</span>
+                  </div>
+                  <div className="flex flex-col gap-1 w-full pr-8">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 tracking-tight">Team Hostnin</span>
+                    </div>
+                    <div className="bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 p-3.5 rounded-[18px] rounded-tl-[4px] shadow-sm flex flex-col gap-3">
+                      <span className="text-[14px] leading-snug">
+                        Add your phone number to get a faster response and ensure we can connect with you if this chat disconnects.
+                      </span>
+                      <form onSubmit={handleSaveIdentity} className="flex flex-col gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={tempName}
+                          onChange={e => setTempName(e.target.value)}
+                          placeholder="Your Name"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-[13px] outline-none focus:border-[#0070f3] focus:ring-2 focus:ring-[#0070f3]/10 transition-all placeholder:text-slate-400"
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="tel"
+                            required
+                            value={tempPhone}
+                            onChange={e => setTempPhone(e.target.value)}
+                            placeholder="Phone Number"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-[13px] outline-none focus:border-[#0070f3] focus:ring-2 focus:ring-[#0070f3]/10 transition-all placeholder:text-slate-400"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isUpdatingIdentity || !tempName.trim() || !tempPhone.trim()}
+                            className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold px-4 py-2 rounded-xl text-[13px] transition-all shadow-sm active:scale-[0.98] shrink-0"
+                          >
+                            {isUpdatingIdentity ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="hidden" id="tf-old-typing-indicator">
                  <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-4 px-4 text-[15px] text-slate-800 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
