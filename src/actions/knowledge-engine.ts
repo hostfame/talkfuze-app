@@ -52,18 +52,25 @@ function buildPricingMD(type: string): string {
 
   const monthly = plans.filter((p: any) => p.period === 'monthly');
   const yearly = plans.filter((p: any) => p.period === 'yearly');
+  const triennially = plans.filter((p: any) => p.period === '3-years');
 
   let md = `## ${type} Pricing (BDT)\n`;
 
   if (monthly.length > 0 && yearly.length > 0) {
     // Shared hosting style: show monthly + yearly + specs per plan
-    md += `| Plan | Monthly | Yearly | Specs |\n|---|---|---|---|\n`;
+    md += `| Plan | Monthly | Yearly | 3-Years | Specs |\n|---|---|---|---|---|\n`;
     const names = [...new Set(monthly.map((p: any) => p.name))] as string[];
     for (const name of names) {
       const m = monthly.find((p: any) => p.name === name);
       const y = yearly.find((p: any) => p.name === name);
+      const t = triennially.find((p: any) => p.name === name);
       const specs = (m?.server || []).join(', ') || (m?.features || []).slice(0, 4).join(', ');
-      md += `| ${name} | ৳${m?.price || 'N/A'} | ৳${y?.price || 'N/A'} | ${specs} |\n`;
+      
+      const mPrice = m ? `৳${m.price}` : 'N/A';
+      const yPrice = y ? `৳${y.price} (৳${y.monthlyBreakdown}/mo)` : 'N/A';
+      const tPrice = t ? `৳${t.price} (৳${t.monthlyBreakdown}/mo)` : 'N/A';
+      
+      md += `| ${name} | ${mPrice} | ${yPrice} | ${tPrice} | ${specs} |\n`;
     }
   } else {
     // VPS/Dedicated style: show price + full specs
@@ -155,7 +162,7 @@ function detectIntents(text: string): Intent[] {
   }
 
   // Generic pricing fallback (only if nothing specific matched)
-  if (intents.length === 0 && /\b(prices?|pricing|কত|দাম|প্রাইস|plan|package|dam|daam)\b/i.test(text)) {
+  if (intents.length === 0 && /\b(prices?|pricing|কত|দাম|প্রাইস|plan|package|dam|daam|koto|tk|taka|tkr|bdt)\b/i.test(text)) {
     intents.push('pricing_web');
   }
   return [...new Set(intents)]; // deduplicate
