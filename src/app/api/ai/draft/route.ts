@@ -208,30 +208,40 @@ export async function POST(req: Request) {
     
     // Split messages to check the most recent exchanges
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
-    const last3Lines = conversationLines.slice(-3).join(' ');
     
-    // Check if the most recent segment of the conversation has Bengali characters
-    const hasRecentBengaliScript = /[\u0980-\u09FF]/.test(last3Lines);
-    
-    // Check the last customer message specifically
+    // Filter to customer-only lines
     const customerLines = conversationLines.filter((line: string) => !line.startsWith('[Agent]') && !line.startsWith('[System]'));
-    const lastCustomerText = customerLines.slice(-2).join(' ').toLowerCase();
-    const hasCustomerBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
     
-    // Count Benglish words in the customer's last messages
-    const words = lastCustomerText.split(/[^a-zA-Z]+/);
-    let benglishWordsFound = 0;
-    for (const w of words) {
-      if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
+    // LATEST message first - prioritize the most recent customer message
+    const lastMessageOnly = customerLines.slice(-1).join(' ').toLowerCase();
+    const lastFewMessages = customerLines.slice(-4).join(' ').toLowerCase();
+    
+    const hasBengaliScriptLatest = /[\u0980-\u09FF]/.test(lastMessageOnly);
+    
+    // Count Benglish words in LATEST message
+    const latestWords = lastMessageOnly.split(/[^a-zA-Z]+/);
+    let latestBenglishCount = 0;
+    for (const w of latestWords) {
+      if (BENGLISH_WORDS.has(w)) latestBenglishCount++;
     }
     
-    // If the last customer message is very short (like "okay", "ok", "yes", "no") and the recent thread has no Bengali, stay in English!
-    const isShortEnglishAck = lastCustomerText.length < 12 && !hasCustomerBengaliScript && benglishWordsFound === 0;
-
-    if (hasRecentBengaliScript || (hasCustomerBengaliScript && !isShortEnglishAck) || (benglishWordsFound >= 1 && !isShortEnglishAck)) {
+    // If latest message is clearly English (no Bengali script, no Benglish, >5 chars), use English
+    const latestIsPureEnglish = !hasBengaliScriptLatest && latestBenglishCount === 0 && lastMessageOnly.length > 5;
+    const latestIsBengali = hasBengaliScriptLatest || latestBenglishCount >= 1;
+    
+    if (latestIsPureEnglish) {
+      detectedLanguage = 'en';
+    } else if (latestIsBengali) {
       detectedLanguage = 'bn';
     } else {
-      detectedLanguage = 'en';
+      // Ambiguous (short message like "hi", "ok") - fallback to last 4 messages
+      const hasBengaliScript = /[\u0980-\u09FF]/.test(lastFewMessages);
+      const words = lastFewMessages.split(/[^a-zA-Z]+/);
+      let benglishWordsFound = 0;
+      for (const w of words) {
+        if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
+      }
+      detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
     }
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)

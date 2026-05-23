@@ -73,20 +73,55 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST begin your reply with the exact Bengali response "ওয়ালাইকুম আসসালাম।" (and unto you peace) in the very first line of your message before anything else.`
       : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or any religious greeting. Start your reply directly, warm, and naturally (e.g. starting directly with "জ্বী, ..." or "হ্যালো, ..." or another helpful response).`;
 
-
-    // 1. Detect if customer used Bengali script
-    const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
-    
-    // 2. Detect if customer used Benglish words
-    const words = lastCustomerText.split(/[^a-zA-Z]+/);
-    let benglishWordsFound = 0;
-    for (const w of words) {
-      if (BENGLISH_WORDS.has(w)) {
-        benglishWordsFound++;
+    // Extract customer's name from the context for personalized greetings
+    let customerFirstName = '';
+    for (const line of customerLines) {
+      const nameMatch = line.match(/^\[([^\]]+)\]:/);
+      if (nameMatch && !['agent', 'system', 'website visitor'].some(s => nameMatch[1].toLowerCase().startsWith(s))) {
+        const fullName = nameMatch[1].trim();
+        // Extract first name only (e.g. "MD Mahadi Hassan" -> "Mahadi", "Sarwar Alam" -> "Sarwar")
+        const parts = fullName.split(/\s+/).filter(p => !['md', 'md.', 'mr', 'mr.', 'mrs', 'mrs.', 'ms', 'ms.'].includes(p.toLowerCase()));
+        customerFirstName = parts[0] || fullName.split(/\s+/)[0] || '';
+        break;
       }
     }
+    const personalizationRule = customerFirstName
+      ? `\n\nPERSONALIZATION: The customer's name is "${customerFirstName}". When greeting, use their name naturally (e.g. "Hey ${customerFirstName}!" or "Hi ${customerFirstName}," in English, or "হ্যালো ${customerFirstName}," in Bengali). NEVER write generic greetings like "Hey there" or "Dear customer" when you know the name.`
+      : '';
 
-    const isBengaliOrBenglish = hasBengaliScript || (benglishWordsFound >= 1);
+
+    // 1. Detect if customer used Bengali script - prioritize LATEST message
+    const lastMessageOnly = customerLines.slice(-1).join(' ').toLowerCase();
+    const hasBengaliScriptLatest = /[\u0980-\u09FF]/.test(lastMessageOnly);
+    
+    // 2. Detect if LATEST message has Benglish words
+    const latestWords = lastMessageOnly.split(/[^a-zA-Z]+/);
+    let latestBenglishCount = 0;
+    for (const w of latestWords) {
+      if (BENGLISH_WORDS.has(w)) latestBenglishCount++;
+    }
+    
+    // 3. If latest message is clearly English (no Bengali script, no Benglish), use English
+    //    If latest message has Bengali/Benglish, use Bengali
+    //    If ambiguous (very short like "hi" or "ok"), fallback to checking last 4 messages
+    const latestIsPureEnglish = !hasBengaliScriptLatest && latestBenglishCount === 0 && lastMessageOnly.length > 5;
+    const latestIsBengali = hasBengaliScriptLatest || latestBenglishCount >= 1;
+    
+    let isBengaliOrBenglish: boolean;
+    if (latestIsPureEnglish) {
+      isBengaliOrBenglish = false; // Customer clearly switched to English
+    } else if (latestIsBengali) {
+      isBengaliOrBenglish = true;
+    } else {
+      // Ambiguous (short message) - fallback to last 4 messages for context
+      const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
+      const words = lastCustomerText.split(/[^a-zA-Z]+/);
+      let benglishWordsFound = 0;
+      for (const w of words) {
+        if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
+      }
+      isBengaliOrBenglish = hasBengaliScript || (benglishWordsFound >= 1);
+    }
     const detectedLanguage = isBengaliOrBenglish ? 'bn' : 'en';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
@@ -114,7 +149,7 @@ ${JSON.stringify(knowledge)}
 
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
-    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING${greetingRule}
+    const dynamicInstructions = `CRITICAL RULE (HIGHEST PRIORITY): LANGUAGE MATCHING${greetingRule}${personalizationRule}
 Determine the language of the customer's messages:
 1. If the customer is writing in English: You MUST reply 100% in English.
    - ONLY use English if there are NO Bengali or Banglish words in the conversation.
