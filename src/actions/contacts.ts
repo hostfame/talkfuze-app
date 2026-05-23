@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 
 import { createClient } from "@/lib/supabase/server"
 import type { Contact } from "@/lib/types"
+import { unstable_noStore as noStore } from "next/cache"
 
 type ContactConversation = {
   id: string
@@ -16,6 +17,7 @@ type ContactWithConversations = Contact & {
 }
 
 export async function getContacts() {
+  noStore();
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Unauthorized")

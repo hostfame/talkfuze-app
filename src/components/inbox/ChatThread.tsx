@@ -1495,10 +1495,10 @@ export default function ChatThread({
     // Mark as read when messages load or change
     if (messages.length > 0) {
       markMessagesAsRead(conversationId, 'agent');
-      const hasUnread = messages.some(m => m.sender_type === 'contact' && m.status !== 'read');
+      const hasUnread = messages.some(m => m.sender_type === 'contact' && m.status !== 'read' && m.content_type !== 'system');
       if (hasUnread) {
         const updatedMessages = messages.map(m => 
-          (m.sender_type === 'contact' && m.status !== 'read') ? { ...m, status: 'read' } : m
+          (m.sender_type === 'contact' && m.status !== 'read' && m.content_type !== 'system') ? { ...m, status: 'read' } : m
         );
         setTimeout(() => {
           useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
@@ -1507,7 +1507,7 @@ export default function ChatThread({
           const conv = store.conversations.find(c => c.id === conversationId);
           if (conv) {
             const lastMsg = conv.messages?.[0];
-            if (lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read') {
+            if (lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read' && lastMsg.content_type !== 'system') {
               store.updateConversation(conversationId, {
                 messages: [{ ...lastMsg, status: 'read' }]
               });

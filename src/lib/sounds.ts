@@ -564,7 +564,7 @@ export const playUISound = (type: 'send' | 'receive', presetOverride?: SoundPres
   // Send sound uses its own independent volume
   if (type === 'send') {
     const sendVol = typeof window !== 'undefined'
-      ? Math.max(0.15, parseFloat(localStorage.getItem('talkfuze_send_volume') || '1.0'))
+      ? Math.max(0.0, parseFloat(localStorage.getItem('talkfuze_send_volume') || '1.0'))
       : 1.0;
     
     // Play custom send sound if uploaded

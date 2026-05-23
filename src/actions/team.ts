@@ -4,8 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 
 import { createClient } from "@/lib/supabase/server"
 import { getErrorMessage } from "@/lib/utils"
+import { unstable_noStore as noStore } from "next/cache"
 
 export async function getTeammates() {
+  noStore();
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Unauthorized")

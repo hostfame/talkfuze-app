@@ -261,7 +261,7 @@ export default function ConversationList({
           }) || [];
 
           const lastMessage = (conv as any).matched_message || (validMessages.length > 0 ? validMessages[0] : null)
-          const isUnread = lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read'
+          const isUnread = lastMessage && lastMessage.sender_type === 'contact' && lastMessage.status !== 'read' && lastMessage.content_type !== 'system'
 
           const getInitials = (name: string) => {
             if (name.startsWith('+')) return name.substring(0, 2)
@@ -370,9 +370,9 @@ export default function ConversationList({
                       <p className={`text-[13.5px] truncate leading-normal py-[2px] flex items-center gap-1 ${
                         isUnread
                           ? 'text-black dark:text-white font-bold'
-                          : lastMessage?.sender_type === 'agent' 
-                            ? 'text-slate-400 dark:text-[#8696a0]' 
-                            : 'text-slate-600 dark:text-[#8696a0] font-medium'
+                          : (lastMessage?.sender_type === 'contact' && lastMessage?.content_type !== 'system')
+                            ? 'text-slate-600 dark:text-[#8696a0] font-medium'
+                            : 'text-slate-400 dark:text-[#8696a0]'
                       }`}>
                         {lastMessage ? (
                           <>

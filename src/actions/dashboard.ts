@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { fetchWhmcsClient } from "@/actions/whmcs"
+import { unstable_noStore as noStore } from 'next/cache'
 
 type ConversationChannelRelation = Relation<{
   type?: string | null
@@ -23,6 +24,7 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
 }
 
 export async function getQuickReplies(orgId: string) {
+  noStore();
   const { data, error } = await supabaseAdmin
     .from('channels')
     .select('config')
@@ -37,6 +39,7 @@ export async function getQuickReplies(orgId: string) {
 }
 
 export async function getCrmData(orgId: string, phone: string) {
+  noStore();
   const { data, error } = await supabaseAdmin
     .from('channels')
     .select('config')
@@ -77,6 +80,7 @@ export async function getCrmData(orgId: string, phone: string) {
 }
 
 export async function getConversations(orgId: string, filter: 'all' | 'unassigned' | 'assigned' | 'archived' | 'ticketed' | string = 'all', agentId?: string) {
+  noStore();
   let query = supabaseAdmin
     .from("conversations")
     .select(`
@@ -129,6 +133,7 @@ export async function assignConversation(orgId: string, conversationId: string, 
 }
 
 export async function getMessages(conversationId: string, limit: number = 50, beforeTimestamp?: string) {
+  noStore();
   if (!conversationId) return []
   
   let query = supabaseAdmin
@@ -312,6 +317,7 @@ export async function replyToConversation(
 }
 
 export async function searchConversations(orgId: string, query: string) {
+  noStore();
   if (!query) return [];
   const cleanQuery = query.toLowerCase();
 
@@ -484,6 +490,7 @@ export async function createConversation(orgId: string, phone: string) {
 // ─────────────────────────────────────────────
 
 export async function getParticipants(conversationId: string) {
+  noStore();
   const { data, error } = await supabaseAdmin
     .from('conversation_participants')
     .select('id, user_id, joined_at, user:users(id, name, avatar_url, role)')
@@ -669,6 +676,7 @@ export async function updateConversationStatus(conversationId: string, status: '
 // ─────────────────────────────────────────────
 
 export async function getQuickRepliesFromTable(orgId: string) {
+  noStore();
   const { data, error } = await supabaseAdmin
     .from('quick_replies')
     .select('id, shortcut, title, content')

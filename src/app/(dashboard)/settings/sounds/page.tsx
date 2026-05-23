@@ -347,7 +347,7 @@ export default function SoundsSettingsPage() {
 
   // ── Handlers: Send ──
   const handleSendVol = (v: number) => {
-    const clamped = Math.max(0.15, v)
+    const clamped = Math.max(0.0, v)
     setSendVol(clamped); persist('talkfuze_send_volume', clamped)
   }
 
@@ -682,7 +682,7 @@ export default function SoundsSettingsPage() {
           />
           <SectionBody>
             <div className="mb-4">
-              <VolumeSlider value={sendVol} min={0.15} onChange={handleSendVol} />
+              <VolumeSlider value={sendVol} min={0.0} onChange={handleSendVol} />
             </div>
             <div className="flex flex-col gap-4">
               <button

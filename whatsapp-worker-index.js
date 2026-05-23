@@ -352,6 +352,13 @@ async function upsertContact(jid, name) {
       console.log(`[UPSERT-CONTACT] Upgrading platform_id from ${existing.platform_id} to ${canonicalJid}`);
     }
 
+    // Automatically clear whatsapp_invalid flag if they successfully sent us a message/activity
+    if (metaUpdates.whatsapp_invalid) {
+      delete metaUpdates.whatsapp_invalid;
+      needsMetaUpdate = true;
+      console.log(`[UPSERT-CONTACT] Cleared whatsapp_invalid flag for ${existing.id} due to inbound activity`);
+    }
+
     // Update phone field if missing
     if (resolvedPhone && !existing.phone) {
       updates.phone = resolvedPhone;
@@ -1119,7 +1126,14 @@ async function processOutboundMessage(msg) {
     if (contact) {
       let isInvalidNumber = false;
       try {
-        if (err.message.includes('exists":false') || err.message.includes('exists:false')) {
+        const errMsg = String(err.message).toLowerCase();
+        if (
+          errMsg.includes('"exists":false') || 
+          errMsg.includes('"exists": false') || 
+          errMsg.includes('exists:false') || 
+          errMsg.includes('exists: false') ||
+          errMsg.includes('not registered on whatsapp')
+        ) {
           isInvalidNumber = true;
         }
       } catch (_) {}
