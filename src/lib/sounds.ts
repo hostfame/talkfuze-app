@@ -672,7 +672,7 @@ const playUnassignedChime = () => {
     waveshaper.oversample = '2x';
 
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(3.0, t); // 3x volume multiplier
+    masterGain.gain.setValueAtTime(15.0, t); // 15x volume multiplier for MAXIMUM loudness
     masterGain.connect(waveshaper);
     waveshaper.connect(ctx.destination);
 
