@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -2189,11 +2189,24 @@ export default function ChatThread({
 
       const data = await res.json();
       if (data.transcript) {
-        setNewMessage(prev => {
-          const prefix = prev.trim() ? prev + " " : "";
-          return prefix + data.transcript;
-        });
         cancelRecording();
+        setIsAiStreaming(true);
+        
+        setInput(prev => {
+          const prefix = prev.trim() ? prev + " " : "";
+          return prefix;
+        });
+        
+        let i = 0;
+        const text = data.transcript;
+        const streamInterval = setInterval(() => {
+          setInput(prev => prev + text.charAt(i));
+          i++;
+          if (i >= text.length) {
+            clearInterval(streamInterval);
+            setIsAiStreaming(false);
+          }
+        }, 15);
       } else {
         throw new Error("No transcript returned");
       }
@@ -3336,7 +3349,7 @@ export default function ChatThread({
                     <Loader2 size={20} className="animate-spin text-blue-500" />
                   ) : (
                     <>
-                      <Bot size={20} />
+                      <Type size={18} />
                     </>
                   )}
                   {/* Tooltip */}
