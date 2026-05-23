@@ -618,6 +618,23 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
   const isConvertingTicket = conversation?.id ? convertingTickets[conversation.id] || false : false
   const [isSendingLink, setIsSendingLink] = useState<number | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+
+  const handleWhmcsLogin = async () => {
+    if (!whmcsClient?.id) return
+    setIsLoggingIn(true)
+    try {
+      const result = await generateWHMCSSsoToken(whmcsClient.id)
+      if (result.success && result.redirect_url) {
+        window.open(result.redirect_url, '_blank')
+      } else {
+        alert(result.error || "Failed to login as client")
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
   const [crmSearchQuery, setCrmSearchQuery] = useState("")
   const [lastSearchedQuery, setLastSearchedQuery] = useState("")
   const [copiedEmail, setCopiedEmail] = useState(false)
@@ -1435,6 +1452,14 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     <a href={`https://my.hostnin.com/root/clientssummary.php?userid=${whmcsClient.id}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-500 transition-colors" title="View in WHMCS">
                       <ExternalLink size={14} />
                     </a>
+                    <button 
+                      onClick={handleWhmcsLogin} 
+                      disabled={isLoggingIn}
+                      className="ml-1 text-[11px] flex items-center gap-1 font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors disabled:opacity-50"
+                    >
+                      {isLoggingIn ? <Loader2 size={12} className="animate-spin" /> : <LogIn size={12} />}
+                      Login as Client
+                    </button>
                   </div>
                 </div>
                 <div className="flex justify-between items-start mb-3">

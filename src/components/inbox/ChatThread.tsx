@@ -377,7 +377,7 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
 
   const urlRegex = /((?:https?:\/\/|www\.)[^\s]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
   const parts = text.split(urlRegex);
-  const mentionRegex = /(@\d+)/g;
+  const mentionRegex = /(@\d+)|(@[a-zA-Z0-9_-]+)/g;
   
   return parts.map((part, i) => {
     const isUrl = urlRegex.test(part);
@@ -416,16 +416,16 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
     }
     
     // Check for mentions in non-URL parts
-    const mentionParts = part.split(mentionRegex);
+    const mentionParts = part.split(mentionRegex).filter(Boolean); // filter out undefined from capture groups
     if (mentionParts.length === 1) return formatWhatsAppMarkdown(part);
     
     return mentionParts.map((mPart, j) => {
       if (mPart.match(mentionRegex)) {
-        const numberStr = mPart.substring(1); // remove @
+        const valueStr = mPart.substring(1); // remove @
         let displayName = mPart;
         
         // Try to find member by phone matching last 10 digits
-        const cleanMention = numberStr.replace(/\D/g, '');
+        const cleanMention = valueStr.replace(/\D/g, '');
         let isTeamMember = false;
         
         if (cleanMention.length >= 10 && teamMembers && teamMembers.length > 0) {
@@ -439,6 +439,13 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
             displayName = `@${member.name}`;
             isTeamMember = true;
           }
+        } else if (teamMembers && teamMembers.length > 0) {
+          // Check if it matches a team member's name directly (for internal mentions)
+          const memberByName = teamMembers.find(m => m.name.replace(/\s+/g, '').toLowerCase() === valueStr.toLowerCase());
+          if (memberByName) {
+             displayName = `@${memberByName.name}`;
+             isTeamMember = true;
+          }
         }
         
         // If not a team member, check metadata from the worker or format nicely
@@ -448,7 +455,8 @@ function renderTextWithLinks(text: string, isAgent: boolean, teamMembers: UserPr
            } else if (cleanMention.length >= 10) {
              displayName = `@Member (+${cleanMention.slice(0, Math.max(1, cleanMention.length - 8))}...${cleanMention.slice(-4)})`;
            } else {
-             displayName = `@Member`;
+             displayName = mPart; // Fallback to raw text if it wasn't a valid phone mention or name mention
+             return formatWhatsAppMarkdown(mPart); // Don't highlight invalid mentions
            }
         }
         
@@ -1243,6 +1251,11 @@ export default function ChatThread({
   const [macroFilter, setMacroFilter] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
 
+  // Internal Mention State
+  const [showMentionMenu, setShowMentionMenu] = useState(false)
+  const [mentionFilter, setMentionFilter] = useState("")
+  const [mentionIndex, setMentionIndex] = useState(0)
+
   // Quick Replies Creation Modal
   const [quickReplyModalOpen, setQuickReplyModalOpen] = useState(false)
   const [quickReplyShortcut, setQuickReplyShortcut] = useState("")
@@ -1605,7 +1618,23 @@ export default function ChatThread({
     }
   };
 
-  // Handle Input Change for Macro Menu
+  const checkMentionTrigger = (val: string, selectionStart: number) => {
+    if (!isInternal) {
+      setShowMentionMenu(false);
+      return;
+    }
+    const textUpToCursor = val.slice(0, selectionStart);
+    const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_ -]*)$/);
+    if (match) {
+      setShowMentionMenu(true);
+      setMentionFilter(match[2].toLowerCase());
+      setMentionIndex(0);
+    } else {
+      setShowMentionMenu(false);
+    }
+  };
+
+  // Handle Input Change for Macro Menu and Mentions
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
 
@@ -1614,12 +1643,14 @@ export default function ChatThread({
       const newVal = val.replace(/(^|\s|\n)\/\/v$/, '').trim();
       setInput(newVal);
       setShowMacroMenu(false);
+      setShowMentionMenu(false);
       startRecording(true);
       return;
     }
 
     setInput(val);
     checkMacroTrigger(val, e.target.selectionStart);
+    checkMentionTrigger(val, e.target.selectionStart);
     lastActivityTimeRef.current = Date.now();
   };
 
@@ -1651,6 +1682,14 @@ export default function ChatThread({
     });
   })();
 
+  const filteredMentions = (() => {
+    return teamMembers.filter(m => {
+      if (!mentionFilter) return true;
+      const nameLower = m.name.toLowerCase();
+      return nameLower.includes(mentionFilter);
+    });
+  })();
+
   useEffect(() => {
     if (showMacroMenu) {
       const element = document.getElementById(`macro-item-${selectedIndex}`);
@@ -1659,6 +1698,15 @@ export default function ChatThread({
       }
     }
   }, [selectedIndex, showMacroMenu]);
+
+  useEffect(() => {
+    if (showMentionMenu) {
+      const element = document.getElementById(`mention-item-${mentionIndex}`);
+      if (element) {
+        element.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [mentionIndex, showMentionMenu]);
 
   const applyMacro = (macroContent: string) => {
     if (macroContent.startsWith('//translate-')) {
@@ -1724,6 +1772,37 @@ export default function ChatThread({
     // Fallback direct replacement
     setInput(macroContent);
     setShowMacroMenu(false);
+  };
+
+  const applyMention = (member: UserProfile) => {
+    const val = input;
+    const textarea = textareaRef.current;
+    
+    if (textarea) {
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+      const textUpToCursor = val.slice(0, selectionStart);
+      const textAfterCursor = val.slice(selectionEnd);
+      
+      const match = textUpToCursor.match(/(?:^|\s)(@)([a-zA-Z0-9_ -]*)$/);
+      if (match) {
+        const atIndex = textUpToCursor.lastIndexOf('@');
+        const mentionText = `@${member.name.replace(/\s+/g, '')} `; // Usually mentions don't have spaces, but we can just use the name without spaces or keep spaces if we want. Let's keep the name as is but remove spaces so it matches. Actually wait, if we use name, we can just do @Name
+        const newValue = val.slice(0, atIndex) + mentionText + textAfterCursor;
+        setInput(newValue);
+        setShowMentionMenu(false);
+        
+        setTimeout(() => {
+          textarea.focus();
+          const newCursorPos = atIndex + mentionText.length;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 10);
+        return;
+      }
+    }
+    
+    setInput(val + `@${member.name.replace(/\s+/g, '')} `);
+    setShowMentionMenu(false);
   };
 
   const loadMoreMessages = async () => {
@@ -2744,6 +2823,33 @@ export default function ChatThread({
         )}
 
         {allMessages.map((msg, idx) => {
+          const prevMsg = idx > 0 ? allMessages[idx - 1] : null;
+          const nextMsg = idx < allMessages.length - 1 ? allMessages[idx + 1] : null;
+
+          const canGroup = (m1: any, m2: any) => {
+            if (!m1 || !m2) return false;
+            if (m1.sender_type === 'system' || m2.sender_type === 'system') return false;
+            if (m1.content_type === 'system' || m2.content_type === 'system') return false;
+            if (m1.content === 'Visitor continued conversation on WhatsApp' || m2.content === 'Visitor continued conversation on WhatsApp') return false;
+            if (m1.content === 'Started a voice call' || m2.content === 'Started a voice call') return false;
+            if (m1.content?.toLowerCase().includes("voice call") || m2.content?.toLowerCase().includes("voice call")) return false;
+            if (m1.sender_type !== m2.sender_type) return false;
+            if (m1.sender_type === 'agent' && m1.sender_id !== m2.sender_id) return false;
+            
+            const meta1 = typeof m1.metadata === 'string' ? (() => { try { return JSON.parse(m1.metadata) } catch(e) { return {} } })() : (m1.metadata || {});
+            const meta2 = typeof m2.metadata === 'string' ? (() => { try { return JSON.parse(m2.metadata) } catch(e) { return {} } })() : (m2.metadata || {});
+            
+            if (meta1.participant_name !== meta2.participant_name) return false;
+            if (!!m1.is_internal !== !!m2.is_internal) return false;
+            
+            const t1 = new Date(m1.created_at || new Date()).getTime();
+            const t2 = new Date(m2.created_at || new Date()).getTime();
+            return Math.abs(t2 - t1) < 5 * 60 * 1000;
+          };
+
+          const isGroupedWithPrev = canGroup(prevMsg, msg);
+          const isGroupedWithNext = canGroup(msg, nextMsg);
+
           const safeMeta = typeof msg.metadata === 'string' 
             ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })() 
             : (msg.metadata || {});
@@ -2922,9 +3028,11 @@ export default function ChatThread({
             }
 
             return (
-              <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end mb-4 ${msg.is_internal ? 'mt-2' : ''}`}>
+              <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end ${isGroupedWithNext ? 'mb-1' : 'mb-4'} ${msg.is_internal && !isGroupedWithPrev ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
-                <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
+                {!isGroupedWithPrev && (
+                  <div className="text-[11px] text-slate-500 mr-1 mb-0.5">{agentName}</div>
+                )}
                 
                 <div className="flex items-end justify-end gap-2 max-w-[75%] min-w-0 relative group">
                   {/* Reply Button on Hover */}
@@ -3022,17 +3130,21 @@ export default function ChatThread({
                     </div>
                   
                   {/* Agent Avatar */}
-                  <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
-                    {agentAvatar ? (
-                      <img src={agentAvatar} alt={agentName} className="w-full h-full object-cover" />
-                    ) : (
-                      agentInitial
-                    )}
-                  </div>
+                  {!isGroupedWithNext ? (
+                    <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center bg-slate-200 text-slate-700 text-[11px] font-bold overflow-hidden">
+                      {agentAvatar ? (
+                        <img src={agentAvatar} alt={agentName} className="w-full h-full object-cover" />
+                      ) : (
+                        agentInitial
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-7 shrink-0"></div>
+                  )}
                 </div>
                 
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
-                <div className="flex justify-end items-center gap-1 mt-1 mr-9">
+                <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
@@ -3062,32 +3174,36 @@ export default function ChatThread({
             )
           } else {
             return (
-              <div id={`msg-${msg.id}`} key={msg.id || idx} className="flex flex-col mb-4 transition-all duration-300 rounded-xl">
+              <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col ${isGroupedWithNext ? 'mb-1' : 'mb-4'} transition-all duration-300 rounded-xl`}>
                 <div className="flex items-end gap-2.5 relative group">
                   {/* Customer / Participant Avatar */}
-                  {msg.metadata?.participant_avatar ? (
-                    <img 
-                      src={msg.metadata.participant_avatar} 
-                      alt={safeMeta.participant_name || contactName}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
-                    />
-                  ) : ((contact?.avatar_url) && !(contact?.platform_id?.endsWith('@g.us'))) ? (
-                    <img 
-                      src={contact.avatar_url} 
-                      alt={contactName}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
+                  {!isGroupedWithNext ? (
+                    msg.metadata?.participant_avatar ? (
+                      <img 
+                        src={msg.metadata.participant_avatar} 
+                        alt={safeMeta.participant_name || contactName}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
+                      />
+                    ) : ((contact?.avatar_url) && !(contact?.platform_id?.endsWith('@g.us'))) ? (
+                      <img 
+                        src={contact.avatar_url} 
+                        alt={contactName}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <img 
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(safeMeta.participant_name || contactName)}&background=random&color=fff&length=1`} 
+                        alt={safeMeta.participant_name || contactName}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800"
+                      />
+                    )
                   ) : (
-                    <img 
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(safeMeta.participant_name || contactName)}&background=random&color=fff&length=1`} 
-                      alt={safeMeta.participant_name || contactName}
-                      className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800"
-                    />
+                    <div className="w-8 shrink-0"></div>
                   )}
                   <div className="max-w-[75%] min-w-0 flex flex-col items-start gap-1">
                     {/* Participant Name Banner for Group Chats */}
-                    {safeMeta.participant_name && (
+                    {!isGroupedWithPrev && safeMeta.participant_name && (
                       <div className="text-[11px] text-slate-500 mb-0.5">{safeMeta.participant_name}</div>
                     )}
                     <div 
@@ -3183,7 +3299,7 @@ export default function ChatThread({
                 </div>
                 
                 {/* Time (OUTSIDE the bubble and avatar stack) */}
-                <div className="flex items-center gap-1 mt-1 ml-11">
+                <div className={`flex items-center gap-1 mt-1 ml-11 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                 </div>
               </div>
@@ -3323,6 +3439,36 @@ export default function ChatThread({
                       <span className="text-[13px] font-semibold text-blue-600 dark:text-blue-400">{macro.shortcut}</span>
                     </div>
                     <span className="text-[13px] text-slate-600 dark:text-slate-300 line-clamp-1">{macro.content}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Mention Menu */}
+        {showMentionMenu && isInternal && teamMembers.length > 0 && (
+          <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
+            <div className="overflow-y-auto p-1">
+              {filteredMentions.length === 0 ? (
+                <div className="p-3 text-center text-[13px] text-slate-500">No team members found.</div>
+              ) : (
+                filteredMentions.map((member, i) => (
+                  <div 
+                    key={member.id} 
+                    id={`mention-item-${i}`}
+                    onMouseEnter={() => setMentionIndex(i)}
+                    onClick={() => applyMention(member)}
+                    className={`px-3 py-2 cursor-pointer rounded-lg flex items-center gap-2.5 ${i === mentionIndex ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                      {member.avatar_url ? (
+                        <img src={member.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-600">{member.name.charAt(0).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <span className="text-[13px] font-semibold text-amber-600 dark:text-amber-400">{member.name}</span>
                   </div>
                 ))
               )}
@@ -3523,10 +3669,12 @@ export default function ChatThread({
                   if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) return;
                   const target = e.target as HTMLTextAreaElement;
                   checkMacroTrigger(target.value, target.selectionStart);
+                  checkMentionTrigger(target.value, target.selectionStart);
                 }}
                 onClick={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   checkMacroTrigger(target.value, target.selectionStart);
+                  checkMentionTrigger(target.value, target.selectionStart);
                 }}
                 onPaste={(e) => {
                   if (e.clipboardData.files && e.clipboardData.files.length > 0) {
@@ -3556,6 +3704,19 @@ export default function ChatThread({
                     applyMacro(filteredMacros[selectedIndex].content)
                   } else if (e.key === 'Escape') {
                     setShowMacroMenu(false)
+                  }
+                } else if (showMentionMenu && isInternal && filteredMentions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setMentionIndex(prev => (prev < filteredMentions.length - 1 ? prev + 1 : prev))
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setMentionIndex(prev => (prev > 0 ? prev - 1 : 0))
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault()
+                    applyMention(filteredMentions[mentionIndex])
+                  } else if (e.key === 'Escape') {
+                    setShowMentionMenu(false)
                   }
                 } else if (e.key === 'Enter' && !e.shiftKey) {
                   if (e.nativeEvent.isComposing) return
