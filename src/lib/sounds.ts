@@ -671,8 +671,10 @@ const playUnassignedChime = () => {
     waveshaper.curve = curve;
     waveshaper.oversample = '2x';
 
+    const userVol = typeof window !== 'undefined' ? parseFloat(localStorage.getItem('talkfuze_unassigned_volume') ?? '1.0') : 1.0;
+    
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(15.0, t); // 15x volume multiplier for MAXIMUM loudness
+    masterGain.gain.setValueAtTime(15.0 * userVol, t); // 15x volume multiplier for MAXIMUM loudness, scaled by user setting
     masterGain.connect(waveshaper);
     waveshaper.connect(ctx.destination);
 

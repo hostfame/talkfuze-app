@@ -26,7 +26,8 @@ export default function InboxPage() {
     teamMembers, setTeamMembers,
     isLoaded, setCurrentUser,
     mobileView, setMobileView,
-    isFetchingMessages, setIsFetchingMessages
+    isFetchingMessages, setIsFetchingMessages,
+    pendingIncomingCall
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
@@ -436,6 +437,11 @@ export default function InboxPage() {
     if (typeof window === 'undefined') return;
     
     // If we are currently in a voice call, don't play chat ringtones
+    if (pendingIncomingCall) {
+      stopUnassignedRingLoop();
+      return;
+    }
+
     const hasUnpicked = conversations.some(c => {
       if (c.status !== 'open') return false;
       let msgs: any[] = [];
@@ -453,7 +459,7 @@ export default function InboxPage() {
     } else {
       stopUnassignedRingLoop();
     }
-  }, [conversations, messagesMap]);
+  }, [conversations, messagesMap, pendingIncomingCall]);
 
   // Repeat alerts for unread chats to prevent agents from missing messages
   useEffect(() => {

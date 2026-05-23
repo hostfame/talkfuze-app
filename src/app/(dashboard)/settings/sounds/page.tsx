@@ -8,7 +8,7 @@ import {
 import {
   SOUND_PRESETS, getSelectedSound, setSelectedSound, getSoundVolume, setSoundVolume, previewSound, type SoundPreset,
   RINGTONE_PRESETS, getSelectedRingtone, setSelectedRingtone, getRingtoneVolume, setRingtoneVolume, previewRingtone, type RingtonePreset,
-  MIN_SOUND_VOLUME, MIN_RINGTONE_VOLUME, playUISound
+  MIN_SOUND_VOLUME, MIN_RINGTONE_VOLUME, playUISound, playUnassignedRingLoop, stopUnassignedRingLoop
 } from "@/lib/sounds"
 
 // ─── Helpers ───
@@ -281,6 +281,8 @@ function CustomSoundUploadRow({
 // ─── Main Page ───
 export default function SoundsSettingsPage() {
   // ── Sound States ──
+  const [unassignedVol, setUnassignedVol] = useState<number>(() => ls.getNum('talkfuze_unassigned_volume', 1.0))
+
   const [msgPreset, setMsgPreset] = useState<SoundPreset>(() => getSelectedSound())
   const [msgVol, setMsgVol] = useState<number>(() => getSoundVolume())
   const [playingMsg, setPlayingMsg] = useState<SoundPreset | null>(null)
@@ -320,6 +322,9 @@ export default function SoundsSettingsPage() {
   const persist = useCallback((key: string, val: string | boolean | number) => {
     ls.set(key, String(val))
   }, [])
+
+  // ── Handlers: Unassigned ──
+  const handleUnassignedVol = (v: number) => { setUnassignedVol(v); persist('talkfuze_unassigned_volume', v) }
 
   // ── Handlers: Message ──
   const handleMsgPreset = (p: SoundPreset) => {
@@ -431,6 +436,36 @@ export default function SoundsSettingsPage() {
       </div>
 
       <div className="space-y-5">
+
+        {/* ───────────── UNASSIGNED CHAT SOUND ───────────── */}
+        <Section>
+          <SectionHeader
+            icon={<Bell size={18} />}
+            title="Unassigned Chat Sound"
+            description="The loud continuous ring that plays when a new chat arrives until someone joins"
+          />
+          <SectionBody>
+            <div className="mb-2">
+              <VolumeSlider value={unassignedVol} min={0.0} onChange={handleUnassignedVol} />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => playUnassignedRingLoop()}
+                className="w-fit flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[13px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <Play size={13} fill="currentColor" />
+                Play Test Ring
+              </button>
+              <button
+                onClick={() => stopUnassignedRingLoop()}
+                className="w-fit flex items-center gap-2.5 px-4 py-2.5 rounded-[12px] bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-[13px] font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <BellOff size={13} fill="currentColor" />
+                Stop Sound
+              </button>
+            </div>
+          </SectionBody>
+        </Section>
 
         {/* ───────────── NOTIFICATION BEHAVIOR ───────────── */}
         <Section>
