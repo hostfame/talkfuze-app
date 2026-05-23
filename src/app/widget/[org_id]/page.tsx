@@ -1440,7 +1440,7 @@ export default function WidgetPage() {
           const newLen = dbMessages.length;
           if (newLen > prevLen) {
              const lastMsg = dbMessages[dbMessages.length - 1];
-             if (lastMsg && lastMsg.sender_type !== 'contact') {
+             if (lastMsg && lastMsg.sender_type !== 'contact' && !prev.some(m => m.id === lastMsg.id)) {
                  playUISound('receive', 'intercom');
              }
           }
@@ -1551,6 +1551,13 @@ export default function WidgetPage() {
   }, [messages, org_id, deviceId, settings, activeConversationId]);
 
   useEffect(() => {
+    setMessages(prev => {
+      const hasOldMessages = prev.some(m => m.conversation_id !== "" && m.conversation_id !== activeConversationId);
+      if (hasOldMessages) {
+        return prev.filter(m => m.conversation_id === "" || m.conversation_id === activeConversationId);
+      }
+      return prev;
+    });
     fetchConversations()
     fetchMsgs()
     const presenceChannel = supabase.channel(`presence:${org_id}`)
