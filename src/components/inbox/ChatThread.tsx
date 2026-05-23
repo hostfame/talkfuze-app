@@ -1153,6 +1153,10 @@ export default function ChatThread({
       const message = "Did we fix your issue? If yes, please leave a quick review here: https://g.page/r/hostnin/review\n\nIf no, click here to escalate: https://hostnin.com/contact"
       
       const tempId = "temp-" + crypto.randomUUID()
+      const lastMessage = messages[messages.length - 1]
+      const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
+      const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+
       addOptimisticMessage(conversationId, {
         id: tempId,
         sender_type: 'agent',
@@ -1162,10 +1166,10 @@ export default function ChatThread({
         metadata: null,
         is_internal: false,
         status: 'sending',
-        created_at: new Date().toISOString()
+        created_at: optimisticCreatedAt
       })
       
-      await replyToConversation(orgId, conversationId, message, false)
+      await replyToConversation(orgId, conversationId, message, false, 'text', { temp_id: tempId })
       markConfirmed(conversationId, tempId)
       
       // Auto-archive after sending CSAT
@@ -2183,6 +2187,10 @@ export default function ChatThread({
       // Send text message first if exists
       if (msgText || currentAttachments.length === 0) {
         const tempId = "temp-" + crypto.randomUUID()
+        const lastMessage = messages[messages.length - 1]
+        const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
+        const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+        
         addOptimisticMessage(conversationId, {
           id: tempId,
           sender_type: 'agent',
@@ -2192,10 +2200,14 @@ export default function ChatThread({
           metadata: replyMeta ? { reply_to: replyMeta } as any : null,
           is_internal: isInternal,
           status: 'sending',
-          created_at: new Date().toISOString()
+          created_at: optimisticCreatedAt
         })
         // Fire and forget so the UI is not blocked
-        replyToConversation(orgId, conversationId, msgText, isInternal, 'text', replyMeta ? { reply_to: replyMeta } : undefined)
+        const metaPayload = {
+          ...(replyMeta ? { reply_to: replyMeta } : {}),
+          temp_id: tempId
+        }
+        replyToConversation(orgId, conversationId, msgText, isInternal, 'text', metaPayload)
           .then(() => markConfirmed(conversationId, tempId))
           .catch((e: unknown) => {
             console.error(e)
@@ -2213,6 +2225,10 @@ export default function ChatThread({
           const isVideo = attachment.type?.startsWith('video/')
           const optimisticContent = isImage ? '[Image]' : isAudio ? '[Audio Voice Message]' : isVideo ? '[Video]' : '[Attachment]'
           
+          const lastMessage = messages[messages.length - 1]
+          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
+          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+
           addOptimisticMessage(conversationId, {
             id: tempId,
             sender_type: 'agent',
@@ -2227,7 +2243,7 @@ export default function ChatThread({
             } as any,
             is_internal: isInternal,
             status: 'sending',
-            created_at: new Date().toISOString()
+            created_at: optimisticCreatedAt
           })
           
           try {
@@ -2259,7 +2275,8 @@ export default function ChatThread({
               media_url: meta.url,
               mimetype: meta.type,
               filename: meta.name,
-              ...(replyMeta ? { reply_to: replyMeta } : {})
+              ...(replyMeta ? { reply_to: replyMeta } : {}),
+              temp_id: tempId
             })
             markConfirmed(conversationId, tempId)
           } catch (error) {
@@ -2370,6 +2387,9 @@ export default function ChatThread({
     
     const { url, file } = stagedAudio;
     const tempId = "temp-" + crypto.randomUUID()
+    const lastMessage = messages[messages.length - 1]
+    const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
+    const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
     
     addOptimisticMessage(conversationId, {
       id: tempId,
@@ -2380,7 +2400,7 @@ export default function ChatThread({
       metadata: { media_url: url },
       is_internal: isInternal,
       status: 'sending',
-      created_at: new Date().toISOString()
+      created_at: optimisticCreatedAt
     })
     
     try {
@@ -2388,7 +2408,8 @@ export default function ChatThread({
         await replyToConversation(orgId, conversationId, '[Audio Voice Message]', isInternal, 'audio', {
           media_url: meta.url,
           mimetype: meta.type,
-          filename: meta.name
+          filename: meta.name,
+          temp_id: tempId
         });
         removeOptimisticMessage(conversationId, tempId)
       }).catch(err => {

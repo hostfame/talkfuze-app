@@ -4,7 +4,7 @@ import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
-import { useInboxStore } from "@/lib/store"
+import { useInboxStore, useMessageStore } from "@/lib/store"
 import { Bell } from "lucide-react"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
@@ -176,6 +176,17 @@ export default function InboxPage() {
         // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
         if (newMsg && newMsg.conversation_id) {
            useInboxStore.getState().addMessage(newMsg.conversation_id, newMsg as AppMessage);
+           
+           // Extract temp_id to clean up optimistic messages instantly and avoid race conditions/flickering
+           let safeMeta = newMsg.metadata;
+           if (typeof safeMeta === 'string') {
+             try {
+               safeMeta = JSON.parse(safeMeta);
+             } catch (e) {}
+           }
+           if (safeMeta && safeMeta.temp_id) {
+             useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, safeMeta.temp_id);
+           }
         }
 
         // Update conversation list locally instead of re-fetching everything
