@@ -3878,6 +3878,7 @@ export default function ChatThread({
                 )}
               </button>
             </div>
+            {/* Action buttons and toggle */}
             <div className="flex items-center gap-3">
               <div className="flex bg-slate-100 dark:bg-[#2a3942] p-0.5 rounded-lg border border-slate-200 dark:border-[#2a3942]">
                 <button 
