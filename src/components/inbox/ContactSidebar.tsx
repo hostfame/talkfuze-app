@@ -997,7 +997,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                   className="text-[14px] font-semibold text-slate-900 dark:text-[#e9edef] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveName()
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleSaveName()
+                    }
                     if (e.key === 'Escape') {
                       setIsEditingName(false)
                       setEditedName(contactName)
@@ -1045,7 +1048,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     className="text-[12.5px] text-slate-700 dark:text-[#d1d7db] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveEmail()
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleSaveEmail()
+                      }
                       if (e.key === 'Escape') {
                         setIsEditingEmail(false)
                         setEditedEmailValue(contactEmail || "")
@@ -1104,7 +1110,10 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     className="text-[12.5px] text-slate-700 dark:text-[#d1d7db] border border-slate-300 dark:border-[#2a3942] bg-white dark:bg-[#202c33] rounded px-1.5 py-0.5 w-full focus:outline-none focus:border-blue-500"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSavePhone()
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleSavePhone()
+                      }
                       if (e.key === 'Escape') {
                         setIsEditingPhone(false)
                         setEditedPhoneValue(!isRawWidgetId(contactPhone) ? contactPhone || "" : "")
