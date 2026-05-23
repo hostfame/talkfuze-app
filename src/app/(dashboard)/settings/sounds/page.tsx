@@ -208,7 +208,7 @@ function SectionHeader({ icon, title, description }: { icon: React.ReactNode; ti
 
 function SectionBody({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-1 max-w-2xl">
+    <div className="flex-1 max-w-2xl w-full">
       <div className="bg-white dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-1">
           {children}
