@@ -46,7 +46,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No transcript returned" }, { status: 500 });
     }
 
-    return NextResponse.json({ transcript });
+    // Post-process with GPT-4o-mini to fix dialect/spelling errors
+    const correctionRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert in Bangladeshi Bengali dialect. The user will provide a raw, slightly hallucinated speech-to-text transcription from Whisper (e.g., it might say 'ভাইষ্টা' instead of 'ভয়েসটা', 'প্রপালি' instead of 'প্রপারলি', 'কম্পাট' instead of 'কনভার্ট', 'কুডিতশি' instead of 'করতেছি'). Fix the spelling, grammar, and phonetic mistakes to match how a Bangladeshi would naturally write this. Return ONLY the corrected text. Do not add any quotes or conversational filler."
+          },
+          {
+            role: "user",
+            content: transcript
+          }
+        ],
+        temperature: 0.2
+      })
+    });
+
+    let finalTranscript = transcript;
+    if (correctionRes.ok) {
+      const correctionData = await correctionRes.json();
+      if (correctionData.choices?.[0]?.message?.content) {
+        finalTranscript = correctionData.choices[0].message.content.trim();
+      }
+    }
+
+    return NextResponse.json({ transcript: finalTranscript });
   } catch (err: any) {
     console.error("Speech to text error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
