@@ -212,6 +212,36 @@ export default function InboxPage() {
            }
         }
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, (payload) => {
+        const newContact = payload.new as any;
+        if (newContact && newContact.id) {
+           const store = useInboxStore.getState();
+           
+           // Update active conversations
+           const prev = store.conversations;
+           const next = prev.map(c => {
+             const contactObj = Array.isArray(c.contact) ? c.contact[0] : c.contact;
+             if (contactObj && contactObj.id === newContact.id) {
+               return { ...c, contact: Array.isArray(c.contact) ? [newContact] : newContact };
+             }
+             return c;
+           });
+           setConversations(next);
+
+           // Update archived conversations
+           const archPrev = store.archivedConversations;
+           if (archPrev && archPrev.length > 0) {
+             const archNext = archPrev.map(c => {
+               const contactObj = Array.isArray(c.contact) ? c.contact[0] : c.contact;
+               if (contactObj && contactObj.id === newContact.id) {
+                 return { ...c, contact: Array.isArray(c.contact) ? [newContact] : newContact };
+               }
+               return c;
+             });
+             store.setArchivedConversations(archNext);
+           }
+        }
+      })
       .subscribe()
       
     // Global voice call listener
