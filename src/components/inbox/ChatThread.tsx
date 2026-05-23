@@ -1270,6 +1270,7 @@ export default function ChatThread({
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const [stagedAudio, setStagedAudio] = useState<{ url: string; file: File } | null>(null)
+  const [isTranscribingAudio, setIsTranscribingAudio] = useState(false)
   
 
 
@@ -2168,9 +2169,42 @@ export default function ChatThread({
     }
     
     setStagedAudio(null)
-    setRecordingDuration(0)
   }
-  
+
+  const handleTranscribeAudio = async () => {
+    if (!stagedAudio) return;
+    setIsTranscribingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", stagedAudio.file);
+
+      const res = await fetch('/api/ai/speech-to-text', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to transcribe audio");
+      }
+
+      const data = await res.json();
+      if (data.transcript) {
+        setNewMessage(prev => {
+          const prefix = prev.trim() ? prev + " " : "";
+          return prefix + data.transcript;
+        });
+        cancelRecording();
+      } else {
+        throw new Error("No transcript returned");
+      }
+    } catch (err) {
+      console.error("Transcription error:", err);
+      setCustomAlert({ title: 'Transcription Failed', message: 'Could not convert audio to text.', type: 'error' });
+    } finally {
+      setIsTranscribingAudio(false);
+    }
+  }
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -3293,8 +3327,27 @@ export default function ChatThread({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button 
+                  onClick={handleTranscribeAudio}
+                  disabled={isTranscribingAudio}
+                  className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 disabled:opacity-50 disabled:hover:bg-transparent rounded-full transition-colors flex items-center justify-center gap-1 group relative"
+                  title="Convert to text"
+                >
+                  {isTranscribingAudio ? (
+                    <Loader2 size={20} className="animate-spin text-blue-500" />
+                  ) : (
+                    <>
+                      <Bot size={20} />
+                    </>
+                  )}
+                  {/* Tooltip */}
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                    Voice to text
+                  </div>
+                </button>
+                <button 
                   onClick={cancelRecording}
-                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                  disabled={isTranscribingAudio}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 disabled:opacity-50 rounded-full transition-colors"
                 >
                   <Trash2 size={20} />
                 </button>

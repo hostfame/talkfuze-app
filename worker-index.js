@@ -1021,7 +1021,12 @@ async function processOutboundMessage(msg) {
     // Resolve LID to PN (Phone Number) JID if real phone is available in metadata or phone
     const realPhone = contact.metadata?.real_phone || contact.phone;
     if (realPhone) {
-      const cleanPhone = realPhone.replace(/[^0-9]/g, '');
+      let cleanPhone = realPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+        cleanPhone = '880' + cleanPhone;
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+        cleanPhone = '88' + cleanPhone;
+      }
       if (cleanPhone.length >= 9 && !realPhone.includes('@')) {
         const phoneJid = `${cleanPhone}@s.whatsapp.net`;
         console.log(`[OUTBOUND] Resolving JID from LID ${jid} to verified Phone JID ${phoneJid}`);
