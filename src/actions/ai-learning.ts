@@ -57,7 +57,7 @@ export async function logAiDraft(
 /**
  * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
  */
-async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, question: string, answer: string } | null> {
+async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, style_corrections: string, question: string, answer: string } | null> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
@@ -78,13 +78,18 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
-        max_tokens: 1000,
-        system: "You are an expert AI CRM training engineer. You extract learning data from AI mistakes. Output valid JSON strictly containing three string keys: 'rule', 'question', 'answer'. You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.",
+        max_tokens: 2000,
+        system: `You are an expert AI CRM linguist and tone analyst for a Bangladeshi hosting company (Hostnin). You perform DEEP line-by-line analysis of how a human agent corrected an AI draft. You extract BOTH factual mistakes AND stylistic/tonal corrections.
+
+Your outputs are used to permanently train the AI to write like a natural, warm, WhatsApp-style human support agent, NOT a corporate robot.
+
+Output valid JSON strictly containing these keys: 'rule', 'style_corrections', 'question', 'answer'.
+You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.`,
         messages: [
           {
             role: "user",
-            content: `Compare the mistaken AI Draft with the Agent's Final Verified Message.
-            
+            content: `Perform a DEEP line-by-line comparison between the AI Draft and the Agent's Final Message.
+
 Conversation Context (Customer asked):
 "${context}"
 
@@ -94,13 +99,35 @@ Mistaken AI Draft:
 Agent's Final Verified Message:
 "${agentSent}"
 
-Tasks:
-1. 'rule': A concise 1-sentence actionable rule (in English) describing exactly why the agent edited the draft and what mistake to avoid.
-   - CRITICAL: If the AI Draft was written in Bengali (বাংলা) but the Agent changed the reply entirely to English (or vice versa), the rule MUST explicitly instruct to respect and match the active conversational language (e.g., "Draft strictly in English when the agent/conversation has shifted to English").
-2. 'question': A clean, standalone 1-sentence summary of the customer's intent/problem.
-3. 'answer': The agent's verified final message (exactly as written, but remove specific personal greetings).
+ANALYSIS TASKS:
 
-Output strictly in JSON: {"rule": "...", "question": "...", "answer": "..."}`
+1. 'rule': A concise 1-2 sentence actionable rule (in English) about the FACTUAL mistake.
+   - If the AI over-promised (timelines, compensation, features), state what to avoid.
+   - If the language was wrong (Bengali vs English mismatch), state the correct language rule.
+   - If no factual mistake exists (only style changes), write "Style-only correction, no factual error."
+
+2. 'style_corrections': A detailed multi-line string (in English) analyzing EVERY stylistic change the agent made. This is the MOST IMPORTANT field. Analyze:
+   a) VOCABULARY SHIFTS: List every word the agent replaced and why.
+      Example: "Replaced bookish 'ক্ষোভ' (formal frustration) with natural 'রাগ' (anger). Replaced textbook 'বিক্রয়' with transliterated 'সেলস'. Replaced 'ক্ষতি' with 'লস'."
+   b) VERB FORM CHANGES: Did the agent change verb structures?
+      Example: "Changed 'বুঝছি' (direct) to 'বুঝতে পারছি' (polite auxiliary). Changed 'করুন' (command) to 'করতে পারেন' (suggestion)."
+   c) DELETED LINES: What entire sentences/phrases did the agent remove and WHY?
+      Example: "Deleted 'এই পরিস্থিতিটি গুরুতর' because it sounds like corporate robot speak. Deleted follow-up question 'What kind of website?' because the customer did not ask for recommendations."
+   d) ADDED CONNECTORS: Did the agent add natural flow words?
+      Example: "Added 'কিন্তু' (but) as a conversational connector instead of starting abruptly."
+   e) TONE SHIFT: Did the agent make it warmer, shorter, more direct, less formal?
+      Example: "Shortened 3-paragraph response to 1 paragraph. Removed unnecessary assurances like 'আমরা সবসময় আপনার সেবায় আছি'."
+   f) ROBOTIC PATTERNS REMOVED: What patterns sound like a bot vs a human?
+      Example: "Removed 'সম্পূর্ণভাবে' (completely) which sounds over-formal. Agents use 'পুরোপুরি' or omit entirely."
+
+   If the messages are in English, analyze English style shifts similarly.
+   If there are NO style changes (only factual), write "No significant style changes."
+
+3. 'question': A clean, standalone 1-sentence summary of the customer's specific problem.
+
+4. 'answer': The agent's verified final message (exactly as written).
+
+Output strictly as JSON: {"rule": "...", "style_corrections": "...", "question": "...", "answer": "..."}`
           }
         ]
       })
@@ -160,7 +187,11 @@ export async function completeAiDraftLog(
       const learningData = await extractLearningData(context, log.ai_draft, agentSent);
       
       if (learningData) {
-        correctionFeedback = learningData.rule;
+        // Combine factual rule + style corrections into a single rich feedback
+        const stylePart = learningData.style_corrections && learningData.style_corrections !== 'No significant style changes.'
+          ? ` | STYLE: ${learningData.style_corrections}`
+          : '';
+        correctionFeedback = `${learningData.rule}${stylePart}`;
 
         // Insert into permanent vector database (RAG) with deduplication
         try {
