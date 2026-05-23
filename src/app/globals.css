@@ -207,3 +207,39 @@
 .ai-bot-glow {
   filter: drop-shadow(0 0 5px rgba(0, 127, 255, 0.6));
 }
+/* Overlay transparent slim scrollbar for windows/linux parity with mac */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3); /* tailwind slate-400 with opacity */
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.4); /* tailwind slate-600 */
+}
+.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.7);
+}
+
+/* Also apply to generic scrollable areas in inbox if we want */
+.inbox-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+.inbox-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+.inbox-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+}
+.inbox-scrollable:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+}

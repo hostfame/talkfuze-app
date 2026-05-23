@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Inbox, Users, BarChart3, Bell, LogOut, BrainCircuit } from "lucide-react"
+import { Inbox, Users, BarChart3, Bell, LogOut, BrainCircuit, Trophy } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
@@ -51,16 +51,15 @@ export default async function DashboardLayout({
               <Inbox size={22} strokeWidth={2.5} />
             </Link>
             <SidebarCallsButton />
-            {!isAgent && (
-              <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-                <Users size={22} strokeWidth={2} />
-              </Link>
-            )}
-            {!isAgent && (
-              <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
-                <BarChart3 size={22} strokeWidth={2} />
-              </Link>
-            )}
+            <Link href="/contacts" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
+              <Users size={22} strokeWidth={2} />
+            </Link>
+            <Link href="/analytics" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white dark:hover:bg-[#202c33] rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
+              <BarChart3 size={22} strokeWidth={2} />
+            </Link>
+            <Link href="/leaderboard" prefetch={true} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95" title="Leaderboard">
+              <Trophy size={22} strokeWidth={2} />
+            </Link>
             {!isAgent && (
               <Link href="/ai-training" prefetch={true} title="AI Observer Dashboard" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 rounded-2xl hover:shadow-sm hover:border hover:border-slate-200 dark:hover:border-[#2a3942] transition-all duration-200 active:scale-95">
                 <BrainCircuit size={22} strokeWidth={2} />

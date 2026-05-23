@@ -994,7 +994,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
       </div>
 
       {activeTab === 'details' && (
-        <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
+        <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-[#111b21]">
           <>
         {/* Contact Header Block (AnyChat Style) */}
         <div className="p-4 border-b border-slate-100 dark:border-[#222e35] flex items-start gap-3">
@@ -1416,7 +1416,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
           </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 relative">
             {isCrmLoading && whmcsClient && (
               <div className="absolute top-0 left-0 w-full h-[2px] overflow-hidden bg-transparent z-50">
                 <div className="h-full bg-blue-500 animate-pulse w-full"></div>
@@ -1729,7 +1729,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
                     <X size={16} />
                   </button>
                 </div>
-                <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                <div className="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                   <div>
                     <label className="block text-[12px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">Subject</label>
                     <input 
@@ -1778,7 +1778,7 @@ export default function ContactSidebar({ conversation, orgId, messages = [] }: {
 
 
       {activeTab === 'cobrowse' && (
-        <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-4 space-y-4 overflow-y-auto">
+        <div className="flex-1 flex flex-col min-h-0 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-4 space-y-4 overflow-y-auto custom-scrollbar">
 
           {(isWhatsApp || isMessenger || isInstagram) ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-sm space-y-5">
