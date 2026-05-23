@@ -3843,15 +3843,7 @@ export default function ChatThread({
             </div>
           )}
           
-          {aiDraftSources.length > 0 && input.trim().length > 0 && !isInternal && (
-            <div className="px-4 pb-2 pt-0 flex items-center gap-1.5 z-[2] relative bg-white dark:bg-[#2a3942] animate-in fade-in duration-200">
-              <Database size={10} className="text-slate-400 shrink-0" />
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate w-full">
-                <span className="font-semibold mr-1">AI used:</span>
-                {aiDraftSources.join(' • ')}
-              </div>
-            </div>
-          )}
+
 
           <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-slate-200 dark:border-[#2a3942]/60 bg-slate-100/60 dark:bg-[#202c33]/90' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">

@@ -153,19 +153,33 @@ export async function POST(req: Request) {
     // 1. Detect language (instant, no IO)
     let detectedLanguage = 'en';
     
-    // Fallback: detect language from the customer's recent messages
-    const customerLines = contextMessages.split('\n')
-      .map((line: string) => line.trim())
-      .filter((line: string) => line && !line.startsWith('[Agent]'));
-
-    const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
-    const hasBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
+    // Split messages to check the most recent exchanges
+    const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
+    const last3Lines = conversationLines.slice(-3).join(' ');
+    
+    // Check if the most recent segment of the conversation has Bengali characters
+    const hasRecentBengaliScript = /[\u0980-\u09FF]/.test(last3Lines);
+    
+    // Check the last customer message specifically
+    const customerLines = conversationLines.filter((line: string) => !line.startsWith('[Agent]') && !line.startsWith('[System]'));
+    const lastCustomerText = customerLines.slice(-2).join(' ').toLowerCase();
+    const hasCustomerBengaliScript = /[\u0980-\u09FF]/.test(lastCustomerText);
+    
+    // Count Benglish words in the customer's last messages
     const words = lastCustomerText.split(/[^a-zA-Z]+/);
     let benglishWordsFound = 0;
     for (const w of words) {
       if (BENGLISH_WORDS.has(w)) benglishWordsFound++;
     }
-    detectedLanguage = (hasBengaliScript || benglishWordsFound >= 1) ? 'bn' : 'en';
+    
+    // If the last customer message is very short (like "okay", "ok", "yes", "no") and the recent thread has no Bengali, stay in English!
+    const isShortEnglishAck = lastCustomerText.length < 12 && !hasCustomerBengaliScript && benglishWordsFound === 0;
+
+    if (hasRecentBengaliScript || (hasCustomerBengaliScript && !isShortEnglishAck) || (benglishWordsFound >= 1 && !isShortEnglishAck)) {
+      detectedLanguage = 'bn';
+    } else {
+      detectedLanguage = 'en';
+    }
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
@@ -220,19 +234,14 @@ Instruction: ${instruction}
 Output ONLY the translation in raw plain text.`;
     } else {
       const languageRule = `CRITICAL LANGUAGE RULES:
-1. DETECT THE CUSTOMER's LANGUAGE from the conversation.
-2. If the customer wrote in English: Reply 100% in English.
-   - ONLY use English if there are NO Bengali or Banglish words in the conversation.
-   - Use contractions: "I'll", "we've", "you're", "don't".
+1. DETECT THE LANGUAGE OF THE MOST RECENT EXCHANGES.
+2. If the conversation has transitioned to English (e.g., the last few messages are in English) OR if the system has selected English: Reply 100% in English.
+   - Use natural conversational English contractions: "I'll", "we've", "you're", "don't".
    - Talk naturally: "Hey, thanks for reaching out!", "Got it!", "Happy to help."
-   - Never say: "Dear customer", "Respected sir/madam", "I hope this message finds you well".
    - NO EMOJIS EVER. Do not use a single emoji.
    - NEVER use words like "Bhai", "Bhaiya", "Bon", "Bro", or similar relational terms.
-3. If the customer's message contains ANY Bengali script (বাংলা) OR ANY clear Banglish words (e.g., 'na', 'er', 'ek', 'kori', 'kemon', 'bhai', 'ki', 'ache', 'hoise', 'korbo', 'kore', 'naki', etc.): Treat the conversation as Banglish and Reply 100% in Bengali script (বাংলা হরফে).
-   - Even if the customer mixes many English words with a few Banglish words (e.g., "Video er interface ek na"), you MUST reply entirely in Bengali script.
-   - NEVER reply in Banglish. We NEVER use Banglish or English to reply to Bangla or Banglish customer messages.
-   - MODERN BENGALI PATTERN (CRITICAL): Write in modern, conversational Bengali as spoken by tech-savvy users on WhatsApp. Absolutely NO Sadhu Bhasha, Sanskrit-heavy, formal, or archaic Bengali words (e.g., never use 'তুরন্ত', 'তাত্ক্ষণিক', 'অনুগ্রহপূর্বক', 'সহযোগিতা').
-   - EMBRACE MODERN LOAN WORDS: Use natural everyday vocabulary and seamlessly incorporate common English tech terms. Instead of archaic Bengali words, use their modern English or casual equivalents (e.g., use 'ইন্সট্যান্ট', 'সাথে সাথে', 'প্লিজ', 'হেল্প', 'চেক').
+3. If the customer's recent messages are in Bengali or Banglish (mix of Bengali/English words written in English/Bangla script): Reply 100% in Bengali script (বাংলা হরফে).
+   - Write in modern, conversational Bengali as spoken on WhatsApp (e.g., use 'প্লিজ', 'সাপোর্ট', 'ইন্সট্যান্ট', 'চেক' transliterated instead of archaic Sanskrit words).
    - THE BENGALI FONT PATTERN (CRITICAL): When replying in Bengali, the ENTIRE message must be written using the Bengali alphabet. Do NOT use any English letters (A-Z).
      * If you need to use an English word (e.g., "support", "good", "payment", "basic hosting", "starter"), DO NOT translate it into a Bengali word. Instead, write the English word using the Bengali alphabet (Transliteration). 
      * Example pattern: write "সাপোর্ট" (not "support"), write "গুড" (not "good"), write "ব্যাসিক হোস্টিং" (not "Basic Hosting").
