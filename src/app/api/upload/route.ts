@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createClient } from '@/lib/supabase/server'
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 
 export async function POST(req: Request) {
   try {
@@ -18,23 +18,31 @@ export async function POST(req: Request) {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = user ? `agent-uploads/${fileName}` : `widget-uploads/${fileName}`
 
-    // Upload directly using supabaseAdmin to bypass all RLS limitations securely
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('media')
-      .upload(filePath, file)
+    const s3Client = new S3Client({
+      region: "auto",
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+      },
+    });
 
-    if (uploadError) {
-      console.error('API Upload error:', uploadError)
-      return NextResponse.json({ success: false, error: uploadError.message }, { status: 500 })
-    }
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { data: urlData } = supabaseAdmin.storage
-      .from('media')
-      .getPublicUrl(filePath)
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: "talkfuze-media",
+        Key: filePath,
+        Body: buffer,
+        ContentType: file.type || "application/octet-stream",
+      })
+    );
+
+    const publicUrl = `${process.env.R2_PUBLIC_DOMAIN}/${filePath}`;
 
     return NextResponse.json({ 
       success: true, 
-      url: urlData.publicUrl, 
+      url: publicUrl, 
       type: file.type, 
       name: file.name 
     })

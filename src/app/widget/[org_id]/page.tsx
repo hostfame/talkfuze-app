@@ -295,7 +295,7 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean) => {
             src={url} 
             alt={filename || 'Image Attachment'} 
             className="max-w-[240px] max-h-[200px] rounded-[14px] object-cover cursor-pointer transition-all duration-300 hover:brightness-95 group-hover:scale-[1.01]"
-            onClick={() => window.open(url, '_blank')}
+            onClick={() => setLightboxImage(url)}
           />
         </div>
       );
@@ -487,6 +487,7 @@ export default function WidgetPage() {
   const [tempPhone, setTempPhone] = useState("")
   const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false)
   const [hasProvidedContact, setHasProvidedContact] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null)
   
   // Co-Browsing WebRTC State
   const [showCoBrowseRequest, setShowCoBrowseRequest] = useState(false)
@@ -4406,6 +4407,16 @@ export default function WidgetPage() {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* Lightbox Overlay */}
+      {lightboxImage && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setLightboxImage(null)}>
+          <button className="absolute top-4 right-4 text-white hover:text-slate-300 p-2 z-50 transition-colors bg-white/10 rounded-full" onClick={() => setLightboxImage(null)}>
+            <X size={24} />
+          </button>
+          <img src={lightboxImage} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
