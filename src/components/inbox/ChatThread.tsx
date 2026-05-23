@@ -131,7 +131,7 @@ const SafeImage = ({
   );
 };
 
-const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, type: 'agent' | 'customer' | 'internal' | 'system', messageId?: string, transcript?: string }) => {
+const CustomAudioPlayer = ({ url, type, messageId, transcript, fullWidth = false }: { url: string, type: 'agent' | 'customer' | 'internal' | 'system', messageId?: string, transcript?: string, fullWidth?: boolean }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const { currentSrc, isPlaying: globalIsPlaying, currentTime: globalCurrentTime, play, seek } = useGlobalAudioStore();
   const isPlaying = currentSrc === url && globalIsPlaying;
@@ -269,12 +269,13 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
     playheadColor = '#475569';
   }
 
-  // Wave bar heights (22 bars)
-  const waveHeights = [8, 14, 10, 18, 12, 22, 16, 24, 18, 26, 20, 24, 16, 20, 12, 16, 10, 14, 8, 12, 6, 10];
+  // Wave bar heights
+  const baseWaveHeights = [8, 14, 10, 18, 12, 22, 16, 24, 18, 26, 20, 24, 16, 20, 12, 16, 10, 14, 8, 12, 6, 10];
+  const waveHeights = fullWidth ? [...baseWaveHeights, ...baseWaveHeights.reverse(), ...baseWaveHeights] : baseWaveHeights;
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <div className={`flex items-center gap-3 transition-all duration-300 ${containerBg} min-w-[230px] max-w-[280px]`}>
+    <div className={`flex flex-col gap-1.5 ${fullWidth ? 'w-full' : ''}`}>
+      <div className={`flex items-center gap-3 transition-all duration-300 ${containerBg} ${fullWidth ? 'w-full' : 'min-w-[230px] max-w-[280px]'}`}>
         <audio 
           ref={audioRef} 
           src={url} 
@@ -297,7 +298,7 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript }: { url: string, 
         <div className="flex-1 flex flex-col justify-center gap-1 overflow-hidden pr-1">
           <div className="flex items-center gap-2 w-full">
             <div 
-              className="flex items-end gap-[2.5px] h-7 flex-1 cursor-pointer select-none group/wave relative py-1"
+              className={`flex items-end h-7 flex-1 cursor-pointer select-none group/wave relative py-1 ${fullWidth ? 'justify-between' : 'gap-[2.5px]'}`}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUpOrLeave}
@@ -2912,7 +2913,7 @@ export default function ChatThread({
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#0b141a]">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
         
         {messages.length >= 50 && hasMoreMessages && (
           <div className="flex justify-center mb-6">
@@ -3543,7 +3544,7 @@ export default function ChatThread({
           </div>
         )}
 
-        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-slate-50/80 dark:bg-slate-800/40 border-slate-300 dark:border-slate-700 focus-within:ring-1 focus-within:border-slate-500 focus-within:ring-slate-500' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
+        <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50/60 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/50 focus-within:ring-1 focus-within:border-amber-400 focus-within:ring-amber-400/50' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
           {isRecording ? (
@@ -3571,9 +3572,9 @@ export default function ChatThread({
               </div>
             </div>
           ) : stagedAudio ? (
-            <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-slate-50 dark:bg-[#202c33]">
-              <div className="flex-1 mr-4">
-                <CustomAudioPlayer url={stagedAudio.url} type={isInternal ? 'internal' : 'agent'} />
+            <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-slate-50 dark:bg-[#202c33] gap-4">
+              <div className="flex-1 w-full">
+                <CustomAudioPlayer url={stagedAudio.url} type={isInternal ? 'internal' : 'agent'} fullWidth={true} />
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button 
@@ -3838,7 +3839,7 @@ export default function ChatThread({
             </div>
           )}
 
-          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-slate-200 dark:border-slate-700/50 bg-slate-100/50 dark:bg-slate-800/30' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
+          <div className={`flex justify-between items-center px-3 py-2 border-t relative z-[2] ${isInternal ? 'border-amber-200/60 dark:border-amber-800/40 bg-amber-100/40 dark:bg-amber-900/20' : 'border-slate-100 dark:border-transparent bg-slate-50/50 dark:bg-[#202c33]'}`}>
             <div className="flex items-center gap-1">
               <input 
                 type="file" 
@@ -3887,9 +3888,9 @@ export default function ChatThread({
                 </button>
                 <button 
                   onClick={() => setIsInternal(true)}
-                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-white dark:bg-[#111b21] text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#e9edef]'}`}
+                  className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all flex items-center gap-1.5 ${isInternal ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-sm' : 'text-slate-500 dark:text-[#8696a0] hover:text-amber-600 dark:hover:text-amber-500'}`}
                 >
-                  <Lock size={12} className={isInternal ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400'} />
+                  <Lock size={12} className={isInternal ? 'text-amber-600 dark:text-amber-500' : 'text-slate-400'} />
                   Whisper
                 </button>
               </div>
@@ -3897,17 +3898,17 @@ export default function ChatThread({
               <button 
                 onClick={handleSend}
                 disabled={(!input.trim() && stagedAttachments.length === 0) || isSending || stagedAudio !== null}
-                className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 ${isInternal ? 'bg-slate-800 hover:bg-slate-900 disabled:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
+                className={`px-5 py-1.5 text-[14px] font-medium text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm ${isInternal ? 'bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 dark:bg-amber-600 dark:hover:bg-amber-700 dark:disabled:bg-amber-800' : 'bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-300'}`}
               >
                 {isSending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Sending...</span>
+                    <span>{isInternal ? 'Whispering...' : 'Sending...'}</span>
                   </>
                 ) : isInternal ? (
                   <>
-                    <Lock size={14} />
-                    <span>Add Whisper</span>
+                    <Lock size={14} className="opacity-90" />
+                    <span>Whisper</span>
                   </>
                 ) : (
                   'Send'
