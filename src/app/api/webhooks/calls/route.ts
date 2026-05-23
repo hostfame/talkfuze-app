@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     
     let matchQuery = supabaseAdmin
       .from('call_logs')
-      .select('id')
+      .select('id, conversation_id')
       .eq('org_id', org_id)
       .is('recording_url', null)
       .gte('created_at', fiveMinsAgo)
@@ -59,6 +59,28 @@ export async function POST(req: NextRequest) {
       if (error) {
         console.error("Failed to update call log:", error)
         return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      // Also attach the recording_url to the UI message metadata
+      const convIds = [...new Set(existingLogs.map(log => log.conversation_id).filter(Boolean))]
+      for (const convId of convIds) {
+        const { data: recentMsgs } = await supabaseAdmin
+          .from('messages')
+          .select('id, metadata')
+          .eq('conversation_id', convId)
+          .in('content', ['Voice call', 'Missed voice call'])
+          .gte('created_at', fiveMinsAgo)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (recentMsgs && recentMsgs.length > 0) {
+          const msg = recentMsgs[0];
+          const meta = typeof msg.metadata === 'string' ? JSON.parse(msg.metadata) : (msg.metadata || {});
+          if (!meta.recording_url) {
+            meta.recording_url = recording_url;
+            await supabaseAdmin.from('messages').update({ metadata: JSON.stringify(meta) }).eq('id', msg.id);
+          }
+        }
       }
     } else {
       // Insert new log if not found (e.g., standard PBX call)

@@ -491,6 +491,83 @@ function getContentType(file: File | null) {
   return 'file'
 }
 
+const VoiceCallWidget = ({ msg, isMissed, agent, safeMeta, msgTime }: any) => {
+  const [showPlayer, setShowPlayer] = useState(false);
+  const hasRecording = !!safeMeta?.recording_url;
+
+  return (
+    <div key={msg.id} className="flex justify-center my-4">
+      <div 
+        className={`flex flex-col gap-2 border px-3.5 py-2 rounded-[14px] shadow-sm transition-all duration-200 ${
+          isMissed 
+            ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' 
+            : 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
+        } ${hasRecording ? 'cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-800/30' : ''}`}
+        onClick={() => {
+          if (hasRecording) setShowPlayer(!showPlayer);
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          {agent && (
+            <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden border border-white/50 shadow-sm flex items-center justify-center bg-blue-50 dark:bg-slate-800">
+              {agent.avatar_url ? (
+                <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                  {agent.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="flex flex-col flex-1 mr-2 min-w-[120px]">
+            <span className={`text-[12px] font-semibold flex items-center gap-1.5 ${
+              isMissed ? 'text-slate-600 dark:text-slate-300' : 'text-blue-700 dark:text-blue-300'
+            }`}>
+              {isMissed ? 'Missed Voice Call' : 'Voice Call'}
+              {hasRecording && !showPlayer && <Play size={12} className={isMissed ? 'text-slate-400' : 'text-blue-500/70'} />}
+            </span>
+            <div className="flex flex-col gap-0.5 mt-0.5">
+              <span className={`text-[11px] font-medium ${
+                isMissed ? 'text-slate-400 dark:text-slate-500' : 'text-blue-500/70 dark:text-blue-400/70'
+              }`}>
+                {msgTime} {safeMeta?.duration ? `\u2022 ${safeMeta.duration}` : ''}
+              </span>
+              {!isMissed && safeMeta?.agent_name && (
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {safeMeta.direction === 'outbound' 
+                    ? `Called by ${safeMeta.agent_name}` 
+                    : `Answered by ${safeMeta.agent_name}`}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-white/50 shadow-sm ${
+            isMissed
+              ? 'bg-slate-200 dark:bg-slate-700'
+              : 'bg-blue-100 dark:bg-blue-800'
+          }`}>
+            {isMissed ? (
+              <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
+            ) : (
+              <Phone size={14} className="text-blue-600 dark:text-blue-300" />
+            )}
+          </div>
+        </div>
+        
+        {showPlayer && hasRecording && (
+          <div className={`mt-1 mb-1 border-t pt-3 flex w-full min-w-[240px] ${
+            isMissed ? 'border-slate-200/50 dark:border-slate-700/50' : 'border-blue-200/50 dark:border-blue-700/50'
+          }`} onClick={(e) => e.stopPropagation()}>
+            <div className="w-full scale-95 origin-left">
+              <CustomAudioPlayer url={safeMeta.recording_url} type="internal" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 type ChatThreadProps = {
   conversationId: string | null
   messages: AppMessage[]
@@ -2945,57 +3022,14 @@ export default function ChatThread({
               const isMissed = msg.content.includes("Missed");
               const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
               return (
-                <div key={msg.id || idx} className="flex justify-center my-4">
-                  <div className={`flex items-center gap-2.5 border px-3.5 py-2 rounded-[14px] shadow-sm ${
-                    isMissed 
-                      ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700' 
-                      : 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/30'
-                  }`}>
-                    {agent && (
-                      <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden border border-white/50 shadow-sm flex items-center justify-center bg-blue-50 dark:bg-slate-800">
-                        {agent.avatar_url ? (
-                          <img src={agent.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                            {agent.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex flex-col flex-1 mr-2">
-                      <span className={`text-[12px] font-semibold ${
-                        isMissed ? 'text-slate-600 dark:text-slate-300' : 'text-blue-700 dark:text-blue-300'
-                      }`}>
-                        {isMissed ? 'Missed Voice Call' : 'Voice Call'}
-                      </span>
-                      <div className="flex flex-col gap-0.5 mt-0.5">
-                        <span className={`text-[11px] font-medium ${
-                          isMissed ? 'text-slate-400 dark:text-slate-500' : 'text-blue-500/70 dark:text-blue-400/70'
-                        }`}>
-                          {msgTime} {safeMeta.duration ? `\u2022 ${safeMeta.duration}` : ''}
-                        </span>
-                        {!isMissed && safeMeta.agent_name && (
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {safeMeta.direction === 'outbound' 
-                              ? `Called by ${safeMeta.agent_name}` 
-                              : `Answered by ${safeMeta.agent_name}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center overflow-hidden border border-white/50 shadow-sm ${
-                      isMissed
-                        ? 'bg-slate-200 dark:bg-slate-700'
-                        : 'bg-blue-100 dark:bg-blue-800'
-                    }`}>
-                      {isMissed ? (
-                        <PhoneMissed size={14} className="text-slate-500 dark:text-slate-400" />
-                      ) : (
-                        <Phone size={14} className="text-blue-600 dark:text-blue-300" />
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <VoiceCallWidget
+                  key={msg.id || idx}
+                  msg={msg}
+                  isMissed={isMissed}
+                  agent={agent}
+                  safeMeta={safeMeta}
+                  msgTime={msgTime}
+                />
               )
             }
 
