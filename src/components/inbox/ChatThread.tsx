@@ -2161,7 +2161,7 @@ export default function ChatThread({
       }
     };
 
-    if (aiDraftLogPromiseRef.current || aiDraftLogIdRef.current) {
+    if ((aiDraftLogPromiseRef.current || aiDraftLogIdRef.current) && !isInternal) {
       processAiDraftLog(aiDraftLogPromiseRef.current, aiDraftLogIdRef.current, msgText);
       aiDraftLogIdRef.current = null;
       aiDraftLogPromiseRef.current = null;
