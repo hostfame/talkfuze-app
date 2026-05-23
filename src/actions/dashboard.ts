@@ -199,7 +199,8 @@ export async function replyToConversation(
       content: content,
       content_type: contentType,
       metadata: metadata,
-      is_internal: isInternal
+      is_internal: isInternal,
+      status: isInternal ? 'delivered' : 'sent'
     })
     .select("id")
     .single()

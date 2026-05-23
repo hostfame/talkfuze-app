@@ -124,7 +124,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
     if (correctionsRes.data) {
       const corrections = correctionsRes.data.map(r => r.correction_feedback).filter(Boolean);
-      const uniqueCorrections = Array.from(new Set(corrections)); // Deduplicate to create a summary of rules
+      const uniqueCorrections = Array.from(new Set(corrections)).slice(0, 10); // Deduplicate and cap to top 10 rules to prevent prompt bloat
       if (uniqueCorrections.length > 0) {
         mistakesBlock = `\n\nCRITICAL KNOWLEDGE (LEARNED FROM PAST MISTAKES):\n${uniqueCorrections.map((c) => `- ${c}`).join('\n')}`;
       }
