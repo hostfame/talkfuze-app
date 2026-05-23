@@ -65,10 +65,12 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     const { data: targetConv } = await supabaseAdmin
       .from("conversations").select("id, status").eq("id", targetConversationId).eq("contact_id", contactId).single();
     if (targetConv) {
-      conversationId = targetConv.id;
-      if (targetConv.status === 'resolved') {
-        // Fire and forget: reopen in background
-        supabaseAdmin.from("conversations").update({ status: 'open' }).eq("id", targetConv.id).then(() => {});
+      if (targetConv.status === 'resolved' || targetConv.status === 'closed') {
+        // Conversation is archived/resolved. We must start a NEW conversation.
+        // So we explicitly do NOT set conversationId here, which forces creation below.
+        conversationId = null;
+      } else {
+        conversationId = targetConv.id;
       }
     }
   }
