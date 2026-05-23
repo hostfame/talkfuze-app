@@ -273,7 +273,7 @@ Draft a smart, helpful reply as the support agent.`;
         return NextResponse.json({ error: "Missing Gemini API key" }, { status: 500 });
       }
 
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`, {
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
