@@ -1417,6 +1417,9 @@ export default function ChatThread({
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
+  const draftLogTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingDraftTextsRef = useRef<string[]>([])
+  const pendingDraftLogIdRef = useRef<string | null>(null)
   const autoTranscribeRef = useRef<boolean>(false)
   const audioChunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -2132,14 +2135,14 @@ export default function ChatThread({
     setIsSending(true)
 
     // Complete AI draft log if this message came from an AI draft
-    // Process asynchronously so it doesn't block the UI
-    const processAiDraftLog = async (promise: Promise<string | null> | null, id: string | null, text: string) => {
+    // Uses an 8-second debounce to handle split-sends: agents often send a long
+    // AI draft as 2-3 separate messages. Without debouncing, only the first
+    // message is captured and the system thinks the agent "deleted" the rest,
+    // generating false correction rules.
+    const flushDraftLog = async (logId: string, texts: string[]) => {
       try {
-        let finalId = id;
-        if (promise && !finalId) {
-          finalId = await promise;
-        }
-        if (finalId && text) {
+        const fullText = texts.join('\n\n');
+        if (logId && fullText) {
           const contextMessages = allMessages
             .filter(m => !m.is_internal)
             .slice(-20)
@@ -2158,7 +2161,7 @@ export default function ChatThread({
               return `[${name}]: ${contentStr}`
             }).join('\n')
 
-          await completeAiDraftLog(finalId, text, contextMessages);
+          await completeAiDraftLog(logId, fullText, contextMessages);
         }
       } catch (e) {
         console.error("Failed to process AI draft log", e);
@@ -2166,9 +2169,43 @@ export default function ChatThread({
     };
 
     if ((aiDraftLogPromiseRef.current || aiDraftLogIdRef.current) && !isInternal) {
-      processAiDraftLog(aiDraftLogPromiseRef.current, aiDraftLogIdRef.current, msgText);
+      // First send after an AI draft - start the debounce window
+      let resolvedId = aiDraftLogIdRef.current;
+      if (aiDraftLogPromiseRef.current && !resolvedId) {
+        aiDraftLogPromiseRef.current.then(id => {
+          if (id) pendingDraftLogIdRef.current = id;
+        }).catch(() => {});
+      }
+      if (resolvedId) pendingDraftLogIdRef.current = resolvedId;
+
+      pendingDraftTextsRef.current = [msgText];
+
+      if (draftLogTimerRef.current) clearTimeout(draftLogTimerRef.current);
+      draftLogTimerRef.current = setTimeout(() => {
+        const logId = pendingDraftLogIdRef.current;
+        const texts = [...pendingDraftTextsRef.current];
+        pendingDraftLogIdRef.current = null;
+        pendingDraftTextsRef.current = [];
+        draftLogTimerRef.current = null;
+        if (logId) flushDraftLog(logId, texts);
+      }, 8000);
+
       aiDraftLogIdRef.current = null;
       aiDraftLogPromiseRef.current = null;
+    } else if (draftLogTimerRef.current && !isInternal) {
+      // Subsequent split-send within the 8-second debounce window
+      pendingDraftTextsRef.current.push(msgText);
+
+      // Reset the timer to give another 8 seconds from this send
+      clearTimeout(draftLogTimerRef.current);
+      draftLogTimerRef.current = setTimeout(() => {
+        const logId = pendingDraftLogIdRef.current;
+        const texts = [...pendingDraftTextsRef.current];
+        pendingDraftLogIdRef.current = null;
+        pendingDraftTextsRef.current = [];
+        draftLogTimerRef.current = null;
+        if (logId) flushDraftLog(logId, texts);
+      }, 8000);
     }
 
     // Auto-join if not joined and sending a public reply
