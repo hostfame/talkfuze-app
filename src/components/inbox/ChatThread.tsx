@@ -1635,6 +1635,16 @@ export default function ChatThread({
     })
   }
 
+  // Auto-dismiss custom alerts (toast) after 4 seconds
+  useEffect(() => {
+    if (customAlert) {
+      const timer = setTimeout(() => {
+        setCustomAlert(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [customAlert]);
+
   const triggerEditMessage = (msg: AppMessage) => {
     setEditingMessage(msg);
     setInput(msg.content);
@@ -5025,46 +5035,38 @@ export default function ChatThread({
         document.body
       )}
 
-      {/* Beautiful Custom Alert Modal */}
+      {/* Custom Alert Toast */}
       {customAlert && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed bottom-6 right-6 z-[999999] pointer-events-none">
           <div 
-            className="bg-white dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-4 flex items-start gap-3 animate-in slide-in-from-right-8 fade-in duration-300 pointer-events-auto min-w-[280px] max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Banner based on type */}
-            <div className="p-6 flex flex-col items-center text-center border-b border-slate-100 dark:border-slate-800/40">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3.5 ${
-                customAlert.type === 'error' 
-                  ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400' 
-                  : customAlert.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : 'bg-blue-50 text-[#0070f3] dark:bg-blue-500/10 dark:text-blue-400'
-              }`}>
-                {customAlert.type === 'error' && <Ban size={22} />}
-                {customAlert.type === 'success' && <CheckCheck size={22} />}
-                {customAlert.type === 'info' && <MessageSquare size={22} />}
-              </div>
-              
-              <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100">
+            <div className={`shrink-0 flex items-center justify-center mt-0.5 ${
+              customAlert.type === 'error' 
+                ? 'text-rose-500 dark:text-rose-400' 
+                : 'text-slate-400 dark:text-slate-500'
+            }`}>
+              {customAlert.type === 'error' && <Ban size={18} strokeWidth={2.5} />}
+              {customAlert.type === 'success' && <Check size={18} strokeWidth={2.5} />}
+              {customAlert.type === 'info' && <Info size={18} strokeWidth={2.5} />}
+            </div>
+            
+            <div className="flex flex-col gap-0.5 pr-2">
+              <h3 className="text-[13.5px] font-bold text-slate-900 dark:text-slate-100 leading-tight">
                 {customAlert.title}
               </h3>
-              
-              <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-[12.5px] text-slate-600 dark:text-slate-400 font-medium leading-snug">
                 {customAlert.message}
               </p>
             </div>
             
-            {/* Actions */}
-            <div className="p-3 bg-slate-50 dark:bg-slate-900/30 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setCustomAlert(null)}
-                className="px-4 py-2 text-[12px] font-bold text-white bg-[#0070f3] hover:bg-blue-650 rounded-xl transition active:scale-95 shadow-sm hover:shadow cursor-pointer"
-              >
-                Okay
-              </button>
-            </div>
+            <button
+              onClick={() => setCustomAlert(null)}
+              className="ml-auto -mt-1 -mr-1 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
+            >
+              <X size={15} strokeWidth={2.5} />
+            </button>
           </div>
         </div>,
         document.body
