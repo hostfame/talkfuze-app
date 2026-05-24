@@ -172,48 +172,35 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
 
 interface CachedLearning {
   fewShotBlock: string;
-  mistakesBlock: string;
   timestamp: number;
 }
 const learningCache: Record<string, CachedLearning> = {};
-const CACHE_TTL = 15 * 1000; // 15 seconds (so agent corrections are learned almost instantly)
+const CACHE_TTL = 15 * 1000;
 
-async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; mistakesBlock: string }> {
+async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
   const now = Date.now();
   const cached = learningCache[orgId];
   if (cached && (now - cached.timestamp < CACHE_TTL)) {
-    return { fewShotBlock: cached.fewShotBlock, mistakesBlock: cached.mistakesBlock };
+    return { fewShotBlock: cached.fewShotBlock };
   }
 
   let fewShotBlock = '';
-  let mistakesBlock = '';
 
   try {
-    const [examplesRes, correctionsRes] = await Promise.all([
-      supabaseAdmin
-        .from("ai_draft_logs")
-        .select("ai_draft, language")
-        .eq("org_id", orgId)
-        .eq("was_edited", false)
-        .not("agent_sent", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(30),
-      supabaseAdmin
-        .from("ai_draft_logs")
-        .select("correction_feedback")
-        .eq("org_id", orgId)
-        .eq("was_edited", true)
-        .not("correction_feedback", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(1000)
-    ]);
+    const { data } = await supabaseAdmin
+      .from("ai_draft_logs")
+      .select("ai_draft, language")
+      .eq("org_id", orgId)
+      .eq("was_edited", false)
+      .not("agent_sent", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(30);
 
-    if (examplesRes.data) {
+    if (data) {
       const allExamples: string[] = [];
       let count = 0;
-      for (const row of examplesRes.data) {
+      for (const row of data) {
         if (row.ai_draft.length < 30) continue;
-        // Only include examples matching the target language to prevent cross-contamination
         if (count < 6) { allExamples.push(row.ai_draft); count++; }
         if (count >= 6) break;
       }
@@ -221,20 +208,12 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
         fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (match this tone):\n${allExamples.join('\n---\n')}`;
       }
     }
-
-    if (correctionsRes.data) {
-      const corrections = correctionsRes.data.map(r => r.correction_feedback).filter(Boolean);
-      const uniqueCorrections = Array.from(new Set(corrections)).slice(0, 15); // Deduplicate and cap to top 15 rules to prevent prompt bloat
-      if (uniqueCorrections.length > 0) {
-        mistakesBlock = `\n\nCRITICAL KNOWLEDGE (LEARNED FROM PAST MISTAKES):\n${uniqueCorrections.map((c) => `- ${c}`).join('\n')}`;
-      }
-    }
   } catch (e) {
     // Non-fatal, proceed without learning data
   }
 
-  learningCache[orgId] = { fewShotBlock, mistakesBlock, timestamp: now };
-  return { fewShotBlock, mistakesBlock };
+  learningCache[orgId] = { fewShotBlock, timestamp: now };
+  return { fewShotBlock };
 }
 
 // ============================================================
@@ -340,7 +319,7 @@ export async function POST(req: Request) {
       : Promise.resolve({ fewShotBlock: '', mistakesBlock: '' });
 
     // Wait for both in parallel (saves ~300-500ms vs sequential)
-    const [, { fewShotBlock, mistakesBlock }] = await Promise.all([vectorSearchPromise, learningPromise]);
+    const [, { fewShotBlock }] = await Promise.all([vectorSearchPromise, learningPromise]);
 
     // 4. Build user message with language rules + knowledge + context
     let userMessage = '';
@@ -360,7 +339,7 @@ FORMATTING & BREVITY:
 - NEVER combine multiple sentences into a single paragraph, even for very short messages. ALWAYS add breathing space.
 - Example for a short reply: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
 - Keep response 3-4 short sentences max. Short bursts, not essays.
-${fewShotBlock}${mistakesBlock}
+${fewShotBlock}
 ${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
 The agent has explicitly requested you to write a message conveying the following exact meaning:
 >>> "${instruction}" <<<

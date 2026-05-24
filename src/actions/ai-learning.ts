@@ -222,6 +222,8 @@ export async function completeAiDraftLog(
             const newEmbedding = embData.data?.[0]?.embedding;
 
             if (newEmbedding) {
+              const enrichedAnswer = `[CRITICAL RULE]: ${learningData.rule}\n[STYLE CORRECTION]: ${learningData.style_corrections}\n\n[VERIFIED REPLY]: ${learningData.answer}`;
+
               // Vector similarity check: find existing entries with >0.85 similarity
               const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
                 query_embedding: newEmbedding,
@@ -234,19 +236,19 @@ export async function completeAiDraftLog(
                 await supabaseAdmin
                   .from('ai_knowledge_base')
                   .update({ 
-                    answer: learningData.answer,
+                    answer: enrichedAnswer,
                     embedding: newEmbedding
                   })
                   .eq('id', similarEntries[0].id);
-                console.log("Updated stale knowledge entry with fresh agent answer.");
+                console.log("Updated stale knowledge entry with fresh agent answer and rules.");
               } else {
                 // Genuinely new question, INSERT
                 await supabaseAdmin.from('ai_knowledge_base').insert({
                   question: learningData.question,
-                  answer: learningData.answer,
+                  answer: enrichedAnswer,
                   embedding: newEmbedding
                 });
-                console.log("Inserted new knowledge entry.");
+                console.log("Inserted new knowledge entry with compounding rules.");
               }
             }
           } catch (err) {
@@ -344,59 +346,3 @@ export async function getApprovedExamples(
 
 /**
  * Fetch the latest 5-8 correction insights where the agent edited the draft.
- */
-export async function getRecentCorrections(orgId: string): Promise<string[]> {
-  try {
-    const now = Date.now();
-    const cached = recentCorrectionsCache[orgId];
-    if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
-      return cached.data;
-    }
-
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("ai_draft_logs")
-      .select("correction_feedback")
-      .eq("org_id", orgId)
-      .eq("was_edited", true)
-      .not("correction_feedback", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(1000); // Deep historical scan for permanent learning
-
-    if (error || !data) return [];
-    
-    // Frequency-based distillation: instead of sliding off the cache,
-    // rules that agents had to correct multiple times become permanent core rules.
-    const ruleCounts: Record<string, { count: number, original: string, lastSeen: number }> = {};
-    let idx = 0;
-    
-    for (const row of data) {
-      if (!row.correction_feedback) continue;
-      // Extract just the factual/stylistic rule, ignoring the deep analysis block
-      const ruleOnly = row.correction_feedback.split(' | STYLE:')[0].trim();
-      if (ruleOnly === "Style-only correction, no factual error.") continue; // Skip unhelpful rules
-      
-      const normalized = ruleOnly.toLowerCase();
-      if (!ruleCounts[normalized]) {
-        ruleCounts[normalized] = { count: 0, original: ruleOnly, lastSeen: idx };
-      }
-      ruleCounts[normalized].count++;
-      idx++;
-    }
-
-    // Sort by frequency (descending) so repeated mistakes become permanent memory.
-    // If tied, prioritize the more recently seen mistake.
-    const sortedRules = Object.values(ruleCounts).sort((a, b) => {
-      if (b.count !== a.count) return b.count - a.count;
-      return a.lastSeen - b.lastSeen;
-    });
-
-    const topRules = sortedRules.slice(0, 15).map(r => r.original);
-
-    recentCorrectionsCache[orgId] = { data: topRules, timestamp: now };
-    return topRules;
-  } catch (e) {
-    console.error("getRecentCorrections error:", e);
-    return [];
-  }
-}
