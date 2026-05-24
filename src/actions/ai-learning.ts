@@ -77,7 +77,7 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 2000,
         system: `You are an expert AI CRM linguist and tone analyst for a Bangladeshi hosting company (Hostnin). You perform DEEP line-by-line analysis of how a human agent corrected an AI draft. You extract BOTH factual mistakes AND stylistic/tonal corrections.
 
@@ -361,29 +361,40 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
       .eq("was_edited", true)
       .not("correction_feedback", "is", null)
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(1000); // Deep historical scan for permanent learning
 
     if (error || !data) return [];
     
-    // Deduplicate similar rules (naively by exact match after lowercasing)
-    const uniqueCorrections: string[] = [];
-    const seenNormalized = new Set<string>();
-
+    // Frequency-based distillation: instead of sliding off the cache,
+    // rules that agents had to correct multiple times become permanent core rules.
+    const ruleCounts: Record<string, { count: number, original: string, lastSeen: number }> = {};
+    let idx = 0;
+    
     for (const row of data) {
       if (!row.correction_feedback) continue;
-      // Strip the verbose STYLE analysis block - only inject the concise factual rule into prompts
-      // The full style data stays in the DB for the dashboard, style patterns are learned via vector DB examples
+      // Extract just the factual/stylistic rule, ignoring the deep analysis block
       const ruleOnly = row.correction_feedback.split(' | STYLE:')[0].trim();
+      if (ruleOnly === "Style-only correction, no factual error.") continue; // Skip unhelpful rules
+      
       const normalized = ruleOnly.toLowerCase();
-      if (!seenNormalized.has(normalized)) {
-        seenNormalized.add(normalized);
-        uniqueCorrections.push(ruleOnly);
-        if (uniqueCorrections.length >= 15) break;
+      if (!ruleCounts[normalized]) {
+        ruleCounts[normalized] = { count: 0, original: ruleOnly, lastSeen: idx };
       }
+      ruleCounts[normalized].count++;
+      idx++;
     }
 
-    recentCorrectionsCache[orgId] = { data: uniqueCorrections, timestamp: now };
-    return uniqueCorrections;
+    // Sort by frequency (descending) so repeated mistakes become permanent memory.
+    // If tied, prioritize the more recently seen mistake.
+    const sortedRules = Object.values(ruleCounts).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.lastSeen - b.lastSeen;
+    });
+
+    const topRules = sortedRules.slice(0, 15).map(r => r.original);
+
+    recentCorrectionsCache[orgId] = { data: topRules, timestamp: now };
+    return topRules;
   } catch (e) {
     console.error("getRecentCorrections error:", e);
     return [];
