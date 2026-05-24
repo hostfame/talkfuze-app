@@ -4,8 +4,8 @@ import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2,
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
-import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
-import { createCannedReply } from "@/actions/snippets"
+import { getMessages, replyToConversation, joinConversation, getParticipants, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
+import { createCannedReply, getCannedReplies } from "@/actions/snippets"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName, updateContactEmail, updateContactPhone } from "@/actions/contacts"
@@ -1736,8 +1736,16 @@ export default function ChatThread({
   }
 
   useEffect(() => {
-    getQuickRepliesFromTable(orgId).then(data => {
-      if (data) setQuickReplies(data as QuickReplyItem[])
+    getCannedReplies(orgId).then(data => {
+      if (data) {
+        const mapped = data.map(d => ({
+          id: d.id,
+          shortcut: d.shortcut,
+          title: d.category || 'general',
+          content: d.content
+        }))
+        setQuickReplies(mapped as QuickReplyItem[])
+      }
     })
   }, [orgId])
 

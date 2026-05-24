@@ -23,20 +23,6 @@ function firstRelation<T>(relation: Relation<T> | undefined) {
   return Array.isArray(relation) ? relation[0] : relation
 }
 
-export async function getQuickReplies(orgId: string) {
-  noStore();
-  const { data, error } = await supabaseAdmin
-    .from('channels')
-    .select('config')
-    .eq('org_id', orgId)
-    .eq('type', 'settings_quick_replies')
-    .single()
-    
-  if (error || !data || !data.config?.items) {
-    return []
-  }
-  return data.config.items
-}
 
 export async function getCrmData(orgId: string, phone: string) {
   noStore();
@@ -678,64 +664,7 @@ export async function updateConversationStatus(conversationId: string, status: '
 }
 
 
-// ─────────────────────────────────────────────
-// Phase 6: Quick Replies from dedicated table
-// ─────────────────────────────────────────────
 
-export async function getQuickRepliesFromTable(orgId: string) {
-  noStore();
-  const { data, error } = await supabaseAdmin
-    .from('canned_replies')
-    .select('id, shortcut, content, category')
-    .eq('org_id', orgId)
-    .order('shortcut', { ascending: true })
-
-  if (error) return []
-  return data?.map(d => ({
-    id: d.id,
-    shortcut: d.shortcut,
-    title: d.category || 'general',
-    content: d.content
-  })) || []
-}
-
-export async function createQuickReply(orgId: string, shortcut: string, title: string, content: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
-  const { data, error } = await supabaseAdmin
-    .from('quick_replies')
-    .insert({ org_id: orgId, shortcut: shortcut.toLowerCase().trim(), title, content, created_by: user.id })
-    .select()
-    .single()
-
-  if (error) throw new Error(error.message)
-  return data
-}
-
-export async function deleteQuickReply(replyId: string) {
-  const { error } = await supabaseAdmin
-    .from('quick_replies')
-    .delete()
-    .eq('id', replyId)
-
-  if (error) throw new Error(error.message)
-  return { success: true }
-}
-
-export async function updateQuickReply(replyId: string, orgId: string, shortcut: string, title: string, content: string) {
-  const { data, error } = await supabaseAdmin
-    .from('quick_replies')
-    .update({ shortcut: shortcut.toLowerCase().trim(), title, content })
-    .eq('id', replyId)
-    .eq('org_id', orgId)
-    .select()
-    .single()
-
-  if (error) throw new Error(error.message)
-  return data
-}
 
 export async function toggleContactBanStatus(contactId: string, currentStatus: string) {
   const newStatus = currentStatus === 'banned' ? 'active' : 'banned'
