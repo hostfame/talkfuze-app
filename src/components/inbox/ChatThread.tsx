@@ -2290,34 +2290,45 @@ export default function ChatThread({
     
     try {
       // Send text message first if exists
-      if (msgText || currentAttachments.length === 0) {
-        const tempId = "temp-" + crypto.randomUUID()
-        const lastMessage = messages[messages.length - 1]
-        const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
-        const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
-        
-        addOptimisticMessage(conversationId, {
-          id: tempId,
-          sender_type: 'agent',
-          sender_id: currentUser?.id ?? null,
-          content: msgText,
-          content_type: 'text',
-          metadata: replyMeta ? { reply_to: replyMeta } as any : null,
-          is_internal: isInternal,
-          status: 'sending',
-          created_at: optimisticCreatedAt
-        })
-        // Fire and forget so the UI is not blocked
-        const metaPayload = {
-          ...(replyMeta ? { reply_to: replyMeta } : {}),
-          temp_id: tempId
-        }
-        replyToConversation(orgId, conversationId, msgText, isInternal, 'text', metaPayload)
-          .then(() => markConfirmed(conversationId, tempId))
-          .catch((e: unknown) => {
-            console.error(e)
-            markFailed(conversationId, tempId)
+      if (msgText) {
+        const msgChunks = msgText.split(/\n\s*\n/).map(chunk => chunk.trim()).filter(Boolean);
+
+        for (const chunk of msgChunks) {
+          const tempId = "temp-" + crypto.randomUUID()
+          const lastMessage = messages[messages.length - 1]
+          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
+          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+          
+          addOptimisticMessage(conversationId, {
+            id: tempId,
+            sender_type: 'agent',
+            sender_id: currentUser?.id ?? null,
+            content: chunk,
+            content_type: 'text',
+            metadata: replyMeta ? { reply_to: replyMeta } as any : null,
+            is_internal: isInternal,
+            status: 'sending',
+            created_at: optimisticCreatedAt
           })
+          
+          // Fire and forget so the UI is not blocked
+          const metaPayload = {
+            ...(replyMeta ? { reply_to: replyMeta } : {}),
+            temp_id: tempId
+          }
+          
+          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
+            .then(() => markConfirmed(conversationId, tempId))
+            .catch((e: unknown) => {
+              console.error(e)
+              markFailed(conversationId, tempId)
+            })
+
+          // Add a small delay between chunks to ensure order
+          if (msgChunks.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
       }
 
       // Process attachments
