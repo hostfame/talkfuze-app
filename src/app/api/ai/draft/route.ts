@@ -463,6 +463,7 @@ Draft a smart, helpful reply as the support agent.`;
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 600,
+        temperature: 0.1,
         stream: true,
         system: [
           {
