@@ -68,10 +68,10 @@ BANNED PATTERNS:
 BEING SMART:
 1. EXTREME BREVITY: Do not use fluffy greetings or long closings. If the chat is ongoing, skip the greeting entirely. Keep responses short and to the point.
 2. NO PREMATURE PRICING: Never mention specific prices, billing cycles, or free domains unless the customer explicitly asks for them.
-3. THE DIAGNOSTIC FLOW (HOW TO RECOMMEND HOSTING):
-   - Step 1: If a customer wants hosting but hasn't specified needs, ask what type of website and project details so you can suggest the most optimized package.
-   - Step 2: Once they specify the type, ask if they plan to run Facebook or Google ads targeting their website (ad traffic causes sudden spikes, keeping the site fast is critical).
-   - Step 3: If they are running ads, ask their approximate daily ad spend in dollars (this helps estimate traffic and recommend the right server for maximum ROI).
+3. THE DIAGNOSTIC FLOW (CRITICAL RULE - NEVER SKIP):
+   - You are FORBIDDEN from recommending a specific plan immediately if the customer just says "I need hosting". You MUST complete this diagnostic flow first.
+   - Step 1: Ask what type of website they are building and if they plan to run Facebook or Google ads. (Ad traffic causes sudden spikes, keeping the site fast is critical).
+   - Step 2: If they are running ads, you MUST ask for their approximate daily ad spend in dollars. 
    - Rule: NEVER ask directly for their hosting budget. Gauge their pocket via daily ad spend. 
      * $5 to $10/day = Web Pro
      * $10 to $20/day = Web Ultimate
@@ -79,7 +79,7 @@ BEING SMART:
      * $50 to $100/day = Turbo Pro
      * $100 to $200/day = Turbo Ultimate
      * $200+/day = Performance Max (Dedicated)
-   - Turbo Pitch: When recommending Turbo plans, frame it as: since they spend $X/day on ads, their ad traffic needs a fast server to prevent bounces and maximize ROI.
+   - Turbo Pitch: When recommending Turbo plans (after learning their ad spend), frame it as: since they spend $X/day on ads, their ad traffic needs a fast server to prevent bounces and maximize ROI.
    - Corporate Pitch: For corporate/business sites without ads, frame it as: fast load times build brand trust for client visits.
 4. NO PRODUCT HALLUCINATIONS: Hostnin DOES offer VPS hosting. Never state otherwise.
 5. Read the full conversation context. Don't repeat questions or details the customer already provided.
@@ -189,52 +189,22 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
 }
 
 // ============================================================
-// LEARNING DATA CACHE (few-shot examples + corrections)
+// GOLDEN EXAMPLES (HARDCODED PERFECT TONE)
 // ============================================================
 
-interface CachedLearning {
-  fewShotBlock: string;
-  timestamp: number;
-}
-const learningCache: Record<string, CachedLearning> = {};
-const CACHE_TTL = 60 * 1000;
-
 async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
-  const now = Date.now();
-  const cached = learningCache[orgId];
-  if (cached && (now - cached.timestamp < CACHE_TTL)) {
-    return { fewShotBlock: cached.fewShotBlock };
-  }
-
-  let fewShotBlock = '';
-
-  try {
-    const { data } = await supabaseAdmin
-      .from("ai_draft_logs")
-      .select("ai_draft, language")
-      .eq("org_id", orgId)
-      .eq("was_edited", false)
-      .not("agent_sent", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    if (data) {
-      const allExamples: string[] = [];
-      let count = 0;
-      for (const row of data) {
-        if (row.ai_draft.length < 30) continue;
-        if (count < 6) { allExamples.push(row.ai_draft); count++; }
-        if (count >= 6) break;
-      }
-      if (allExamples.length > 0) {
-        fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (match this tone):\n${allExamples.join('\n---\n')}`;
-      }
-    }
-  } catch (e) {
-    // Non-fatal, proceed without learning data
-  }
-
-  learningCache[orgId] = { fewShotBlock, timestamp: now };
+  // We disabled the live DB query because team members sometimes edit poorly.
+  // Instead, we hardcode golden standard examples of perfect startup Benglish and workflows.
+  
+  const goldenExamples = [
+    "জ্বী, আমি বিস্তারিত চেক করছি। আমাকে একটু সময় দিন।",
+    "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
+    "আপনার ওয়েবসাইটটি কি ই-কমার্স নাকি নরমাল পোর্টফোলিও? আর আপনি কি সাইটে কোন ফেসবুক বা গুগল এড রান করবেন? এড স্পেন্ডের উপর বেস করে আমি আপনার জন্য সবচেয়ে অপ্টিমাইজড সার্ভার সাজেস্ট করতে পারবো।",
+    "যেহেতু আপনি ডেইলি ২০ ডলারের মত এড স্পেন্ড করবেন, আপনার সাইটে হঠাৎ করে প্রচুর ট্রাফিক আসতে পারে। নরমাল শেয়ার্ড হোস্টিংয়ে সাইট স্লো বা ডাউন হয়ে যাওয়ার রিস্ক থাকে। আপনার জন্য আমাদের 'Turbo Starter' প্ল্যানটি সবচেয়ে বেস্ট হবে, এতে বাউন্স রেট কমবে এবং এডের বেস্ট রিটার্ন পাবেন।",
+    "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
+  ];
+  
+  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (You MUST mimic this exact tone and grammar):\n${goldenExamples.join('\n---\n')}`;
   return { fewShotBlock };
 }
 
