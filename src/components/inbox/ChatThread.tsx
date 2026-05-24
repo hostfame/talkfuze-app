@@ -3216,44 +3216,102 @@ export default function ChatThread({
             >
               <Info size={18} strokeWidth={2} />
             </button>
-            {showInfoMenu && (
-              <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-2 px-3 z-50 text-[13px] text-slate-600 dark:text-slate-300">
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1.5">
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">Chat Info</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="opacity-70">Total Messages:</span>
-                    <span className="font-medium">{messages.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="opacity-70">Visitor IP:</span>
-                    <span className="font-medium">{((conversation as any)?.metadata)?.ip || ((contact as any)?.metadata)?.ip || 'Unknown'}</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="opacity-70 shrink-0 mr-2">Chat ID:</span>
-                    <div className="flex items-center gap-1.5 min-w-0 bg-slate-50 dark:bg-slate-800 rounded px-1.5 py-1 border border-slate-100 dark:border-slate-700">
-                      <span className="font-mono text-[10px] truncate opacity-70" title={conversationId || ''}>
-                        {conversationId ? conversationId.split('-')[0] + '...' : ''}
-                      </span>
-                      <button 
-                        onClick={() => {
-                          if (conversationId) {
-                            navigator.clipboard.writeText(conversationId);
-                            setCustomAlert({ title: 'Copied', message: 'Chat ID copied to clipboard', type: 'success' });
-                            setShowInfoMenu(false);
-                          }
-                        }}
-                        className="text-[#0070f3] hover:text-blue-600 p-1 bg-white dark:bg-slate-900 rounded shadow-sm transition-colors shrink-0"
-                        title="Copy full ID"
-                      >
-                        <Copy size={12} />
-                      </button>
+            {showInfoMenu && (() => {
+              const convMeta = (conversation as any)?.metadata || {};
+              const contactMeta = (contact as any)?.metadata || {};
+              const rawUA = convMeta.user_agent || convMeta.userAgent || contactMeta.user_agent || contactMeta.userAgent;
+              
+              let deviceBrowser = 'Not Available';
+              if (rawUA && typeof rawUA === 'string') {
+                let browser = 'Unknown Browser';
+                if (rawUA.includes('Chrome')) browser = 'Chrome';
+                else if (rawUA.includes('Safari') && !rawUA.includes('Chrome')) browser = 'Safari';
+                else if (rawUA.includes('Firefox')) browser = 'Firefox';
+                else if (rawUA.includes('Edge')) browser = 'Edge';
+
+                let os = 'Unknown OS';
+                if (rawUA.includes('Windows')) os = 'Windows';
+                else if (rawUA.includes('Mac OS') || rawUA.includes('Macintosh')) os = 'Mac';
+                else if (rawUA.includes('Android')) os = 'Android';
+                else if (rawUA.includes('iPhone') || rawUA.includes('iPad')) os = 'iOS';
+                else if (rawUA.includes('Linux')) os = 'Linux';
+
+                if (browser !== 'Unknown Browser' || os !== 'Unknown OS') {
+                  deviceBrowser = `${os} / ${browser}`;
+                }
+              }
+
+              const rawUrl = convMeta.current_url || convMeta.url || convMeta.referrer || contactMeta.current_url;
+              let displayUrl = 'Not Available';
+              if (rawUrl && typeof rawUrl === 'string') {
+                try {
+                  const urlObj = new URL(rawUrl);
+                  displayUrl = urlObj.hostname.replace('www.', '') + urlObj.pathname;
+                  if (displayUrl === 'hostnin.com/') displayUrl = 'hostnin.com';
+                } catch(e) {
+                  displayUrl = rawUrl.substring(0, 30) + (rawUrl.length > 30 ? '...' : '');
+                }
+              }
+
+              const isWhmcsLinked = !!contact?.email;
+
+              return (
+                <div className="absolute right-0 top-full mt-1 w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-2 px-3 z-50 text-[13px] text-slate-600 dark:text-slate-300">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                      <span className="font-semibold text-slate-800 dark:text-slate-100">Chat Info</span>
+                    </div>
+
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="opacity-70 shrink-0">Device:</span>
+                      <span className="font-medium text-right truncate" title={typeof rawUA === 'string' ? rawUA : ''}>{deviceBrowser}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="opacity-70 shrink-0">Page URL:</span>
+                      <span className="font-medium text-right truncate" title={typeof rawUrl === 'string' ? rawUrl : ''}>{displayUrl}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="opacity-70 shrink-0">WHMCS:</span>
+                      {isWhmcsLinked ? (
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 rounded">Linked</span>
+                      ) : (
+                        <span className="font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-1.5 rounded">Not Linked</span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="opacity-70">Total Messages:</span>
+                      <span className="font-medium">{messages.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="opacity-70">Visitor IP:</span>
+                      <span className="font-medium">{convMeta.ip || contactMeta.ip || 'Unknown'}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="opacity-70 shrink-0 mr-2">Chat ID:</span>
+                      <div className="flex items-center gap-1.5 min-w-0 bg-slate-50 dark:bg-slate-800 rounded px-1.5 py-1 border border-slate-100 dark:border-slate-700">
+                        <span className="font-mono text-[10px] truncate opacity-70" title={conversationId || ''}>
+                          {conversationId ? conversationId.split('-')[0] + '...' : ''}
+                        </span>
+                        <button 
+                          onClick={() => {
+                            if (conversationId) {
+                              navigator.clipboard.writeText(conversationId);
+                            }
+                          }}
+                          className="text-[#0070f3] hover:text-blue-600 p-1 bg-white dark:bg-slate-900 rounded shadow-sm transition-colors shrink-0"
+                          title="Copy full ID"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {onToggleRightSidebar && (
