@@ -619,6 +619,56 @@ type ChatThreadProps = {
   onToggleRightSidebar?: () => void
 }
 
+const playStartBeep = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(650, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const playStopBeep = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(850, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.035, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 export default function ChatThread({ 
   conversationId, 
   messages, 
@@ -1353,6 +1403,11 @@ export default function ChatThread({
   // Load draft when conversation changes
   useEffect(() => {
     if (conversationId) {
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+        streamingIntervalRef.current = null;
+        setIsAiStreaming(false);
+      }
       const timer = setTimeout(() => {
         const draft = localStorage.getItem(`draft_${conversationId}`)
         setInput(draft || "")
@@ -1444,6 +1499,7 @@ export default function ChatThread({
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const [customAlert, setCustomAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'info' } | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
   const [isAiStreaming, setIsAiStreaming] = useState(false)
   const [isWaitingForTranscript, setIsWaitingForTranscript] = useState(false)
@@ -1738,6 +1794,9 @@ export default function ChatThread({
 
   useEffect(() => {
     return () => {
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+      }
       stagedAttachmentsRef.current.forEach(att => {
         if (att.previewUrl) {
           try {
@@ -1925,6 +1984,13 @@ export default function ChatThread({
   // Handle Input Change for Macro Menu and Mentions
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+
+    // Clear any active speech-to-text streaming interval if the user starts typing/editing
+    if (streamingIntervalRef.current) {
+      clearInterval(streamingIntervalRef.current);
+      streamingIntervalRef.current = null;
+      setIsAiStreaming(false);
+    }
 
     // Quick Voice Record shortcut (//v)
     if (val.trim() === '//v' || val.endsWith(' //v') || val.endsWith('\n//v')) {
@@ -2564,6 +2630,7 @@ export default function ChatThread({
       }
 
       mediaRecorderRef.current.start()
+      playStartBeep()
       setIsPreparingRecord(false)
       setIsRecording(true)
       setRecordingDuration(0)
@@ -2594,6 +2661,7 @@ export default function ChatThread({
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
       if (timerRef.current) clearInterval(timerRef.current)
       setIsRecording(false)
+      playStopBeep()
 
       // Clear recording status broadcast
       if (conversationId) {
@@ -2706,6 +2774,11 @@ export default function ChatThread({
           return prefix;
         });
         
+        if (streamingIntervalRef.current) {
+          clearInterval(streamingIntervalRef.current);
+          streamingIntervalRef.current = null;
+        }
+
         let i = 0;
         const text = data.transcript;
         const streamInterval = setInterval(() => {
@@ -2713,9 +2786,13 @@ export default function ChatThread({
           i++;
           if (i >= text.length) {
             clearInterval(streamInterval);
+            if (streamingIntervalRef.current === streamInterval) {
+              streamingIntervalRef.current = null;
+            }
             setIsAiStreaming(false);
           }
         }, 15);
+        streamingIntervalRef.current = streamInterval;
       } else {
         throw new Error("No transcript returned");
       }
