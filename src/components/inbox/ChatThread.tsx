@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2 } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -1466,6 +1466,29 @@ export default function ChatThread({
   const [aiSampleTargetId, setAiSampleTargetId] = useState<string | null>(null)
   const [aiSampleLoading, setAiSampleLoading] = useState(false)
   const [aiSampleText, setAiSampleText] = useState("")
+  const [aiSampleContextStr, setAiSampleContextStr] = useState("")
+  const [aiSampleLogId, setAiSampleLogId] = useState<string | null>(null)
+  const [aiSampleEditing, setAiSampleEditing] = useState(false)
+  const [aiSampleSaving, setAiSampleSaving] = useState(false)
+
+  const saveAiSampleToKnowledge = async () => {
+    if (!aiSampleLogId) {
+       setCustomAlert({ title: 'Error', message: 'Log ID missing. Try generating again.', type: 'error' })
+       return
+    }
+    setAiSampleSaving(true)
+    try {
+       await completeAiDraftLog(aiSampleLogId, aiSampleText, aiSampleContextStr)
+       setAiSampleTargetId(null)
+       setAiSampleEditing(false)
+       setCustomAlert({ title: 'Trained', message: 'Perfect reply added to AI Knowledge Base.', type: 'success' })
+    } catch (err) {
+       console.error(err)
+       setCustomAlert({ title: 'Error', message: 'Failed to save to Knowledge Base.', type: 'error' })
+    } finally {
+       setAiSampleSaving(false)
+    }
+  }
 
   // Unified Agent Activity Tracking
   const lastActivityTimeRef = useRef<number>(Date.now());
@@ -1602,6 +1625,8 @@ export default function ChatThread({
         return `[${name}]: ${contentStr}`
       }).join('\n')
 
+    setAiSampleContextStr(contextMessages);
+
     try {
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
@@ -1639,6 +1664,10 @@ export default function ChatThread({
           }
         }
       }
+      
+      const logId = await logAiDraft(orgId, conversationId, currentUser?.id || '', fullText, 'bn');
+      if (logId) setAiSampleLogId(logId);
+
     } catch (error: any) {
       setAiSampleText(`Error: ${error.message}`)
       setAiSampleLoading(false)
@@ -3705,27 +3734,76 @@ export default function ChatThread({
               {messageNode}
               <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
                 <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 shrink-0 mb-1 border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
-                    <Bot size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 shrink-0 mb-1 border border-slate-200 dark:border-slate-700/50 shadow-sm">
+                    <Bot size={16} className="text-slate-600 dark:text-slate-400" />
                   </div>
-                  <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-indigo-500/20 dark:border-indigo-500/30 shadow-md rounded-br-none">
-                    <div className="absolute -top-3 left-3 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
+                  <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 shadow-md rounded-br-none">
+                    <div className="absolute -top-3 left-3 text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
                       AI Draft Comparison
                     </div>
                     
                     {aiSampleLoading && !aiSampleText ? (
                       <div className="flex items-center justify-center h-6 gap-2 px-4 py-2">
-                        <Loader2 size={14} className="animate-spin text-indigo-500" />
+                        <Loader2 size={14} className="animate-spin text-slate-500" />
                         <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400">Generating alternative...</span>
                       </div>
                     ) : (
-                      <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed mt-1">
-                        {aiSampleText}
-                        {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-indigo-500 animate-pulse align-middle"></span>}
+                      <div className="flex flex-col mt-1">
+                        <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-w-[200px]">
+                          {aiSampleEditing ? (
+                            <textarea
+                              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 outline-none resize-y min-h-[100px] text-[13.5px]"
+                              value={aiSampleText}
+                              onChange={(e) => setAiSampleText(e.target.value)}
+                              disabled={aiSampleSaving}
+                            />
+                          ) : (
+                            <>
+                              {aiSampleText}
+                              {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        {!aiSampleLoading && (
+                          <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700/50 pt-2.5">
+                            {aiSampleEditing ? (
+                              <>
+                                <button 
+                                  onClick={() => setAiSampleEditing(false)}
+                                  disabled={aiSampleSaving}
+                                  className="text-[11px] px-2.5 py-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors font-medium"
+                                >
+                                  Cancel
+                                </button>
+                                <button 
+                                  onClick={saveAiSampleToKnowledge}
+                                  disabled={aiSampleSaving}
+                                  className="text-[11px] px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50"
+                                >
+                                  {aiSampleSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                  {aiSampleSaving ? "Learning..." : "Save to AI Knowledge"}
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={() => setAiSampleEditing(true)}
+                                className="text-[11px] px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-1.5 font-medium"
+                              >
+                                <Edit2 size={12} />
+                                Edit & Train
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                     <button 
-                      onClick={() => setAiSampleTargetId(null)} 
+                      onClick={() => {
+                        setAiSampleTargetId(null);
+                        setAiSampleEditing(false);
+                      }} 
                       className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"
                       title="Close Comparison"
                     >
