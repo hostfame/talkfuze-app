@@ -3752,11 +3752,18 @@ export default function ChatThread({
                         <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-w-[200px]">
                           {aiSampleEditing ? (
                             <textarea
-                              className="w-[300px] sm:w-[400px] bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-md p-3 outline-none resize-y min-h-[140px] text-[13.5px] leading-relaxed shadow-inner transition-colors focus:border-blue-400 focus:bg-white dark:focus:bg-slate-900"
+                              className="w-full min-w-[280px] sm:min-w-[360px] bg-transparent border-0 p-0 m-0 outline-none resize-none overflow-hidden text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200 focus:ring-0"
                               value={aiSampleText}
-                              onChange={(e) => setAiSampleText(e.target.value)}
+                              onChange={(e) => {
+                                setAiSampleText(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                              }}
                               disabled={aiSampleSaving}
-                              placeholder="Edit the draft to make it perfect..."
                             />
                           ) : (
                             <>
