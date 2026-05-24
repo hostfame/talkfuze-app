@@ -3629,13 +3629,29 @@ export default function ChatThread({
             }
 
             if (msg.content === "Your ticket is created" || msg.content.includes("ticket is created")) {
+              const tidMatch = msg.content.match(/#([A-Za-z0-9-]+)/)
+              const tid = safeMeta?.ticket_tid || (tidMatch ? tidMatch[1] : null)
+              const ticketId = safeMeta?.ticket_id
+              
+              const linkUrl = ticketId 
+                ? `https://my.hostnin.com/root/supporttickets.php?action=view&id=${ticketId}`
+                : tid 
+                  ? `https://my.hostnin.com/root/supporttickets.php?view=any&ticketid=${tid}` 
+                  : null
+
               return (
                 <div key={safeMeta?.temp_id || msg.id || idx} className="flex justify-center my-5">
-                  <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5 rounded-full shadow-sm">
-                    <span className="text-[12px] text-blue-700 dark:text-blue-300 font-semibold">
+                  <div 
+                    onClick={() => {
+                      if (linkUrl) window.open(linkUrl, '_blank')
+                    }}
+                    className={`flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 px-3 py-1.5 rounded-full shadow-sm transition-colors ${linkUrl ? 'cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:border-blue-200 dark:hover:border-blue-800/50 active:scale-95' : ''}`}
+                    title={linkUrl ? "View Ticket in WHMCS" : ""}
+                  >
+                    <span className="text-[12px] text-blue-700 dark:text-blue-300 font-semibold select-none">
                       {msg.content}
                     </span>
-                    <span className="text-[10.5px] text-blue-400 dark:text-blue-500/70 ml-1">{msgTime}</span>
+                    <span className="text-[10.5px] text-blue-400 dark:text-blue-500/70 ml-1 select-none">{msgTime}</span>
                   </div>
                 </div>
               )

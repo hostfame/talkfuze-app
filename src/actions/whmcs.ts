@@ -392,6 +392,10 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       content_type: 'system',
       is_internal: false,
       status: 'delivered',
+      metadata: {
+        ticket_id: result.id,
+        ticket_tid: result.tid
+      }
     })
 
     // 10. Tag the conversation as ticketed, but keep it open
