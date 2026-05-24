@@ -127,14 +127,27 @@ export async function POST(req: Request) {
       try {
         const imgRes = await fetch(imageUrl);
         if (imgRes.ok) {
-          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
-          let mediaType = "image/jpeg";
-          if (contentType.includes("png")) mediaType = "image/png";
-          else if (contentType.includes("gif")) mediaType = "image/gif";
-          else if (contentType.includes("webp")) mediaType = "image/webp";
-
           const buffer = await imgRes.arrayBuffer();
-          const base64Data = Buffer.from(buffer).toString("base64");
+          const bufferNode = Buffer.from(buffer);
+          
+          let mediaType = "image/jpeg";
+          
+          // Anthropic strictly validates media_type against actual file bytes.
+          // Sometimes WhatsApp/Cloudflare sends WebP disguised as JPEG.
+          if (bufferNode.length > 12) {
+            const header = bufferNode.toString('ascii', 0, 12);
+            if (header.startsWith('RIFF') && header.includes('WEBP')) {
+              mediaType = 'image/webp';
+            } else if (bufferNode[0] === 0xFF && bufferNode[1] === 0xD8 && bufferNode[2] === 0xFF) {
+              mediaType = 'image/jpeg';
+            } else if (bufferNode[0] === 0x89 && bufferNode[1] === 0x50 && bufferNode[2] === 0x4E && bufferNode[3] === 0x47) {
+              mediaType = 'image/png';
+            } else if (header.startsWith('GIF87a') || header.startsWith('GIF89a')) {
+              mediaType = 'image/gif';
+            }
+          }
+
+          const base64Data = bufferNode.toString("base64");
           return { base64Data, mediaType };
         }
       } catch (err: any) {
