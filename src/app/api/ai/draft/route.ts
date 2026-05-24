@@ -17,7 +17,11 @@ const BENGLISH_WORDS = new Set([
   'chaitechi', 'lagbe', 'nilam', 'dekhun', 'koren', 'korun', 'hbe', 'nki', 'naki',
   'hoile', 'hole', 'hoise', 'hoyese', 'bujhlam', 'bujhte',
   'kora', 'korar', 'amar', 'tomar', 'tar', 'unader', 'oder', 'eder', 'kno',
-  'ebong', 'kintu'
+  'ebong', 'kintu', 'ekta', 'jonno', 'ami', 'tumi', 'apni', 'hobe', 'ki', 'kobe',
+  'kothay', 'kemon', 'ar', 'er', 'te', 'korbo', 'korse', 'korsen', 'dibe', 'den',
+  'din', 'niye', 'ase', 'asi', 'nai', 'nei', 'ache', 'korsi', 'korechi', 'kaj',
+  'hoy', 'hoyni', 'parbo', 'parben', 'jabe', 'jaben', 'kotha', 'bolte', 'chacchi',
+  'beshi', 'kom', 'koto', 'koi', 'kikore', 'kemne', 'evabe', 'ase', 'niye', 'nile'
 ]);
 
 // ============================================================
@@ -276,7 +280,7 @@ export async function POST(req: Request) {
     const lastCustomerLine = customerLines[customerLines.length - 1] || '';
     const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
 
-    const customerFullText = customerLines.slice(-4).join(' ').toLowerCase();
+    const customerFullText = customerLines.slice(-10).join(' ').toLowerCase();
     const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
     const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
