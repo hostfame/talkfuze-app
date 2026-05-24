@@ -65,7 +65,7 @@ export default function ConversationList({
   const [newChatNumber, setNewChatNumber] = useState("")
   const [searchResult, setSearchResult] = useState<'idle' | 'not_found' | 'loading'>('idle')
   
-  const { activeFilter, currentUser, isLoaded } = useInboxStore()
+  const { activeFilter, currentUser, isLoaded, activeCalls } = useInboxStore()
   
   // Debounce search query
   useEffect(() => {
@@ -386,7 +386,7 @@ export default function ConversationList({
 
               {/* Content */}
               <div className="flex-1 min-w-0 mt-0.5 flex flex-col justify-center">
-                {/* Line 1: Name and Time */}
+                {/* Line 1: Name and Time / Call Status */}
                 <div className="flex justify-between items-center mb-1">
                   <div className="flex items-center gap-2 truncate">
                     <span className={`text-[14.5px] truncate ${
@@ -433,15 +433,37 @@ export default function ConversationList({
                       }
                     })()}
                   </div>
-                  <span className={`text-[11px] shrink-0 ml-2 ${
-                    isUnread
-                      ? 'text-blue-600 dark:text-[#00a884] font-bold'
-                      : isSelected 
-                        ? 'text-slate-500 dark:text-[#8696a0] font-medium' 
-                        : 'text-slate-400 dark:text-[#8696a0]'
-                  }`}>
-                    {time}
-                  </span>
+                  
+                  {/* Call Indicator or Time */}
+                  {activeCalls[conv.id] ? (
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-full pl-2 pr-1 py-0.5 shadow-sm">
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight flex items-center gap-1 uppercase">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        In call
+                      </span>
+                      {activeCalls[conv.id].agentAvatar ? (
+                        <img 
+                          src={activeCalls[conv.id].agentAvatar} 
+                          className="w-4 h-4 rounded-full border border-emerald-200 dark:border-emerald-500/30 object-cover" 
+                          alt={activeCalls[conv.id].agentName} 
+                        />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[8px] font-bold border border-emerald-200 dark:border-emerald-500/30">
+                          {activeCalls[conv.id].agentName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className={`text-[11px] shrink-0 ml-2 ${
+                      isUnread
+                        ? 'text-blue-600 dark:text-[#00a884] font-bold'
+                        : isSelected 
+                          ? 'text-slate-500 dark:text-[#8696a0] font-medium' 
+                          : 'text-slate-400 dark:text-[#8696a0]'
+                    }`}>
+                      {time}
+                    </span>
+                  )}
                 </div>
 
                 {/* Line 2: Message Preview and Unread Dot */}

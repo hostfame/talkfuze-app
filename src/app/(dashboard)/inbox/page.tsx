@@ -351,6 +351,19 @@ export default function InboxPage() {
           playUISound('receive');
         }
       })
+      .on('broadcast', { event: 'voice_call_started' }, (payload) => {
+        if (payload.payload.conversationId) {
+          useInboxStore.getState().setActiveCall(payload.payload.conversationId, {
+            agentName: payload.payload.agentName,
+            agentAvatar: payload.payload.agentAvatar
+          });
+        }
+      })
+      .on('broadcast', { event: 'voice_call_ended' }, (payload) => {
+        if (payload.payload.conversationId) {
+          useInboxStore.getState().setActiveCall(payload.payload.conversationId, null);
+        }
+      })
       .subscribe()
 
     return () => {

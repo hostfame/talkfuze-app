@@ -138,6 +138,8 @@ interface InboxState {
   setMobileView: (view: 'list' | 'chat') => void
   setConvertingTicket: (id: string, converting: boolean) => void
   setIsFetchingMessages: (id: string, isFetching: boolean) => void
+  activeCalls: Record<string, { agentName: string, agentAvatar?: string }>
+  setActiveCall: (conversationId: string, callData: { agentName: string, agentAvatar?: string } | null) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -190,7 +192,17 @@ export const useInboxStore = create<InboxState>((set) => ({
   })),
   setIsFetchingMessages: (id, isFetching) => set((state) => ({
     isFetchingMessages: { ...state.isFetchingMessages, [id]: isFetching }
-  }))
+  })),
+  activeCalls: {},
+  setActiveCall: (conversationId, callData) => set((state) => {
+    const newActiveCalls = { ...state.activeCalls }
+    if (callData) {
+      newActiveCalls[conversationId] = callData
+    } else {
+      delete newActiveCalls[conversationId]
+    }
+    return { activeCalls: newActiveCalls }
+  })
 }))
 
 interface GlobalAudioState {
