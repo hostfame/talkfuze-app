@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Zap, Plus, Search, Trash2, Edit2, Loader2, Save, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getQuickRepliesFromTable, createQuickReply, updateQuickReply, deleteQuickReply } from "@/actions/dashboard"
+import { getCannedReplies, createCannedReply, updateCannedReply, deleteCannedReply } from "@/actions/snippets"
 import type { QuickReplyItem } from "@/lib/types"
 
 export default function QuickRepliesSettingsPage() {
@@ -24,8 +24,12 @@ export default function QuickRepliesSettingsPage() {
   const fetchReplies = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true)
     try {
-      const data = await getQuickRepliesFromTable(ORG_ID)
-      if (data) setReplies(data as QuickReplyItem[])
+      const data = await getCannedReplies(ORG_ID)
+      if (data) {
+        // Map category to title for UI compatibility
+        const mapped = data.map((d: any) => ({ ...d, title: d.category }))
+        setReplies(mapped as QuickReplyItem[])
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -58,11 +62,13 @@ export default function QuickRepliesSettingsPage() {
 
     try {
       if (editingId) {
-        const updated = await updateQuickReply(editingId, ORG_ID, shortcutInput, titleInput, messageInput)
-        setReplies(prev => prev.map(r => r.id === editingId ? updated as QuickReplyItem : r))
+        const updated = await updateCannedReply(editingId, shortcutInput, messageInput, titleInput || "general")
+        const mapped = { ...updated, title: updated.category }
+        setReplies(prev => prev.map(r => r.id === editingId ? mapped as QuickReplyItem : r))
       } else {
-        const created = await createQuickReply(ORG_ID, shortcutInput, titleInput, messageInput)
-        setReplies(prev => [...prev, created as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)))
+        const created = await createCannedReply(ORG_ID, shortcutInput, messageInput, titleInput || "general")
+        const mapped = { ...created, title: created.category }
+        setReplies(prev => [...prev, mapped as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)))
       }
       setIsModalOpen(false)
     } catch (e: any) {
@@ -76,7 +82,7 @@ export default function QuickRepliesSettingsPage() {
     if (!confirm("Are you sure you want to delete this quick reply?")) return
     
     try {
-      await deleteQuickReply(id)
+      await deleteCannedReply(id)
       setReplies(prev => prev.filter(r => r.id !== id))
     } catch (e: any) {
       alert(`Failed to delete: ${e.message}`)
