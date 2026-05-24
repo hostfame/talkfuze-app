@@ -193,30 +193,43 @@ export async function completeAiDraftLog(
           : '';
         correctionFeedback = `${learningData.rule}${stylePart}`;
 
-        // Insert into permanent vector database (RAG) with deduplication
+        // Insert into permanent vector database (RAG) with smart deduplication
+        // Uses vector similarity to find semantically similar questions, then UPDATES stale answers
         try {
-          // QUALITY GATE 3: Check for duplicate questions before inserting
-          const { data: existing } = await supabaseAdmin
-            .from('ai_knowledge_base')
-            .select('id')
-            .ilike('question', learningData.question.trim())
-            .limit(1);
+          const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
+          });
+          const embData = await embeddingRes.json();
+          const newEmbedding = embData.data?.[0]?.embedding;
 
-          if (existing && existing.length > 0) {
-            console.log("Skipping vector insert: duplicate question already exists.");
-          } else {
-            const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
+          if (newEmbedding) {
+            // Vector similarity check: find existing entries with >0.85 similarity
+            const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
+              query_embedding: newEmbedding,
+              match_threshold: 0.85,
+              match_count: 1
             });
-            const embData = await embeddingRes.json();
-            if (embData.data?.[0]?.embedding) {
+
+            if (similarEntries && similarEntries.length > 0) {
+              // Semantically similar question exists, UPDATE with fresh answer (self-heal stale data)
+              await supabaseAdmin
+                .from('ai_knowledge_base')
+                .update({ 
+                  answer: learningData.answer,
+                  embedding: newEmbedding
+                })
+                .eq('id', similarEntries[0].id);
+              console.log("Updated stale knowledge entry with fresh agent answer.");
+            } else {
+              // Genuinely new question, INSERT
               await supabaseAdmin.from('ai_knowledge_base').insert({
                 question: learningData.question,
                 answer: learningData.answer,
-                embedding: embData.data[0].embedding
+                embedding: newEmbedding
               });
+              console.log("Inserted new knowledge entry.");
             }
           }
         } catch (err) {

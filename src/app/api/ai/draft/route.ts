@@ -301,7 +301,7 @@ export async function POST(req: Request) {
           
           const { data: vectorDocs } = await supabaseAdmin.rpc('match_knowledge', {
             query_embedding,
-            match_threshold: 0.3,
+            match_threshold: 0.45,
             match_count: 3
           });
           
