@@ -3228,7 +3228,7 @@ export default function ChatThread({
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="opacity-70">Visitor IP:</span>
-                    <span className="font-medium">{(conversation?.metadata as any)?.ip || (contact?.metadata as any)?.ip || 'Unknown'}</span>
+                    <span className="font-medium">{((conversation as any)?.metadata)?.ip || ((contact as any)?.metadata)?.ip || 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="opacity-70">Chat ID:</span>
@@ -3312,6 +3312,7 @@ export default function ChatThread({
           )}
         </div>
       </div>
+    </div>
 
       {/* Background ticket conversion indicator */}
       {isConverting && (
