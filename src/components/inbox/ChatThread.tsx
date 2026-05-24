@@ -3191,19 +3191,6 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => {
-              if (conversationId) {
-                const url = `${window.location.origin}/inbox?c=${conversationId}`;
-                navigator.clipboard.writeText(url);
-                setCustomAlert({ title: 'Link Copied', message: 'Chat link copied to clipboard', type: 'success' });
-              }
-            }}
-            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
-            title="Share Chat Link"
-          >
-            <Share2 size={18} strokeWidth={2} />
-          </button>
           <div className="relative" ref={infoMenuRef}>
             <button 
               onClick={() => setShowInfoMenu(!showInfoMenu)}
@@ -3250,23 +3237,54 @@ export default function ChatThread({
               }
 
               const isWhmcsLinked = !!contact?.email;
+              const isWhatsApp = contact?.platform_type === 'whatsapp';
+              
+              let firstContact = 'Unknown';
+              if (conversation?.created_at || contact?.created_at) {
+                firstContact = new Date(conversation?.created_at || contact?.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+              }
 
               return (
                 <div className="absolute right-0 top-full mt-1 w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-2 px-3 z-50 text-[13px] text-slate-600 dark:text-slate-300">
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1.5">
                       <span className="font-semibold text-slate-800 dark:text-slate-100">Chat Info</span>
+                      <button 
+                        onClick={() => {
+                          if (conversationId) {
+                            const url = `${window.location.origin}/inbox?c=${conversationId}`;
+                            navigator.clipboard.writeText(url);
+                            setCustomAlert({ title: 'Link Copied', message: 'Chat link copied to clipboard', type: 'success' });
+                            setShowInfoMenu(false);
+                          }
+                        }}
+                        className="text-[#0070f3] hover:text-blue-600 p-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 rounded shadow-sm transition-colors"
+                        title="Copy Share Link"
+                      >
+                        <Share2 size={13} />
+                      </button>
                     </div>
 
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="opacity-70 shrink-0">Device:</span>
-                      <span className="font-medium text-right truncate" title={typeof rawUA === 'string' ? rawUA : ''}>{deviceBrowser}</span>
-                    </div>
+                    {!isWhatsApp && deviceBrowser !== 'Not Available' && (
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="opacity-70 shrink-0">Device:</span>
+                        <span className="font-medium text-right truncate" title={typeof rawUA === 'string' ? rawUA : ''}>{deviceBrowser}</span>
+                      </div>
+                    )}
 
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="opacity-70 shrink-0">Page URL:</span>
-                      <span className="font-medium text-right truncate" title={typeof rawUrl === 'string' ? rawUrl : ''}>{displayUrl}</span>
-                    </div>
+                    {!isWhatsApp && displayUrl !== 'Not Available' && (
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="opacity-70 shrink-0">Page URL:</span>
+                        <span className="font-medium text-right truncate" title={typeof rawUrl === 'string' ? rawUrl : ''}>{displayUrl}</span>
+                      </div>
+                    )}
+
+                    {isWhatsApp && (
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="opacity-70 shrink-0">Source:</span>
+                        <span className="font-medium text-right truncate text-emerald-600 dark:text-emerald-400">WhatsApp</span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center gap-2">
                       <span className="opacity-70 shrink-0">WHMCS:</span>
@@ -3278,13 +3296,22 @@ export default function ChatThread({
                     </div>
 
                     <div className="flex justify-between items-center">
+                      <span className="opacity-70">First Contact:</span>
+                      <span className="font-medium">{firstContact}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
                       <span className="opacity-70">Total Messages:</span>
                       <span className="font-medium">{messages.length}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="opacity-70">Visitor IP:</span>
-                      <span className="font-medium">{convMeta.ip || contactMeta.ip || 'Unknown'}</span>
-                    </div>
+                    
+                    {(convMeta.ip || contactMeta.ip) && (
+                      <div className="flex justify-between items-center">
+                        <span className="opacity-70">Visitor IP:</span>
+                        <span className="font-medium">{convMeta.ip || contactMeta.ip}</span>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between items-center mt-1">
                       <span className="opacity-70 shrink-0 mr-2">Chat ID:</span>
                       <div className="flex items-center gap-1.5 min-w-0 bg-slate-50 dark:bg-slate-800 rounded px-1.5 py-1 border border-slate-100 dark:border-slate-700">
