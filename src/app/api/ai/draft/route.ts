@@ -266,8 +266,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1. Detect language (instant, no IO)
-    // Split messages to check the most recent exchanges
+    // 1. Detect language using CONVERSATION CONTEXT, not just last message
+    // This prevents "Yes"/"Ok" from switching a Bengali conversation to English
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     
     // Filter to customer-only lines
@@ -277,16 +277,29 @@ export async function POST(req: Request) {
     const lastCustomerLine = customerLines[customerLines.length - 1] || '';
     const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
 
-    const detectedLanguage = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(latestCustomerMessageCleaned) ? 'bn' : 'en';
+    // Check last 5 customer messages for language (majority vote)
+    const bengaliRegex = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+    const recentCustomerMsgs = customerLines.slice(-5).map((l: string) => l.replace(/^\[[^\]]+\]:\s*/, '').trim());
+    let bnCount = 0;
+    let enCount = 0;
+    for (const msg of recentCustomerMsgs) {
+      if (bengaliRegex.test(msg)) bnCount++;
+      else enCount++;
+    }
+    const detectedLanguage = bnCount >= enCount ? 'bn' : 'en';
+
+    // Cap context to last 20 messages for faster/cheaper Haiku generation
+    const cappedContextMessages = conversationLines.slice(-20).join('\n');
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
-    let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(contextMessages);
+    let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(cappedContextMessages);
 
-    // 2.5 Vector DB RAG Search
-    try {
-      if (process.env.OPENAI_API_KEY) {
+    // 2.5 Vector DB RAG Search + 3. Learning Data - run in PARALLEL for speed
+    const vectorSearchPromise = (async () => {
+      try {
+        if (!process.env.OPENAI_API_KEY) return;
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const lines = contextMessages.split('\n')
+        const lines = cappedContextMessages.split('\n')
           .map((line: string) => line.trim())
           .filter((line: string) => line && !line.startsWith('[Agent]'));
         const lastQuery = lines.slice(-3).join(' ');
@@ -294,7 +307,7 @@ export async function POST(req: Request) {
         if (lastQuery.length > 10) {
           const embeddingRes = await openai.embeddings.create({
             model: 'text-embedding-3-small',
-            input: lastQuery,
+            input: lastQuery.substring(0, 1500),
             dimensions: 1536
           });
           const query_embedding = embeddingRes.data[0].embedding;
@@ -311,15 +324,17 @@ export async function POST(req: Request) {
             vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
           }
         }
+      } catch (e) {
+        console.error('Vector DB search failed:', e);
       }
-    } catch (e) {
-      console.error('Vector DB search failed:', e);
-    }
+    })();
 
-    // 3. Fetch learning data (cached, ~0ms on hit)
-    const { fewShotBlock, mistakesBlock } = (orgId && !isTranslation)
-      ? await getLearningData(orgId)
-      : { fewShotBlock: '', mistakesBlock: '' };
+    const learningPromise = (orgId && !isTranslation)
+      ? getLearningData(orgId)
+      : Promise.resolve({ fewShotBlock: '', mistakesBlock: '' });
+
+    // Wait for both in parallel (saves ~300-500ms vs sequential)
+    const [, { fewShotBlock, mistakesBlock }] = await Promise.all([vectorSearchPromise, learningPromise]);
 
     // 4. Build user message with language rules + knowledge + context
     let userMessage = '';
@@ -355,7 +370,7 @@ ${knowledgeContext}
 Customer Name: ${contactName}
 
 Conversation:
-${contextMessages}
+${cappedContextMessages}
 
 ${imageBlock ? `\nCRITICAL MULTIMODAL/VISION INSTRUCTION:
 The customer has uploaded an image/screenshot (attached to this message). 
