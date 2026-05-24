@@ -3231,23 +3231,25 @@ export default function ChatThread({
                     <span className="font-medium">{((conversation as any)?.metadata)?.ip || ((contact as any)?.metadata)?.ip || 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="opacity-70">Chat ID:</span>
-                  </div>
-                  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 border border-slate-100 dark:border-slate-700">
-                    <span className="font-mono text-[11px] truncate mr-2" title={conversationId || ''}>{conversationId}</span>
-                    <button 
-                      onClick={() => {
-                        if (conversationId) {
-                          navigator.clipboard.writeText(conversationId);
-                          setCustomAlert({ title: 'Copied', message: 'Chat ID copied to clipboard', type: 'success' });
-                          setShowInfoMenu(false);
-                        }
-                      }}
-                      className="text-[#0070f3] hover:text-blue-600 p-1 bg-blue-50 dark:bg-blue-900/30 rounded transition-colors"
-                      title="Copy ID"
-                    >
-                      <Copy size={14} />
-                    </button>
+                    <span className="opacity-70 shrink-0 mr-2">Chat ID:</span>
+                    <div className="flex items-center gap-1.5 min-w-0 bg-slate-50 dark:bg-slate-800 rounded px-1.5 py-1 border border-slate-100 dark:border-slate-700">
+                      <span className="font-mono text-[10px] truncate opacity-70" title={conversationId || ''}>
+                        {conversationId ? conversationId.split('-')[0] + '...' : ''}
+                      </span>
+                      <button 
+                        onClick={() => {
+                          if (conversationId) {
+                            navigator.clipboard.writeText(conversationId);
+                            setCustomAlert({ title: 'Copied', message: 'Chat ID copied to clipboard', type: 'success' });
+                            setShowInfoMenu(false);
+                          }
+                        }}
+                        className="text-[#0070f3] hover:text-blue-600 p-1 bg-white dark:bg-slate-900 rounded shadow-sm transition-colors shrink-0"
+                        title="Copy full ID"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
