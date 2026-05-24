@@ -183,59 +183,77 @@ export async function completeAiDraftLog(
     let correctionFeedback: string | null = null;
 
     if (wasEdited) {
-      // Generate both short-term rule and permanent Q&A pair
-      const learningData = await extractLearningData(context, log.ai_draft, agentSent);
+      // Skip learning extraction for minor edits (typos, spacing)
+      // Measure how different the texts are using character-level similarity
+      const draft = log.ai_draft.trim();
+      const sent = agentSent.trim();
+      const maxLen = Math.max(draft.length, sent.length);
+      let matchCount = 0;
+      const shorter = draft.length <= sent.length ? draft : sent;
+      const longer = draft.length > sent.length ? draft : sent;
+      for (let i = 0; i < shorter.length; i++) {
+        if (shorter[i] === longer[i]) matchCount++;
+      }
+      const similarity = maxLen > 0 ? matchCount / maxLen : 1;
+
+      if (similarity > 0.85) {
+        // Minor edit (typo/spacing/small tweak), skip expensive Sonnet call
+        console.log(`Minor edit detected (${(similarity * 100).toFixed(0)}% similar), skipping learning extraction.`);
+      } else {
+        // Significant rewrite, extract learning via Sonnet
+        const learningData = await extractLearningData(context, log.ai_draft, agentSent);
       
-      if (learningData) {
-        // Combine factual rule + style corrections into a single rich feedback
-        const stylePart = learningData.style_corrections && learningData.style_corrections !== 'No significant style changes.'
-          ? ` | STYLE: ${learningData.style_corrections}`
-          : '';
-        correctionFeedback = `${learningData.rule}${stylePart}`;
+        if (learningData) {
+          // Combine factual rule + style corrections into a single rich feedback
+          const stylePart = learningData.style_corrections && learningData.style_corrections !== 'No significant style changes.'
+            ? ` | STYLE: ${learningData.style_corrections}`
+            : '';
+          correctionFeedback = `${learningData.rule}${stylePart}`;
 
-        // Insert into permanent vector database (RAG) with smart deduplication
-        // Uses vector similarity to find semantically similar questions, then UPDATES stale answers
-        try {
-          const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
-          });
-          const embData = await embeddingRes.json();
-          const newEmbedding = embData.data?.[0]?.embedding;
-
-          if (newEmbedding) {
-            // Vector similarity check: find existing entries with >0.85 similarity
-            const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
-              query_embedding: newEmbedding,
-              match_threshold: 0.85,
-              match_count: 1
+          // Insert into permanent vector database (RAG) with smart deduplication
+          // Uses vector similarity to find semantically similar questions, then UPDATES stale answers
+          try {
+            const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
             });
+            const embData = await embeddingRes.json();
+            const newEmbedding = embData.data?.[0]?.embedding;
 
-            if (similarEntries && similarEntries.length > 0) {
-              // Semantically similar question exists, UPDATE with fresh answer (self-heal stale data)
-              await supabaseAdmin
-                .from('ai_knowledge_base')
-                .update({ 
+            if (newEmbedding) {
+              // Vector similarity check: find existing entries with >0.85 similarity
+              const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
+                query_embedding: newEmbedding,
+                match_threshold: 0.85,
+                match_count: 1
+              });
+
+              if (similarEntries && similarEntries.length > 0) {
+                // Semantically similar question exists, UPDATE with fresh answer (self-heal stale data)
+                await supabaseAdmin
+                  .from('ai_knowledge_base')
+                  .update({ 
+                    answer: learningData.answer,
+                    embedding: newEmbedding
+                  })
+                  .eq('id', similarEntries[0].id);
+                console.log("Updated stale knowledge entry with fresh agent answer.");
+              } else {
+                // Genuinely new question, INSERT
+                await supabaseAdmin.from('ai_knowledge_base').insert({
+                  question: learningData.question,
                   answer: learningData.answer,
                   embedding: newEmbedding
-                })
-                .eq('id', similarEntries[0].id);
-              console.log("Updated stale knowledge entry with fresh agent answer.");
-            } else {
-              // Genuinely new question, INSERT
-              await supabaseAdmin.from('ai_knowledge_base').insert({
-                question: learningData.question,
-                answer: learningData.answer,
-                embedding: newEmbedding
-              });
-              console.log("Inserted new knowledge entry.");
+                });
+                console.log("Inserted new knowledge entry.");
+              }
             }
+          } catch (err) {
+            console.error("Vector insert error:", err);
           }
-        } catch (err) {
-          console.error("Vector insert error:", err);
         }
-      }
+      } // end else (significant edit)
     }
 
     const updatePayload = {
