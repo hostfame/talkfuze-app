@@ -2550,9 +2550,9 @@ export default function ChatThread({
           let chunkDelay = 0;
           if (!isInternal && i > 0) {
             const lines = chunk.split('\n').length;
-            if (lines === 1) chunkDelay = 3000;
-            else if (lines === 2) chunkDelay = 5000;
-            else chunkDelay = 8000;
+            if (lines === 1) chunkDelay = 4000;
+            else if (lines === 2) chunkDelay = 6000;
+            else chunkDelay = 10000;
             accumulatedDelay += chunkDelay;
           }
           
@@ -3141,14 +3141,14 @@ export default function ChatThread({
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       <style>{`
         @keyframes grayToBlue {
-          0% { background-color: #94a3b8; }
+          0% { background-color: #bfdbfe; }
           100% { background-color: #0070f3; }
         }
         .dark .gray-to-blue-dark {
           animation-name: grayToBlueDark;
         }
         @keyframes grayToBlueDark {
-          0% { background-color: #475569; }
+          0% { background-color: #0d9488; }
           100% { background-color: #005c4b; }
         }
       `}</style>

@@ -19,8 +19,13 @@ async function test() {
     
     console.log('Status:', res.status);
     
-    const text = await res.text();
-    console.log('Response:', text);
+    const body = res.body;
+    body.on('data', chunk => {
+        console.log('CHUNK:', chunk.toString());
+    });
+    body.on('end', () => {
+        console.log('DONE');
+    });
   } catch (err) {
     console.error('Error:', err);
   }
