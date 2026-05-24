@@ -3350,7 +3350,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'file' && (mediaUrl) ? (
                             <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition mb-1">
                               <Paperclip size={16} />
-                              <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
+                              <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename?.split('/').pop()?.replace(/^\d+_/, '') || 'Download File'}</span>
                             </a>
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
@@ -3508,7 +3508,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'file' && (mediaUrl) ? (
                             <a href={(mediaUrl) as string} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg hover:bg-black/10 transition mb-1">
                               <Paperclip size={16} />
-                              <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename || 'Download File'}</span>
+                              <span className="text-[13px] underline truncate max-w-[180px]">{safeMeta.filename?.split('/').pop()?.replace(/^\d+_/, '') || 'Download File'}</span>
                             </a>
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
