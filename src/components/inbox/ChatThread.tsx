@@ -1463,7 +1463,7 @@ export default function ChatThread({
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, message: AppMessage } | null>(null)
   const [editingMessage, setEditingMessage] = useState<AppMessage | null>(null)
   
-  const [aiSampleModalOpen, setAiSampleModalOpen] = useState(false)
+  const [aiSampleTargetId, setAiSampleTargetId] = useState<string | null>(null)
   const [aiSampleLoading, setAiSampleLoading] = useState(false)
   const [aiSampleText, setAiSampleText] = useState("")
 
@@ -1561,7 +1561,7 @@ export default function ChatThread({
 
   const generateAiSample = async (targetMessage: AppMessage) => {
     if (!conversationId) return
-    setAiSampleModalOpen(true)
+    setAiSampleTargetId(targetMessage.id)
     setAiSampleLoading(true)
     setAiSampleText("")
     setContextMenu(null)
@@ -3695,6 +3695,47 @@ export default function ChatThread({
                 </div>
               </div>
             )
+
+            if (msg.id === aiSampleTargetId) {
+              return (
+                <React.Fragment key={msg.id}>
+                  {messageBubble}
+                  <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
+                    <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 shrink-0 mb-1 border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
+                        <Bot size={16} className="text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-indigo-500/20 dark:border-indigo-500/30 shadow-md rounded-br-none">
+                        <div className="absolute -top-3 left-3 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
+                          AI Draft Comparison
+                        </div>
+                        
+                        {aiSampleLoading && !aiSampleText ? (
+                          <div className="flex items-center justify-center h-6 gap-2 px-4 py-2">
+                            <Loader2 size={14} className="animate-spin text-indigo-500" />
+                            <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400">Generating alternative...</span>
+                          </div>
+                        ) : (
+                          <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed mt-1">
+                            {aiSampleText}
+                            {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-indigo-500 animate-pulse align-middle"></span>}
+                          </div>
+                        )}
+                        <button 
+                          onClick={() => setAiSampleTargetId(null)} 
+                          className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"
+                          title="Close Comparison"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </React.Fragment>
+              )
+            }
+
+            return messageBubble;
           }
         })}
         
@@ -4423,55 +4464,6 @@ export default function ChatThread({
           </div>
         </div>,
         document.body
-      )}
-
-      {/* AI Sample Modal */}
-      {aiSampleModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-slate-900/80 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Bot size={16} className="text-blue-500" />
-                AI Sample Response
-              </h3>
-              <button 
-                onClick={() => setAiSampleModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            
-            <div className="p-5">
-              <div className="text-[13px] text-slate-500 dark:text-slate-400 mb-3">
-                This is what the AI would have generated at this exact point in the conversation:
-              </div>
-              
-              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 min-h-[120px] max-h-[300px] overflow-y-auto relative">
-                {aiSampleLoading && !aiSampleText ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 py-8">
-                    <Loader2 size={24} className="animate-spin text-blue-500" />
-                    <span className="text-[13px] font-medium animate-pulse">Generating AI Sample...</span>
-                  </div>
-                ) : (
-                  <p className="text-[14px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                    {aiSampleText}
-                    {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-4 bg-blue-500 animate-pulse"></span>}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="px-5 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 flex justify-end">
-              <button
-                onClick={() => setAiSampleModalOpen(false)}
-                className="px-4 py-2 text-[13px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Image Zoom Modal */}
