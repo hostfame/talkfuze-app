@@ -3399,6 +3399,8 @@ export default function ChatThread({
           const isAgent = msg.sender_type === 'agent' || msg.sender_type === 'ai'
           const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           
+          let messageNode;
+          
           if (isAgent) {
             // Find agent details from teamMembers
             let agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
@@ -3418,7 +3420,7 @@ export default function ChatThread({
               agentAvatar = "/team/h.jpg";
             }
 
-            return (
+            messageNode = (
               <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col items-end ${isGroupedWithNext ? 'mb-1' : 'mb-4'} ${msg.is_internal && !isGroupedWithPrev ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
                 {!isGroupedWithPrev && (
@@ -3564,7 +3566,7 @@ export default function ChatThread({
               </div>
             )
           } else {
-            return (
+            messageNode = (
               <div id={`msg-${msg.id}`} key={msg.id || idx} className={`flex flex-col ${isGroupedWithNext ? 'mb-1' : 'mb-4'} transition-all duration-300 rounded-xl`}>
                 <div className="flex items-end gap-2.5 relative group">
                   {/* Customer / Participant Avatar */}
@@ -3695,48 +3697,48 @@ export default function ChatThread({
                 </div>
               </div>
             )
-
-            if (msg.id === aiSampleTargetId) {
-              return (
-                <Fragment key={msg.id}>
-                  {messageBubble}
-                  <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
-                    <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 shrink-0 mb-1 border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
-                        <Bot size={16} className="text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-indigo-500/20 dark:border-indigo-500/30 shadow-md rounded-br-none">
-                        <div className="absolute -top-3 left-3 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
-                          AI Draft Comparison
-                        </div>
-                        
-                        {aiSampleLoading && !aiSampleText ? (
-                          <div className="flex items-center justify-center h-6 gap-2 px-4 py-2">
-                            <Loader2 size={14} className="animate-spin text-indigo-500" />
-                            <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400">Generating alternative...</span>
-                          </div>
-                        ) : (
-                          <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed mt-1">
-                            {aiSampleText}
-                            {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-indigo-500 animate-pulse align-middle"></span>}
-                          </div>
-                        )}
-                        <button 
-                          onClick={() => setAiSampleTargetId(null)} 
-                          className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"
-                          title="Close Comparison"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Fragment>
-              )
-            }
-
-            return messageBubble;
           }
+
+        if (msg.id === aiSampleTargetId) {
+          return (
+            <Fragment key={msg.id}>
+              {messageNode}
+              <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
+                <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 shrink-0 mb-1 border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
+                    <Bot size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-indigo-500/20 dark:border-indigo-500/30 shadow-md rounded-br-none">
+                    <div className="absolute -top-3 left-3 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
+                      AI Draft Comparison
+                    </div>
+                    
+                    {aiSampleLoading && !aiSampleText ? (
+                      <div className="flex items-center justify-center h-6 gap-2 px-4 py-2">
+                        <Loader2 size={14} className="animate-spin text-indigo-500" />
+                        <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400">Generating alternative...</span>
+                      </div>
+                    ) : (
+                      <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed mt-1">
+                        {aiSampleText}
+                        {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-indigo-500 animate-pulse align-middle"></span>}
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => setAiSampleTargetId(null)} 
+                      className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"
+                      title="Close Comparison"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Fragment>
+          )
+        }
+
+        return messageNode;
         })}
         
 
