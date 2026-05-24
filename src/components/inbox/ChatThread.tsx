@@ -4,7 +4,8 @@ import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2,
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
-import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage, createQuickReply } from "@/actions/dashboard"
+import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
+import { createCannedReply } from "@/actions/snippets"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName, updateContactEmail, updateContactPhone } from "@/actions/contacts"
@@ -4703,16 +4704,21 @@ export default function ChatThread({
               }
               
               const shortcut = quickReplyShortcut.toLowerCase().trim().replace(/^\//, ''); // strip leading slash if they typed it
-              if (quickReplies.some(r => r.shortcut.toLowerCase() === shortcut)) {
+              if (quickReplies.some(r => r.shortcut.toLowerCase() === shortcut || r.shortcut.toLowerCase() === `/${shortcut}`)) {
                 alert('Shortcut already exists! Please use a unique shortcut tag.');
                 return;
               }
 
               setQuickReplySaving(true);
               try {
-                const created = await createQuickReply(orgId, shortcut, quickReplyTitle.trim(), quickReplyContent.trim());
+                const created = await createCannedReply(orgId, shortcut, quickReplyContent.trim(), "general");
                 if (created) {
-                  setQuickReplies(prev => [...prev, created as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)));
+                  setQuickReplies(prev => [...prev, {
+                    id: created.id,
+                    shortcut: created.shortcut,
+                    title: created.category || "general",
+                    content: created.content
+                  } as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)));
                   setQuickReplyModalOpen(false);
                 }
               } catch (err: any) {
