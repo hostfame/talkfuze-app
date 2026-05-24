@@ -3752,10 +3752,11 @@ export default function ChatThread({
                         <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-w-[200px]">
                           {aiSampleEditing ? (
                             <textarea
-                              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 outline-none resize-y min-h-[100px] text-[13.5px]"
+                              className="w-[300px] sm:w-[400px] bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-md p-3 outline-none resize-y min-h-[140px] text-[13.5px] leading-relaxed shadow-inner transition-colors focus:border-blue-400 focus:bg-white dark:focus:bg-slate-900"
                               value={aiSampleText}
                               onChange={(e) => setAiSampleText(e.target.value)}
                               disabled={aiSampleSaving}
+                              placeholder="Edit the draft to make it perfect..."
                             />
                           ) : (
                             <>
@@ -3773,14 +3774,14 @@ export default function ChatThread({
                                 <button 
                                   onClick={() => setAiSampleEditing(false)}
                                   disabled={aiSampleSaving}
-                                  className="text-[11px] px-2.5 py-1.5 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors font-medium"
+                                  className="text-[11px] px-2.5 py-1.5 rounded-md bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors font-medium"
                                 >
                                   Cancel
                                 </button>
                                 <button 
                                   onClick={saveAiSampleToKnowledge}
                                   disabled={aiSampleSaving}
-                                  className="text-[11px] px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-900 dark:bg-slate-600 dark:hover:bg-slate-500 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50"
+                                  className="text-[11px] px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50 shadow-sm"
                                 >
                                   {aiSampleSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                                   {aiSampleSaving ? "Learning..." : "Save to AI Knowledge"}
