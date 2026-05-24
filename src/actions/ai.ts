@@ -89,16 +89,13 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const lastCustomerLine = customerLines[customerLines.length - 1] || '';
     const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
 
-    // Regex only used for metadata/logging, NOT for prompt enforcement
-    const detectedLanguage = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(latestCustomerMessageCleaned) ? 'bn' : 'en';
+    const customerFullText = customerLines.slice(-4).join(' ').toLowerCase();
+    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
+    const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+    const isBenglish = words.some(w => BENGLISH_WORDS.has(w));
+    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
-
-## LANGUAGE MATCHING (HIGHEST PRIORITY)
-You MUST reply in the SAME language the customer is currently speaking in their most recent message.
-- If their latest message is in English (including messages with Bengali currency symbols like ৳), reply in English.
-- If their latest message contains Bengali script letters or is in Banglish (Bengali words in Latin letters like "vai", "apni", "hobe", "bhai"), reply in Bengali script.
-- IGNORE the language of older messages, audio transcripts, agent replies, example responses, or knowledge base entries. ONLY the customer's latest message determines your reply language.
 
 YOUR PERSONALITY:
 - Confident, proactive, highly helpful, and warm.
@@ -134,7 +131,7 @@ ${JSON.stringify(knowledge)}
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-Match the language of this message in your reply.${greetingRule}${personalizationRule}${fewShotBlock}${mistakesBlock}`;
+CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer's language is strictly ${strictLanguage}. You MUST reply ONLY in ${strictLanguage}. Do not use any other language.${greetingRule}${personalizationRule}${fewShotBlock}${mistakesBlock}`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -177,7 +174,7 @@ Match the language of this message in your reply.${greetingRule}${personalizatio
       return { success: false, error: "AI returned an empty response." };
     }
 
-    return { success: true, text: draftText.trim(), language: detectedLanguage };
+    return { success: true, text: draftText.trim(), language: strictLanguage };
   } catch (error: any) {
     console.error("AI Draft Generation failed:", error);
     return { success: false, error: error.message || "An unexpected error occurred." };

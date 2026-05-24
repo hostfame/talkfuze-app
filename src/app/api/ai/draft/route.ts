@@ -262,16 +262,11 @@ export async function POST(req: Request) {
     const lastCustomerLine = customerLines[customerLines.length - 1] || '';
     const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
 
-    // Check last 5 customer messages for language (majority vote)
-    const bengaliRegex = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-    const recentCustomerMsgs = customerLines.slice(-5).map((l: string) => l.replace(/^\[[^\]]+\]:\s*/, '').trim());
-    let bnCount = 0;
-    let enCount = 0;
-    for (const msg of recentCustomerMsgs) {
-      if (bengaliRegex.test(msg)) bnCount++;
-      else enCount++;
-    }
-    const detectedLanguage = bnCount >= enCount ? 'bn' : 'en';
+    const customerFullText = customerLines.slice(-4).join(' ').toLowerCase();
+    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
+    const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+    const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
+    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
@@ -332,7 +327,7 @@ Instruction: ${instruction}
 Output ONLY the translation in raw plain text.`;
     } else {
     userMessage = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-Match the language of this message in your reply.
+CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer's language is strictly ${strictLanguage}. You MUST reply ONLY in ${strictLanguage}. Do not use any other language.
 
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
@@ -595,7 +590,7 @@ Draft a smart, helpful reply as the support agent.`;
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: detectedLanguage, sources: knowledgeSources })}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: strictLanguage, sources: knowledgeSources })}\n\n`));
 
         const reader = anthropicResponse.body?.getReader();
         const decoder = new TextDecoder("utf-8");

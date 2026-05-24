@@ -153,7 +153,7 @@ export default function ContactSidebar({
   isOpen?: boolean,
   onClose?: () => void
 }) {
-  const { triggerDial, convertingTickets, setConvertingTicket } = useInboxStore()
+  const { triggerDial, convertingTickets, setConvertingTicket, pendingIpUnblock, setPendingIpUnblock } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
   const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
@@ -725,6 +725,35 @@ export default function ContactSidebar({
   const [isUnblocking, setIsUnblocking] = useState(false)
   const [unblockResult, setUnblockResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [isUnblockExpanded, setIsUnblockExpanded] = useState(false)
+
+  useEffect(() => {
+    if (pendingIpUnblock) {
+      setUnblockIpInput(pendingIpUnblock)
+      setIsUnblockExpanded(true)
+      
+      // Auto-trigger unblock
+      if (!isUnblocking) {
+        setIsUnblocking(true)
+        setUnblockResult(null)
+        unblockIPFast(pendingIpUnblock).then((res: any) => {
+          if (res && res.result === 'success') {
+            setUnblockResult({ type: 'success', message: res.message || 'Unblocked!' })
+            setUnblockIpInput('')
+          } else {
+            setUnblockResult({ type: 'error', message: res?.message || 'Failed to unblock IP' })
+          }
+        }).catch((err: any) => {
+          console.error(err)
+          setUnblockResult({ type: 'error', message: 'Failed to unblock IP' })
+        }).finally(() => {
+          setIsUnblocking(false)
+          setPendingIpUnblock(null)
+          setTimeout(() => setUnblockResult(null), 8000)
+        })
+      }
+    }
+  }, [pendingIpUnblock])
+
 
   const handleCreateTicket = async () => {
     if (!whmcsClient || !newTicketSubject.trim() || !newTicketMessage.trim()) return

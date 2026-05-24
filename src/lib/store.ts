@@ -140,6 +140,8 @@ interface InboxState {
   setIsFetchingMessages: (id: string, isFetching: boolean) => void
   activeCalls: Record<string, { agentName: string, agentAvatar?: string }>
   setActiveCall: (conversationId: string, callData: { agentName: string, agentAvatar?: string } | null) => void
+  pendingIpUnblock: string | null
+  setPendingIpUnblock: (ip: string | null) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -157,6 +159,7 @@ export const useInboxStore = create<InboxState>((set) => ({
   mobileView: 'list',
   convertingTickets: {},
   isFetchingMessages: {},
+  pendingIpUnblock: null,
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setArchivedConversations: (archivedConversations) => set({ archivedConversations, isFetchingArchived: false }),
   setIsFetchingArchived: (loading) => set({ isFetchingArchived: loading }),
@@ -202,7 +205,8 @@ export const useInboxStore = create<InboxState>((set) => ({
       delete newActiveCalls[conversationId]
     }
     return { activeCalls: newActiveCalls }
-  })
+  }),
+  setPendingIpUnblock: (ip) => set({ pendingIpUnblock: ip })
 }))
 
 interface GlobalAudioState {

@@ -4,6 +4,7 @@ global.WebSocket = require('ws');
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const { uploadToR2 } = require('./r2.js');
+const { registerUnblockRoute } = require('./unblock-ip.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -1612,6 +1613,9 @@ async function registerWebhook() {
 // ─────────────────────────────────────────────
 // Start
 // ─────────────────────────────────────────────
+
+// Register IP unblock endpoint
+registerUnblockRoute(app);
 
 app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
   console.log(`[SERVER] TalkFuze Evolution Bridge running on port ${WEBHOOK_PORT}`);

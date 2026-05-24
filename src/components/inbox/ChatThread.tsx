@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -4150,6 +4150,28 @@ export default function ChatThread({
                 >
                   <Database size={14} className="text-blue-500 dark:text-[#00a884]" />
                   Add to Database
+                </button>
+              );
+            })()}
+
+            {/* IP Unblock - Available if IP is detected */}
+            {(() => {
+              const ipRegex = /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/;
+              const ipMatch = contextMenu.message.content?.match(ipRegex);
+              const detectedIp = ipMatch ? ipMatch[0] : null;
+              
+              if (!detectedIp) return null;
+              
+              return (
+                <button 
+                  onClick={() => {
+                    useInboxStore.getState().setPendingIpUnblock(detectedIp);
+                    setContextMenu(null);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium"
+                >
+                  <Shield size={14} className="text-slate-400 dark:text-slate-500" />
+                  Unblock IP
                 </button>
               );
             })()}
