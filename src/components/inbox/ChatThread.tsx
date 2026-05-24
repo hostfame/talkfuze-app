@@ -2499,12 +2499,25 @@ export default function ChatThread({
       // Send text message first if exists
       if (msgText) {
         const msgChunks = msgText.split(/\n\s*\n/).map(chunk => chunk.trim()).filter(Boolean);
+        let accumulatedDelay = 0;
 
-        for (const chunk of msgChunks) {
+        for (let i = 0; i < msgChunks.length; i++) {
+          const chunk = msgChunks[i];
           const tempId = "temp-" + crypto.randomUUID()
           const lastMessage = messages[messages.length - 1]
           const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
-          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + i + 1)).toISOString()
+          
+          let chunkDelay = 0;
+          if (!isInternal && i > 0) {
+            const lines = chunk.split('\n').length;
+            if (lines === 1) chunkDelay = 3000;
+            else if (lines === 2) chunkDelay = 5000;
+            else chunkDelay = 8000;
+            accumulatedDelay += chunkDelay;
+          }
+          
+          const isScheduled = accumulatedDelay > 0;
           
           addOptimisticMessage(conversationId, {
             id: tempId,
@@ -2512,28 +2525,45 @@ export default function ChatThread({
             sender_id: currentUser?.id ?? null,
             content: chunk,
             content_type: 'text',
-            metadata: replyMeta ? { reply_to: replyMeta } as any : null,
+            metadata: {
+              ...(replyMeta ? { reply_to: replyMeta } : {}),
+              scheduled_delay: isScheduled ? accumulatedDelay : undefined
+            } as any,
             is_internal: isInternal,
             status: 'sending',
             created_at: optimisticCreatedAt
           })
           
-          // Fire and forget so the UI is not blocked
           const metaPayload = {
             ...(replyMeta ? { reply_to: replyMeta } : {}),
             temp_id: tempId
           }
-          
-          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
-            .then(() => markConfirmed(conversationId, tempId))
-            .catch((e: unknown) => {
-              console.error(e)
-              markFailed(conversationId, tempId)
-            })
 
-          // Add a delay between chunks to simulate typing and ensure order
-          if (msgChunks.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 4000));
+          if (!isScheduled) {
+            replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
+              .then(() => markConfirmed(conversationId, tempId))
+              .catch((e: unknown) => {
+                console.error(e)
+                markFailed(conversationId, tempId)
+              })
+          } else {
+            // Trigger typing indicator for this chunk
+            setTimeout(() => {
+              supabase.channel(`typing:${orgId}`).send({
+                type: 'broadcast',
+                event: 'typingStatus',
+                payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+              });
+            }, accumulatedDelay - chunkDelay);
+            
+            setTimeout(() => {
+              replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
+                .then(() => markConfirmed(conversationId, tempId))
+                .catch((e: unknown) => {
+                  console.error(e)
+                  markFailed(conversationId, tempId)
+                })
+            }, accumulatedDelay);
           }
         }
       }
@@ -3070,6 +3100,19 @@ export default function ChatThread({
 
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
+      <style>{`
+        @keyframes grayToBlue {
+          0% { background-color: #94a3b8; }
+          100% { background-color: #0070f3; }
+        }
+        .dark .gray-to-blue-dark {
+          animation-name: grayToBlueDark;
+        }
+        @keyframes grayToBlueDark {
+          0% { background-color: #475569; }
+          100% { background-color: #005c4b; }
+        }
+      `}</style>
       {/* Header */}
       <div className="h-16 border-b border-slate-200/80 dark:border-[#222e35] flex justify-between items-center px-4 bg-white/95 backdrop-blur-md dark:bg-[#202c33] shrink-0 z-40 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3">
@@ -3562,6 +3605,9 @@ export default function ChatThread({
 
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
+                      style={msg.metadata?.scheduled_delay && msg.status === 'sending' ? {
+                        animation: `grayToBlue ${msg.metadata.scheduled_delay}ms ease-in-out forwards`
+                      } : undefined}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
@@ -3571,7 +3617,9 @@ export default function ChatThread({
                               : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                              : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                              : msg.metadata?.scheduled_delay && msg.status === 'sending'
+                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 gray-to-blue-dark'
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
