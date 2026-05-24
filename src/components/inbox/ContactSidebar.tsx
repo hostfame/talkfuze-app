@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy, Server } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy, Server, Share2 } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -726,6 +726,7 @@ export default function ContactSidebar({
   const [unblockResult, setUnblockResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [isUnblockExpanded, setIsUnblockExpanded] = useState(false)
   const [copiedId, setCopiedId] = useState(false)
+  const [copiedShare, setCopiedShare] = useState(false)
 
   useEffect(() => {
     if (pendingIpUnblock) {
@@ -1087,6 +1088,20 @@ export default function ContactSidebar({
                   </button>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  <button 
+                    onClick={() => {
+                      if (conversation?.id) {
+                        const url = `${window.location.origin}/inbox?c=${conversation.id}`;
+                        navigator.clipboard.writeText(url);
+                        setCopiedShare(true);
+                        setTimeout(() => setCopiedShare(false), 2000);
+                      }
+                    }}
+                    className="p-1 rounded-md transition-colors text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    title="Copy Share Link"
+                  >
+                    {copiedShare ? <Check size={13} className="text-emerald-500" /> : <Share2 size={13} />}
+                  </button>
                   <button 
                     onClick={() => {
                       if (conversation?.id) {

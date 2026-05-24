@@ -3258,20 +3258,6 @@ export default function ChatThread({
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1.5">
                       <span className="font-semibold text-slate-800 dark:text-slate-100">Chat Info</span>
-                      <button 
-                        onClick={() => {
-                          if (conversationId) {
-                            const url = `${window.location.origin}/inbox?c=${conversationId}`;
-                            navigator.clipboard.writeText(url);
-                            setCustomAlert({ title: 'Link Copied', message: 'Chat link copied to clipboard', type: 'success' });
-                            setShowInfoMenu(false);
-                          }
-                        }}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                        title="Copy Share Link"
-                      >
-                        <Share2 size={14} />
-                      </button>
                     </div>
 
                     {!isWhatsApp && deviceBrowser !== 'Not Available' && (
@@ -3288,23 +3274,7 @@ export default function ChatThread({
                       </div>
                     )}
 
-                    {isWhatsApp && (
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="opacity-70 shrink-0">Source:</span>
-                        <span className="font-medium text-right truncate">WhatsApp</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="opacity-70 shrink-0">WHMCS:</span>
-                      {isWhmcsLinked ? (
-                        <span className="font-medium">Linked</span>
-                      ) : (
-                        <span className="font-medium opacity-70">Not Linked</span>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center gap-2">
+                    <div className="flex justify-between items-center gap-2 mt-1">
                       <span className="opacity-70 shrink-0">AI Topic:</span>
                       <span className="font-medium text-right truncate" title={convMeta.topic || convMeta.intent || 'Not Analyzed'}>
                         {convMeta.topic || convMeta.intent || 'Not Analyzed'}
@@ -3327,26 +3297,6 @@ export default function ChatThread({
                         <span className="font-medium">{convMeta.ip || contactMeta.ip}</span>
                       </div>
                     )}
-                    
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="opacity-70 shrink-0 mr-2">Chat ID:</span>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="font-mono text-[10px] truncate opacity-70" title={conversationId || ''}>
-                          {conversationId ? conversationId.split('-')[0] + '...' : ''}
-                        </span>
-                        <button 
-                          onClick={() => {
-                            if (conversationId) {
-                              navigator.clipboard.writeText(conversationId);
-                            }
-                          }}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors shrink-0 p-0.5"
-                          title="Copy full ID"
-                        >
-                          <Copy size={13} />
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               );
