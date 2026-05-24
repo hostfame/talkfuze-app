@@ -1144,13 +1144,14 @@ async function processOutboundMessage(msg) {
       
       if (waitTime > 0) {
         console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms and simulating typing...`);
-        sendWhatsAppPresence(jid, 'composing', waitTime).catch(() => {});
+        sendWhatsAppPresence(jid, 'composing', Math.min(10000, waitTime)).catch(() => {});
         const presenceInterval = setInterval(() => {
-          sendWhatsAppPresence(jid, 'composing', waitTime).catch(() => {});
+          sendWhatsAppPresence(jid, 'composing', 10000).catch(() => {});
         }, 10000);
         
         await new Promise(resolve => setTimeout(resolve, waitTime));
         clearInterval(presenceInterval);
+        sendWhatsAppPresence(jid, 'paused', 100).catch(() => {});
       }
     }
 
