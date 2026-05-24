@@ -622,6 +622,47 @@ async function processMessage(msg) {
     const contactId = await upsertContact(conversationJid, (isGroup || fromMe) ? null : senderName);
     const conversationId = await upsertConversation(contactId, channelId);
 
+    // Smart Outbound WhatsApp Race Condition Deduplication
+    if (fromMe) {
+      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString();
+      const cleanText = text ? text.replace(/^\*.*?\*\n/, '').trim() : '';
+      
+      const { data: matchedOutbound } = await supabase
+        .from('messages')
+        .select('id, content, content_type')
+        .eq('org_id', ORG_ID)
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', 'agent')
+        .is('platform_message_id', null)
+        .gte('created_at', fifteenSecondsAgo)
+        .order('created_at', { ascending: false });
+
+      if (matchedOutbound && matchedOutbound.length > 0) {
+        let bestMatch;
+        if (contentType === 'text') {
+          bestMatch = matchedOutbound.find(m => m.content_type === 'text' && (m.content || '').trim() === cleanText);
+        } else {
+          bestMatch = matchedOutbound.find(m => m.content_type === contentType);
+        }
+        
+        if (!bestMatch) {
+          bestMatch = matchedOutbound[0];
+        }
+        
+        console.log(`[MSG] Found matching outbound agent message: ${bestMatch.id}. Associating with msgId: ${msgId}`);
+        
+        await supabase
+          .from('messages')
+          .update({
+            platform_message_id: msgId,
+            status: 'delivered'
+          })
+          .eq('id', bestMatch.id);
+          
+        return; // Complete match, prevent duplicate insertion!
+      }
+    }
+
     // Build metadata
     const metadata = {
       participant_jid: isGroup ? senderJid : null,
@@ -1267,24 +1308,31 @@ async function sendWhatsAppPresence(jid, presence) {
 }
 
 // Outbound read receipt sync (blue ticks)
-async function markWhatsAppMessageAsRead(jid) {
+async function markWhatsAppMessageAsRead(jid, msgId) {
   try {
+    const payload = {
+      readMessages: [
+        {
+          remoteJid: jid,
+          fromMe: false,
+          id: msgId
+        }
+      ]
+    };
+
     const res = await fetch(`${EVOLUTION_API_URL}/chat/markMessageAsRead/${EVOLUTION_INSTANCE}`, {
       method: 'POST',
       headers: {
         'apikey': EVOLUTION_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        number: jid,
-        readMessages: true
-      })
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
       const err = await res.text();
       console.error(`[READ-RECEIPT] Evolution markMessageAsRead failed: ${err}`);
     } else {
-      console.log(`[READ-RECEIPT] Sent blue tick for JID ${jid}`);
+      console.log(`[READ-RECEIPT] Sent blue tick for message ${msgId} (JID ${jid})`);
     }
   } catch (err) {
     console.error(`[READ-RECEIPT] Error sending read receipt for ${jid}:`, err.message);
@@ -1320,7 +1368,7 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
           jid = jid.replace('@lid', '@s.whatsapp.net');
         }
 
-        await markWhatsAppMessageAsRead(jid);
+        await markWhatsAppMessageAsRead(jid, newMsg.platform_message_id);
       } catch (err) {
         console.error('[READ-SYNC] Error:', err.message);
       }

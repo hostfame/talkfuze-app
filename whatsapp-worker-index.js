@@ -1308,24 +1308,31 @@ async function sendWhatsAppPresence(jid, presence) {
 }
 
 // Outbound read receipt sync (blue ticks)
-async function markWhatsAppMessageAsRead(jid) {
+async function markWhatsAppMessageAsRead(jid, msgId) {
   try {
+    const payload = {
+      readMessages: [
+        {
+          remoteJid: jid,
+          fromMe: false,
+          id: msgId
+        }
+      ]
+    };
+
     const res = await fetch(`${EVOLUTION_API_URL}/chat/markMessageAsRead/${EVOLUTION_INSTANCE}`, {
       method: 'POST',
       headers: {
         'apikey': EVOLUTION_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        number: jid,
-        readMessages: true
-      })
+      body: JSON.stringify(payload)
     });
     if (!res.ok) {
       const err = await res.text();
       console.error(`[READ-RECEIPT] Evolution markMessageAsRead failed: ${err}`);
     } else {
-      console.log(`[READ-RECEIPT] Sent blue tick for JID ${jid}`);
+      console.log(`[READ-RECEIPT] Sent blue tick for message ${msgId} (JID ${jid})`);
     }
   } catch (err) {
     console.error(`[READ-RECEIPT] Error sending read receipt for ${jid}:`, err.message);
@@ -1361,7 +1368,7 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
           jid = jid.replace('@lid', '@s.whatsapp.net');
         }
 
-        await markWhatsAppMessageAsRead(jid);
+        await markWhatsAppMessageAsRead(jid, newMsg.platform_message_id);
       } catch (err) {
         console.error('[READ-SYNC] Error:', err.message);
       }
