@@ -3763,7 +3763,8 @@ export default function ChatThread({
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       style={safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed') ? {
-                        animationDuration: `${safeMeta.scheduled_delay}ms`
+                        animationDuration: `${safeMeta.scheduled_delay}ms`,
+                        animationDelay: `-${msg.created_at ? Math.max(0, Date.now() - new Date(msg.created_at).getTime()) : 0}ms`
                       } : undefined}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')

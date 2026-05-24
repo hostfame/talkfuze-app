@@ -213,7 +213,8 @@ export default function InboxPage() {
            }
            
            if (existingConv) {
-             const channelData = Array.isArray(existingConv.channels) ? existingConv.channels[0] : (existingConv.channels || existingConv.channel);
+             const channelsArray = Array.isArray((existingConv as any).channels) ? (existingConv as any).channels : ((existingConv as any).channels ? [(existingConv as any).channels] : ((existingConv as any).channel ? [(existingConv as any).channel] : []));
+             const channelData = (channelsArray as any).flat()[0] as any;
              if (channelData?.type === 'messenger') isMessenger = true;
            }
 
@@ -269,7 +270,8 @@ export default function InboxPage() {
         const c2 = useInboxStore.getState().archivedConversations?.find(c => c.id === newMsg?.conversation_id);
         const targetConv = c1 || c2;
         if (targetConv) {
-          const channelData = Array.isArray(targetConv.channels) ? targetConv.channels[0] : (targetConv.channels || targetConv.channel);
+          const channelsArray = Array.isArray(targetConv.channels) ? targetConv.channels : (targetConv.channels ? [targetConv.channels] : ((targetConv as any).channel ? [(targetConv as any).channel] : []));
+          const channelData = channelsArray.flat()[0] as any;
           if (channelData?.type === 'messenger') isMessengerForNotif = true;
         }
 
