@@ -304,8 +304,8 @@ export async function POST(req: Request) {
           });
           
           if (vectorDocs && vectorDocs.length > 0) {
-            knowledgeContext += '\n\n## Past Solved Tickets (Reference ONLY for solution approach and context. Do NOT copy their wording, tone, or style. Always follow your system prompt rules for tone and formatting.)\n' + 
-              vectorDocs.map((d: any) => `Customer Asked: ${d.question}\nAgent Solved With: ${d.answer}`).join('\n\n---\n\n');
+            knowledgeContext += '\n\n## Past Solved Tickets (Reference these for the exact step-by-step workflow and tone)\n' + 
+              vectorDocs.map((d: any) => `Customer Context: ${d.question}\nAgent Reply / Workflow: ${d.answer}`).join('\n\n---\n\n');
             vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
           }
         }
