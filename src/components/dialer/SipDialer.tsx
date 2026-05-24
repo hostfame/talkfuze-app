@@ -326,6 +326,11 @@ export default function SipDialer() {
           }).catch(console.error)
         }
 
+        // Clean up the duration now that the call is definitively terminated
+        // This ensures the NEXT call doesn't accidentally inherit this duration if initialization is somehow missed
+        setCallDuration(0)
+        callDurationRef.current = 0
+
         setStatus('Registered')
         setSessionState(SessionState.Terminated)
         stopSynthesizedRing()
@@ -504,6 +509,8 @@ export default function SipDialer() {
 
     simpleUser.delegate = {
       onCallReceived: () => {
+        setCallDuration(0)
+        callDurationRef.current = 0
         setStatus('Incoming Call...')
         setSessionState(SessionState.Initial)
         setIsMuted(false)
@@ -612,7 +619,10 @@ export default function SipDialer() {
         }
       },
       onCallCreated: () => {
+        setCallDuration(0)
+        callDurationRef.current = 0
         setStatus('Calling...')
+        setSessionState(SessionState.Initial)
         const session = (simpleUser as any).session
         if (session) {
           const remoteUser = session.remoteIdentity?.uri?.user || number.replace(/[^\d+]/g, '')
