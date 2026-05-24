@@ -2552,7 +2552,7 @@ export default function ChatThread({
               supabase.channel(`typing:${orgId}`).send({
                 type: 'broadcast',
                 event: 'typingStatus',
-                payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id }
+                payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id, delayMs: chunkDelay }
               });
             }, accumulatedDelay - chunkDelay);
             
