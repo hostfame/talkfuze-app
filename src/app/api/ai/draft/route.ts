@@ -199,8 +199,8 @@ export async function POST(req: Request) {
           });
           
           if (vectorDocs && vectorDocs.length > 0) {
-            knowledgeContext += '\n\n## Past Solved Tickets (Reference these for the exact step-by-step workflow and tone)\n' + 
-              vectorDocs.map((d: any) => `Customer Context: ${d.question}\nAgent Reply / Workflow: ${d.answer}`).join('\n\n---\n\n');
+            knowledgeContext += '\n\n## Knowledge Base & Reference Answers (Use this information to draft your reply)\n' + 
+              vectorDocs.map((d: any) => `User Question / Context: ${d.question}\nRelevant Answer / Info: ${d.answer}`).join('\n\n---\n\n');
             vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
           }
         }

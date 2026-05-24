@@ -1939,6 +1939,8 @@ export default function ChatThread({
   }, [conversationId, removeOptimisticMessage])
 
   const prevMsgLength = useRef(messages.length)
+  const prevOptMsgLength = useRef(optimisticMessages.length)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Skip scroll when there are no messages (loading state)
@@ -1947,18 +1949,50 @@ export default function ChatThread({
       return
     }
 
-    // Use instant scroll for bulk loads, smooth for single new messages
     const isBulkLoad = Math.abs(messages.length - prevMsgLength.current) > 1
+    const isNewOptMsg = optimisticMessages.length > prevOptMsgLength.current
     
-    // Use rAF to batch with paint and avoid layout thrashing
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ 
-        behavior: isBulkLoad ? 'auto' : 'smooth' 
+    let shouldScroll = true
+    
+    // Only prevent auto-scroll if it's a single incoming message AND we are scrolled up
+    if (!isBulkLoad && !isNewOptMsg) {
+      const container = scrollContainerRef.current
+      if (container) {
+        // 150px threshold for being "at the bottom" (enough to cover the typing bubble or a small message)
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150
+        if (!isNearBottom) {
+          shouldScroll = false
+        }
+      }
+    }
+
+    if (shouldScroll) {
+      // Use rAF to batch with paint and avoid layout thrashing
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ 
+          behavior: isBulkLoad ? 'auto' : 'smooth' 
+        })
       })
-    })
+    }
     
     prevMsgLength.current = messages.length
+    prevOptMsgLength.current = optimisticMessages.length
   }, [messages.length, optimisticMessages.length])
+
+  // Handle scrolling for typing indicators so they aren't cut off
+  useEffect(() => {
+    if (isCustomerTyping || isCustomerRecording) {
+      const container = scrollContainerRef.current
+      if (container) {
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150
+        if (isNearBottom) {
+          requestAnimationFrame(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+          })
+        }
+      }
+    }
+  }, [isCustomerTyping, isCustomerRecording])
 
   // Keep messages pinned to bottom as textarea grows during AI streaming
   useEffect(() => {
@@ -3437,7 +3471,7 @@ export default function ChatThread({
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
         
         {messages.length >= 50 && hasMoreMessages && (
           <div className="flex justify-center mb-6">
