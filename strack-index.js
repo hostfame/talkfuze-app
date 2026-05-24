@@ -1406,13 +1406,13 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
       console.log(`[RECALL] Recalling message ${platformMessageId} for customer ${jid}`);
       
       const payload = {
-        number: jid,
-        messageId: platformMessageId,
-        status: "DELETE_FOR_EVERYONE"
+        remoteJid: jid,
+        fromMe: true,
+        id: platformMessageId
       };
 
-      const res = await fetch(`${EVOLUTION_API_URL}/message/deleteMessage/${EVOLUTION_INSTANCE}`, {
-        method: 'POST',
+      const res = await fetch(`${EVOLUTION_API_URL}/chat/deleteMessageForEveryone/${EVOLUTION_INSTANCE}`, {
+        method: 'DELETE',
         headers: {
           'apikey': EVOLUTION_API_KEY,
           'Content-Type': 'application/json'

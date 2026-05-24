@@ -1340,6 +1340,37 @@ async function markWhatsAppMessageAsRead(jid, msgId) {
   }
 }
 
+function resolveBulletproofJid(contact) {
+  let jid = contact.platform_id.includes('@')
+    ? contact.platform_id
+    : `${contact.platform_id}@s.whatsapp.net`;
+
+  if (jid.endsWith('@lid')) {
+    jid = jid.replace('@lid', '@s.whatsapp.net');
+  }
+
+  const realPhone = contact.metadata?.real_phone || contact.phone;
+  if (realPhone) {
+    let cleanPhone = realPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
+      cleanPhone = '880' + cleanPhone;
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+      cleanPhone = '88' + cleanPhone;
+    }
+    if (cleanPhone.length >= 9 && !realPhone.includes('@')) {
+      jid = `${cleanPhone}@s.whatsapp.net`;
+    }
+  }
+
+  let cleanJidNumber = jid.split('@')[0].replace(/[^0-9]/g, '');
+  if (cleanJidNumber.length === 10 && cleanJidNumber.startsWith('1')) {
+    cleanJidNumber = '880' + cleanJidNumber;
+  } else if (cleanJidNumber.length === 11 && cleanJidNumber.startsWith('01')) {
+    cleanJidNumber = '88' + cleanJidNumber;
+  }
+  return `${cleanJidNumber}@s.whatsapp.net`;
+}
+
 // Outbound message updates (editing and deletion/recalling)
 async function processOutboundMessageUpdate(oldMsg, newMsg) {
   const isAgent = newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai';
@@ -1358,16 +1389,13 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
 
         const { data: contact } = await supabaseRealtime
           .from('contacts')
-          .select('platform_id')
+          .select('platform_id, phone, metadata')
           .eq('id', conv.contact_id)
           .single();
 
         if (!contact) return;
 
-        let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
-        if (jid.endsWith('@lid')) {
-          jid = jid.replace('@lid', '@s.whatsapp.net');
-        }
+        let jid = resolveBulletproofJid(contact);
 
         await markWhatsAppMessageAsRead(jid, newMsg.platform_message_id);
       } catch (err) {
@@ -1393,27 +1421,24 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
 
       const { data: contact } = await supabaseRealtime
         .from('contacts')
-        .select('platform_id')
+        .select('platform_id, phone, metadata')
         .eq('id', conv.contact_id)
         .single();
 
       if (!contact) return;
 
-      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
-      if (jid.endsWith('@lid')) {
-        jid = jid.replace('@lid', '@s.whatsapp.net');
-      }
+      let jid = resolveBulletproofJid(contact);
 
       console.log(`[RECALL] Recalling message ${platformMessageId} for customer ${jid}`);
       
       const payload = {
-        number: jid,
-        messageId: platformMessageId,
-        status: "DELETE_FOR_EVERYONE"
+        remoteJid: jid,
+        fromMe: true,
+        id: platformMessageId
       };
 
-      const res = await fetch(`${EVOLUTION_API_URL}/message/deleteMessage/${EVOLUTION_INSTANCE}`, {
-        method: 'POST',
+      const res = await fetch(`${EVOLUTION_API_URL}/chat/deleteMessageForEveryone/${EVOLUTION_INSTANCE}`, {
+        method: 'DELETE',
         headers: {
           'apikey': EVOLUTION_API_KEY,
           'Content-Type': 'application/json'
@@ -1445,16 +1470,13 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
 
       const { data: contact } = await supabaseRealtime
         .from('contacts')
-        .select('platform_id')
+        .select('platform_id, phone, metadata')
         .eq('id', conv.contact_id)
         .single();
 
       if (!contact) return;
 
-      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
-      if (jid.endsWith('@lid')) {
-        jid = jid.replace('@lid', '@s.whatsapp.net');
-      }
+      let jid = resolveBulletproofJid(contact);
 
       let editedText = newMsg.content;
       
