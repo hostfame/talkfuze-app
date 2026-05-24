@@ -2448,9 +2448,9 @@ export default function ChatThread({
               markFailed(conversationId, tempId)
             })
 
-          // Add a small delay between chunks to ensure order
+          // Add a delay between chunks to simulate typing and ensure order
           if (msgChunks.length > 1) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 4000));
           }
         }
       }
