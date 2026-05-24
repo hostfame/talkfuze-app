@@ -3131,12 +3131,17 @@ export default function ChatThread({
           0% { background-color: #bfdbfe; }
           100% { background-color: #0070f3; }
         }
-        .dark .gray-to-blue-dark {
-          animation-name: grayToBlueDark;
-        }
         @keyframes grayToBlueDark {
-          0% { background-color: #0d9488; }
+          0% { background-color: #475569; }
           100% { background-color: #005c4b; }
+        }
+        .sending-anim {
+          animation-name: grayToBlue;
+          animation-timing-function: ease-in-out;
+          animation-fill-mode: forwards;
+        }
+        .dark .sending-anim {
+          animation-name: grayToBlueDark;
         }
       `}</style>
       {/* Header */}
@@ -3779,8 +3784,8 @@ export default function ChatThread({
 
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
-                      style={safeMeta?.scheduled_delay && msg.status === 'sending' ? {
-                        animation: `grayToBlue ${safeMeta.scheduled_delay}ms ease-in-out forwards`
+                      style={safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed') ? {
+                        animationDuration: `${safeMeta.scheduled_delay}ms`
                       } : undefined}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
@@ -3791,8 +3796,8 @@ export default function ChatThread({
                               : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                              : safeMeta?.scheduled_delay && msg.status === 'sending'
-                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 gray-to-blue-dark'
+                              : safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
+                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim'
                                 : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
@@ -3886,7 +3891,7 @@ export default function ChatThread({
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
-                      {msg.status === 'sending' ? (
+                      {(msg.status === 'sending' || msg.status === 'confirmed') ? (
                         <Check size={14} className="text-slate-400" />
                       ) : msg.status === 'failed' ? (
                         <span 
