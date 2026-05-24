@@ -728,9 +728,20 @@ export async function editMessage(messageId: string, newContent: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  const { data: existingMsg } = await supabaseAdmin
+    .from('messages')
+    .select('metadata')
+    .eq('id', messageId)
+    .single()
+
+  const updatedMetadata = {
+    ...(existingMsg?.metadata || {}),
+    edited_at: new Date().toISOString()
+  }
+
   const { data, error } = await supabaseAdmin
     .from('messages')
-    .update({ content: newContent })
+    .update({ content: newContent, metadata: updatedMetadata })
     .eq('id', messageId)
     .select()
     .single()

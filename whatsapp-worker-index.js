@@ -1144,9 +1144,9 @@ async function processOutboundMessage(msg) {
       
       if (waitTime > 0) {
         console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms and simulating typing...`);
-        sendWhatsAppPresence(jid, 'composing').catch(() => {});
+        sendWhatsAppPresence(jid, 'composing', waitTime).catch(() => {});
         const presenceInterval = setInterval(() => {
-          sendWhatsAppPresence(jid, 'composing').catch(() => {});
+          sendWhatsAppPresence(jid, 'composing', waitTime).catch(() => {});
         }, 10000);
         
         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -1303,7 +1303,7 @@ async function sendPendingOutboundMessages() {
 }
 
 // Outbound presence sync (typing/recording indicators)
-async function sendWhatsAppPresence(jid, presence) {
+async function sendWhatsAppPresence(jid, presence, delayMs = 1200) {
   try {
     const res = await fetch(`${EVOLUTION_API_URL}/chat/sendPresence/${EVOLUTION_INSTANCE}`, {
       method: 'POST',
@@ -1314,7 +1314,7 @@ async function sendWhatsAppPresence(jid, presence) {
       body: JSON.stringify({
         number: jid,
         presence: presence,
-        delay: 1200
+        delay: delayMs
       })
     });
     if (!res.ok) {
@@ -1476,7 +1476,7 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
   }
 
   // 2. Message Editing
-  else if (newMsg.content !== oldMsg.content && newMsg.content_type === 'text') {
+  else if (newMsg.content_type === 'text' && newMsg.metadata?.edited_at && newMsg.metadata.edited_at !== newMsg.metadata?.whatsapp_edit_synced_at) {
     try {
       const { data: conv } = await supabaseRealtime
         .from('conversations')
@@ -1543,6 +1543,14 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
       }
 
       console.log(`[EDIT] Message ${platformMessageId} successfully updated on WhatsApp`);
+
+      await supabaseRealtime.from('messages').update({
+        metadata: {
+          ...(newMsg.metadata || {}),
+          whatsapp_edit_synced_at: newMsg.metadata.edited_at
+        }
+      }).eq('id', newMsg.id);
+
     } catch (err) {
       console.error('[EDIT] Error:', err.message);
     }
