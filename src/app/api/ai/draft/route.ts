@@ -284,7 +284,8 @@ export async function POST(req: Request) {
     const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
     const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
-    const languageOverride = (isBengaliScript || isBenglish) ? '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer\'s language is strictly Bengali. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' : '';
+    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
+    const languageOverride = strictLanguage === 'Bengali' ? '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer\'s language is strictly Bengali. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' : '';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
