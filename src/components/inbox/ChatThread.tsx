@@ -1475,13 +1475,14 @@ export default function ChatThread({
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
-  const [isLoadingParticipants, setIsLoadingParticipants] = useState(!!conversationId)
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
   const isPickedUp = !conversationId ? true : (participants.length > 0 || messages.some(m => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content && m.content.includes('joined the conversation'))))
   const isLoadedConversation = !isFetching && !isLoadingParticipants
   const showJoinOverlay = isLoadedConversation && !isPickedUp
-  const isComposerBlocked = !isLoadedConversation || !isPickedUp
+  // Only block composer when we KNOW it's not picked up (after loading). Never block while loading.
+  const isComposerBlocked = showJoinOverlay
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
