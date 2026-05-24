@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2 } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -3191,6 +3191,19 @@ export default function ChatThread({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              if (conversationId) {
+                const url = `${window.location.origin}/inbox?c=${conversationId}`;
+                navigator.clipboard.writeText(url);
+                setCustomAlert({ title: 'Link Copied', message: 'Chat link copied to clipboard', type: 'success' });
+              }
+            }}
+            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
+            title="Share Chat Link"
+          >
+            <Share2 size={18} strokeWidth={2} />
+          </button>
           <div className="relative" ref={infoMenuRef}>
             <button 
               onClick={() => setShowInfoMenu(!showInfoMenu)}
