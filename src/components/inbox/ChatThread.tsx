@@ -1475,10 +1475,13 @@ export default function ChatThread({
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
-  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(!!conversationId)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
   const isPickedUp = !conversationId ? true : (participants.length > 0 || messages.some(m => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content && m.content.includes('joined the conversation'))))
+  const isLoadedConversation = !isFetching && !isLoadingParticipants
+  const showJoinOverlay = isLoadedConversation && !isPickedUp
+  const isComposerBlocked = !isLoadedConversation || !isPickedUp
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -1748,8 +1751,12 @@ export default function ChatThread({
     setReplyToMessage(null)
     setShowMacroMenu(false)
     setIsInternal(false)
+    setParticipants([]) // Reset participants immediately to prevent cross-customer layout leakage during transition
 
-    if (!conversationId) return
+    if (!conversationId) {
+      setIsLoadingParticipants(false)
+      return
+    }
     setIsLoadingParticipants(true)
     let active = true
 
@@ -3985,20 +3992,26 @@ export default function ChatThread({
           </div>
         </div>
         {/* Actual composer - always shown, locked to whisper if not picked up */}
-        <div className={`relative ${!isPickedUp ? "mt-4" : ""}`}>
-            {!isPickedUp && (
+        <div className={`relative ${showJoinOverlay ? "mt-4" : ""}`}>
+          {showJoinOverlay && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/40 dark:bg-[#0b141a]/40 backdrop-blur-[3px] rounded-xl pointer-events-auto">
               <button
                 onClick={handleJoinThread}
                 disabled={isJoining}
-                className="px-8 py-3 bg-[#0070f3] hover:bg-blue-600 text-white font-bold rounded-full shadow-[0_4px_14px_0_rgba(0,112,243,0.39)] hover:shadow-[0_6px_20px_rgba(0,112,243,0.23)] hover:bg-[rgba(0,112,243,0.9)] transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95"
+                className="cursor-pointer px-8 py-3 bg-[#0070f3] hover:bg-blue-600 text-white font-semibold rounded-full shadow-[0_4px_14px_0_rgba(0,112,243,0.3)] hover:shadow-[0_6px_20px_rgba(0,112,243,0.2)] transition-all flex items-center gap-2.5 transform hover:scale-105 active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
               >
-                {isJoining ? <Loader2 size={18} className="animate-spin" /> : <MessageSquare size={18} />}
-                Join Chat
+                {isJoining ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <span className="p-1 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                    <MessageSquare size={16} className="text-white" />
+                  </span>
+                )}
+                <span className="tracking-wide">Join Chat</span>
               </button>
             </div>
           )}
-          <div className={`transition-all duration-300 ${!isPickedUp ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
+          <div className={`transition-all duration-300 ${isComposerBlocked ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
           <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
