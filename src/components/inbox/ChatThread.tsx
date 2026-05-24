@@ -1430,6 +1430,7 @@ export default function ChatThread({
   const [stagedAttachments, setStagedAttachments] = useState<StagedAttachment[]>([])
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false)
+  const [isPreparingRecord, setIsPreparingRecord] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
   const [stagedAudio, setStagedAudio] = useState<{ url: string; file: File } | null>(null)
   const [isTranscribingAudio, setIsTranscribingAudio] = useState(false)
@@ -2408,6 +2409,7 @@ export default function ChatThread({
   const startRecording = async (isAutoTranscribe: boolean | any = false) => {
     const shouldAutoTranscribe = typeof isAutoTranscribe === 'boolean' ? isAutoTranscribe : false;
     autoTranscribeRef.current = shouldAutoTranscribe;
+    setIsPreparingRecord(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia(VOICE_CONSTRAINTS)
       mediaRecorderRef.current = new MediaRecorder(stream)
@@ -2439,6 +2441,7 @@ export default function ChatThread({
       }
 
       mediaRecorderRef.current.start()
+      setIsPreparingRecord(false)
       setIsRecording(true)
       setRecordingDuration(0)
 
@@ -2457,6 +2460,8 @@ export default function ChatThread({
     } catch (err) {
       console.error("Error accessing microphone:", err)
       setCustomAlert({ title: 'Permission Denied', message: 'Microphone access is required to record audio.', type: 'error' })
+    } finally {
+      setIsPreparingRecord(false)
     }
   }
 
@@ -3761,7 +3766,15 @@ export default function ChatThread({
         <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50 dark:bg-[#1f1d17] border-amber-300 dark:border-amber-900/40 focus-within:ring-1 focus-within:border-amber-400 focus-within:ring-amber-400/30' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
           {(isAiDrafting || isAiStreaming) && <div className="ai-shimmer-overlay" />}
-          {isRecording ? (
+          {isPreparingRecord ? (
+            <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-amber-50/50 dark:bg-amber-950/20">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                <span className="text-amber-600 dark:text-amber-400 font-medium">Connecting microphone...</span>
+                <span className="text-sm text-amber-600/70 dark:text-amber-400/70">Wait a moment to start speaking</span>
+              </div>
+            </div>
+          ) : isRecording ? (
             <div className="flex items-center justify-between w-full p-4 min-h-[90px] bg-red-50/50 dark:bg-red-950/20">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
