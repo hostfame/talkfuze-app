@@ -47,7 +47,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       'hobe', 'ase', 'aseh', 'tai', 'karone', 'ekhon', 'korte', 'toh', 'sathe',
       'keno', 'shudhu', 'dorkar', 'nai', 'kichhu', 'kichu', 'pore', 'korbo', 'sob',
       'tarpor', 'chaile', 'parbo', 'parbona', 'karon', 'theke', 'diye', 'hoye', 'hoy',
-      'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi',
+      'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi', 'ki', 'kiser', 'kire',
       'ache', 'dhonnobad', 'shundor', 'sundor', 'khub', 'valo', 'bhalo', 'kharap',
       'niben', 'nibo', 'taka', 'lakh', 'bdt', 'vai', 'vaia', 'apu', 'boltesi', 'cai',
       'chaitechi', 'lagbe', 'nilam', 'dekhun', 'koren', 'korun', 'hbe', 'nki', 'naki',

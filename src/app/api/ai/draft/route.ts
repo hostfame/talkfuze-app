@@ -11,7 +11,7 @@ const BENGLISH_WORDS = new Set([
   'hobe', 'ase', 'aseh', 'tai', 'karone', 'ekhon', 'korte', 'toh', 'sathe',
   'keno', 'shudhu', 'dorkar', 'nai', 'kichhu', 'kichu', 'pore', 'korbo', 'sob',
   'tarpor', 'chaile', 'parbo', 'parbona', 'karon', 'theke', 'diye', 'hoye', 'hoy',
-  'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi',
+  'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi', 'ki', 'kiser', 'kire',
   'ache', 'dhonnobad', 'shundor', 'sundor', 'khub', 'valo', 'bhalo', 'kharap',
   'niben', 'nibo', 'taka', 'lakh', 'bdt', 'vai', 'vaia', 'apu', 'boltesi', 'cai',
   'chaitechi', 'lagbe', 'nilam', 'dekhun', 'koren', 'korun', 'hbe', 'nki', 'naki',
@@ -41,6 +41,7 @@ YOUR PERSONALITY:
 - Anticipate the customer's needs and keep replies concise, professional, and empathetic.
 
 BANNED PATTERNS:
+- NO ROBOTIC BENGALI TRANSLATIONS: When drafting in Bengali, NEVER literally translate English sign-offs like "Stay happy!" or "Have a good day!". Never say "খুশি থাকুন!" or "আপনার দিনটি শুভ হোক!". Just end with a natural, simple "ধন্যবাদ" (Thanks) or "যেকোনো প্রয়োজনে জানাবেন" (Let us know if you need anything) or simply end the sentence. Talk like a real Bangladeshi support agent.
 - NO HYPHENS (-) and NO EM DASHES. Use commas (,) instead.
 - No placeholders like "[Your Name]". Just output the message itself.
 - ABSOLUTELY NO META-COMMENTARY: NEVER talk about yourself being an AI, never analyze the conversation structure, never say things like "I notice this is a test", "you've already replied", "the customer only said X", "What would you like me to do?". You are a SUPPORT AGENT, not an AI assistant. Just draft the reply as if you are the human agent.
@@ -175,7 +176,7 @@ interface CachedLearning {
   timestamp: number;
 }
 const learningCache: Record<string, CachedLearning> = {};
-const CACHE_TTL = 15 * 1000;
+const CACHE_TTL = 60 * 1000;
 
 async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
   const now = Date.now();
@@ -229,9 +230,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
-    // Fetch and encode image if present
-    let imageBlock: { base64Data: string; mediaType: string } | null = null;
-    if (imageUrl && !isTranslation) {
+    // Fetch and encode image if present - wrapped in a Promise to run in PARALLEL
+    const imagePromise = (async () => {
+      if (!imageUrl || isTranslation) return null;
       try {
         const imgRes = await fetch(imageUrl);
         if (imgRes.ok) {
@@ -243,13 +244,13 @@ export async function POST(req: Request) {
 
           const buffer = await imgRes.arrayBuffer();
           const base64Data = Buffer.from(buffer).toString("base64");
-          imageBlock = { base64Data, mediaType };
-          console.log(`[AI Draft] Vision block constructed from customer attachment: ${mediaType}, Size: ${base64Data.length} chars.`);
+          return { base64Data, mediaType };
         }
       } catch (err: any) {
-        console.error("[AI Draft] Image fetch or base64 conversion failed:", err.message);
+        console.error("[AI Draft] Image fetch failed:", err.message);
       }
-    }
+      return null;
+    })();
 
     // 1. Detect language using CONVERSATION CONTEXT, not just last message
     // This prevents "Yes"/"Ok" from switching a Bengali conversation to English
@@ -313,8 +314,8 @@ export async function POST(req: Request) {
       ? getLearningData(orgId)
       : Promise.resolve({ fewShotBlock: '', mistakesBlock: '' });
 
-    // Wait for both in parallel (saves ~300-500ms vs sequential)
-    const [, { fewShotBlock }] = await Promise.all([vectorSearchPromise, learningPromise]);
+    // Wait for all three heavy operations in parallel (saves ~500-1500ms vs sequential)
+    const [imageBlock, , { fewShotBlock }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise]);
 
     // 4. Build user message with language rules + knowledge + context
     let userMessage = '';

@@ -471,7 +471,7 @@ function renderTextWithLinks(
         // If not a team member, check metadata from the worker or format nicely
         if (!isTeamMember) {
            if (metadataMentions && metadataMentions[cleanMention]) {
-             displayName = `@${metadataMentions[cleanMention]}`;
+            displayName = `@${metadataMentions[cleanMention]}`;
            } else if (cleanMention.length >= 10) {
              displayName = `@Member (+${cleanMention.slice(0, Math.max(1, cleanMention.length - 8))}...${cleanMention.slice(-4)})`;
            } else {
@@ -498,6 +498,10 @@ function renderTextWithLinks(
       return formatWhatsAppMarkdown(mPart);
     });
   });
+}
+
+function generateAiSample(targetMessage: any) {
+  // Logic would be implemented in component
 }
 
 function firstRelation<T>(relation: Relation<T> | undefined) {
@@ -1456,8 +1460,12 @@ export default function ChatThread({
   const activeUploadsRef = useRef<Record<string, Promise<{ url: string; type: string; name: string }>>>({})
   const [replyToMessage, setReplyToMessage] = useState<any | null>(null)
   
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; message: any } | null>(null)
-  const [editingMessage, setEditingMessage] = useState<any | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, message: AppMessage } | null>(null)
+  const [editingMessage, setEditingMessage] = useState<AppMessage | null>(null)
+  
+  const [aiSampleModalOpen, setAiSampleModalOpen] = useState(false)
+  const [aiSampleLoading, setAiSampleLoading] = useState(false)
+  const [aiSampleText, setAiSampleText] = useState("")
 
   // Unified Agent Activity Tracking
   const lastActivityTimeRef = useRef<number>(Date.now());
@@ -1528,7 +1536,7 @@ export default function ChatThread({
     }
   }, [isActivelyComposing, conversationId, isInternal, orgId, currentUser]);
 
-  const handleContextMenu = (e: React.MouseEvent, message: any) => {
+  const handleContextMenu = (e: React.MouseEvent, message: AppMessage) => {
     if (message.status === 'recalled' || message.status === 'deleted') return
     e.preventDefault()
     setContextMenu({
@@ -1538,7 +1546,7 @@ export default function ChatThread({
     })
   }
 
-  const triggerEditMessage = (msg: any) => {
+  const triggerEditMessage = (msg: AppMessage) => {
     setEditingMessage(msg);
     setInput(msg.content);
     setContextMenu(null);
@@ -1549,6 +1557,92 @@ export default function ChatThread({
         textareaRef.current.setSelectionRange(len, len);
       }
     }, 100);
+  }
+
+  const generateAiSample = async (targetMessage: AppMessage) => {
+    if (!conversationId) return
+    setAiSampleModalOpen(true)
+    setAiSampleLoading(true)
+    setAiSampleText("")
+    setContextMenu(null)
+
+    // Calculate context up to the message right BEFORE targetMessage if target is agent
+    let targetIndex = allMessages.findIndex(m => m.id === targetMessage.id);
+    if (targetMessage.sender_type === 'agent' || targetMessage.sender_type === 'ai') {
+      targetIndex = targetIndex - 1;
+    }
+    
+    if (targetIndex < 0) {
+      setAiSampleText("Not enough context.");
+      setAiSampleLoading(false);
+      return;
+    }
+
+    const historyUpToTarget = allMessages.slice(0, targetIndex + 1);
+
+    const contextMessages = historyUpToTarget
+      .filter(m => !m.is_internal)
+      .slice(-20)
+      .map(m => {
+        let name = 'System'
+        if (m.content_type !== 'system') {
+          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
+          name = isAgent ? 'Agent' : (contactName || 'Customer')
+        }
+        
+        let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
+        if (m.content_type === 'audio') {
+           const transcript = (m.metadata as any)?.transcript
+           contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
+        }
+        if (m.content_type === 'image' || m.content_type === 'video' || m.content_type === 'document') {
+           const caption = m.content?.trim()
+           contentStr = caption ? `[${m.content_type}] ${caption}` : `[${m.content_type}]`
+        }
+        return `[${name}]: ${contentStr}`
+      }).join('\n')
+
+    try {
+      const res = await fetch('/api/ai/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contextMessages, contactName, orgId, instruction: '', isTranslation: false, imageUrl: null })
+      })
+
+      if (!res.ok) throw new Error('API failed')
+      if (!res.body) throw new Error('No body')
+
+      setAiSampleLoading(false)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.error) throw new Error(data.error)
+              if (data.text) {
+                fullText += data.text
+                setAiSampleText(fullText)
+              }
+            } catch (e) {
+              // ignore parse errors
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      setAiSampleText(`Error: ${error.message}`)
+      setAiSampleLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -4234,6 +4328,15 @@ export default function ChatThread({
               );
             })()}
 
+            {/* AI Sample - Available for all messages */}
+            <button 
+              onClick={() => generateAiSample(contextMenu.message)}
+              className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium border-b border-slate-100 dark:border-slate-700/50"
+            >
+              <Bot size={14} className="text-slate-400 dark:text-slate-500" />
+              AI Sample
+            </button>
+
             {/* Reply - ONLY available for text messages */}
             {contextMenu.message.content_type === 'text' && (
               <button 
@@ -4321,6 +4424,56 @@ export default function ChatThread({
         </div>,
         document.body
       )}
+
+      {/* AI Sample Modal */}
+      {aiSampleModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-slate-900/80 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Bot size={16} className="text-blue-500" />
+                AI Sample Response
+              </h3>
+              <button 
+                onClick={() => setAiSampleModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-5">
+              <div className="text-[13px] text-slate-500 dark:text-slate-400 mb-3">
+                This is what the AI would have generated at this exact point in the conversation:
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 min-h-[120px] max-h-[300px] overflow-y-auto relative">
+                {aiSampleLoading && !aiSampleText ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 py-8">
+                    <Loader2 size={24} className="animate-spin text-blue-500" />
+                    <span className="text-[13px] font-medium animate-pulse">Generating AI Sample...</span>
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    {aiSampleText}
+                    {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-4 bg-blue-500 animate-pulse"></span>}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="px-5 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+              <button
+                onClick={() => setAiSampleModalOpen(false)}
+                className="px-4 py-2 text-[13px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Image Zoom Modal */}
       {zoomedImage && typeof document !== 'undefined' && createPortal(
         <div 
