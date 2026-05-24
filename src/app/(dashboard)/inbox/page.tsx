@@ -198,8 +198,25 @@ export default function InboxPage() {
            const isPageView = safeMeta?.event === 'page_view' || newMsg.content?.startsWith('Viewed:');
 
            const prev = useInboxStore.getState().conversations;
+           const archPrev = useInboxStore.getState().archivedConversations || [];
            const next = [...(prev || [])];
+           
            const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
+           let isMessenger = false;
+           
+           let existingConv = null;
+           if (convIndex !== -1) {
+             existingConv = next[convIndex];
+           } else {
+             const archIndex = archPrev.findIndex(c => c.id === newMsg.conversation_id);
+             if (archIndex !== -1) existingConv = archPrev[archIndex];
+           }
+           
+           if (existingConv) {
+             const channelData = Array.isArray(existingConv.channels) ? existingConv.channels[0] : (existingConv.channels || existingConv.channel);
+             if (channelData?.type === 'messenger') isMessenger = true;
+           }
+
            if (convIndex !== -1) {
               const conv = { ...next[convIndex] } as any;
               
@@ -209,34 +226,58 @@ export default function InboxPage() {
                 conv.messages = [newMsg, ...(conv.messages || [])];
                 
                 if (newMsg.sender_type === 'contact') {
-                  conv.is_unread = true;
-                  conv.is_archived = false;
-                  if (conv.status === 'resolved') conv.status = 'open';
+                  if (isMessenger) {
+                     conv.is_unread = false;
+                     conv.is_archived = true;
+                  } else {
+                     conv.is_unread = true;
+                     conv.is_archived = false;
+                     if (conv.status === 'resolved') conv.status = 'open';
+                  }
                 }
 
                 // Move to top
                 next.splice(convIndex, 1);
-                next.unshift(conv);
+                
+                if (isMessenger) {
+                  // If it's messenger, it should be removed from active and let backend refresh the archived list
+                  getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+                } else {
+                  next.unshift(conv);
+                }
               }
               
               setConversations(next);
            } else {
-              // It's a brand new conversation, fetch it quietly
-              // Always refresh 'all' to maintain badge counts
-              getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
-              const currentFilter = useInboxStore.getState().activeFilter as any;
-              if (currentFilter === 'archived' || currentFilter === 'ticketed') {
-                getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+              // It's a brand new conversation, or an archived one being replied to
+              if (isMessenger) {
+                // Just refresh archived quietly
+                getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+              } else {
+                getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
+                const currentFilter = useInboxStore.getState().activeFilter as any;
+                if (currentFilter === 'archived' || currentFilter === 'ticketed') {
+                  getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+                }
               }
            }
         }
         
-        // Play sound if the message is from a contact
-        if (newMsg && newMsg.sender_type === 'contact') {
+        // Find conv again for notification checks
+        let isMessengerForNotif = false;
+        const c1 = conversations.find(c => c.id === newMsg?.conversation_id);
+        const c2 = useInboxStore.getState().archivedConversations?.find(c => c.id === newMsg?.conversation_id);
+        const targetConv = c1 || c2;
+        if (targetConv) {
+          const channelData = Array.isArray(targetConv.channels) ? targetConv.channels[0] : (targetConv.channels || targetConv.channel);
+          if (channelData?.type === 'messenger') isMessengerForNotif = true;
+        }
+
+        // Play sound if the message is from a contact (and NOT messenger)
+        if (newMsg && newMsg.sender_type === 'contact' && !isMessengerForNotif) {
            playUISound('receive')
            // Desktop notification
-           const conv = conversations.find(c => c.id === newMsg.conversation_id);
-           const contact = conv?.contact;
+           const contact = targetConv?.contact;
            const convName = (Array.isArray(contact) ? contact[0]?.name : contact?.name) || 'Customer';
            sendDesktopNotification(`New message from ${convName}`, newMsg.content_type === 'text' ? newMsg.content : 'Sent an attachment');
            // Tab badge - count unread conversations
