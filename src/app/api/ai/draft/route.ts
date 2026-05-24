@@ -303,6 +303,13 @@ export async function POST(req: Request) {
           .filter((line: string) => line && !line.startsWith('[Agent]'));
         const lastQuery = lines.slice(-3).join(' ');
         
+        // Fast-path bypass: If latest message is short and has no technical or sales query keywords, skip costly OpenAI embeddings & Supabase vector RPC
+        const cleanLatest = latestCustomerMessageCleaned.toLowerCase();
+        const hasDiagnosticOrSalesIntent = /error|down|ssl|dns|ip|fail|not working|price|cost|buy|order|how|what|where|why|plan|package|hosting|domain/i.test(cleanLatest);
+        if (cleanLatest.length < 25 && !hasDiagnosticOrSalesIntent) {
+          return;
+        }
+
         if (lastQuery.length > 10) {
           const embeddingRes = await openai.embeddings.create({
             model: 'text-embedding-3-small',
