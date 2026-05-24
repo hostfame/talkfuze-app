@@ -207,6 +207,13 @@ export default function InboxPage() {
                 conv.last_message_at = newMsg.created_at;
                 conv.latestMessage = [newMsg];
                 conv.messages = [newMsg, ...(conv.messages || [])];
+                
+                if (newMsg.sender_type === 'contact') {
+                  conv.is_unread = true;
+                  conv.is_archived = false;
+                  if (conv.status === 'resolved') conv.status = 'open';
+                }
+
                 // Move to top
                 next.splice(convIndex, 1);
                 next.unshift(conv);
