@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -1184,9 +1184,11 @@ export default function ChatThread({
   }, [input])
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showInfoMenu, setShowInfoMenu] = useState(false)
   const [showResolveConfirm, setShowResolveConfirm] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const infoMenuRef = useRef<HTMLDivElement>(null)
   const { updateConversation, removeConversation, isLoaded, convertingTickets, setConvertingTicket, activeCalls } = useInboxStore()
   const isConverting = conversationId ? convertingTickets[conversationId] || false : false
 
@@ -1219,6 +1221,9 @@ export default function ChatThread({
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false)
+      }
+      if (infoMenuRef.current && !infoMenuRef.current.contains(event.target as Node)) {
+        setShowInfoMenu(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -3168,16 +3173,52 @@ export default function ChatThread({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 relative" ref={menuRef}>
-          {isJoined ? (
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={infoMenuRef}>
             <button 
-              onClick={() => handleThreadAction('leave')}
-              className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              title="Leave thread"
+              onClick={() => setShowInfoMenu(!showInfoMenu)}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
+              title="Chat Info"
             >
-              <LogOut size={18} strokeWidth={2} />
+              <Info size={18} strokeWidth={2} />
             </button>
-          ) : null}
+            {showInfoMenu && (
+              <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-2 px-3 z-50 text-[13px] text-slate-600 dark:text-slate-300">
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">Chat Info</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="opacity-70">Total Messages:</span>
+                    <span className="font-medium">{messages.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="opacity-70">Visitor IP:</span>
+                    <span className="font-medium">{(conversation?.metadata as any)?.ip || (contact?.metadata as any)?.ip || 'Unknown'}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="opacity-70">Chat ID:</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 border border-slate-100 dark:border-slate-700">
+                    <span className="font-mono text-[11px] truncate mr-2" title={conversationId || ''}>{conversationId}</span>
+                    <button 
+                      onClick={() => {
+                        if (conversationId) {
+                          navigator.clipboard.writeText(conversationId);
+                          setCustomAlert({ title: 'Copied', message: 'Chat ID copied to clipboard', type: 'success' });
+                          setShowInfoMenu(false);
+                        }
+                      }}
+                      className="text-[#0070f3] hover:text-blue-600 p-1 bg-blue-50 dark:bg-blue-900/30 rounded transition-colors"
+                      title="Copy ID"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {onToggleRightSidebar && (
             <button 
@@ -3189,17 +3230,21 @@ export default function ChatThread({
             </button>
           )}
 
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
-          >
-            <MoreVertical size={18} strokeWidth={2} />
-          </button>
-
-
-          
-          {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-[#2a3942] rounded-md transition-colors"
+            >
+              <MoreVertical size={18} strokeWidth={2} />
+            </button>
+            
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg py-1 z-50">
+                {isJoined && (
+                  <button onClick={() => handleThreadAction('leave')} className="w-full text-left px-4 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
+                    <LogOut size={14} className="opacity-50" /> Leave thread
+                  </button>
+                )}
               <button onClick={() => handleThreadAction('pin')} className="w-full text-left px-4 py-2 text-[13px] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2">
                 <Pin size={14} className="opacity-50" /> {conversation?.is_pinned ? 'Unpin thread' : 'Pin thread'}
               </button>
