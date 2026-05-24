@@ -3051,7 +3051,7 @@ export default function ChatThread({
                 }}
                 className="px-3 py-1.5 text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors mr-1 cursor-pointer"
               >
-                Return to Call
+                Return to Chat
               </button>
             )}
             {callStatus === 'active' && (
