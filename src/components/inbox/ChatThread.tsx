@@ -9,7 +9,7 @@ import { createCannedReply, getCannedReplies } from "@/actions/snippets"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName, updateContactEmail, updateContactPhone } from "@/actions/contacts"
-import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
+import { convertChatToTicket, fetchWhmcsClient, fetchWhmcsClientByDomain } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore, useGlobalAudioStore, recentEdits } from "@/lib/store"
@@ -4669,29 +4669,44 @@ export default function ChatThread({
             style={{ top: contextMenu.y, left: contextMenu.x }}
             className="absolute bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 min-w-[175px] animate-in fade-in zoom-in-95 duration-100"
           >
-            {/* Add to Database - Available if email or phone is detected */}
+            {/* Add to Database - Available if email, phone, or domain is detected */}
             {(() => {
               const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
               const phoneRegex = /(?:\+?88)?01[3-9]\d{8}|\b\d{10,14}\b/i;
+              const domainRegex = /\b([a-zA-Z0-9-]+\.(?:com|net|org|io|co|me|bd|xyz|info|biz|uk|eu|tv|ca|ai|dev|app))\b/i;
               
               const emailMatch = contextMenu.message.content?.match(emailRegex);
               const phoneMatch = contextMenu.message.content?.match(phoneRegex);
+              const domainMatch = contextMenu.message.content?.match(domainRegex);
               
               const detectedEmail = emailMatch ? emailMatch[0] : null;
               const detectedPhone = !detectedEmail && phoneMatch ? phoneMatch[0] : null;
+              const detectedDomain = !detectedEmail && !detectedPhone && domainMatch ? domainMatch[0] : null;
 
-              if ((!detectedEmail && !detectedPhone) || !contact?.id) return null;
+              if ((!detectedEmail && !detectedPhone && !detectedDomain) || !contact?.id) return null;
 
               const isEmail = !!detectedEmail;
-              const detectedValue = detectedEmail || detectedPhone;
+              const isDomain = !!detectedDomain;
+              const detectedValue = detectedEmail || detectedPhone || detectedDomain;
 
               return (
                 <button 
                   onClick={async () => {
                     setContextMenu(null);
                     try {
-                      let result;
-                      if (isEmail) {
+                      let result: any;
+                      if (isDomain) {
+                        const whmcsClient = await fetchWhmcsClientByDomain(detectedValue as string);
+                        if (whmcsClient && whmcsClient.email) {
+                          await updateContactEmail(contact.id, whmcsClient.email);
+                          if (whmcsClient.phonenumber) {
+                             await updateContactPhone(contact.id, whmcsClient.phonenumber);
+                          }
+                          result = { success: true, email: whmcsClient.email, phone: whmcsClient.phonenumber };
+                        } else {
+                          result = { success: false, error: "No WHMCS client found for this domain." };
+                        }
+                      } else if (isEmail) {
                         result = await updateContactEmail(contact.id, detectedValue as string);
                       } else {
                         result = await updateContactPhone(contact.id, detectedValue as string);
@@ -4700,18 +4715,22 @@ export default function ChatThread({
                       if (result.success) {
                         if (conversationId) {
                           const updatedContact = { ...contact };
-                          if (isEmail) {
+                          if (isDomain) {
+                            updatedContact.email = result.email;
+                            if (result.phone) updatedContact.phone = result.phone;
+                          } else if (isEmail) {
                             updatedContact.email = detectedValue;
                           } else {
                             updatedContact.phone = detectedValue;
                           }
                           updateConversation(conversationId, { contact: updatedContact });
+                          setCustomAlert({ title: 'Success', message: `Added to database successfully via ${isDomain ? 'domain' : isEmail ? 'email' : 'phone'}!`, type: 'success' });
                         }
                       } else {
                         setCustomAlert({ title: 'Error', message: "Failed to add to database: " + result.error, type: 'error' });
                       }
                     } catch (err: any) {
-                      setCustomAlert({ title: 'Error', message: "Error updating contact " + (isEmail ? "email" : "phone") + ": " + err.message, type: 'error' });
+                      setCustomAlert({ title: 'Error', message: "Error updating contact: " + err.message, type: 'error' });
                     }
                   }}
                   className="w-full text-left px-3.5 py-2 text-[13px] text-blue-600 dark:text-[#00a884] hover:bg-blue-50/50 dark:hover:bg-[#00a884]/10 flex items-center gap-2 font-semibold border-b border-slate-100 dark:border-slate-700/50"

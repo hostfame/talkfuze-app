@@ -60,6 +60,33 @@ export async function fetchWhmcsClient(phoneOrEmail: string) {
   }
 }
 
+export async function fetchWhmcsClientByDomain(domain: string) {
+  try {
+    const cleanDomain = domain.trim().toLowerCase()
+    
+    const { whmcsRequest, getClientDetails } = await import('@/lib/whmcs')
+    
+    let domainResult = await whmcsRequest<any>('GetClientsDomains', { domain: cleanDomain, limitnum: 1 })
+    let clientId = domainResult?.domains?.domain?.[0]?.userid || domainResult?.domains?.domain?.[0]?.clientid
+
+    if (!clientId) {
+      let productResult = await whmcsRequest<any>('GetClientsProducts', { domain: cleanDomain, limitnum: 1 })
+      clientId = productResult?.products?.product?.[0]?.userid || productResult?.products?.product?.[0]?.clientid
+    }
+
+    if (clientId) {
+      const fullClient = await getClientDetails(clientId)
+      if (fullClient && fullClient.result === 'success') {
+        return fullClient
+      }
+    }
+    return null
+  } catch (error) {
+    console.error("Failed to fetch WHMCS client by domain:", error)
+    return null
+  }
+}
+
 export async function fetchWhmcsServices(clientId: number) {
   try {
     const productsRes = await getClientsProducts(clientId, 0, 100)
