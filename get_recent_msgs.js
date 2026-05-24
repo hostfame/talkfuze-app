@@ -10,7 +10,7 @@ async function run() {
     .select('id, sender_type, sender_id, content, metadata, conversation_id, created_at')
     .in('content', ['Voice call', 'Missed voice call'])
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(5);
     
   if (error) {
     console.error(error);
@@ -19,4 +19,3 @@ async function run() {
   console.log(JSON.stringify(data, null, 2));
 }
 run();
-

@@ -1,0 +1,124 @@
+{
+  "total": 43869,
+  "categories": {
+    "domain": 8839,
+    "pricing": 6111,
+    "cpanel": 734,
+    "general": 22033,
+    "email": 1116,
+    "technical": 1224,
+    "ssl": 410,
+    "vps": 377,
+    "billing": 1409,
+    "database": 143,
+    "wordpress": 683,
+    "backup": 166,
+    "migration": 159,
+    "development": 271,
+    "plan_change": 99,
+    "ip_block": 50,
+    "cancellation": 45
+  },
+  "sample": [
+    {
+      "q": "Asad bhai unar sathe kotha bolen aktu\nBar bar call dicce,  ar apnake khujtase\nThanks bhai\nhttps://my",
+      "a": "শর্টকাট এটা কোথায় সেইভ কব়লেন?",
+      "cat": "domain"
+    },
+    {
+      "q": "Dear Md. Showebur Rahman,\n\nWelcome to Hostnin! Your hosting account has been set up and is ready to ",
+      "a": "আপনার ডোমেইনে নেমসা‍র্ভার আপডেট করেছেন?",
+      "cat": "pricing"
+    },
+    {
+      "q": "￼\n\nBasic\n\nSpeed for Starters\n\n৳2499/mo\n\n৳986/mo\n\nSame Price Renew, Guaranteed\n\nSelect Plan\n\n৳11,832 ",
+      "a": "জ্বী এই ফিচারগুলো পাবেন",
+      "cat": "pricing"
+    },
+    {
+      "q": "Hello! Can I get more info on this?\nHi\nজ্বী অবশ‍্যই। আপনি তিন বছরের জন‍্য একসাথে পার্চেজ করলে সাথে প",
+      "a": "Sure! What specific topic or information are you looking for?",
+      "cat": "domain"
+    },
+    {
+      "q": "website load hocche na\nআপনাব় ডোমেইন এড্রেসটি দিন।\nchoicea2z.com\nwhoer.net থেকে আপনাব় আইপি টি দিন।\n",
+      "a": "একটু সময় দিবেন, চেক করছি\nআমি ইস্যুটি চেক করেছি এবং এটি সমাধান করা হয়েছে, অনুগ্রহপু‍র্বক এখন চেক করুন\nম্যানটেইন্যান্স দেখতে পাচ্ছি, আপনাকে বলা হয়েছে কিছুক্ষণ পর আসতে",
+      "cat": "domain"
+    },
+    {
+      "q": "Hello Support Team,\n\nI am facing an issue while trying to connect my business email account accounts",
+      "a": "Your issue needs to be checked by our technical team, so opening a support ticket will help us solve it faster.\r\n\r\nYou can open a ticket by following this video: https://youtu.be/eNgZfXg_USI",
+      "cat": "domain"
+    },
+    {
+      "q": "Starter\nIdeal for multiple sites with storage, WordPress &amp; Laravel features\n\n৳799/mo\n৳\n166\n/mo\nS",
+      "a": "আপনি কি ওয়েব স্টার্টার প্যাকেজটির কথা বলছেন?",
+      "cat": "pricing"
+    },
+    {
+      "q": "Hello\nHi\nI have just purchased your Cloud starter hosting plan\nbut it is showing that there is no pa",
+      "a": "Hello! How can I assist you today?",
+      "cat": "pricing"
+    },
+    {
+      "q": "bhaiya\nmuhib bhi er sathe kotha hoisilo\nmonthly server malware security er bepare\nami per month 1200",
+      "a": "জ্বী বলুন, আপনাকে কিভাবে সহযোগিতা করতে পারি?",
+      "cat": "pricing"
+    },
+    {
+      "q": "amar supscriptio. 2027 porjonto ase\nএই অফাব়টি গতকালই শেষ হয়ে গিয়েছে।\nokk...got it\namar 2027 porjo",
+      "a": "আসসালামু আলাইকুম তৌকির সাহেব,\n\nআপনার ওয়েবসাইটে কি বর্তমানে কোন সমস্যা পাচ্ছেন?\n\nআমরা বাংলাদেশে একমাত্র কোম্পানী যারা হোষ্টিং ছাড়াও ওয়েবসাইট এর স্পীড অপটিমাইজেশন ও যেকোন ডেভেলপমেন্ট ইস্যুতে সম্পুর্ণ",
+      "cat": "pricing"
+    },
+    {
+      "q": "RAM (সবচেয়ে গুরুত্বপূর্ণ)\nAI মডেল বা এজেন্ট চালানোর জন্য র‍্যাম হলো প্রধান শক্তি।\n\nসর্বনিম্ন: ৪ GB ",
+      "a": "এর জন্য আপনাকে মিনিমাম প্রো প্যাকেজ নিতে হবে আপনার রিকয়া‍রমেন্ট অনুযায়ী",
+      "cat": "pricing"
+    },
+    {
+      "q": "I am in my own village house\n693 middle joara sanmaji para village were I borned without anything de",
+      "a": "হোস্টনিন সাপোর্ট এ যোগাযোগ করার জন্য আপনাকে ধন্যবাদ। \n\n২৪ ঘন্টা ইন্সট্যান্ট কল সাপোর্ট পেতে Call Support লিখে মেসেজ করুন, আমাদের একজন এক্সপার্ট সাপোর্ট এক্সিকিউটিভ আপনাকে খুব দ্রুতই কল করবেন।",
+      "cat": "domain"
+    },
+    {
+      "q": "হ্যালো, শুভেচ্ছা নেবেন।\n\nআমি আমার WordPress ওয়েবসাইটের (insaffashion.com) জন্য হোস্টিং নিতে আগ্রহী। ",
+      "a": "জ্বী। আমি আপনাব় মেসেজটি সম্পূর্ন পড়ে আপনাকে জানাচ্ছি।",
+      "cat": "domain"
+    },
+    {
+      "q": "Let me be straightforward. I am Shakil Anower Samrat, CEO of Softsasi. Our entire team consists of e",
+      "a": "This is Asaduzzaman from the Hostnin senior team. May I give you a call, or would you prefer that I send you a meeting link?",
+      "cat": "pricing"
+    },
+    {
+      "q": "his message was created automatically by mail delivery software.\n\nA message that you sent could not ",
+      "a": "Thanks for the info. Which package are you currently using?\nআপনার ইস্যুটি টেকনিক্যাল ডিপা‍র্টমেন্ট এর আওতায় হওয়ায় আমি আপনাকে টিকিট ওপেন করার ব্যাপারে রিকমেন্ড করছি, আপনি চাইলে মাত্র একটি মেসেজের মাধ্য",
+      "cat": "pricing"
+    },
+    {
+      "q": "Hi\nEmergency Help\nজী বলুন কিভাবে সহযোগিতা করতে পারি?\nআমার সাইট হ্যাক হয়ে ডেটা ডিলিট করে ফেলে। তারপর ",
+      "a": "Dear ASIF ISLAM, our team has replied to the ticket (want to delete this duplicate package).",
+      "cat": "cpanel"
+    },
+    {
+      "q": "I have a question guys.. Your web hosting plan Pro.. I get the SSH server access.. I want to install",
+      "a": "We don&apos;t provide .com.bd domain and you can avail this directly from btcl website.",
+      "cat": "pricing"
+    },
+    {
+      "q": "My domain shows SSL not working\nEnglish\nTechnical Support\nHovering mouse on &quot;Force HTTPS Redire",
+      "a": "Please continue with any one option. Kindly refrain from sending messages through multiple systems.",
+      "cat": "domain"
+    },
+    {
+      "q": "Hello\nVoice call\nপ্রিয় গ্রাহক, আমাদের সাথে যোগাযোগ এর প্রচেষ্টার জন্য আপনাকে ধন্যবাদ। \n\nট্রান্সপার",
+      "a": "জ্বী আপনাকে কল করা হয়েছে কি?",
+      "cat": "general"
+    },
+    {
+      "q": "1.আমার ২০০টি আলাদা ডাটাবেস এবং ডোমেইন থাকবে। আপনাদের সার্ভারের CPU এবং RAM কি এই পরিমাণ কনকারেন্ট (এ",
+      "a": "দুঃখিত দেরিতে রিপ্লাই করার জন্য। আপনার রেকোইরেমেন্ট অনুযায়ী আপনাকে আমাদের ডেডিকেটেড হোস্টিং রেকমেন্ড করছি।\nডেডিকেটেড হোস্টিং এর প্রাইস এবং বিস্তারিত পাবেন এই লিংক এ : https://hostnin.com/hosting/dedic",
+      "cat": "domain"
+    }
+  ]
+}

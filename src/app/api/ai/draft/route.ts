@@ -221,7 +221,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string; m
 
     if (correctionsRes.data) {
       const corrections = correctionsRes.data.map(r => r.correction_feedback).filter(Boolean);
-      const uniqueCorrections = Array.from(new Set(corrections)).slice(0, 10); // Deduplicate and cap to top 10 rules to prevent prompt bloat
+      const uniqueCorrections = Array.from(new Set(corrections)).slice(0, 15); // Deduplicate and cap to top 15 rules to prevent prompt bloat
       if (uniqueCorrections.length > 0) {
         mistakesBlock = `\n\nCRITICAL KNOWLEDGE (LEARNED FROM PAST MISTAKES):\n${uniqueCorrections.map((c) => `- ${c}`).join('\n')}`;
       }
@@ -377,7 +377,10 @@ ${cappedContextMessages}
 
 ${imageBlock ? `\nCRITICAL MULTIMODAL/VISION INSTRUCTION:
 The customer has uploaded an image/screenshot (attached to this message). 
-You MUST analyze the contents of this image (such as server error logs, pricing tables, CPGuard notifications, or cPanel interface screenshots) and directly address what is shown in your reply. Explain the issue shown in the image and state how we are fixing it or what it means.` : ''}
+You MUST analyze the contents of this image carefully. 
+- If it is a pricing table, plan comparison, or website screenshot: Answer their query based on the visible plans, features, and prices.
+- If it is an error log, CPGuard notification, or cPanel screenshot: Explain the technical issue shown and how it will be resolved.
+ALWAYS base your response strictly on what is visibly present in the image. DO NOT invent or hallucinate tickets, bookings, or unrelated scenarios.` : ''}
 
 Draft a smart, helpful reply as the support agent.`;
     }
@@ -425,7 +428,7 @@ Draft a smart, helpful reply as the support agent.`;
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "claude-haiku-4-5-20251001",
+            model: "claude-3-5-haiku-20241022",
             max_tokens: 600,
             stream: true,
             system: [
@@ -557,7 +560,7 @@ Draft a smart, helpful reply as the support agent.`;
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-3-5-haiku-20241022",
         max_tokens: 600,
         stream: true,
         system: [

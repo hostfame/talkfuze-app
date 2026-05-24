@@ -77,7 +77,7 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 2000,
         system: `You are an expert AI CRM linguist and tone analyst for a Bangladeshi hosting company (Hostnin). You perform DEEP line-by-line analysis of how a human agent corrected an AI draft. You extract BOTH factual mistakes AND stylistic/tonal corrections.
 
@@ -361,7 +361,7 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
       .eq("was_edited", true)
       .not("correction_feedback", "is", null)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(200);
 
     if (error || !data) return [];
     
@@ -378,7 +378,7 @@ export async function getRecentCorrections(orgId: string): Promise<string[]> {
       if (!seenNormalized.has(normalized)) {
         seenNormalized.add(normalized);
         uniqueCorrections.push(ruleOnly);
-        if (uniqueCorrections.length >= 6) break;
+        if (uniqueCorrections.length >= 15) break;
       }
     }
 

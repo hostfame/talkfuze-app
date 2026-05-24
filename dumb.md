@@ -1,3 +1,4 @@
-- I have supabase access, i can do evrrything from supabase by myself and not need to ask imran to manually check or do anything.
-
-- I have all the access to vercel, github as well. i will not be dumb and let imran pass my work.
+- I have Supabase access: I can do everything from Supabase by myself and do not need to ask Imran to manually check or do anything.
+- I have all access to Vercel and GitHub as well. I will not be dumb and let Imran pass my work. I will verify things myself.
+- ALWAYS use CLI for Supabase SQL operations. No browser needed. Use `npx supabase db query --linked` or direct `psql` connection.
+- NEVER open browser for Supabase dashboard when CLI can do the job.

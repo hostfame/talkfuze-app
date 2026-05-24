@@ -1976,6 +1976,11 @@ export default function ChatThread({
            const transcript = (m.metadata as any)?.transcript
            contentStr = transcript ? `[Audio Transcript]: ${transcript}` : `[Audio Voice Message]`
         }
+        // Preserve caption text for image/video/document messages (critical for language detection)
+        if (m.content_type === 'image' || m.content_type === 'video' || m.content_type === 'document') {
+           const caption = m.content?.trim()
+           contentStr = caption ? `[${m.content_type}] ${caption}` : `[${m.content_type}]`
+        }
         return `[${name}]: ${contentStr}`
       }).join('\n')
 
