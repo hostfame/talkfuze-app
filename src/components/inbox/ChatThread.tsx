@@ -11,7 +11,7 @@ import { updateContactName, updateContactEmail, updateContactPhone } from "@/act
 import { convertChatToTicket, fetchWhmcsClient } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
-import { useMessageStore, useInboxStore, useGlobalAudioStore } from "@/lib/store"
+import { useMessageStore, useInboxStore, useGlobalAudioStore, recentEdits } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 // removed generateAiDraft import
 import { logAiDraft, completeAiDraftLog } from "@/actions/ai-learning"
@@ -2104,13 +2104,35 @@ export default function ChatThread({
       );
       useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
 
-      try {
-         await editMessage(editMsgId, msgText);
-      } catch (err: any) {
-         console.error('Failed to edit: ' + err.message);
-         // Revert on failure
-         useInboxStore.getState().setMessages(conversationId, messages);
-      }
+      // Register the optimistic edit lock to shield it from real-time status updates
+      recentEdits.set(editMsgId, { content: msgText, timestamp: Date.now() });
+
+      // Run edit database update with up to 3 retries for transient errors
+      (async () => {
+        let retries = 3;
+        let success = false;
+        let lastError = null;
+
+        while (retries > 0 && !success) {
+          try {
+            await editMessage(editMsgId, msgText);
+            success = true;
+          } catch (err: any) {
+            lastError = err;
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+        }
+
+        if (!success) {
+          console.error('Failed to edit message after all retries:', lastError);
+          // Release lock and revert UI on complete failure
+          recentEdits.delete(editMsgId);
+          useInboxStore.getState().setMessages(conversationId, messages);
+        }
+      })();
       return;
     }
     

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { AppMessage, ConversationWithDetails, UserProfile } from './types';
 
+// Registry to track optimistic message edits on the client and prevent status updates from reverting the content
+export const recentEdits = new Map<string, { content: string; timestamp: number }>();
+
 export type OptimisticMessage = {
   id: string;
   sender_type: string;

@@ -4,7 +4,7 @@ import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
 import { useEffect, useState, useRef } from "react"
-import { useInboxStore, useMessageStore } from "@/lib/store"
+import { useInboxStore, useMessageStore, recentEdits } from "@/lib/store"
 import { Bell } from "lucide-react"
 import { getConversations, getMessages } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
@@ -269,7 +269,17 @@ export default function InboxPage() {
         if (newMsg && newMsg.conversation_id) {
           const currentMsgs = useInboxStore.getState().messagesMap[newMsg.conversation_id] || [];
           if (currentMsgs.length > 0) {
-             useInboxStore.getState().setMessages(newMsg.conversation_id, currentMsgs.map(m => m.id === newMsg.id ? { ...m, ...newMsg } : m));
+             useInboxStore.getState().setMessages(newMsg.conversation_id, currentMsgs.map(m => {
+               if (m.id === newMsg.id) {
+                 const recentEdit = recentEdits.get(newMsg.id);
+                 if (recentEdit && Date.now() - recentEdit.timestamp < 10000) {
+                   // Shield optimistic message edits from concurrent status updates
+                   return { ...m, ...newMsg, content: recentEdit.content };
+                 }
+                 return { ...m, ...newMsg };
+               }
+               return m;
+             }));
           }
         }
       })
