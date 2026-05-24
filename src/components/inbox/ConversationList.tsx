@@ -535,7 +535,7 @@ export default function ConversationList({
                     setShowNewChatModal(false);
                     setSearchResult('idle');
                   }}
-                  className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full p-1 transition-colors"
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full p-1 transition-colors"
                 >
                   <X size={16} strokeWidth={2} />
                 </button>
@@ -561,11 +561,11 @@ export default function ConversationList({
                   />
                 </div>
                 <button 
-                  className="bg-transparent hover:bg-slate-50 text-slate-400 font-semibold px-4 py-2.5 rounded-lg text-[13px] transition-colors uppercase"
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-[#202c33] dark:disabled:text-slate-500 font-semibold px-4 py-2.5 rounded-lg text-[13px] transition-colors uppercase flex items-center justify-center min-w-[80px]"
                   onClick={handleCheckNumber}
-                  disabled={!newChatNumber}
+                  disabled={!newChatNumber || searchResult === 'loading'}
                 >
-                  CHECK
+                  {searchResult === 'loading' ? <Loader2 size={16} className="animate-spin" /> : "CHECK"}
                 </button>
               </div>
 
