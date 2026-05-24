@@ -1686,23 +1686,27 @@ export default function ChatThread({
 
   // Merge: real messages + any still-pending/failed/confirmed optimistic ones
   // Confirmed optimistic messages show as 'delivered' until real-time replaces them (no flicker)
-  const allMessages = [
-    ...messages,
-    ...(optimisticMessages
-      .filter(om => {
-        // Filter out confirmed optimistic messages that already have a real counterpart
-        if (om.status === 'confirmed') {
-          return !messages.some(m => m.content === om.content && m.sender_type === om.sender_type);
-        }
-        return true;
-      })
-      .map(om => ({
-        ...om,
-        // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
-        status: om.status === 'confirmed' ? 'sent' : om.status
-      })) as unknown as AppMessage[]
-    )
-  ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  // Fix: Sort real messages and optimistic messages SEPARATELY.
+  // Optimistic messages are always appended at the bottom to prevent bouncing due to client/server clock skew.
+  const sortedRealMessages = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  
+  const processedOptimisticMessages = optimisticMessages
+    .filter(om => {
+      // Filter out confirmed optimistic messages that already have a real counterpart
+      if (om.status === 'confirmed') {
+        return !messages.some(m => m.content === om.content && m.sender_type === om.sender_type);
+      }
+      return true;
+    })
+    .map(om => ({
+      ...om,
+      // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
+      status: om.status === 'confirmed' ? 'sent' : om.status
+    })) as unknown as AppMessage[];
+    
+  const sortedOptimisticMessages = [...processedOptimisticMessages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  const allMessages = [...sortedRealMessages, ...sortedOptimisticMessages];
 
   // Safety net: auto-clean any confirmed optimistic messages older than 10s
   // This handles edge cases where real-time subscription misses the INSERT
