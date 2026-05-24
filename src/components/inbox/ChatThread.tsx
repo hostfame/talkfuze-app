@@ -2304,35 +2304,39 @@ export default function ChatThread({
         
         for (const line of lines) {
           if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            let data;
             try {
-              const data = JSON.parse(line.slice(6))
-              if (data.error) {
-                throw new Error(data.error)
+              data = JSON.parse(line.slice(6))
+            } catch (e) {
+              continue; // Ignore incomplete chunks
+            }
+
+            if (data.error) {
+              throw new Error(data.error)
+            }
+            if (data.text) {
+              fullText += data.text
+              setInput(prefix + fullText + suffix)
+              if (textareaRef.current) {
+                textareaRef.current.focus()
+                textareaRef.current.scrollTop = textareaRef.current.scrollHeight
               }
-              if (data.text) {
-                fullText += data.text
-                setInput(prefix + fullText + suffix)
-                if (textareaRef.current) {
-                  textareaRef.current.focus()
-                  textareaRef.current.scrollTop = textareaRef.current.scrollHeight
-                }
-              }
-              if (data.language) {
-                lang = data.language
-              }
-              if (data.sources) {
-                setAiDraftSources(data.sources)
-              }
-              if (data.usage) {
-                usageTokens = data.usage.total
-              }
-              if (data.model) {
-                usageModel = data.model
-              }
-              if (data.temperature !== undefined) {
-                usageTemp = data.temperature
-              }
-            } catch (e) {}
+            }
+            if (data.language) {
+              lang = data.language
+            }
+            if (data.sources) {
+              setAiDraftSources(data.sources)
+            }
+            if (data.usage) {
+              usageTokens = data.usage.total
+            }
+            if (data.model) {
+              usageModel = data.model
+            }
+            if (data.temperature !== undefined) {
+              usageTemp = data.temperature
+            }
           }
         }
       }
@@ -3241,7 +3245,7 @@ export default function ChatThread({
               
               let firstContact = 'Unknown';
               if (conversation?.created_at || contact?.created_at) {
-                firstContact = new Date(conversation?.created_at || contact?.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                firstContact = new Date((conversation?.created_at || contact?.created_at) as string).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
               }
 
               return (
