@@ -3299,6 +3299,13 @@ export default function ChatThread({
                       )}
                     </div>
 
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="opacity-70 shrink-0">AI Topic:</span>
+                      <span className="font-medium text-right truncate bg-slate-100 dark:bg-slate-800 px-1.5 rounded text-slate-700 dark:text-slate-300" title={convMeta.topic || convMeta.intent || 'Not Analyzed'}>
+                        {convMeta.topic || convMeta.intent || 'Not Analyzed'}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between items-center">
                       <span className="opacity-70">First Contact:</span>
                       <span className="font-medium">{firstContact}</span>
