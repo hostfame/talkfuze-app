@@ -284,7 +284,7 @@ export async function POST(req: Request) {
     const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
     const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
-    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
+    const languageOverride = (isBengaliScript || isBenglish) ? '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer\'s language is strictly Bengali. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' : '';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
@@ -344,9 +344,8 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-    userMessage = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer's language is strictly ${strictLanguage}. You MUST reply ONLY in ${strictLanguage}. Do not use any other language.
-
+    userMessage = `The customer's latest message is: "${latestCustomerMessageCleaned}"${languageOverride}
+    
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
 - NEVER combine multiple sentences into a single paragraph, even for very short messages. ALWAYS add breathing space.
