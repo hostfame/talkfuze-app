@@ -4451,7 +4451,10 @@ export default function ChatThread({
                       const currentMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
                       useInboxStore.getState().setMessages(conversationId, currentMsgs.filter(m => m.id !== msgId));
                     }
-                    await recallMessage(msgId);
+                    const res = await recallMessage(msgId);
+                    if (!res.success) {
+                      throw new Error(res.error || 'Unknown error');
+                    }
                   } catch (err: any) {
                     // Revert if it fails (optional, but alerts for now)
                     setCustomAlert({ title: 'Error', message: 'Failed to delete: ' + err.message, type: 'error' });

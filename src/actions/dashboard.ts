@@ -808,13 +808,16 @@ export async function editMessage(messageId: string, newContent: string) {
 export async function recallMessage(messageId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  if (!user) return { success: false, error: 'Not authenticated' }
 
   const { error } = await supabaseAdmin
     .from('messages')
     .update({ status: 'recalled' })
     .eq('id', messageId)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[recallMessage] Supabase error:', error);
+    return { success: false, error: error.message }
+  }
   return { success: true }
 }
