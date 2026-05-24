@@ -2573,37 +2573,20 @@ export default function ChatThread({
             created_at: optimisticCreatedAt
           })
           
-          const metaPayload = {
+          const metaPayload: any = {
             ...(replyMeta ? { reply_to: replyMeta } : {}),
             temp_id: tempId
           }
-
-          if (!isScheduled) {
-            replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
-              .then(() => markConfirmed(conversationId, tempId))
-              .catch((e: unknown) => {
-                console.error(e)
-                markFailed(conversationId, tempId)
-              })
-          } else {
-            // Trigger typing indicator for this chunk
-            setTimeout(() => {
-              supabase.channel(`typing:${orgId}`).send({
-                type: 'broadcast',
-                event: 'typingStatus',
-                payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_id: currentUser?.id, delayMs: chunkDelay }
-              });
-            }, accumulatedDelay - chunkDelay);
-            
-            setTimeout(() => {
-              replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
-                .then(() => markConfirmed(conversationId, tempId))
-                .catch((e: unknown) => {
-                  console.error(e)
-                  markFailed(conversationId, tempId)
-                })
-            }, accumulatedDelay);
+          if (isScheduled) {
+            metaPayload.scheduled_delay = accumulatedDelay;
           }
+
+          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
+            .then(() => markConfirmed(conversationId, tempId))
+            .catch((e: unknown) => {
+              console.error(e)
+              markFailed(conversationId, tempId)
+            })
         }
       }
 

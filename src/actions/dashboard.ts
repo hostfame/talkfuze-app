@@ -186,7 +186,7 @@ export async function replyToConversation(
       content_type: contentType,
       metadata: metadata,
       is_internal: isInternal,
-      status: isInternal ? 'delivered' : 'sent'
+      status: isInternal ? 'delivered' : (metadata.scheduled_delay ? 'sending' : 'sent')
     })
     .select("id")
     .single()
@@ -346,6 +346,11 @@ export async function searchConversations(orgId: string, query: string) {
     .limit(50);
   
   const msgConvIds = messages?.map(m => m.conversation_id) || [];
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanQuery);
+  if (isUuid && !msgConvIds.includes(cleanQuery)) {
+    msgConvIds.push(cleanQuery);
+  }
 
   // Combine and deduplicate conversation IDs
   // We don't have conversation IDs for the contacts yet, we just filter by contact_id

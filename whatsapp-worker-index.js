@@ -1136,6 +1136,24 @@ async function processOutboundMessage(msg) {
     }
     jid = `${cleanJidNumber}@s.whatsapp.net`;
 
+    // Implement scheduled delay if requested by UI (e.g. realistic AI typing delay)
+    const scheduledDelayMs = msg.metadata?.scheduled_delay;
+    if (scheduledDelayMs) {
+      const sendAfter = new Date(msg.created_at).getTime() + scheduledDelayMs;
+      const waitTime = sendAfter - Date.now();
+      
+      if (waitTime > 0) {
+        console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms and simulating typing...`);
+        sendWhatsAppPresence(jid, 'composing').catch(() => {});
+        const presenceInterval = setInterval(() => {
+          sendWhatsAppPresence(jid, 'composing').catch(() => {});
+        }, 10000);
+        
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        clearInterval(presenceInterval);
+      }
+    }
+
     let quoted = null;
     try {
       const parentMessageId = msg.metadata?.reply_to?.message_id;
