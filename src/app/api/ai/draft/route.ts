@@ -104,7 +104,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
   ];
   
-  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (You MUST mimic this exact tone and grammar):\n${goldenExamples.join('\n---\n')}`;
+  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (These examples show the exact tone, brevity, and workflow you must mimic. If the customer is speaking English, you MUST translate this vibe/meaning into English and NEVER output Bengali):\n${goldenExamples.join('\n---\n')}`;
   return { fewShotBlock };
 }
 
@@ -172,7 +172,9 @@ export async function POST(req: Request) {
     const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
     const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
-    const languageOverride = strictLanguage === 'Bengali' ? '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer\'s language is strictly Bengali. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' : '';
+    const languageOverride = strictLanguage === 'Bengali' 
+      ? '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer\'s language is strictly Bengali. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' 
+      : '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection, the customer\'s language is strictly ENGLISH. You MUST reply ONLY in English. Do NOT write any Bengali whatsoever.';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
