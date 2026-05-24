@@ -1,7 +1,7 @@
 "use client"
 
 import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
 import { getMessages, replyToConversation, getQuickReplies, joinConversation, getParticipants, getQuickRepliesFromTable, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage, createQuickReply } from "@/actions/dashboard"
@@ -3698,7 +3698,7 @@ export default function ChatThread({
 
             if (msg.id === aiSampleTargetId) {
               return (
-                <React.Fragment key={msg.id}>
+                <Fragment key={msg.id}>
                   {messageBubble}
                   <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
                     <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
@@ -3731,7 +3731,7 @@ export default function ChatThread({
                       </div>
                     </div>
                   </div>
-                </React.Fragment>
+                </Fragment>
               )
             }
 
