@@ -2554,9 +2554,11 @@ export default function ChatThread({
           let chunkDelay = 0;
           if (!isInternal && i > 0) {
             const lines = chunk.split('\n').length;
-            if (lines === 1) chunkDelay = 8000;
-            else if (lines === 2) chunkDelay = 14000;
-            else chunkDelay = 20000;
+            if (lines === 1) chunkDelay = 10000;
+            else if (lines === 2) chunkDelay = 20000;
+            else if (lines === 3) chunkDelay = 30000;
+            else if (lines === 4) chunkDelay = 60000;
+            else chunkDelay = 80000;
             accumulatedDelay += chunkDelay;
           }
           

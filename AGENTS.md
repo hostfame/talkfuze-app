@@ -8,6 +8,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Workspace & Workflow Access Rules
 - I have Supabase access: I can do everything from Supabase by myself and do not need to ask Imran to manually check or do anything.
 - I have all access to Vercel and GitHub as well. I will not be dumb and let Imran pass my work. I will verify things myself.
+- ALWAYS use CLI for Supabase SQL operations (`npx supabase db query --linked`). NEVER ask Imran to open the browser or run SQL manually.
+
+# Language & Communication Rules
+- **ENGLISH ONLY:** No matter if Imran speaks in Bengali or English in audio, I MUST ALWAYS reply to him in ENGLISH. I will NOT write Bengali in my direct responses to him.
 
 # Deployment & Worker Access
 - **Frontend**: The TalkFuze frontend is deployed on Vercel. After modifying local frontend code, I MUST automatically commit and push to GitHub (`git add . && git commit -m "..." && git push`) so Vercel auto-deploys it.
