@@ -3750,20 +3750,19 @@ export default function ChatThread({
                     ) : (
                       <div className="flex flex-col mt-1">
                         <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-w-[200px]">
-                          {aiSampleEditing ? (
-                            <textarea
-                              className="w-full min-w-[280px] sm:min-w-[360px] bg-transparent border-0 p-0 m-0 outline-none resize-y overflow-y-auto text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200 focus:ring-0"
-                              value={aiSampleText}
-                              rows={Math.max(4, aiSampleText.split('\n').length)}
-                              onChange={(e) => setAiSampleText(e.target.value)}
-                              disabled={aiSampleSaving}
-                            />
-                          ) : (
-                            <>
-                              {aiSampleText}
-                              {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
-                            </>
-                          )}
+                          <div
+                            contentEditable={aiSampleEditing && !aiSampleSaving}
+                            suppressContentEditableWarning
+                            onInput={(e) => setAiSampleText((e.target as HTMLDivElement).innerText)}
+                            className={`outline-none ${aiSampleEditing ? 'cursor-text' : ''}`}
+                          >
+                            {aiSampleEditing ? aiSampleText : (
+                              <>
+                                {aiSampleText}
+                                {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
+                              </>
+                            )}
+                          </div>
                         </div>
                         
                         {/* Action Buttons */}
