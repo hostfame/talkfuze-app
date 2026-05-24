@@ -725,6 +725,7 @@ export default function ContactSidebar({
   const [isUnblocking, setIsUnblocking] = useState(false)
   const [unblockResult, setUnblockResult] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [isUnblockExpanded, setIsUnblockExpanded] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
 
   useEffect(() => {
     if (pendingIpUnblock) {
@@ -1085,14 +1086,29 @@ export default function ContactSidebar({
                     <Pencil size={12} strokeWidth={2.5} />
                   </button>
                 </div>
-                <button 
-                  onClick={handleToggleBan}
-                  disabled={isBanning}
-                  className={`p-1 rounded-md transition-colors shrink-0 ${isBanned ? 'text-white bg-red-500 hover:bg-red-600' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'} ${isBanning ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                  title={isBanned ? "Unban this User" : "Ban this User"}
-                >
-                  {isBanning ? <Loader2 size={13} className="animate-spin" /> : <Ban size={13} />}
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button 
+                    onClick={() => {
+                      if (conversation?.id) {
+                        navigator.clipboard.writeText(conversation.id);
+                        setCopiedId(true);
+                        setTimeout(() => setCopiedId(false), 2000);
+                      }
+                    }}
+                    className="p-1 rounded-md transition-colors text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    title="Copy Chat ID"
+                  >
+                    {copiedId ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  </button>
+                  <button 
+                    onClick={handleToggleBan}
+                    disabled={isBanning}
+                    className={`p-1 rounded-md transition-colors ${isBanned ? 'text-white bg-red-500 hover:bg-red-600' : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'} ${isBanning ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    title={isBanned ? "Unban this User" : "Ban this User"}
+                  >
+                    {isBanning ? <Loader2 size={13} className="animate-spin" /> : <Ban size={13} />}
+                  </button>
+                </div>
               </div>
             )}
             
