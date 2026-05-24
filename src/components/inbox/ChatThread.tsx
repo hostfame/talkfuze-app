@@ -1132,7 +1132,7 @@ export default function ChatThread({
   const [showResolveConfirm, setShowResolveConfirm] = useState(false)
   const [isResolving, setIsResolving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const { updateConversation, removeConversation, isLoaded, convertingTickets, setConvertingTicket } = useInboxStore()
+  const { updateConversation, removeConversation, isLoaded, convertingTickets, setConvertingTicket, activeCalls } = useInboxStore()
   const isConverting = conversationId ? convertingTickets[conversationId] || false : false
 
   const [isEditingName, setIsEditingName] = useState(false)
@@ -3057,7 +3057,7 @@ export default function ChatThread({
             {callStatus === 'active' && (
               <button 
                 onClick={toggleMuteVoiceCall}
-                className={`p-2 rounded-xl transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                className={`p-2 rounded-xl transition-all cursor-pointer ${isMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 title={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? (
@@ -3085,6 +3085,32 @@ export default function ChatThread({
                 "Hang Up"
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Banner for when ANOTHER agent is in a call in the current conversation */}
+      {conversationId && activeCalls[conversationId] && (callStatus !== 'active' && callStatus !== 'calling') && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-3 flex items-center justify-between text-emerald-700 dark:text-emerald-400 shrink-0 z-20">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              {activeCalls[conversationId].agentAvatar ? (
+                <img src={activeCalls[conversationId].agentAvatar} alt={activeCalls[conversationId].agentName} className="w-8 h-8 rounded-full object-cover border-2 border-emerald-500/30" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 border-2 border-emerald-500/30">
+                  {activeCalls[conversationId].agentName.charAt(0)}
+                </div>
+              )}
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-bold">
+                {activeCalls[conversationId].agentName} is on a call with this customer
+              </span>
+              <span className="text-[11px] opacity-80">
+                You can still read and send messages.
+              </span>
+            </div>
           </div>
         </div>
       )}
