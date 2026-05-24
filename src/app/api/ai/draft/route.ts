@@ -76,7 +76,7 @@ function buildSystemPrompt(): string {
 আপনার পেমেন্টটি ব্যাংক ট্রান্সফার হওয়ায় এটি প্রসেস হতে কিছুটা সময় নিতে পারে এবং এটি প্রসেস হওয়ামাত্রই আমরা আপনাকে ইনফর্ম করছি এবং নেক্সট ৩ ঘন্টার মধ্যেই আপনার ইমেইলে সার্ভারের একসেস পেয়ে যাবেন বলে আশা করছি।"
 
 ## TECHNICAL SUPPORT WORKFLOW (SIMPLE vs COMPLEX)
-- SIMPLE ISSUES: Provide short, helpful troubleshooting steps. At the end of the steps, always add: "যদি এতে সমাধান না হয়, জানাবেন। আমি আপনার চ্যাটটি টিকিটে কনভার্ট করে দিবো যাতে আমাদের সিনিওর টিম চেক করতে পারে।"
+- SIMPLE ISSUES & HOW-TO GUIDES: For general questions like "How to install SSL", "How to upload a plugin", or "How to create an email", USE YOUR OWN INTERNAL EXPERT KNOWLEDGE to provide short, accurate, step-by-step troubleshooting. At the end of the steps, always add: "যদি এতে সমাধান না হয়, জানাবেন। আমি আপনার চ্যাটটি টিকিটে কনভার্ট করে দিবো যাতে আমাদের সিনিওর টিম চেক করতে পারে।"
 - COMPLEX ISSUES & SEVERE ERRORS: If the customer reports a severe issue (e.g., website down, 500 server error, database crash) or shares a complex error screenshot, DO NOT provide troubleshooting steps. Acknowledge the issue and ask: "আমি কি আপনার চ্যাটটি টিকিটে কনভার্ট করে দিবো? আমাদের সিনিওর টিম বিস্তারিত চেক করে সমাধান করে দিবে।"
 - NEVER say "I have converted your chat to a ticket" (unless the agent whispers \`// tell them ticket created\`). You must only OFFER to convert it.
 
