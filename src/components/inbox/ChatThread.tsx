@@ -1685,11 +1685,12 @@ export default function ChatThread({
   }, [messages.length, conversationId])
 
   // Merge: real messages + any still-pending/failed/confirmed optimistic ones
-  // Confirmed optimistic messages show as 'delivered' until real-time replaces them (no flicker)
-  // Fix: Sort real messages and optimistic messages SEPARATELY.
-  // Optimistic messages are always appended at the bottom to prevent bouncing due to client/server clock skew.
-  const sortedRealMessages = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  
+  // To prevent clock skew bouncing, ensure optimistic messages are always sorted AFTER the latest known real message
+  let maxRealTime = 0;
+  if (messages.length > 0) {
+    maxRealTime = Math.max(...messages.map(m => new Date(m.created_at).getTime()));
+  }
+
   const processedOptimisticMessages = optimisticMessages
     .filter(om => {
       // Filter out confirmed optimistic messages that already have a real counterpart
@@ -1698,15 +1699,22 @@ export default function ChatThread({
       }
       return true;
     })
-    .map(om => ({
-      ...om,
-      // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
-      status: om.status === 'confirmed' ? 'sent' : om.status
-    })) as unknown as AppMessage[];
+    .map((om, index) => {
+      const originalTime = new Date(om.created_at).getTime();
+      // Ensure optimistic time is strictly greater than the latest real message to prevent bouncing backwards
+      const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
+      return {
+        ...om,
+        // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
+        status: om.status === 'confirmed' ? 'sent' : om.status,
+        created_at: new Date(adjustedTime).toISOString()
+      };
+    }) as unknown as AppMessage[];
     
-  const sortedOptimisticMessages = [...processedOptimisticMessages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-  const allMessages = [...sortedRealMessages, ...sortedOptimisticMessages];
+  const allMessages = [
+    ...messages,
+    ...processedOptimisticMessages
+  ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   // Safety net: auto-clean any confirmed optimistic messages older than 10s
   // This handles edge cases where real-time subscription misses the INSERT

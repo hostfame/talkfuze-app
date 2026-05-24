@@ -3231,7 +3231,20 @@ export default function WidgetPage() {
                 </div>
               )}
 
-              {messages.map((msg, idx) => {
+              {(() => {
+                const realMessages = messages.filter(m => !m.id.startsWith('temp-'));
+                const optimisticMessages = messages.filter(m => m.id.startsWith('temp-'));
+                let maxRealTime = 0;
+                if (realMessages.length > 0) {
+                  maxRealTime = Math.max(...realMessages.map(m => new Date(m.created_at).getTime()));
+                }
+                const processedOptimistic = optimisticMessages.map((om, index) => {
+                  const originalTime = new Date(om.created_at).getTime();
+                  const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
+                  return { ...om, created_at: new Date(adjustedTime).toISOString() };
+                });
+                return [...realMessages, ...processedOptimistic].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+              })().map((msg, idx) => {
                 const safeMeta = typeof msg.metadata === 'string'
                   ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
                   : (msg.metadata || {});
