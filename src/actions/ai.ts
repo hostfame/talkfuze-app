@@ -1,6 +1,6 @@
 "use server";
 import knowledge from './hostnin-knowledge.json';
-import { getApprovedExamples, getRecentCorrections } from './ai-learning';
+import { getApprovedExamples } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 
@@ -25,9 +25,8 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     let mistakesBlock = '';
     if (orgId) {
       try {
-        const [examples, corrections] = await Promise.all([
-          getApprovedExamples(orgId),
-          getRecentCorrections(orgId)
+        const [examples] = await Promise.all([
+          getApprovedExamples(orgId)
         ]);
 
         const allExamples = [
@@ -36,10 +35,6 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
         ];
         if (allExamples.length > 0) {
           fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (your team approved these as perfect replies, learn from their tone and style):\n${allExamples.join('\n---\n')}`;
-        }
-        
-        if (corrections.length > 0) {
-          mistakesBlock = `\n\nCRITICAL: PAST MISTAKES TO AVOID (Human agents corrected your drafts for these reasons. Learn from these and DO NOT repeat them):\n${corrections.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
         }
       } catch (e) {
         // Silently fail, few-shot/corrections are optional enhancements

@@ -343,6 +343,3 @@ export async function getApprovedExamples(
     return { bengali: [], english: [] };
   }
 }
-
-/**
- * Fetch the latest 5-8 correction insights where the agent edited the draft.
