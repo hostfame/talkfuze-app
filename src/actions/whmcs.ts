@@ -1,6 +1,6 @@
 "use server"
 
-import { getClientByPhone, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast, getInvoices, getClientDetails, getClientDashboardData } from "@/lib/whmcs"
+import { getClientByPhone, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast, getInvoices, getClientDetails, getClientDashboardData, getClientDashboardDataByPhoneOrEmail } from "@/lib/whmcs"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function fetchWhmcsClient(phoneOrEmail: string) {
@@ -148,6 +148,24 @@ export async function fetchWhmcsDashboardData(clientId: number) {
   } catch (error) {
     console.error("Failed to fetch WHMCS dashboard data:", error)
     return { services: { products: [], domains: [] }, tickets: [], invoices: [] }
+  }
+}
+
+export async function fetchWhmcsDashboardDataBySearch(searchQuery: string) {
+  try {
+    const data = await getClientDashboardDataByPhoneOrEmail(searchQuery)
+    if (data.result === 'success') {
+      return {
+        client: data.client || null,
+        services: data.services || { products: [], domains: [] },
+        tickets: data.tickets || [],
+        invoices: data.invoices || []
+      }
+    }
+    return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
+  } catch (error) {
+    console.error("Failed to fetch WHMCS dashboard data by search:", error)
+    return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
   }
 }
 

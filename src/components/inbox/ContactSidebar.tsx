@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken, fetchWhmcsDashboardData } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken, fetchWhmcsDashboardData, fetchWhmcsDashboardDataBySearch } from "@/actions/whmcs"
 import { unblockIPFast } from "@/actions/server-ops"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
@@ -813,28 +813,37 @@ export default function ContactSidebar({
     setLastSearchedQuery(query.trim());
     setIsCrmLoading(true);
     try {
-      const client = (await fetchWhmcsClient(query.trim())) as any;
-      if (client) {
-        setWhmcsClient(client);
-        const dashboardData = await fetchWhmcsDashboardData(client.id);
+      const dashboardData = await fetchWhmcsDashboardDataBySearch(query.trim());
+      if (dashboardData.client && dashboardData.client.id) {
+        setWhmcsClient(dashboardData.client);
         setWhmcsServices(dashboardData.services);
         setWhmcsTickets(dashboardData.tickets);
         setWhmcsInvoices(dashboardData.invoices);
 
         // Bind to user so we don't need to search again next time
         if (contact?.id) {
-          await updateContactEmail(contact.id, client.email);
-          if (!contact.phone && client.phonenumber && !client.phonenumber.includes('@')) {
-            const cleanPhone = client.phonenumber.replace(/\D/g, '');
+          await updateContactEmail(contact.id, dashboardData.client.email);
+          if (!contact.phone && dashboardData.client.phonenumber && !dashboardData.client.phonenumber.includes('@')) {
+            const cleanPhone = dashboardData.client.phonenumber.replace(/\D/g, '');
             if (cleanPhone.length >= 9) {
               await updateContactPhone(contact.id, cleanPhone);
               setContactPhoneOverrides((current) => ({
                 ...current,
-                [contact.id]: cleanPhone,
+                [contact.id]: cleanPhone
               }));
             }
           }
         }
+        
+        // Also update the global cache so subsequent loads are instant
+        setCrmCache(query.trim(), {
+          whmcsClient: dashboardData.client,
+          whmcsServices: dashboardData.services,
+          whmcsTickets: dashboardData.tickets,
+          whmcsInvoices: dashboardData.invoices,
+          legacyData: crmData,
+          timestamp: Date.now()
+        });
       } else {
         setWhmcsClient(null);
         setWhmcsServices(null);
@@ -943,12 +952,21 @@ export default function ContactSidebar({
           ]
 
           const shouldFetchWhmcs = isWhatsApp || isRealEmail || isValidPhone
+          
+          let legacyData = null;
+          let whmcsData = null;
+
           if (shouldFetchWhmcs) {
             setLastSearchedQuery(cleanPhone.trim())
-            promises.push(fetchWhmcsClient(cleanPhone.trim()))
+            const [lData, wData] = await Promise.all([
+              getCrmData(orgId, cleanPhone),
+              fetchWhmcsDashboardDataBySearch(cleanPhone.trim())
+            ]);
+            legacyData = lData;
+            whmcsData = wData;
+          } else {
+            legacyData = await getCrmData(orgId, cleanPhone);
           }
-
-          const [legacyData, whmcsClientResult] = await Promise.all(promises)
 
           if (mounted) {
             if (legacyData) setCrmData(legacyData)
@@ -957,7 +975,9 @@ export default function ContactSidebar({
             }
           }
 
-          if (shouldFetchWhmcs && whmcsClientResult) {
+          if (shouldFetchWhmcs && whmcsData && whmcsData.client) {
+            const whmcsClientResult = whmcsData.client;
+            
             if (mounted) {
               setWhmcsClient(whmcsClientResult)
             }
@@ -973,19 +993,17 @@ export default function ContactSidebar({
               }
             }
 
-            const dashboardData = await fetchWhmcsDashboardData(whmcsClientResult.id);
-
             if (mounted) {
-              setWhmcsServices(dashboardData.services)
-              setWhmcsTickets(dashboardData.tickets)
-              setWhmcsInvoices(dashboardData.invoices)
+              setWhmcsServices(whmcsData.services)
+              setWhmcsTickets(whmcsData.tickets)
+              setWhmcsInvoices(whmcsData.invoices)
               
               // Update global cache
               setCrmCache(cacheKey, {
                 whmcsClient: whmcsClientResult,
-                whmcsServices: dashboardData.services,
-                whmcsTickets: dashboardData.tickets,
-                whmcsInvoices: dashboardData.invoices,
+                whmcsServices: whmcsData.services,
+                whmcsTickets: whmcsData.tickets,
+                whmcsInvoices: whmcsData.invoices,
                 legacyData: legacyData,
                 timestamp: Date.now()
               });

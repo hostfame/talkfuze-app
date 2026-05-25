@@ -1363,6 +1363,20 @@ export async function getClientDashboardData(clientId: number) {
     return result;
 }
 
+export async function getClientDashboardDataByPhoneOrEmail(searchQuery: string) {
+    const result = await whmcsRequest<{
+        result: 'success' | 'error';
+        client?: any;
+        services?: { products: any[], domains: any[] };
+        tickets?: any[];
+        invoices?: any[];
+    }>('GetClientDashboardDataByPhoneOrEmail', {
+        search: searchQuery,
+    });
+
+    return result;
+}
+
 export async function unblockWhmcsIP(ip: string, clientId: number) {
     return whmcsRequest<{
         result: 'success' | 'error';
