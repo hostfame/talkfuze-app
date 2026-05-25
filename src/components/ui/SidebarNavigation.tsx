@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit, Library } from "lucide-react"
+import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit, Library, CreditCard } from "lucide-react"
 
 interface SidebarNavigationProps {
   isAgent: boolean
@@ -31,7 +31,14 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
       href: "/calls",
       label: "Calls",
       icon: Phone,
-      isActive: pathname.startsWith("/calls"),
+      isActive: pathname === "/calls",
+      visible: true
+    },
+    {
+      href: "/calls/unpaid",
+      label: "Unpaid Invoices Calls",
+      icon: CreditCard,
+      isActive: pathname.startsWith("/calls/unpaid"),
       visible: true
     },
     {

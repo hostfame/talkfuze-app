@@ -507,3 +507,16 @@ export async function unblockIP(ip: string, clientId: number) {
     return { result: 'error', message: error.message || "Failed to unblock IP" }
   }
 }
+
+export async function fetchAllWhmcsUnpaidInvoices() {
+  try {
+    const { whmcsRequest } = await import('@/lib/whmcs')
+    // We rely on the newly added custom action GetUnpaidInvoicesWithClients in the bridge
+    // If it's not deployed yet, this will fail until the new bridge is live.
+    const result = await whmcsRequest<any>('GetUnpaidInvoicesWithClients', {})
+    return result?.invoices || []
+  } catch (error) {
+    console.error("Failed to fetch all WHMCS unpaid invoices:", error)
+    return []
+  }
+}

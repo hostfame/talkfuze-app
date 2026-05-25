@@ -296,6 +296,8 @@ try {
         // Custom API
         'GetClientByPhone', // Custom endpoint for Talkfuze
         'GetClientDashboardData', // Custom endpoint for fast CRM fetching
+        'GetClientDashboardDataByPhoneOrEmail', // Custom endpoint for instant 1-trip fetching
+        'GetUnpaidInvoicesWithClients', // Custom endpoint to fetch unpaid invoices with phonenumbers
     ];
 
     if (!in_array($action, $allowedActions) && $action !== 'CheckAffiliatePromoOwner' && $action !== 'DomainRelayUpdateNS' && $action !== 'UnblockIP') {
@@ -652,6 +654,160 @@ try {
             bridgeLog('GetClientDashboardData ERROR: ' . $e->getMessage());
             http_response_code(500);
             die(json_encode(['result' => 'error', 'message' => 'Failed to fetch dashboard data']));
+        }
+        exit;
+    }
+
+    // ============================================
+    // CUSTOM ACTION: GetClientDashboardDataByPhoneOrEmail
+    // ============================================
+    // Looks up a client by email or phone and instantly returns all their dashboard data in one request.
+    // This is the ultimate "lightning fast" optimization.
+    if ($action === 'GetClientDashboardDataByPhoneOrEmail') {
+        $search = $_POST['search'] ?? '';
+        
+        if (empty($search)) {
+            http_response_code(400);
+            die(json_encode(['result' => 'error', 'message' => 'search parameter is required']));
+        }
+
+        $whmcsPath = __DIR__;
+        if (file_exists($whmcsPath . '/init.php')) {
+            require_once $whmcsPath . '/init.php';
+        }
+        
+        try {
+            $clientId = 0;
+            $clientData = null;
+
+            // 1. Try email lookup first
+            if (strpos($search, '@') !== false) {
+                $client = \WHMCS\Database\Capsule::table('tblclients')
+                    ->where('email', $search)
+                    ->first(['id', 'firstname', 'lastname', 'companyname', 'email', 'phonenumber', 'status']);
+                if ($client) {
+                    $clientId = $client->id;
+                    $clientData = $client;
+                }
+            }
+
+            // 2. Try phone lookup if not found
+            if ($clientId === 0) {
+                $searchDigits = preg_replace('/\D/', '', $search);
+                if (!empty($searchDigits)) {
+                    $clients = \WHMCS\Database\Capsule::table('tblclients')
+                        ->get(['id', 'firstname', 'lastname', 'companyname', 'email', 'phonenumber', 'status']);
+                    
+                    foreach ($clients as $c) {
+                        if (empty($c->phonenumber)) continue;
+                        $clientDigits = preg_replace('/\D/', '', $c->phonenumber);
+                        if (empty($clientDigits)) continue;
+                        
+                        if ($clientDigits === $searchDigits) {
+                            $clientId = $c->id;
+                            $clientData = $c;
+                            break;
+                        } 
+                        
+                        if (strlen($clientDigits) >= 9 && strlen($searchDigits) >= 9) {
+                            $clientSuffix = substr($clientDigits, -9);
+                            $searchSuffix = substr($searchDigits, -9);
+                            if ($clientSuffix === $searchSuffix) {
+                                $clientId = $c->id;
+                                $clientData = $c;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If still not found, return empty
+            if ($clientId === 0) {
+                echo json_encode([
+                    'result' => 'success',
+                    'client' => null,
+                    'services' => ['products' => [], 'domains' => []],
+                    'tickets' => [],
+                    'invoices' => []
+                ]);
+                exit;
+            }
+
+            // 3. We have the client, fetch dashboard data using localAPI
+            $products = localAPI('GetClientsProducts', ['clientid' => $clientId, 'limitnum' => 100]);
+            $domains = localAPI('GetClientsDomains', ['clientid' => $clientId, 'limitnum' => 100]);
+            $tickets = localAPI('GetTickets', ['clientid' => $clientId, 'limitstart' => 0, 'limitnum' => 50]);
+            $invoices = localAPI('GetInvoices', ['userid' => $clientId, 'status' => 'Unpaid', 'limitnum' => 100]);
+            
+            echo json_encode([
+                'result' => 'success',
+                'client' => $clientData,
+                'services' => [
+                    'products' => $products['products']['product'] ?? [],
+                    'domains' => $domains['domains']['domain'] ?? []
+                ],
+                'tickets' => $tickets['tickets']['ticket'] ?? [],
+                'invoices' => $invoices['invoices']['invoice'] ?? []
+            ]);
+        } catch (Exception $e) {
+            bridgeLog('GetClientDashboardDataByPhoneOrEmail ERROR: ' . $e->getMessage());
+            http_response_code(500);
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch dashboard data']));
+        }
+        exit;
+    }
+
+    // ============================================
+    // CUSTOM ACTION: GetUnpaidInvoicesWithClients
+    // ============================================
+    if ($action === 'GetUnpaidInvoicesWithClients') {
+        $whmcsPath = __DIR__;
+        if (file_exists($whmcsPath . '/init.php')) {
+            require_once $whmcsPath . '/init.php';
+        }
+
+        try {
+            // Get all unpaid invoices using localAPI
+            $invoicesRes = localAPI('GetInvoices', ['status' => 'Unpaid', 'limitnum' => 1000]);
+            $invoices = $invoicesRes['invoices']['invoice'] ?? [];
+
+            // Extract unique client IDs
+            $clientIds = [];
+            foreach ($invoices as $inv) {
+                if (!empty($inv['userid'])) {
+                    $clientIds[$inv['userid']] = true;
+                }
+            }
+            $clientIds = array_keys($clientIds);
+
+            // Fetch client details for these IDs
+            $clientsMap = [];
+            if (!empty($clientIds)) {
+                $clients = \WHMCS\Database\Capsule::table('tblclients')
+                    ->whereIn('id', $clientIds)
+                    ->get(['id', 'phonenumber', 'email']);
+                
+                foreach ($clients as $c) {
+                    $clientsMap[$c->id] = $c;
+                }
+            }
+
+            // Merge phone number into invoices
+            foreach ($invoices as &$inv) {
+                $uid = $inv['userid'];
+                $inv['phonenumber'] = $clientsMap[$uid]->phonenumber ?? '';
+                $inv['email'] = $clientsMap[$uid]->email ?? '';
+            }
+
+            echo json_encode([
+                'result' => 'success',
+                'invoices' => $invoices
+            ]);
+        } catch (Exception $e) {
+            bridgeLog('GetUnpaidInvoicesWithClients ERROR: ' . $e->getMessage());
+            http_response_code(500);
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch invoices with clients']));
         }
         exit;
     }
