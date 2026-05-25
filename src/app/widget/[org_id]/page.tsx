@@ -3262,7 +3262,7 @@ export default function WidgetPage() {
                   return { ...om, created_at: new Date(adjustedTime).toISOString() };
                 });
                 return [...realMessages, ...processedOptimistic].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-              })().map((msg, idx) => {
+              })().map((msg, idx, arr) => {
                 const safeMeta = typeof msg.metadata === 'string'
                   ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
                   : (msg.metadata || {});
@@ -3294,8 +3294,8 @@ export default function WidgetPage() {
                 if (isAiOrAgent) {
                   const nextMsg = arr[idx + 1];
                   if (nextMsg && (nextMsg.sender_type === 'agent' || nextMsg.sender_type === 'ai')) {
-                    const currentAgentId = msg.agent?.id || msg.sender_id || 'default';
-                    const nextAgentId = nextMsg.agent?.id || nextMsg.sender_id || 'default';
+                    const currentAgentId = msg.agent?.name || msg.sender_id || 'default';
+                    const nextAgentId = nextMsg.agent?.name || nextMsg.sender_id || 'default';
                     if (currentAgentId === nextAgentId) {
                       showAvatar = false;
                     }
