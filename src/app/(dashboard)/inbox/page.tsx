@@ -664,9 +664,16 @@ export default function InboxPage() {
         if (isQuiet) return;
       }
 
-      // Check if there are any unread conversations
-      const hasUnread = conversations.some(c => c.is_unread);
-      if (hasUnread) {
+      // Check if there are any unread conversations with recent messages (last 15 mins)
+      const hasRecentUnread = conversations.some(c => {
+        if (!c.is_unread) return false;
+        // Prevents endless ghost pinging for old unread conversations that got buried
+        const msgTime = new Date(c.last_message_at || c.created_at).getTime();
+        const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
+        return msgTime > fifteenMinsAgo;
+      });
+
+      if (hasRecentUnread) {
         playUISound('receive');
       }
     };
