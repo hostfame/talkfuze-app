@@ -3847,8 +3847,8 @@ export default function ChatThread({
             let agentAvatar = agent?.avatar_url;
 
             if (msg.sender_type === 'ai') {
-              agentName = "Nina";
-              agentInitial = "N";
+              agentName = "Aisha Siddika";
+              agentInitial = "A";
               agentAvatar = "/team/h.jpg";
             }
 

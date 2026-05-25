@@ -1199,7 +1199,7 @@ async function processOutboundMessage(msg) {
         console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
       }
     } else if (msg.sender_type === 'ai') {
-      agentName = 'Nina';
+      agentName = 'Aisha Siddika';
     }
 
     let formattedContent = msg.content || '';
@@ -1532,7 +1532,7 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
           agentName = agentUser.name;
         }
       } else if (newMsg.sender_type === 'ai') {
-        agentName = 'Nina';
+        agentName = 'Aisha Siddika';
       }
 
       if (agentName) {

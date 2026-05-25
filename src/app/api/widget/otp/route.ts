@@ -214,7 +214,7 @@ If you did not request this, you can safely ignore this email.
         const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation'
         const transcript = messages.map((m: { sender_type: string; agent?: { name?: string }; content: string }) => {
           if (m.sender_type === 'system') return `* ${m.content} *`
-          if (m.sender_type === 'ai') return `Nina:\n${m.content}`
+          if (m.sender_type === 'ai') return `Aisha Siddika:\n${m.content}`
           const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
           return `${name}:\n${m.content}`
         }).join('\n\n')
