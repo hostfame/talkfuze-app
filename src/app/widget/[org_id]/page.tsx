@@ -1456,8 +1456,8 @@ export default function WidgetPage() {
         for (const m of dbMessages) {
           let safeMeta = m.metadata as any;
           try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch(e) {}
-          if (safeMeta?.scheduled_delay && (m.sender_type === 'agent' || m.sender_type === 'ai')) {
-             const showAfter = new Date(m.created_at).getTime() + safeMeta.scheduled_delay;
+          if (safeMeta?.chunk_delay && (m.sender_type === 'agent' || m.sender_type === 'ai')) {
+             const showAfter = new Date(m.created_at).getTime() + safeMeta.chunk_delay;
              const waitTime = showAfter - now;
              if (waitTime > 0) {
                 m.metadata = safeMeta;
@@ -1533,7 +1533,11 @@ export default function WidgetPage() {
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
         const currentConvId = activeConversationIdRef.current
         if (payload.payload.direction === 'agent' && payload.payload.conversation_id === currentConvId) {
-          setIsAgentTyping(payload.payload.is_typing)
+          if (!payload.payload.is_typing && pendingDelaysRef.current > 0) {
+             // Ignore stop typing if there are delayed messages still pending
+          } else {
+             setIsAgentTyping(payload.payload.is_typing)
+          }
           
           // Safety net: auto-clear typing after 5s if stop broadcast is missed
           if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
@@ -1661,8 +1665,8 @@ export default function WidgetPage() {
           let safeMeta = newMsg.metadata;
           try {
             if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
-            if (safeMeta?.scheduled_delay) {
-               const showAfter = new Date(newMsg.created_at).getTime() + safeMeta.scheduled_delay;
+            if (safeMeta?.chunk_delay) {
+               const showAfter = new Date(newMsg.created_at).getTime() + safeMeta.chunk_delay;
                const waitTime = showAfter - Date.now();
                if (waitTime > 0) delayMs = waitTime;
             }
@@ -3333,7 +3337,16 @@ export default function WidgetPage() {
                   const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
                   return { ...om, created_at: new Date(adjustedTime).toISOString() };
                 });
-                return [...realMessages, ...processedOptimistic].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                return [...realMessages, ...processedOptimistic].sort((a, b) => {
+                  const timeA = new Date(a.created_at).getTime();
+                  const timeB = new Date(b.created_at).getTime();
+                  if (timeA === timeB) {
+                    // System messages should appear before other messages if they have the same timestamp
+                    if (a.sender_type === 'system' && b.sender_type !== 'system') return -1;
+                    if (b.sender_type === 'system' && a.sender_type !== 'system') return 1;
+                  }
+                  return timeA - timeB;
+                });
               })().map((msg, idx, arr) => {
                 const safeMeta = typeof msg.metadata === 'string'
                   ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
@@ -3388,20 +3401,20 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' joined')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={idx} className="flex justify-center my-4 select-none">
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-3 py-1.5 rounded-full shadow-sm">
-                          <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
+                      <div key={idx} className="flex justify-center my-1.5 select-none">
+                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
+                          <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
                             {avatarUrl ? (
                               <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
+                              <span className="text-[9px] font-bold text-slate-600 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
                             )}
                           </div>
-                          <span className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
                             {agentName} joined the chat
                           </span>
                           {msgTime && (
-                            <span className="text-[10.5px] text-slate-400 dark:text-slate-500 ml-1 font-normal">{msgTime}</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 ml-0.5 font-normal">{msgTime}</span>
                           )}
                         </div>
                       </div>
@@ -3413,20 +3426,20 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' left')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={idx} className="flex justify-center my-4 select-none opacity-80">
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-3 py-1.5 rounded-full shadow-sm">
-                          <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center opacity-80">
+                      <div key={idx} className="flex justify-center my-1.5 select-none opacity-80">
+                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
+                          <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center opacity-80">
                             {avatarUrl ? (
                               <img src={avatarUrl} alt="" className="w-full h-full object-cover grayscale-[30%]" />
                             ) : (
-                              <span className="text-[10px] font-bold text-slate-550 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
+                              <span className="text-[9px] font-bold text-slate-550 dark:text-slate-405">{agentName.charAt(0).toUpperCase()}</span>
                             )}
                           </div>
-                          <span className="text-[12px] text-slate-600 dark:text-slate-450 font-medium">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-450 font-medium">
                             {agentName} left the chat
                           </span>
                           {msgTime && (
-                            <span className="text-[10.5px] text-slate-400 dark:text-slate-500 ml-1 font-normal">{msgTime}</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 ml-0.5 font-normal">{msgTime}</span>
                           )}
                         </div>
                       </div>
@@ -3446,9 +3459,9 @@ export default function WidgetPage() {
                   }
 
                   return (
-                    <div key={idx} className="flex items-center gap-3 my-4 px-2 select-none">
+                    <div key={idx} className="flex items-center gap-3 my-2 px-2 select-none">
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0 tracking-tight">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0 tracking-tight">
                         {displayContent}
                       </span>
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
