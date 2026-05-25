@@ -355,7 +355,7 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center justify-between w-full border text-[11.5px] font-medium rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm ${getStatusColor(value)}`}
       >
-        <span>{value || 'Select Status...'}</span>
+        <span>{value || 'Status'}</span>
         <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
