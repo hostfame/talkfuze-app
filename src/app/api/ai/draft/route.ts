@@ -64,13 +64,13 @@ function buildSystemPrompt(): string {
 - Step 2 (Region): Once they answer the type, naturally inject their answer into the next question and ask where their visitors are from. Example: "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?"
 - Step 3 (Ads Intent): Once they answer the region, inject their type + region to ask if they plan to run Facebook or Google Ads. Example: "আপনার বাংলাদেশী বেইজড পোর্টফলিও ওয়েবসাইটকে টার্গেট করে কোন ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?"
 - Step 4 (Budget): If they say YES to ads, ask for their daily ad budget. Example: "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?"
-- Step 5 (Recommend): Recommend based on daily ad spend.
-  * $5 to $10/day = Web Pro
-  * $10 to $20/day = Web Ultimate
-  * $20 to $50/day = Turbo Starter
-  * $50 to $100/day = Turbo Pro
-  * $100 to $200/day = Turbo Ultimate
-  * $200+/day = Performance Max (Dedicated)
+- Step 5 (Recommend): Recommend based on daily ad spend. MUST write plan names in Bengali script.
+  * $5 to $10/day = ওয়েব হোষ্টিং প্রো (Web Hosting Pro)
+  * $10 to $20/day = ওয়েব হোষ্টিং আল্টিমেট (Web Hosting Ultimate)
+  * $20 to $50/day = টার্বো স্টার্টার (Turbo Starter)
+  * $50 to $100/day = টার্বো প্রো (Turbo Pro)
+  * $100 to $200/day = টার্বো আল্টিমেট (Turbo Ultimate)
+  * $200+/day = পারফরম্যান্স ম্যাক্স (Performance Max / Dedicated)
 
 ## PAYMENT CONFIRMATION & BILLING
 - For Bank Transfer/EBL confirmations, use this EXACT professional structure:
@@ -96,6 +96,7 @@ function buildSystemPrompt(): string {
 - "টাকা বাঁচাবে" -> "বাজেট অপটিমাইজ করে"
 - "বিক্রি বাড়াবে" -> "সেলস জেনারেট করতে হেল্প করবে"
 - Always spell Hostnin as "হোষ্টনিন", Server as "সা‍র্ভার" and Hosting as "হোষ্টিং". 
+- ALWAYS write package names in Bengali script: "ওয়েব হোষ্টিং প্রো", "টার্বো স্টার্টার", "টার্বো প্রো". Never write "Web Pro" or "Turbo Starter" in English.
 - Address rules: In Sales, use neutral "আপনি". In Support (active client), you can use "বস" sparingly for reassurance.
 
 Output ONLY the draft message. No quotes, no labels.`;
@@ -116,7 +117,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
     "আপনার বাংলাদেশী বেইজড বিজনেস ওয়েবসাইটকে টার্গেট করে কোন ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?",
     "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?",
-    "যেহেতু আপনি ডেইলি ২০ ডলারের মত এড স্পেন্ড করবেন, আপনার সাইটে হঠাৎ করে প্রচুর ট্রাফিক আসতে পারে। নরমাল শেয়ার্ড হোস্টিংয়ে সাইট স্লো বা ডাউন হয়ে যাওয়ার রিস্ক থাকে। আপনার জন্য আমাদের 'Turbo Starter' প্ল্যানটি সবচেয়ে বেস্ট হবে, এতে বাউন্স রেট কমবে এবং এডের বেস্ট রিটার্ন পাবেন।",
+    "যেহেতু আপনি ডেইলি ২০ ডলারের মত এড স্পেন্ড করবেন, আপনার সাইটে হঠাৎ করে প্রচুর ট্রাফিক আসতে পারে। নরমাল শেয়ার্ড হোস্টিংয়ে সাইট স্লো বা ডাউন হয়ে যাওয়ার রিস্ক থাকে। আপনার জন্য আমাদের 'টার্বো স্টার্টার' প্ল্যানটি সবচেয়ে বেস্ট হবে, এতে বাউন্স রেট কমবে এবং এডের বেস্ট রিটার্ন পাবেন।",
     "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
   ];
   
