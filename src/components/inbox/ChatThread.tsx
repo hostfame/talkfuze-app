@@ -2686,8 +2686,7 @@ export default function ChatThread({
           const currentStoreMessages = useInboxStore.getState().messagesMap[conversationId] || [];
           const lastMessage = currentStoreMessages[currentStoreMessages.length - 1];
           const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0;
-          // Add extra offset (+2 for reply vs +1 for join) to guarantee strict ordering
-          const optimisticCreatedAt = new Date(Math.max(Date.now() + i * 100, lastMsgTime + i * 100 + 2)).toISOString();
+          // Delay logic will calculate optimisticCreatedAt after evaluating chunk delay
           
           let chunkDelay = 0;
           let previousDelay = 0;
@@ -2709,6 +2708,9 @@ export default function ChatThread({
           }
           
           const isScheduled = accumulatedDelay > 0;
+          
+          // Add accumulated chunk delay mathematically to sort them into the future
+          const optimisticCreatedAt = new Date(Math.max(Date.now() + accumulatedDelay + (i * 10), lastMsgTime + accumulatedDelay + (i * 10) + 2)).toISOString();
           
           addOptimisticMessage(conversationId, {
             id: tempId,
