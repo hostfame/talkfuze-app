@@ -667,6 +667,13 @@ export default function InboxPage() {
       // Check if there are any unread conversations with recent messages (last 15 mins)
       const hasRecentUnread = conversations.some(c => {
         if (!c.is_unread) return false;
+        if (c.tags?.includes('alert')) return false;
+
+        // Match UI Unread tab logic: ignore Facebook/Instagram
+        const channelArray = Array.isArray(c.channels) ? c.channels : (c.channels ? [c.channels] : []);
+        const channel = channelArray.flat()[0] as any;
+        if (channel && channel.type !== 'whatsapp' && channel.type !== 'widget') return false;
+
         // Prevents endless ghost pinging for old unread conversations that got buried
         const msgTime = new Date(c.last_message_at || c.created_at).getTime();
         const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
