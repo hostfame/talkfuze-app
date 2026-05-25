@@ -299,13 +299,14 @@ FORMATTING & BREVITY:
 - Keep response 3-4 short sentences max. Short bursts, not essays.
 ${fewShotBlock}
 ${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
-The agent has explicitly requested you to write a message conveying the following exact meaning:
+The human support agent has provided a DIRECT INSTRUCTION for what the reply must contain.
 >>> "${instruction}" <<<
 
 RULES FOR THIS INSTRUCTION:
-1. FOCUS ONLY ON THE INSTRUCTION. Do NOT bring up past topics from the conversation unless directly required.
-2. If the instruction is short (like "done", "fixed", "check now"), just write a brief, professional 1-2 sentence message (e.g., "I've completed this for you. Please check."). Do NOT hallucinate long explanations or repeat previous steps.
-3. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in. The instruction is just for you to know what to say, but you MUST translate that intent into the customer's language.` : ''}
+1. YOUR SOLE PURPOSE IS TO EXECUTE THIS INSTRUCTION. Do NOT write a generic support reply. Do NOT bring up past topics or knowledge base articles unless they are strictly required to fulfill this instruction.
+2. If the instruction is a direct phrase (like "apni kemon achen?"), just format it beautifully and return it exactly as meant. Do NOT add extra fluff.
+3. If the instruction is a command (like "tell them the invoice is paid"), write a professional, empathetic response expanding on that command using the context, but keep it strictly focused on that topic.
+4. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
@@ -324,7 +325,9 @@ You MUST analyze the contents of this image carefully.
 ALWAYS base your response strictly on what is visibly present in the image. DO NOT invent or hallucinate tickets, bookings, or unrelated scenarios.
 CRITICAL REMINDER: You MUST explain the image in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'strictly ENGLISH'} as per the language override.` : ''}
 
-Draft a smart, helpful reply as the support agent.
+${instruction 
+  ? `Draft the reply based STRICTLY on the Agent Instruction above. Ignore unrelated context.` 
+  : `Draft a smart, helpful reply as the support agent.`}
 FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'ENGLISH'} ONLY.`;
     }
 
