@@ -2616,7 +2616,7 @@ export default function ChatThread({
           let chunkDelay = 0;
           let previousDelay = 0;
           if (!isInternal) {
-            if (usedAiDraft || i > 0) {
+            if (i > 0) {
               // Calculate realistic delay based on length/lines (Imran's 20s/40s/50s rule)
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
               
@@ -2626,11 +2626,6 @@ export default function ChatThread({
                 chunkDelay = 40000; // 40s
               } else {
                 chunkDelay = 50000; // 50s
-              }
-
-              // Exception: First chunk of manually typed message sends instantly
-              if (!usedAiDraft && i === 0) {
-                chunkDelay = 0;
               }
             }
             previousDelay = accumulatedDelay;
