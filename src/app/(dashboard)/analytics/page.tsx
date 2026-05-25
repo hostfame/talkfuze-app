@@ -76,8 +76,8 @@ export default async function AnalyticsPage(props: PageProps) {
   const rulesLearned = rulesData || [];
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0b141a]">
-      <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <div className="flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-[#0b141a]">
+      <div className="flex-1 flex flex-col w-full p-6 space-y-6 overflow-hidden">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -133,15 +133,18 @@ export default async function AnalyticsPage(props: PageProps) {
           </div>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Two Column Layout - Fills remaining space */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-4 gap-6">
           
           {/* Active Learning Rules */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="mb-2">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Self-Learned Rules</h2>
+          <div className="lg:col-span-1 flex flex-col min-h-0">
+            <div className="mb-3">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Self-Learned Rules
+              </h2>
             </div>
-            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden max-h-[800px] flex flex-col">
+            <div className="flex-1 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-0">
               {rulesLearned.length === 0 ? (
                 <div className="p-6 text-center text-slate-500 text-sm">
                   No correction rules generated yet.
@@ -164,11 +167,14 @@ export default async function AnalyticsPage(props: PageProps) {
           </div>
 
           {/* Recent Drafts Log */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="mb-2">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Recent AI Drafts</h2>
+          <div className="lg:col-span-3 flex flex-col min-h-0">
+            <div className="mb-3">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                Recent AI Drafts
+              </h2>
             </div>
-            <div className="bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222e35] rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-0">
               <div className="overflow-y-auto custom-scrollbar flex-1 p-4 bg-slate-50 dark:bg-[#1a2329]">
                 {safeLogs.length > 0 ? (
                   safeLogs.map((log) => (

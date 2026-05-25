@@ -88,16 +88,16 @@ export default function DraftLogItem({ log }: { log: any }) {
   };
 
   return (
-    <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm mb-6 flex flex-col xl:flex-row gap-6">
+    <div className="bg-white dark:bg-[#111b21] p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm mb-4 flex flex-col xl:flex-row gap-5">
       
       {/* Left Column: Chat Context */}
-      <div className="flex-1 space-y-5">
+      <div className="flex-1 space-y-4">
         
         {/* Header */}
         <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-[#222e35]">
            <div className="flex items-center gap-2">
-             <span className="font-semibold text-slate-800 dark:text-slate-100">{customerName}</span>
-             <span className="text-slate-400 text-xs">· {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
+             <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">{customerName}</span>
+             <span className="text-slate-400 text-[11px]">· {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}</span>
            </div>
            <div className="flex items-center gap-2">
              <button
@@ -109,45 +109,47 @@ export default function DraftLogItem({ log }: { log: any }) {
                }}
                id={`copy-${log.id}`}
                title="Click to copy Log ID for quality override"
-               className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#2a3942] hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors cursor-pointer"
+               className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#2a3942] hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors cursor-pointer"
              >
                {log.id.slice(0, 8)}
              </button>
-             <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+             <Link href={`/inbox?c=${log.conversation_id}`} target="_blank" title="View Full Chat" className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">
                View Chat
              </Link>
            </div>
         </div>
 
-        {/* Customer Asked */}
-        {log.customer_context && (
-          <div className="relative pt-3">
-            <div className="absolute -top-1 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-[#2a363d] rounded-full">
-              Customer Asked
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Customer Asked */}
+          {log.customer_context && (
+            <div className="relative pt-2.5">
+              <div className="absolute -top-1.5 left-3 bg-white dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-slate-400 border border-slate-200/60 dark:border-[#2a363d] rounded">
+                Customer
+              </div>
+              <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[12px] bg-slate-50 dark:bg-[#1a2329] p-3 rounded-lg border border-slate-200/60 dark:border-[#2a363d] h-full">
+                {customerContextClean}
+              </div>
             </div>
-            <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[13px] bg-slate-50 dark:bg-[#1a2329] p-4 rounded-xl border border-slate-200/60 dark:border-[#2a363d]">
-              {customerContextClean}
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* AI Draft */}
-        <div className="relative pt-3">
-          <div className="absolute -top-1 left-3 bg-white dark:bg-[#111b21] px-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-[#222e35] rounded-full">
-            AI Draft
-          </div>
-          <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[13px] bg-white dark:bg-[#111b21] p-4 rounded-xl border border-slate-100 dark:border-[#222e35] shadow-sm">
-            {log.ai_draft}
+          {/* AI Draft */}
+          <div className="relative pt-2.5">
+            <div className="absolute -top-1.5 left-3 bg-white dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-slate-400 border border-slate-100 dark:border-[#222e35] rounded">
+              AI Draft
+            </div>
+            <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[12px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm h-full">
+              {log.ai_draft}
+            </div>
           </div>
         </div>
 
         {/* Final Sent */}
         {log.agent_sent && (
-          <div className="relative pt-3">
-            <div className="absolute -top-1 left-3 bg-blue-50 dark:bg-[#111b21] px-2 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full">
-              Final Sent Message
+          <div className="relative pt-2.5">
+            <div className="absolute -top-1.5 left-3 bg-blue-50 dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded">
+              Final Sent
             </div>
-            <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[13px] bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+            <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[12px] bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30">
               {log.agent_sent}
             </div>
           </div>
@@ -156,7 +158,7 @@ export default function DraftLogItem({ log }: { log: any }) {
       </div>
 
       {/* Right Column: AI Metrics & Learned Rule */}
-      <div className="xl:w-72 flex flex-col gap-4 xl:border-l xl:pl-6 border-t xl:border-t-0 pt-4 xl:pt-0 border-slate-100 dark:border-[#222e35]">
+      <div className="xl:w-64 flex flex-col gap-3 xl:border-l xl:pl-5 border-t xl:border-t-0 pt-4 xl:pt-0 border-slate-100 dark:border-[#222e35]">
         
         <div className="flex items-center gap-2 mb-1">
            {log.was_edited ? (
