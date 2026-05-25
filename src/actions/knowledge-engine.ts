@@ -127,11 +127,12 @@ function buildDomainContext(userMessage: string): string {
   const finalDomains = selectedDomains.length > 0 ? selectedDomains : allDomains.slice(0, 10);
   
   const pricingLines = finalDomains.map((d: any) => {
-    let p = `${d.tld} (Reg: ৳${d.price}`;
-    if (d.renew && d.renew !== d.price) p += `, Ren: ৳${d.renew}`;
-    if (d.transfer && d.transfer !== d.price) p += `, Trans: ৳${d.transfer}`;
-    p += ')';
-    return p;
+    const renew = d.renew || d.price;
+    const transfer = d.transfer || d.price;
+    if (d.price === renew && d.price === transfer) {
+      return `${d.tld} (Reg/Renew/Transfer: ৳${d.price})`;
+    }
+    return `${d.tld} (Reg: ৳${d.price}, Ren: ৳${renew}, Trans: ৳${transfer})`;
   });
 
   return `## Domain Pricing (BDT/year)\n${pricingLines.join(' | ')}\nFor other extensions, say: "Check availability and exact pricing at https://hostnin.com/domain"`;

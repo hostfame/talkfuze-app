@@ -140,9 +140,11 @@ async function run() {
 
   console.log("Inserting Domains...");
   for (const domain of knowledgeData.domains) {
+    const renew = domain.renew || domain.price;
+    const transfer = domain.transfer || domain.price;
     await insertKnowledge(
       `What is the price to register, transfer, or renew a ${domain.tld} domain?`,
-      `Domain Extension: ${domain.tld}\nPrice: ৳${domain.price}/year`
+      `Domain Extension: ${domain.tld}\nRegistration: ৳${domain.price}/year\nRenewal: ৳${renew}/year\nTransfer: ৳${transfer}`
     );
   }
   
