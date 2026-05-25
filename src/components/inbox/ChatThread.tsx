@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Bot, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Brain, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2 } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -3903,7 +3903,7 @@ export default function ChatThread({
                   )}
                   {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && safeMeta.used_ai_draft && (
                     <span title="AI Draft Used" className="flex items-center">
-                      <Bot size={10} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-60 hover:opacity-100 transition-opacity" />
+                      <Brain size={10} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-60 hover:opacity-100 transition-opacity" />
                     </span>
                   )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
