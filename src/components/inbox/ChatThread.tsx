@@ -1481,6 +1481,7 @@ export default function ChatThread({
   // Join Thread State
   const [participants, setParticipants] = useState<ConversationParticipant[]>([])
   const [isJoining, setIsJoining] = useState(false)
+  const [hasJoinedOptimistically, setHasJoinedOptimistically] = useState(false)
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false)
   const [showWhisperComposer, setShowWhisperComposer] = useState(false)
   const isJoined = !conversationId ? true : participants.some(p => p.user_id === currentUser?.id)
@@ -1490,6 +1491,7 @@ export default function ChatThread({
   const hasPropAssignee = !!firstRelation(conversation?.assignee) || !!conversation?.assigned_to;
   
   const isPickedUp = !conversationId ? true : (
+    hasJoinedOptimistically ||
     participants.length > 0 || 
     hasPropParticipants || 
     hasPropAssignee || 
@@ -1788,6 +1790,7 @@ export default function ChatThread({
     setShowMacroMenu(false)
     setIsInternal(false)
     setParticipants([]) // Reset participants immediately to prevent cross-customer layout leakage during transition
+    setHasJoinedOptimistically(false) // Reset optimistic state on thread switch
 
     if (!conversationId) {
       setIsLoadingParticipants(false)
@@ -1857,6 +1860,7 @@ export default function ChatThread({
     
     // Optimistic UI update to make it feel instant
     const prevParticipants = [...participants]
+    setHasJoinedOptimistically(true)
     setParticipants([...participants, { user_id: currentUser.id, role: 'agent' } as unknown as ConversationParticipant])
     setIsInternal(false) // Auto-switch to reply mode
     setIsJoining(true)
