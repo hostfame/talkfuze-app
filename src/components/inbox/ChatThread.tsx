@@ -3897,10 +3897,14 @@ export default function ChatThread({
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
                 <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
                   {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && !safeMeta.used_ai_draft && (
-                    <Edit2 size={10} className="text-slate-300 dark:text-slate-600 mr-0.5" title="Manual Reply (No AI)" />
+                    <span title="Manual Reply (No AI)" className="flex items-center">
+                      <Edit2 size={9} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-50 hover:opacity-100 transition-opacity" />
+                    </span>
                   )}
                   {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && safeMeta.used_ai_draft && (
-                    <Bot size={11} className="text-blue-300 dark:text-blue-800 mr-0.5" title="AI Draft Used" />
+                    <span title="AI Draft Used" className="flex items-center">
+                      <Bot size={10} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-60 hover:opacity-100 transition-opacity" />
+                    </span>
                   )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
