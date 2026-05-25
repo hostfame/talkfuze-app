@@ -1530,6 +1530,7 @@ export default function ChatThread({
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
   const autoSendDraftRef = useRef<boolean>(false)
+  const autoDraftTriggeredIdsRef = useRef<Set<string>>(new Set())
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
   const draftLogTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pendingDraftTextsRef = useRef<string[]>([])
@@ -2421,6 +2422,8 @@ export default function ChatThread({
     if (lastMessage.content_type === 'system') return;
     
     // 5. Check if we already auto-drafted for this exact message
+    // 5. Check if we already auto-drafted for this exact message in this session
+    if (autoDraftTriggeredIdsRef.current.has(lastMessage.id)) return;
     const lastDraftedId = localStorage.getItem(`auto_drafted_msg_id_${conversationId}`);
     if (lastDraftedId === lastMessage.id) return;
     
@@ -2435,6 +2438,7 @@ export default function ChatThread({
     const isShortMessage = !hasMedia && wordCount < 3;
     
     // Fire it with a tiny delay to ensure state is settled
+    autoDraftTriggeredIdsRef.current.add(lastMessage.id);
     const timer = setTimeout(() => {
       // Mark as drafted so we don't loop
       localStorage.setItem(`auto_drafted_msg_id_${conversationId}`, lastMessage.id);
@@ -2454,8 +2458,8 @@ export default function ChatThread({
     const msgText = (overrideText ? overrideText : input).trim()
     
     // AI Copilot feature
-    if (msgText.startsWith('//') && msgText.length > 2) {
-      const instruction = msgText.substring(2).trim();
+    if (msgText.toLowerCase().startsWith('/ai ') && msgText.length > 4) {
+      const instruction = msgText.substring(4).trim();
       handleAiDraft(instruction);
       return;
     }
@@ -4710,8 +4714,8 @@ export default function ChatThread({
                   if (input.trim().startsWith('//t ') && input.trim().length > 4) {
                     const text = input.trim().substring(4).trim();
                     handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
-                  } else if (input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
-                    const instruction = input.trim().substring(2).trim();
+                  } else if (input.trim().toLowerCase().startsWith('/ai ') && input.trim().length > 4) {
+                    const instruction = input.trim().substring(4).trim();
                     handleAiDraft(instruction);
                   } else {
                     handleSend()
