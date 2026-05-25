@@ -1305,6 +1305,7 @@ export default function WidgetPage() {
   
   const chatScrollContainerRef = useRef<HTMLDivElement>(null)
   const isUserScrolledUpRef = useRef(false)
+  const pendingDelaysRef = useRef(0)
   
   const handleChatScroll = () => {
     if (chatScrollContainerRef.current) {
@@ -1490,7 +1491,9 @@ export default function WidgetPage() {
         delayedMsgs.forEach(m => {
            const delayMs = (m as any).waitTime;
            setIsAgentTyping(true);
+           pendingDelaysRef.current += 1;
            setTimeout(async () => {
+              pendingDelaysRef.current -= 1;
               if (m.sender_type === 'agent' || m.sender_type === 'system') {
                  if (m.sender_id) {
                    const agentData = await getAgentProfile(m.sender_id);
@@ -1501,7 +1504,7 @@ export default function WidgetPage() {
                  if (prev.some(x => x.id === m.id)) return prev;
                  if (m.sender_type !== 'contact') {
                     playUISound('receive', 'intercom');
-                    setIsAgentTyping(false);
+                    if (pendingDelaysRef.current === 0) setIsAgentTyping(false);
                  }
                  return [...prev, m].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
               });
@@ -1687,8 +1690,10 @@ export default function WidgetPage() {
               
               if (newMsg.sender_type !== 'contact') {
                   playUISound('receive', 'intercom');
-                  setIsAgentTyping(false);
-                  setIsAgentRecording(false);
+                  if (pendingDelaysRef.current === 0) {
+                      setIsAgentTyping(false);
+                      setIsAgentRecording(false);
+                  }
               }
               
               if (newMsg.sender_type === 'contact') {
@@ -1709,7 +1714,9 @@ export default function WidgetPage() {
             if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai') {
                setIsAgentTyping(true);
             }
+            pendingDelaysRef.current += 1;
             setTimeout(() => {
+              pendingDelaysRef.current -= 1;
               processIncoming();
             }, delayMs);
           } else {
