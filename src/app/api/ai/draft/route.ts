@@ -150,7 +150,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
 
 export async function POST(req: Request) {
   try {
-    const { contextMessages, contactName, orgId, instruction, isTranslation, imageUrl } = await req.json();
+    const { contextMessages, contactName, orgId, instruction, isTranslation, imageUrl, crmContext } = await req.json();
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
@@ -310,6 +310,12 @@ RULES FOR THIS INSTRUCTION:
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
+
+${crmContext ? `## Customer CRM Profile (WHMCS Data)
+- Active Services: ${crmContext.services?.length ? JSON.stringify(crmContext.services) : 'None found'}
+- Invoices: ${crmContext.invoices?.length ? JSON.stringify(crmContext.invoices) : 'None found'}
+
+Rule: Use this CRM data to provide accurate details (like Invoice IDs, due dates, or Domain names) when requested or when it adds critical context.` : ''}
 
 Customer Name: ${contactName}
 

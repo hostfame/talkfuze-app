@@ -2299,13 +2299,39 @@ export default function ChatThread({
         return `[${name}]: ${contentStr}`
       }).join('\n')
 
-
+    // Extract CRM data for AI context
+    const cleanPhone = contact?.wa_number?.replace(/\D/g, '');
+    const cacheKey = cleanPhone || conversationId;
+    const cachedCrm = useInboxStore.getState().crmCache[cacheKey];
+    
+    let crmContext = null;
+    if (cachedCrm) {
+      crmContext = {
+        services: Array.isArray(cachedCrm.whmcsServices) ? cachedCrm.whmcsServices.map((s: any) => ({
+          id: s.id,
+          domain: s.domain,
+          product: s.product || s.translated_name,
+          status: s.status,
+          amount: s.amount,
+          billingcycle: s.billingcycle,
+          nextduedate: s.nextduedate
+        })) : [],
+        invoices: Array.isArray(cachedCrm.whmcsInvoices) ? cachedCrm.whmcsInvoices.map((i: any) => ({
+          id: i.id,
+          invoicenum: i.invoicenum,
+          status: i.status,
+          total: i.total,
+          balance: i.balance,
+          duedate: i.duedate
+        })) : []
+      };
+    }
 
     try {
       const res = await fetch('/api/ai/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contextMessages, contactName, orgId, instruction, isTranslation, imageUrl })
+        body: JSON.stringify({ contextMessages, contactName, orgId, instruction, isTranslation, imageUrl, crmContext })
       })
 
       if (!res.ok) throw new Error('API failed')
