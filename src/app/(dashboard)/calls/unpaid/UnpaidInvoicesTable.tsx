@@ -271,19 +271,10 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
                       <div className="font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{inv.total} {inv.currencycode}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="relative w-full max-w-[140px]">
-                        <select 
-                          value={record?.status || ""} 
-                          onChange={(e) => handleUpdate(inv.id, inv.userid, 'status', e.target.value)}
-                          className={`appearance-none w-full border text-[11.5px] font-medium rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm ${getStatusColor(record?.status || null)} dark:bg-[#111b21] dark:border-slate-700 dark:text-slate-200`}
-                        >
-                          <option value="" disabled className="text-slate-400">Select Status...</option>
-                          <option value="Answered">Answered</option>
-                          <option value="Not Answered">Not Answered</option>
-                          <option value="Unreachable">Unreachable</option>
-                        </select>
-                        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-50 pointer-events-none" />
-                      </div>
+                      <CustomStatusDropdown 
+                        value={record?.status || null}
+                        onChange={(val) => handleUpdate(inv.id, inv.userid, 'status', val)}
+                      />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-1.5 bg-slate-50 dark:bg-[#111b21] p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm w-max mx-auto">
@@ -329,6 +320,61 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+function CustomStatusDropdown({ value, onChange }: { value: string | null, onChange: (val: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  const getStatusColor = (status: string | null) => {
+    if (status === 'Answered') return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+    if (status === 'Not Answered') return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
+    if (status === 'Unreachable') return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+    return 'bg-white text-slate-500 border-slate-200 dark:bg-[#111b21] dark:border-slate-700 dark:text-slate-200'
+  }
+
+  const options = ['Answered', 'Not Answered', 'Unreachable']
+
+  return (
+    <div className="relative w-full max-w-[140px]" ref={ref}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between w-full border text-[11.5px] font-medium rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm ${getStatusColor(value)}`}
+      >
+        <span>{value || 'Select Status...'}</span>
+        <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 w-full mt-1.5 z-50 bg-white dark:bg-[#182229] border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => {
+                onChange(opt)
+                setIsOpen(false)
+              }}
+              className={`w-full text-left px-3 py-2 text-[11.5px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${value === opt ? 'bg-slate-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
