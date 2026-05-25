@@ -1494,6 +1494,8 @@ export default function WidgetPage() {
            pendingDelaysRef.current += 1;
            setTimeout(async () => {
               pendingDelaysRef.current -= 1;
+              if (m.conversation_id !== activeConversationIdRef.current) return;
+              
               if (m.sender_type === 'agent' || m.sender_type === 'system') {
                  if (m.sender_id) {
                    const agentData = await getAgentProfile(m.sender_id);
@@ -1667,6 +1669,8 @@ export default function WidgetPage() {
           } catch(e) {}
 
           const processIncoming = async () => {
+            if (newMsg.conversation_id !== activeConversationIdRef.current) return;
+            
             if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
               let existingAgent = null;
               setMessages(prev => {
