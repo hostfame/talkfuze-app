@@ -4082,7 +4082,7 @@ export default function ChatThread({
               <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
                 <div className="flex items-end gap-2.5 flex-row-reverse max-w-[85%]">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 shrink-0 mb-1 border border-slate-200 dark:border-slate-700/50 shadow-sm">
-                    <Bot size={16} className="text-slate-600 dark:text-slate-400" />
+                    <Brain size={16} className="text-slate-600 dark:text-slate-400" />
                   </div>
                   <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 shadow-md rounded-br-none">
                     <div className="absolute -top-3 left-3 text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
@@ -4616,7 +4616,7 @@ export default function ChatThread({
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xl text-[12px] font-medium transition-colors border border-slate-700/50"
                   >
-                    <Bot size={14} className="text-blue-400" />
+                    <Brain size={14} className="text-blue-400" />
                     Translate
                   </button>
                 </div>
@@ -4657,11 +4657,11 @@ export default function ChatThread({
                 className={`p-1.5 rounded-md transition-all disabled:opacity-50 ${aiDraftFailed ? 'text-red-500 hover:bg-red-50' : (isAiDrafting || isAiStreaming) ? 'text-blue-500' : isInternal ? 'text-amber-800 hover:bg-amber-100/50 dark:text-amber-400 dark:hover:bg-amber-950/40' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-[#8696a0] dark:hover:text-[#e9edef] dark:hover:bg-[#2a3942]'}`}
               >
                 {(isAiDrafting || isAiStreaming) ? (
-                  <Bot size={16} strokeWidth={2} className="text-blue-500 ai-bot-glow animate-pulse" />
+                  <Brain size={16} strokeWidth={2} className="text-blue-500 ai-bot-glow animate-pulse" />
                 ) : aiDraftFailed ? (
                   <X size={16} strokeWidth={2} />
                 ) : (
-                  <Bot size={16} strokeWidth={2} />
+                  <Brain size={16} strokeWidth={2} />
                 )}
               </button>
             </div>
@@ -4825,7 +4825,7 @@ export default function ChatThread({
               onClick={() => generateAiSample(contextMenu.message)}
               className="w-full text-left px-3.5 py-2 text-[13px] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 font-medium border-b border-slate-100 dark:border-slate-700/50"
             >
-              <Bot size={14} className="text-slate-400 dark:text-slate-500" />
+              <Brain size={14} className="text-slate-400 dark:text-slate-500" />
               AI Sample
             </button>
 
