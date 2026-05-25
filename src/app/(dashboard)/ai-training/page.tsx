@@ -259,27 +259,11 @@ export default function AITrainingDashboard() {
         {activeTab === 'observer' && (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <StatCard 
-                icon={<Archive className="text-slate-500" />} 
-                title="Archived (24h)" 
-                value={stats.totalArchived} 
-              />
-              <StatCard 
-                icon={<BookOpen className="text-[#0070f3]" />} 
-                title="Trained" 
-                value={stats.successfullyTrained} 
-              />
-              <StatCard 
-                icon={<Clock className="text-amber-500" />} 
-                title="Processing" 
-                value={stats.pending} 
-              />
-              <StatCard 
-                icon={<AlertCircle className="text-red-500" />} 
-                title="Failed" 
-                value={stats.failed} 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <StatCard title="Archived (24h)" value={stats.totalArchived} />
+              <StatCard title="Trained" value={stats.successfullyTrained} />
+              <StatCard title="Processing" value={stats.pending} />
+              <StatCard title="Failed" value={stats.failed} />
             </div>
 
             {/* Logs Table */}
@@ -354,16 +338,11 @@ export default function AITrainingDashboard() {
         {/* Tab 2: Accuracy Validation View */}
         {activeTab === 'validation' && (
           <div className="space-y-6">
-            <div className="bg-blue-50/50 dark:bg-[#111b21] rounded-2xl border border-blue-100 dark:border-[#2a3942] p-5 flex items-start gap-4 shadow-sm">
-              <div className="p-3 rounded-xl bg-blue-100/60 dark:bg-blue-900/20 text-[#0070f3] shrink-0">
-                <Sparkles size={20} />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-[#e9edef]">How accuracy validation works</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  We match your past support draft corrections against our vector database. Click **Run Live Test** on any corrected message card. The CRM will dynamically draft a **new reply** with the active learning rule, then let Claude 4.5 Sonnet score the improvement side-by-side!
-                </p>
-              </div>
+            <div className="bg-slate-50 dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#2a3942] p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-[#e9edef] mb-1">How accuracy validation works</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                We match your past support draft corrections against our vector database. Click <strong>Run Live Test</strong> on any corrected message card. The CRM will dynamically draft a <strong>new reply</strong> with the active learning rule, then let Claude 4.5 Sonnet score the improvement side-by-side!
+              </p>
             </div>
 
             {loadingValidation ? (
@@ -378,11 +357,10 @@ export default function AITrainingDashboard() {
             ) : (
               <div className="space-y-6">
                 {correctedDrafts.map((draft) => (
-                  <div key={draft.id} className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#2a3942] overflow-hidden shadow-sm">
+                  <div key={draft.id} className="bg-white dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#2a3942] overflow-hidden shadow-sm">
                     {/* Header: Displays active rule */}
-                    <div className="px-6 py-4 bg-slate-50/50 dark:bg-[#202c33]/40 border-b border-slate-100 dark:border-[#2a3942] flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-[#0070f3]"><Sparkles size={14} /></span>
+                    <div className="px-5 py-3 bg-slate-50 dark:bg-[#202c33]/40 border-b border-slate-100 dark:border-[#2a3942] flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-slate-800 dark:text-[#e9edef]">
                           Rule: <span className="font-normal text-slate-600 dark:text-slate-300 italic">"{draft.correction_feedback}"</span>
                         </span>
@@ -396,24 +374,24 @@ export default function AITrainingDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-[#2a3942]">
                       
                       {/* Left Side: Original Scenario */}
-                      <div className="p-6 space-y-4">
+                      <div className="p-5 space-y-4">
                         <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Asked</span>
-                          <div className="mt-1.5 p-3 rounded-xl bg-slate-50 dark:bg-[#202c33]/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Customer Asked</span>
+                          <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
                             {draft.customer_context}
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-3">
                           <div>
-                            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1"><X size={10} /> Mistaken AI Draft</span>
-                            <div className="mt-1.5 p-3 rounded-xl bg-red-50/30 dark:bg-red-950/10 border border-red-100/30 dark:border-red-900/10 text-xs text-slate-500 line-through leading-relaxed">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mistaken AI Draft</span>
+                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-500 line-through leading-relaxed">
                               {draft.ai_draft}
                             </div>
                           </div>
                           <div>
-                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-1"><Check size={10} /> Agent Final Target</span>
-                            <div className="mt-1.5 p-3 rounded-xl bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-100/20 dark:border-emerald-900/10 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Agent Final Target</span>
+                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
                               {draft.agent_sent}
                             </div>
                           </div>
@@ -421,32 +399,31 @@ export default function AITrainingDashboard() {
                       </div>
 
                       {/* Right Side: Live Learning Validation */}
-                      <div className="p-6 bg-slate-50/20 dark:bg-[#111b21] flex flex-col justify-between">
+                      <div className="p-5 bg-slate-50/20 dark:bg-[#111b21] flex flex-col justify-between">
                         
                         {draft.validation_score !== null ? (
                           <div className="space-y-4 h-full flex flex-col justify-between">
                             <div className="space-y-3">
                               {/* Score Badges */}
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-[#0070f3] uppercase tracking-wider flex items-center gap-1"><Zap size={10} /> New Live AI Draft</span>
-                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">New Live AI Draft</span>
+                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
                                   draft.validation_score >= 90
-                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                    : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                                    ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                    : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                                 }`}>
-                                  <ShieldCheck size={12} />
-                                  Score: {draft.validation_score}% {draft.validation_score >= 90 ? 'PASS' : 'WARNING'}
+                                  Score: {draft.validation_score}%
                                 </div>
                               </div>
 
                               {/* New Live Draft Box */}
-                              <div className="p-3 rounded-xl bg-emerald-50/10 dark:bg-[#202c33]/40 border border-emerald-500/30 dark:border-emerald-500/10 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
+                              <div className="p-3 rounded-lg bg-white dark:bg-[#202c33]/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
                                 {draft.validation_draft}
                               </div>
 
                               {/* Critique Box */}
-                              <div className="p-3.5 rounded-xl bg-blue-50/30 dark:bg-blue-950/10 border border-blue-100/30 dark:border-blue-900/10 text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-                                <span className="font-semibold not-italic text-[#0070f3] block mb-0.5">Claude 4.5 Sonnet QA Critique:</span>
+                              <div className="p-3 rounded-lg bg-slate-100/50 dark:bg-[#182229] border border-slate-200/50 dark:border-[#2a3942] text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic">
+                                <span className="font-semibold not-italic text-slate-600 dark:text-slate-300 block mb-1">Validation Critique:</span>
                                 "{draft.validation_verdict}"
                               </div>
                             </div>
@@ -454,29 +431,24 @@ export default function AITrainingDashboard() {
                             <button
                               onClick={() => handleRunValidation(draft.id)}
                               disabled={validatingId === draft.id}
-                              className="mt-4 px-4 py-2 w-full flex items-center justify-center gap-2 rounded-lg bg-white dark:bg-[#202c33] border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-[#2a3942] transition-colors disabled:opacity-50"
+                              className="mt-4 px-4 py-2 w-full text-center rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-semibold hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
                             >
-                              <RefreshCcw size={12} className={validatingId === draft.id ? "animate-spin" : ""} />
                               {validatingId === draft.id ? "Testing..." : "Re-Validate Accuracy"}
                             </button>
                           </div>
                         ) : (
-                          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
-                            <div className="p-4 rounded-full bg-slate-100 dark:bg-[#202c33] text-slate-400">
-                              <Zap size={28} />
-                            </div>
+                          <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
                             <div>
                               <h4 className="text-xs font-semibold text-slate-700 dark:text-[#e9edef]">Not tested yet</h4>
-                              <p className="text-[11px] text-slate-400 mt-1 max-w-[240px] leading-relaxed">
+                              <p className="text-[11px] text-slate-500 mt-1 max-w-[220px] leading-relaxed">
                                 Run a live test to see if the AI successfully avoids the mistake in real-time.
                               </p>
                             </div>
                             <button
                               onClick={() => handleRunValidation(draft.id)}
                               disabled={validatingId === draft.id}
-                              className="px-5 py-2.5 w-full max-w-[200px] flex items-center justify-center gap-2 rounded-xl bg-[#0070f3] text-white text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                              className="mt-2 px-5 py-2 w-full max-w-[160px] rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-semibold hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
                             >
-                              <Play size={12} fill="white" />
                               {validatingId === draft.id ? "Validating..." : "Run Live Test"}
                             </button>
                           </div>
@@ -495,16 +467,11 @@ export default function AITrainingDashboard() {
   )
 }
 
-function StatCard({ icon, title, value }: { icon: React.ReactNode, title: string, value: number }) {
+function StatCard({ title, value }: { title: string, value: number }) {
   return (
-    <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#2a3942] p-5 shadow-sm flex items-center gap-4">
-      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#202c33]">
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{title}</p>
-        <p className="text-2xl font-semibold text-slate-800 dark:text-[#e9edef] mt-0.5">{value}</p>
-      </div>
+    <div className="bg-white dark:bg-[#111b21] rounded-xl border border-slate-200 dark:border-[#2a3942] p-4 shadow-sm">
+      <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold mb-1">{title}</p>
+      <p className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{value}</p>
     </div>
   )
 }
@@ -512,12 +479,12 @@ function StatCard({ icon, title, value }: { icon: React.ReactNode, title: string
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'completed':
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30"><CheckCircle2 size={12} /> Trained</span>
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">Trained</span>
     case 'processing':
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-[#0070f3] dark:bg-blue-900/20 dark:text-[#0070f3] border border-blue-200 dark:border-blue-800/30"><RefreshCcw size={12} className="animate-spin" /> Distilling</span>
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#0070f3] dark:bg-blue-900/20 dark:text-[#0070f3] border border-blue-200 dark:border-blue-800/30">Distilling</span>
     case 'failed':
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30"><AlertCircle size={12} /> Failed</span>
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30">Failed</span>
     default:
-      return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200 dark:border-amber-800/30"><Clock size={12} /> Pending</span>
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Pending</span>
   }
 }

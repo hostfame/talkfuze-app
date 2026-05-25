@@ -147,12 +147,11 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
                     showOutsideDays
                     className="p-1 custom-day-picker"
                     classNames={{
-                      day_selected: "bg-[#0070f3] text-white hover:bg-[#0070f3] hover:text-white rounded-lg font-bold",
+                      selected: "bg-[#0070f3] text-white hover:bg-[#0070f3] hover:text-white rounded-lg font-bold",
                       day: "hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 p-2 w-9 h-9 flex items-center justify-center transition-colors text-sm font-medium",
-                      day_today: "bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white rounded-lg",
-                      head_cell: "text-slate-400 dark:text-slate-500 font-medium text-[11px] uppercase tracking-wider",
-                      nav_button: "p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors",
-                      caption: "flex justify-between items-center py-2 px-1 mb-2",
+                      today: "bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white rounded-lg",
+                      weekday: "text-slate-400 dark:text-slate-500 font-medium text-[11px] uppercase tracking-wider",
+                      nav: "flex items-center gap-1",
                       caption_label: "text-sm font-bold text-slate-800 dark:text-slate-200"
                     }}
                   />
@@ -163,7 +162,7 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
                       border: none;
                       background-color: transparent;
                     }
-                    .custom-day-picker .rdp-day_selected:focus:not([disabled]) {
+                    .custom-day-picker .rdp-selected:focus:not([disabled]) {
                       background-color: #0070f3;
                     }
                     .custom-day-picker .rdp-day:focus-visible {
