@@ -2597,19 +2597,22 @@ export default function ChatThread({
           
           let chunkDelay = 0;
           if (!isInternal) {
-            if (i === 0) {
-              if (usedAiDraft) {
-                // First chunk of an AI draft needs a delay so the user sees a "typing..." indicator,
-                // otherwise it appears instantly which feels like a bot.
-                chunkDelay = Math.floor(1500 + chunk.length * 40);
-                if (chunkDelay > 15000) chunkDelay = 15000; // Cap at 15s for the first chunk so agent isn't waiting forever
+            if (usedAiDraft || i > 0) {
+              // Calculate realistic delay based on length/lines (Imran's 20s/40s/50s rule)
+              const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
+              
+              if (lineCount <= 1) {
+                chunkDelay = 20000; // 20s
+              } else if (lineCount === 2) {
+                chunkDelay = 40000; // 40s
               } else {
-                chunkDelay = 0; // Manually typed, send instantly
+                chunkDelay = 50000; // 50s
               }
-            } else {
-              // Subsequent chunks: base cognitive delay + 75ms per character (~80 WPM fast human typing)
-              chunkDelay = Math.floor(2500 + chunk.length * 75);
-              if (chunkDelay > 45000) chunkDelay = 45000; // Cap at 45 seconds per chunk
+
+              // Exception: First chunk of manually typed message sends instantly
+              if (!usedAiDraft && i === 0) {
+                chunkDelay = 0;
+              }
             }
             accumulatedDelay += chunkDelay;
           }
