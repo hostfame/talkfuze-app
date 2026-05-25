@@ -320,19 +320,28 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
           />
         </td>
         <td className="px-6 py-4">
-          <div className="flex items-center justify-center gap-1.5 bg-slate-50 dark:bg-[#111b21] p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm w-max mx-auto">
+          <div className="flex items-center justify-center gap-1 bg-slate-50 dark:bg-[#111b21] p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm w-max mx-auto">
             <button
-              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', record?.will_renew === 'Yes' ? null : 'Yes')}
+              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', 'Yes')}
               className={`px-3 py-1.5 rounded-md text-[11.5px] font-semibold transition-all ${record?.will_renew === 'Yes' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-slate-800'}`}
             >
               Yes
             </button>
             <button
-              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', record?.will_renew === 'No' ? null : 'No')}
+              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', 'No')}
               className={`px-3 py-1.5 rounded-md text-[11.5px] font-semibold transition-all ${record?.will_renew === 'No' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-slate-800'}`}
             >
               No
             </button>
+            {record?.will_renew && (
+              <button
+                onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', null)}
+                className="px-1.5 py-1.5 ml-0.5 rounded-md text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 transition-colors"
+                title="Clear Selection"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </td>
         <td className="px-6 py-4">
