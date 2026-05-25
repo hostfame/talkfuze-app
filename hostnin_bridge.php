@@ -768,8 +768,13 @@ try {
         }
 
         try {
-            // Get all unpaid invoices using localAPI
-            $invoicesRes = localAPI('GetInvoices', ['status' => 'Unpaid', 'limitnum' => 1000]);
+            // Get all unpaid invoices using localAPI, ordered by latest
+            $invoicesRes = localAPI('GetInvoices', [
+                'status' => 'Unpaid', 
+                'limitnum' => 1000,
+                'orderby' => 'id',
+                'order' => 'DESC'
+            ]);
             $invoices = $invoicesRes['invoices']['invoice'] ?? [];
 
             // Extract unique client IDs

@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Phone, Check, X, CreditCard, ChevronDown, Save, Loader2, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 import { upsertUnpaidInvoiceCall } from "@/actions/unpaid-calls"
 import { useInboxStore } from "@/lib/store"
 import { format, isToday, isYesterday, addDays, subDays, parseISO } from "date-fns"
+import { DayPicker } from "react-day-picker"
+import "react-day-picker/dist/style.css"
 
 type Invoice = {
   id: number
@@ -44,9 +46,22 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   )
 
   const [savingId, setSavingId] = useState<number | null>(null)
-  const dateInputRef = useRef<HTMLInputElement>(null)
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const calendarRef = useRef<HTMLDivElement>(null)
+
+  // Handle click outside to close calendar
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setIsCalendarOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const selectedDateStr = useMemo(() => {
     return format(selectedDate, 'yyyy-MM-dd')
@@ -108,26 +123,56 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
               <ChevronLeft className="w-4 h-4" />
             </button>
             
-            <div className="relative flex items-center">
+            <div className="relative flex items-center" ref={calendarRef}>
               <button 
-                onClick={() => dateInputRef.current?.showPicker?.()}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-semibold transition-colors rounded-md ${isCalendarOpen ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
               >
-                <Calendar className="w-4 h-4 text-slate-400" />
+                <Calendar className={`w-4 h-4 ${isCalendarOpen ? 'text-blue-500' : 'text-slate-400'}`} />
                 {formattedDateDisplay}
               </button>
-              <input
-                ref={dateInputRef}
-                type="date"
-                value={selectedDateStr}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setSelectedDate(parseISO(e.target.value))
-                  }
-                }}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                style={{ visibility: 'hidden' }}
-              />
+
+              {/* Custom Popover Calendar */}
+              {isCalendarOpen && (
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDate(date)
+                        setIsCalendarOpen(false)
+                      }
+                    }}
+                    showOutsideDays
+                    className="p-1 custom-day-picker"
+                    classNames={{
+                      day_selected: "bg-[#0070f3] text-white hover:bg-[#0070f3] hover:text-white rounded-lg font-bold",
+                      day: "hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 p-2 w-9 h-9 flex items-center justify-center transition-colors text-sm font-medium",
+                      day_today: "bg-slate-100 dark:bg-slate-800 font-bold text-slate-900 dark:text-white rounded-lg",
+                      head_cell: "text-slate-400 dark:text-slate-500 font-medium text-[11px] uppercase tracking-wider",
+                      nav_button: "p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors",
+                      caption: "flex justify-between items-center py-2 px-1 mb-2",
+                      caption_label: "text-sm font-bold text-slate-800 dark:text-slate-200"
+                    }}
+                  />
+                  
+                  {/* Global CSS override for react-day-picker to remove default ugly outlines */}
+                  <style>{`
+                    .custom-day-picker .rdp-button:focus:not([disabled]) {
+                      border: none;
+                      background-color: transparent;
+                    }
+                    .custom-day-picker .rdp-day_selected:focus:not([disabled]) {
+                      background-color: #0070f3;
+                    }
+                    .custom-day-picker .rdp-day:focus-visible {
+                      outline: 2px solid #0070f3;
+                      outline-offset: 2px;
+                    }
+                  `}</style>
+                </div>
+              )}
             </div>
 
             <button 
