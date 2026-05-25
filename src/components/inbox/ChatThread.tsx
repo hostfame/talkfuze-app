@@ -4130,59 +4130,60 @@ export default function ChatThread({
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 shrink-0 mb-1 border border-slate-200 dark:border-slate-700/50 shadow-sm">
                     <Brain size={16} className="text-slate-600 dark:text-slate-400" />
                   </div>
-                  <div className="group relative rounded-2xl px-4 py-3 min-w-[60px] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 shadow-md rounded-br-none">
-                    <div className="absolute -top-3 left-3 text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5">
+                  <div className="group relative rounded-2xl px-4 py-3.5 min-w-[280px] max-w-full bg-white dark:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-all duration-300 rounded-br-none hover:shadow-md">
+                    <div className="absolute -top-2.5 left-4 text-[9.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5 rounded-sm">
                       AI Draft Comparison
                     </div>
                     
                     {aiSampleLoading && !aiSampleText ? (
-                      <div className="flex items-center justify-center h-6 gap-2 px-4 py-2">
-                        <Loader2 size={14} className="animate-spin text-slate-500" />
-                        <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400">Generating alternative...</span>
+                      <div className="flex items-center justify-center h-12 gap-2 px-4 py-2">
+                        <Loader2 size={16} className="animate-spin text-slate-400" />
+                        <span className="text-[12px] font-medium text-slate-500">Generating alternative...</span>
                       </div>
                     ) : (
                       <div className="flex flex-col mt-1">
-                        <div className="text-[13.5px] text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed min-w-[200px]">
-                          <div
-                            contentEditable={aiSampleEditing && !aiSampleSaving}
-                            suppressContentEditableWarning
-                            onInput={(e) => setAiSampleText((e.target as HTMLDivElement).innerText)}
-                            className={`outline-none ${aiSampleEditing ? 'cursor-text' : ''}`}
-                          >
-                            {aiSampleEditing ? aiSampleText : (
-                              <>
-                                {aiSampleText}
-                                {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
-                              </>
-                            )}
-                          </div>
+                        <div className="text-[13.5px] text-slate-700 dark:text-slate-200 leading-relaxed w-full">
+                          {aiSampleEditing ? (
+                            <textarea
+                              value={aiSampleText}
+                              onChange={(e) => setAiSampleText(e.target.value)}
+                              disabled={aiSampleSaving}
+                              className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 outline-none resize-y min-h-[120px] text-[13.5px] text-slate-700 dark:text-slate-200 leading-relaxed focus:ring-1 focus:ring-blue-500/50 transition-all"
+                              placeholder="Edit AI response..."
+                            />
+                          ) : (
+                            <div className="whitespace-pre-wrap min-w-[200px]">
+                              {aiSampleText}
+                              {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
+                            </div>
+                          )}
                         </div>
                         
                         {/* Action Buttons */}
                         {!aiSampleLoading && (
-                          <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700/50 pt-2.5">
+                          <div className="mt-3.5 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700/50 pt-3">
                             {aiSampleEditing ? (
                               <>
                                 <button 
                                   onClick={() => setAiSampleEditing(false)}
                                   disabled={aiSampleSaving}
-                                  className="text-[11px] px-2.5 py-1.5 rounded-md bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors font-medium"
+                                  className="text-[11.5px] px-3 py-1.5 rounded-md bg-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors font-medium"
                                 >
                                   Cancel
                                 </button>
                                 <button 
                                   onClick={saveAiSampleToKnowledge}
                                   disabled={aiSampleSaving}
-                                  className="text-[11px] px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50 shadow-sm"
+                                  className="text-[11.5px] px-3.5 py-1.5 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 transition-colors flex items-center gap-1.5 font-medium disabled:opacity-50 shadow-sm"
                                 >
-                                  {aiSampleSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                  {aiSampleSaving && <Loader2 size={12} className="animate-spin" />}
                                   {aiSampleSaving ? "Learning..." : "Save to AI Knowledge"}
                                 </button>
                               </>
                             ) : (
                               <button 
                                 onClick={() => setAiSampleEditing(true)}
-                                className="text-[11px] px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-1.5 font-medium"
+                                className="text-[11.5px] px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all duration-200 flex items-center gap-1.5 font-medium shadow-sm hover:shadow active:scale-[0.98]"
                               >
                                 <Edit2 size={12} />
                                 Edit & Train
@@ -4197,7 +4198,7 @@ export default function ChatThread({
                         setAiSampleTargetId(null);
                         setAiSampleEditing(false);
                       }} 
-                      className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"
+                      className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-105 active:scale-95"
                       title="Close Comparison"
                     >
                       <X size={14} />
