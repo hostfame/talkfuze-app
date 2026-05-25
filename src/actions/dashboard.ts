@@ -509,7 +509,7 @@ export async function getParticipants(conversationId: string) {
   return data || []
 }
 
-export async function joinConversation(conversationId: string) {
+export async function joinConversation(conversationId: string, createdAt?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
@@ -544,8 +544,7 @@ export async function joinConversation(conversationId: string) {
       throw new Error(insertError.message)
     }
 
-    // Insert system message
-    await supabaseAdmin.from('messages').insert({
+    const insertData: any = {
       conversation_id: conversationId,
       org_id: profile.org_id,
       sender_type: 'system',
@@ -554,7 +553,14 @@ export async function joinConversation(conversationId: string) {
       content_type: 'system',
       is_internal: false,
       status: 'delivered',
-    })
+    };
+    
+    if (createdAt) {
+      insertData.created_at = createdAt;
+    }
+
+    // Insert system message
+    await supabaseAdmin.from('messages').insert(insertData)
   }
 
   return getParticipants(conversationId)

@@ -2566,7 +2566,13 @@ export default function ChatThread({
     if (!isJoined && !isInternal) {
       const prevParticipants = [...participants]
       setParticipants([...participants, { user_id: currentUser?.id, role: 'agent' } as unknown as ConversationParticipant])
-      joinConversation(conversationId).then(updated => {
+      
+      const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
+      const lastMsg = currentStoreMsgs[currentStoreMsgs.length - 1];
+      const lastTime = lastMsg ? new Date(lastMsg.created_at).getTime() : 0;
+      const joinTimestamp = new Date(Math.max(Date.now() - 50, lastTime + 1)).toISOString();
+      
+      joinConversation(conversationId, joinTimestamp).then(updated => {
         setParticipants(updated as unknown as ConversationParticipant[])
       }).catch(e => {
         console.error('Failed to auto-join:', e)
@@ -2586,7 +2592,8 @@ export default function ChatThread({
           const currentStoreMessages = useInboxStore.getState().messagesMap[conversationId] || [];
           const lastMessage = currentStoreMessages[currentStoreMessages.length - 1];
           const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0;
-          const optimisticCreatedAt = new Date(Math.max(Date.now() + i * 100, lastMsgTime + i * 100 + 1)).toISOString();
+          // Add extra offset (+2 for reply vs +1 for join) to guarantee strict ordering
+          const optimisticCreatedAt = new Date(Math.max(Date.now() + i * 100, lastMsgTime + i * 100 + 2)).toISOString();
           
           let chunkDelay = 0;
           if (!isInternal) {
