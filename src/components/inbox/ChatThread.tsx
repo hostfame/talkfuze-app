@@ -2413,10 +2413,8 @@ export default function ChatThread({
     // 3. Skip if it's audio or video (requires transcription/listening)
     if (lastMessage.content_type === 'audio' || lastMessage.content_type === 'video') return;
     
-    // 4. Check length (skip if < 3 words) UNLESS it has media (image/document)
-    const hasMedia = lastMessage.content_type === 'image' || lastMessage.content_type === 'document';
-    const wordCount = lastMessage.content?.trim().split(/\s+/).length || 0;
-    if (!hasMedia && wordCount < 3) return;
+    // 4. Check if it's purely a system message (though sender_type already handles this usually)
+    if (lastMessage.content_type === 'system') return;
     
     // 5. Check if we already auto-drafted for this exact message
     const lastDraftedId = localStorage.getItem(`auto_drafted_msg_id_${conversationId}`);
