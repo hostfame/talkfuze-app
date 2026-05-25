@@ -1062,6 +1062,8 @@ const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: WebSocket }
 });
 
+const activeTypingConversations = new Map();
+
 // Outbound message processor
 async function processOutboundMessage(msg) {
   if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
@@ -1103,47 +1105,27 @@ async function processOutboundMessage(msg) {
       return;
     }
 
-    let jid = contact.platform_id.includes('@')
-      ? contact.platform_id
-      : `${contact.platform_id}@s.whatsapp.net`;
-
-    if (jid.endsWith('@lid')) {
-      jid = jid.replace('@lid', '@s.whatsapp.net');
-    }
-
-    // Resolve LID to PN (Phone Number) JID if real phone is available in metadata or phone
-    const realPhone = contact.metadata?.real_phone || contact.phone;
-    if (realPhone) {
-      let cleanPhone = realPhone.replace(/[^0-9]/g, '');
-      if (cleanPhone.length === 10 && cleanPhone.startsWith('1')) {
-        cleanPhone = '880' + cleanPhone;
-      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
-        cleanPhone = '88' + cleanPhone;
-      }
-      if (cleanPhone.length >= 9 && !realPhone.includes('@')) {
-        const phoneJid = `${cleanPhone}@s.whatsapp.net`;
-        console.log(`[OUTBOUND] Resolving JID from LID ${jid} to verified Phone JID ${phoneJid}`);
-        jid = phoneJid;
-      }
-    }
-
-    // Bulletproof: Normalize any final JID to ensure correct BD country code prefix
-    let cleanJidNumber = jid.split('@')[0].replace(/[^0-9]/g, '');
-    if (cleanJidNumber.length === 10 && cleanJidNumber.startsWith('1')) {
-      cleanJidNumber = '880' + cleanJidNumber;
-    } else if (cleanJidNumber.length === 11 && cleanJidNumber.startsWith('01')) {
-      cleanJidNumber = '88' + cleanJidNumber;
-    }
-    jid = `${cleanJidNumber}@s.whatsapp.net`;
+    let jid = resolveBulletproofJid(contact);
 
     // Implement scheduled delay if requested by UI (e.g. realistic AI typing delay)
     const scheduledDelayMs = msg.metadata?.scheduled_delay;
     if (scheduledDelayMs) {
-      const sendAfter = new Date(msg.created_at).getTime() + scheduledDelayMs;
-      const waitTime = sendAfter - Date.now();
+      let waitTime = 0;
+      if (msg.received_at_local) {
+        // Fresh from realtime: strictly wait relative to when we received it to prevent DB clock drift issues
+        const elapsed = Date.now() - msg.received_at_local;
+        waitTime = Math.max(0, scheduledDelayMs - elapsed);
+      } else {
+        // Pending sweep recovery: already delayed on DB side, no wait.
+        waitTime = 0;
+      }
       
       if (waitTime > 0) {
-        console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms and simulating typing...`);
+        console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms (received_at_local strategy)...`);
+        
+        const activeCount = (activeTypingConversations.get(jid) || 0) + 1;
+        activeTypingConversations.set(jid, activeCount);
+
         sendWhatsAppPresence(jid, 'composing', Math.min(10000, waitTime)).catch(() => {});
         const presenceInterval = setInterval(() => {
           sendWhatsAppPresence(jid, 'composing', 10000).catch(() => {});
@@ -1151,7 +1133,12 @@ async function processOutboundMessage(msg) {
         
         await new Promise(resolve => setTimeout(resolve, waitTime));
         clearInterval(presenceInterval);
-        sendWhatsAppPresence(jid, 'paused', 100).catch(() => {});
+        
+        const newCount = (activeTypingConversations.get(jid) || 1) - 1;
+        activeTypingConversations.set(jid, newCount);
+        if (newCount <= 0) {
+          sendWhatsAppPresence(jid, 'paused', 100).catch(() => {});
+        }
       }
     }
 
@@ -1589,6 +1576,7 @@ supabaseRealtime
     table: 'messages',
     filter: `org_id=eq.${ORG_ID}`
   }, async (payload) => {
+    payload.new.received_at_local = Date.now();
     await processOutboundMessage(payload.new);
   })
   .on('postgres_changes', {

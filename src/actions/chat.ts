@@ -75,7 +75,8 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     }
   }
 
-  if (!conversationId) {
+  // If we didn't get a specific conversation, and we didn't explicitly request a 'new' one, look for an active one
+  if (!conversationId && targetConversationId !== 'new') {
     const { data: convs } = await supabaseAdmin
       .from("conversations").select("id").eq("org_id", orgId).eq("contact_id", contactId).eq("status", "open").order('created_at', { ascending: false }).limit(1)
     conversationId = convs?.[0]?.id || null;

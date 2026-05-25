@@ -1875,7 +1875,7 @@ export default function WidgetPage() {
                   url: response.url,
                   filename: 'voice-message.webm',
                   mimetype: 'audio/webm'
-                }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
+                }, activeConversationId || undefined)
 
                 if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
                   setActiveConversationId(res.conversationId)
@@ -2056,7 +2056,7 @@ export default function WidgetPage() {
               url: response.url,
               filename: file.name,
               mimetype: file.type
-            }, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId);
+            }, activeConversationId || undefined);
 
             if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
               setActiveConversationId(res.conversationId);
@@ -2217,7 +2217,7 @@ export default function WidgetPage() {
       if (activeConversationId === 'new') {
         await startNewConversation(org_id, deviceId)
       }
-      const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId === 'new' || !activeConversationId ? undefined : activeConversationId)
+      const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId || undefined)
       if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
         setActiveConversationId(res.conversationId)
       }
