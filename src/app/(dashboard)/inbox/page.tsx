@@ -667,12 +667,24 @@ export default function InboxPage() {
       // Check if there are any unread conversations with recent messages (last 15 mins)
       const hasRecentUnread = conversations.some(c => {
         if (!c.is_unread) return false;
-        if (c.tags?.includes('alert')) return false;
+        if (c.is_archived || c.tags?.includes('alert')) return false;
 
         // Match UI Unread tab logic: ignore Facebook/Instagram
         const channelArray = Array.isArray(c.channels) ? c.channels : (c.channels ? [c.channels] : []);
         const channel = channelArray.flat()[0] as any;
         if (channel && channel.type !== 'whatsapp' && channel.type !== 'widget') return false;
+
+        // Match UI Unread tab logic: ignore page views and system messages
+        const validMsgs = c.messages?.filter((m: any) => {
+          let safeMeta = m.metadata;
+          try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
+          return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
+        }) || [];
+        const lastMsg = (c as any).matched_message || (validMsgs.length > 0 ? validMsgs[0] : null);
+        
+        if (!lastMsg || lastMsg.sender_type !== 'contact' || lastMsg.status === 'read' || lastMsg.content_type === 'system') {
+          return false;
+        }
 
         // Prevents endless ghost pinging for old unread conversations that got buried
         const msgTime = new Date(c.last_message_at || c.created_at).getTime();
