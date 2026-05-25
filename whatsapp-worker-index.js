@@ -1424,11 +1424,11 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
     return;
   }
 
-  const platformMessageId = newMsg.platform_message_id;
-  if (!platformMessageId) return;
-
+  let platformMessageId = newMsg.platform_message_id;
+  
   // 1. Message Recall/Deletion
   if ((newMsg.status === 'recalled' || newMsg.status === 'deleted') && oldMsg.status !== 'recalled' && oldMsg.status !== 'deleted') {
+    if (!platformMessageId) return; // Cannot recall if not sent
     try {
       const { data: conv } = await supabaseRealtime
         .from('conversations')
@@ -1478,6 +1478,28 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
 
   // 2. Message Editing
   else if (newMsg.content_type === 'text' && newMsg.metadata?.edited_at && newMsg.metadata.edited_at !== newMsg.metadata?.whatsapp_edit_synced_at) {
+    // If user edited very fast, platform_message_id might still be null. Retry fetching it for up to 5 seconds.
+    if (!platformMessageId) {
+      console.log(`[EDIT] platform_message_id is null for ${newMsg.id}. Waiting for it to be assigned...`);
+      for (let i = 0; i < 10; i++) {
+        await new Promise(res => setTimeout(res, 500));
+        const { data: latestMsg } = await supabaseRealtime
+          .from('messages')
+          .select('platform_message_id')
+          .eq('id', newMsg.id)
+          .single();
+        if (latestMsg && latestMsg.platform_message_id) {
+          platformMessageId = latestMsg.platform_message_id;
+          console.log(`[EDIT] Fetched assigned platform_message_id: ${platformMessageId}`);
+          break;
+        }
+      }
+      if (!platformMessageId) {
+        console.warn(`[EDIT] Giving up on edit for ${newMsg.id} - platform_message_id never assigned.`);
+        return;
+      }
+    }
+    
     try {
       const { data: conv } = await supabaseRealtime
         .from('conversations')

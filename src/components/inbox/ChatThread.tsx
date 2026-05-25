@@ -2415,11 +2415,13 @@ export default function ChatThread({
       const editMsgId = editingMessage.id;
       setEditingMessage(null);
 
-      // Optimistic update
-      const updatedMessages = messages.map(m => 
+      const currentMessages = useInboxStore.getState().messagesMap[conversationId] || [];
+      const updatedMessages = currentMessages.map(m => 
         m.id === editMsgId ? { ...m, content: msgText } : m
       );
       useInboxStore.getState().setMessages(conversationId, updatedMessages as AppMessage[]);
+
+      const originalText = editingMessage.content;
 
       // Register the optimistic edit lock to shield it from real-time status updates
       recentEdits.set(editMsgId, { content: msgText, timestamp: Date.now() });
@@ -2447,7 +2449,11 @@ export default function ChatThread({
           console.error('Failed to edit message after all retries:', lastError);
           // Release lock and revert UI on complete failure
           recentEdits.delete(editMsgId);
-          useInboxStore.getState().setMessages(conversationId, messages);
+          const revertMessages = useInboxStore.getState().messagesMap[conversationId] || [];
+          useInboxStore.getState().setMessages(
+            conversationId, 
+            revertMessages.map(m => m.id === editMsgId ? { ...m, content: originalText } : m)
+          );
         }
       })();
       return;
@@ -2568,9 +2574,10 @@ export default function ChatThread({
         for (let i = 0; i < msgChunks.length; i++) {
           const chunk = msgChunks[i];
           const tempId = "temp-" + crypto.randomUUID()
-          const lastMessage = messages[messages.length - 1]
-          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
-          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + i + 1)).toISOString()
+          const currentStoreMessages = useInboxStore.getState().messagesMap[conversationId] || [];
+          const lastMessage = currentStoreMessages[currentStoreMessages.length - 1];
+          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0;
+          const optimisticCreatedAt = new Date(Math.max(Date.now() + i * 100, lastMsgTime + i * 100 + 1)).toISOString();
           
           let chunkDelay = 0;
           if (!isInternal && i > 0) {
@@ -2627,9 +2634,10 @@ export default function ChatThread({
           const isVideo = attachment.type?.startsWith('video/')
           const optimisticContent = isImage ? '[Image]' : isAudio ? '[Audio Voice Message]' : isVideo ? '[Video]' : '[Attachment]'
           
-          const lastMessage = messages[messages.length - 1]
-          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
-          const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+          const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
+          const lastMessage = currentStoreMsgs[currentStoreMsgs.length - 1];
+          const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0;
+          const optimisticCreatedAt = new Date(Math.max(Date.now() + 500, lastMsgTime + 500)).toISOString();
 
           addOptimisticMessage(conversationId, {
             id: tempId,
@@ -2795,9 +2803,10 @@ export default function ChatThread({
     
     const { url, file } = stagedAudio;
     const tempId = "temp-" + crypto.randomUUID()
-    const lastMessage = messages[messages.length - 1]
-    const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0
-    const optimisticCreatedAt = new Date(Math.max(Date.now(), lastMsgTime + 1)).toISOString()
+    const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
+    const lastMessage = currentStoreMsgs[currentStoreMsgs.length - 1];
+    const lastMsgTime = lastMessage ? new Date(lastMessage.created_at).getTime() : 0;
+    const optimisticCreatedAt = new Date(Math.max(Date.now() + 100, lastMsgTime + 100)).toISOString();
     
     addOptimisticMessage(conversationId, {
       id: tempId,
