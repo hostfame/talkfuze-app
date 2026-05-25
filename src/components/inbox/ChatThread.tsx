@@ -2423,11 +2423,13 @@ export default function ChatThread({
     const lastDraftedId = localStorage.getItem(`auto_drafted_msg_id_${conversationId}`);
     if (lastDraftedId === lastMessage.id) return;
     
-    // 6. Only trigger when they start typing their first word/character
-    if (input.trim() === "") return;
+    // 6. Only trigger when they have typed at least 3 characters
+    const trimmedInput = input.trim();
+    if (trimmedInput.length < 3) return;
     
     // 6.5 Do not trigger if they are typing a command or internal whisper
-    if (input.startsWith('/')) return;
+    if (trimmedInput.startsWith('/')) return;
+    if (trimmedInput.startsWith('//')) return; // Covers legacy //t, //v, etc
     if (isInternal) return;
     
     // 7. Check if we are actively drafting
