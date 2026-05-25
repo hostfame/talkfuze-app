@@ -1529,6 +1529,7 @@ export default function ChatThread({
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
   const aiDraftLogIdRef = useRef<string | null>(null)
+  const autoSendDraftRef = useRef<boolean>(false)
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
   const draftLogTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pendingDraftTextsRef = useRef<string[]>([])
@@ -2368,8 +2369,11 @@ export default function ChatThread({
 
       setIsAiStreaming(false)
 
-
-
+      if (autoSendDraftRef.current && fullText.trim()) {
+        console.log("[Auto-Draft Copilot] Auto-sending drafted message!");
+        autoSendDraftRef.current = false;
+        handleSend(fullText.trim());
+      } 
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
         aiDraftLogPromiseRef.current = logAiDraft(
@@ -2426,21 +2430,28 @@ export default function ChatThread({
     // 7. Check if we are actively drafting
     if (isAiDrafting || isAiStreaming) return;
     
+    const hasMedia = lastMessage.content_type === 'image' || lastMessage.content_type === 'document';
+    const wordCount = lastMessage.content?.trim().split(/\s+/).length || 0;
+    const isShortMessage = !hasMedia && wordCount < 3;
+    
     // Fire it with a tiny delay to ensure state is settled
     const timer = setTimeout(() => {
       // Mark as drafted so we don't loop
       localStorage.setItem(`auto_drafted_msg_id_${conversationId}`, lastMessage.id);
-      console.log("[Auto-Draft Copilot] Triggering for msg:", lastMessage.id);
+      console.log("[Auto-Draft Copilot] Triggering for msg:", lastMessage.id, "AutoSend:", isShortMessage);
+      
+      autoSendDraftRef.current = isShortMessage;
       handleAiDraft();
     }, 300);
     
     return () => clearTimeout(timer);
   }, [messages, conversationId, input, isAiDrafting, isAiStreaming]);
 
-  const handleSend = async () => {
-    if ((!input.trim() && stagedAttachments.length === 0) || !conversationId) return
+  const handleSend = async (e?: React.MouseEvent | React.KeyboardEvent | string) => {
+    const overrideText = typeof e === 'string' ? e : undefined;
+    if ((!input.trim() && !overrideText && stagedAttachments.length === 0) || !conversationId) return
 
-    const msgText = input.trim()
+    const msgText = (overrideText ? overrideText : input).trim()
     
     // AI Copilot feature
     if (msgText.startsWith('//') && msgText.length > 2) {
