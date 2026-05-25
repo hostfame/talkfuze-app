@@ -153,6 +153,37 @@ export async function fetchWhmcsDashboardData(clientId: number) {
 
 export async function fetchWhmcsDashboardDataBySearch(searchQuery: string) {
   try {
+    const cleanSearch = searchQuery.trim();
+    if (!cleanSearch) {
+      return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
+    }
+
+    // 1. Resolve client using our highly optimized fetchWhmcsClient
+    const client = await fetchWhmcsClient(cleanSearch);
+
+    if (client && client.id) {
+      // 2. Fetch dashboard data using client ID which is extremely fast
+      const dashboardData = await getClientDashboardData(client.id);
+      
+      if (dashboardData.result === 'success') {
+        return {
+          client: client,
+          services: dashboardData.services || { products: [], domains: [] },
+          tickets: dashboardData.tickets || [],
+          invoices: dashboardData.invoices || []
+        }
+      }
+      
+      // If dashboard data fails but we have client, still return client
+      return {
+          client: client,
+          services: { products: [], domains: [] },
+          tickets: [],
+          invoices: []
+      }
+    }
+
+    // Fallback to the slow bridge action if fetchWhmcsClient fails (should rarely happen)
     const data = await getClientDashboardDataByPhoneOrEmail(searchQuery)
     if (data.result === 'success') {
       return {
