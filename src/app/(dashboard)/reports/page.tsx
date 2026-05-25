@@ -171,11 +171,11 @@ export default function ReportsPage() {
                     <thead className="bg-slate-50 dark:bg-[#182229] text-slate-500 dark:text-[#8696a0] border-b border-slate-200 dark:border-[#222e35]">
                       <tr>
                         <th className="px-6 py-3 font-medium">Date</th>
-                        <th className="px-6 py-3 font-medium">Revenue</th>
                         <th className="px-6 py-3 font-medium">Total Messages</th>
                         <th className="px-6 py-3 font-medium">Customer Messages</th>
                         <th className="px-6 py-3 font-medium">Agent Replies</th>
                         <th className="px-6 py-3 font-medium">New Conversations</th>
+                        <th className="px-6 py-3 font-medium">Revenue</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-[#222e35]">
@@ -184,13 +184,13 @@ export default function ReportsPage() {
                           <td className="px-6 py-4 font-medium text-slate-800 dark:text-[#e9edef]">
                             {new Date(stat.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                           </td>
-                          <td className="px-6 py-4 font-medium text-[#10b981]">
-                            ৳{(stat.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                          </td>
                           <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.messages.toLocaleString()}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.customerMessages.toLocaleString()}</td>
                           <td className="px-6 py-4 text-[#0070f3] font-medium">{stat.agentMessages.toLocaleString()}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.newChats.toLocaleString()}</td>
+                          <td className="px-6 py-4 font-medium text-[#10b981]">
+                            ৳{(stat.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
