@@ -2435,9 +2435,9 @@ export default function ChatThread({
     // 7. Check if we are actively drafting
     if (isAiDrafting || isAiStreaming) return;
     
-    // Fire it with a tiny delay to ensure state is settled
-    autoDraftTriggeredIdsRef.current.add(lastMessage.id);
+    // Fire it with a tiny delay to ensure state is settled and debounce typing
     const timer = setTimeout(() => {
+      autoDraftTriggeredIdsRef.current.add(lastMessage.id);
       // Mark as drafted so we don't loop across renders/reloads
       localStorage.setItem(`auto_drafted_msg_id_${conversationId}`, lastMessage.id);
       console.log("[Auto-Draft Copilot] Triggering for msg:", lastMessage.id, "on typing start.");
