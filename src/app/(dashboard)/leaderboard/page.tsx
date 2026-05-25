@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getLeaderboardStats } from "@/actions/leaderboard"
+import { getLeaderboardStats, getMissedChatsStats } from "@/actions/leaderboard"
 import { 
   Clock, 
   MessageSquare, 
@@ -17,14 +17,18 @@ import {
   Flame,
   CheckCircle2,
   ShieldAlert,
-  Wrench
+  Wrench,
+  AlertCircle,
+  Eye
 } from "lucide-react"
 
 export default function LeaderboardPage() {
   const user = useAuth()
+  const [view, setView] = useState<'leaderboard' | 'missed'>('leaderboard')
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily')
   const [customDate, setCustomDate] = useState<string>(() => new Date().toISOString().split('T')[0])
   const [stats, setStats] = useState<any[]>([])
+  const [missedChats, setMissedChats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null)
 
@@ -33,8 +37,13 @@ export default function LeaderboardPage() {
       if (!user?.org_id) return
       setLoading(true)
       try {
-        const data = await getLeaderboardStats(user.org_id, period, period === 'custom' ? customDate : undefined)
-        setStats(data)
+        if (view === 'leaderboard') {
+          const data = await getLeaderboardStats(user.org_id, period, period === 'custom' ? customDate : undefined)
+          setStats(data)
+        } else {
+          const data = await getMissedChatsStats(user.org_id, period, period === 'custom' ? customDate : undefined)
+          setMissedChats(data)
+        }
       } catch (e) {
         console.error(e)
       } finally {
@@ -42,7 +51,7 @@ export default function LeaderboardPage() {
       }
     }
     loadStats()
-  }, [user?.org_id, period, customDate])
+  }, [user?.org_id, period, customDate, view])
 
   const formatActiveTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
@@ -79,9 +88,33 @@ export default function LeaderboardPage() {
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b141a]">
       {/* Header - Trophy removed as requested */}
       <div className="flex items-center justify-between p-6 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222e35]">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-[#e9edef]">Leaderboard</h1>
-          <p className="text-sm text-slate-500 dark:text-[#8696a0]">Track team performance and active time</p>
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-[#e9edef]">Leaderboard</h1>
+            <p className="text-sm text-slate-500 dark:text-[#8696a0]">Track team performance and active time</p>
+          </div>
+          <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942]">
+            <button
+              onClick={() => setView('leaderboard')}
+              className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                view === 'leaderboard' 
+                  ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
+                  : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+              }`}
+            >
+              Performance
+            </button>
+            <button
+              onClick={() => setView('missed')}
+              className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                view === 'missed' 
+                  ? 'bg-white dark:bg-[#2a3942] text-rose-600 dark:text-rose-400 shadow-sm' 
+                  : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+              }`}
+            >
+              Missed Chats
+            </button>
+          </div>
         </div>
         
         <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942] items-center">
@@ -233,7 +266,60 @@ export default function LeaderboardPage() {
                 </div>
               </div>
             ))
-          )}
+          ) : view === 'missed' ? (
+            missedChats.length === 0 ? (
+              <div className="text-center py-20 text-slate-500 dark:text-[#8696a0]">
+                No missed chats for this period. Great job!
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2 mb-4">
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-[#e9edef] flex items-center gap-2">
+                    <AlertCircle className="text-rose-500" size={20} />
+                    Missed Chats ({missedChats.length})
+                  </h2>
+                  <span className="text-sm text-slate-500">Unanswered for &gt;30 mins</span>
+                </div>
+                {missedChats.map((chat) => (
+                  <div 
+                    key={chat.id}
+                    className="flex items-center justify-between p-5 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:border-rose-200 dark:hover:border-rose-900/50 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-600 border border-rose-100 dark:border-rose-900/50 flex items-center justify-center font-bold text-lg">
+                        {chat.contactName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-800 dark:text-[#e9edef] text-base">{chat.contactName}</h3>
+                        <p className="text-sm text-slate-500 dark:text-[#8696a0] mt-0.5 max-w-xl truncate">
+                          "{chat.lastMessageContent}"
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[13px] font-semibold text-rose-600 dark:text-rose-400">
+                          Missed {chat.timeSinceLastMessage >= 60 ? `${Math.floor(chat.timeSinceLastMessage / 60)}h ${chat.timeSinceLastMessage % 60}m` : `${chat.timeSinceLastMessage}m`} ago
+                        </span>
+                        <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">
+                          {new Date(chat.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <a 
+                        href={`/inbox?c=${chat.id}`}
+                        target="_blank"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-[#182229] dark:hover:bg-[#202c33] text-slate-700 dark:text-[#e9edef] text-sm font-medium rounded-lg border border-slate-200 dark:border-[#2a3942] transition-colors"
+                      >
+                        <Eye size={16} /> View Chat
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : null}
         </div>
       </div>
 

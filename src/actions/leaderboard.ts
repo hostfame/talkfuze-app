@@ -312,4 +312,101 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
   // Sort by public messagesCount descending
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
+export async function getMissedChatsStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
+  noStore();
+  if (!orgId) return [];
+
+  const now = new Date();
+  
+  // Bangladesh local midnight start date (UTC+6 offset)
+  const bdMidnight = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  bdMidnight.setUTCHours(0, 0, 0, 0);
+  const localMidnight = new Date(bdMidnight.getTime() - 6 * 60 * 60 * 1000);
+  
+  let startDate = new Date(localMidnight);
+  let endDate = new Date();
+  
+  if (period === 'weekly') {
+    startDate.setDate(localMidnight.getDate() - 7);
+  } else if (period === 'monthly') {
+    startDate.setDate(localMidnight.getDate() - 30);
+  } else if (period === 'custom' && customStartDate) {
+    startDate = new Date(customStartDate);
+    startDate.setUTCHours(0,0,0,0);
+    startDate = new Date(startDate.getTime() - 6 * 60 * 60 * 1000);
+    
+    if (customEndDate) {
+      endDate = new Date(customEndDate);
+      endDate.setUTCHours(23,59,59,999);
+      endDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
+    }
+  }
+
+  // Get all conversations
+  let query = supabaseAdmin
+    .from('conversations')
+    .select(`
+      id,
+      created_at,
+      status,
+      messages (
+        id,
+        content,
+        sender_type,
+        created_at
+      ),
+      contacts (
+        id,
+        name,
+        phone
+      )
+    `)
+    .eq('org_id', orgId)
+    .gte('last_message_at', startDate.toISOString());
+    
+  if (period === 'custom') {
+    query = query.lte('last_message_at', endDate.toISOString());
+  }
+
+  const { data: conversations, error } = await query;
+  if (error || !conversations) {
+    console.error("Error fetching conversations for missed chats:", error);
+    return [];
+  }
+
+  const missedChats: any[] = [];
+
+  conversations.forEach(conv => {
+    if (!conv.messages || conv.messages.length === 0) return;
+    
+    // Sort messages ascending by time
+    const msgs = [...conv.messages].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    // Check if the last message was from contact
+    const lastMsg = msgs[msgs.length - 1];
+    if (lastMsg.sender_type === 'contact') {
+      const msgTime = new Date(lastMsg.created_at).getTime();
+      const timeDiffMins = (now.getTime() - msgTime) / (1000 * 60);
+      
+      // If last message from contact was more than 30 mins ago, it's considered "Missed"
+      if (timeDiffMins >= 30) {
+        // Did an agent ever reply in this conversation on that same day? 
+        // Not necessarily, but the conversation is effectively currently "missed" if they haven't replied.
+        // What if it was resolved? Even if resolved, if the customer replied "thanks" and agent didn't reply, that's not missed, that's just a polite end.
+        // Let's filter out very short messages like "ok", "thanks" if we want, but Imran wants simple missed chats tracking.
+        missedChats.push({
+          id: conv.id,
+          contactName: conv.contacts?.name || conv.contacts?.phone || 'Unknown',
+          contactPhone: conv.contacts?.phone || '',
+          lastMessageTime: lastMsg.created_at,
+          lastMessageContent: lastMsg.content,
+          status: conv.status,
+          timeSinceLastMessage: Math.floor(timeDiffMins)
+        });
+      }
+    }
+  });
+
+  // Sort descending by time
+  return missedChats.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 }
