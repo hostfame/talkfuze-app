@@ -73,14 +73,14 @@ export async function getVolumeStats(orgId: string, days: number = 30) {
     }
   }
 
-  const grouped: Record<string, { date: string, messages: number, customerMessages: number, agentMessages: number, newChats: number }> = {}
+  const grouped: Record<string, { date: string, messages: number, customerMessages: number, agentMessages: number, newChats: number, revenue: number }> = {}
 
   for (let i = 0; i < days; i++) {
     const d = new Date(startDate)
     d.setDate(startDate.getDate() + i)
     // Offset for BD time formatting
     const dStr = format(new Date(d.getTime() + 6 * 60 * 60 * 1000), 'yyyy-MM-dd')
-    grouped[dStr] = { date: dStr, messages: 0, customerMessages: 0, agentMessages: 0, newChats: 0 }
+    grouped[dStr] = { date: dStr, messages: 0, customerMessages: 0, agentMessages: 0, newChats: 0, revenue: 0 }
   }
 
   if (messages) {
@@ -105,6 +105,22 @@ export async function getVolumeStats(orgId: string, days: number = 30) {
         grouped[dStr].newChats++
       }
     })
+  }
+
+  // Fetch Daily Revenue from WHMCS Bridge
+  try {
+    const { whmcsRequest } = await import('@/lib/whmcs')
+    const revResult = await whmcsRequest<any>('GetDailyRevenue', { days })
+    if (revResult && revResult.result === 'success' && revResult.revenue) {
+      Object.entries(revResult.revenue).forEach(([dateStr, amount]) => {
+        if (grouped[dateStr]) {
+          grouped[dateStr].revenue = Number(amount) || 0
+        }
+      })
+    }
+  } catch (error) {
+    console.error("Failed to fetch WHMCS revenue:", error)
+    // Non-fatal, just continue with 0 revenue
   }
 
   return Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

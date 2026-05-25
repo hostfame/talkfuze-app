@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { getVolumeStats } from "@/actions/reports"
-import { MessageSquare, Activity, CalendarDays, LineChart, Hash, BarChart } from "lucide-react"
+import { MessageSquare, Activity, CalendarDays, LineChart, Hash, BarChart, Banknote } from "lucide-react"
 
 export default function ReportsPage() {
   const user = useAuth()
@@ -33,6 +33,7 @@ export default function ReportsPage() {
   const totalCustomer = stats.reduce((sum, s) => sum + s.customerMessages, 0)
   const totalAgent = stats.reduce((sum, s) => sum + s.agentMessages, 0)
   const totalNewChats = stats.reduce((sum, s) => sum + s.newChats, 0)
+  const totalRevenue = stats.reduce((sum, s) => sum + (s.revenue || 0), 0)
   const avgDaily = stats.length ? Math.round(totalMessages / stats.length) : 0
 
   return (
@@ -69,8 +70,8 @@ export default function ReportsPage() {
           
           {loading ? (
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map(i => (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                {[1, 2, 3, 4, 5].map(i => (
                   <div key={i} className="h-24 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] animate-pulse" />
                 ))}
               </div>
@@ -84,7 +85,7 @@ export default function ReportsPage() {
             <div className="space-y-6">
               
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
                     <MessageSquare size={14} className="text-slate-400" /> Total Messages
@@ -105,9 +106,15 @@ export default function ReportsPage() {
                 </div>
                 <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
-                    <Hash size={14} className="text-slate-400" /> New Conversations
+                    <Hash size={14} className="text-slate-400" /> New Chats
                   </p>
                   <p className="text-3xl font-bold text-slate-800 dark:text-[#e9edef] mt-2">{totalNewChats.toLocaleString()}</p>
+                </div>
+                <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-[#10b981]">
+                  <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <Banknote size={14} className="text-[#10b981]" /> Total Revenue
+                  </p>
+                  <p className="text-3xl font-bold text-[#10b981] mt-2">৳{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
               </div>
 
@@ -127,7 +134,7 @@ export default function ReportsPage() {
                         {/* Tooltip */}
                         <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1.5 px-2.5 rounded-md shadow-lg whitespace-nowrap z-10 pointer-events-none flex flex-col gap-1 items-center">
                           <span className="font-medium">{new Date(stat.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                          <span className="text-slate-300">{stat.messages} msgs | {stat.newChats} chats</span>
+                          <span className="text-slate-300">{stat.messages} msgs | ৳{(stat.revenue || 0).toLocaleString()} rev</span>
                         </div>
                         
                         <div className="w-full bg-slate-100 dark:bg-[#202c33] rounded-t-md overflow-hidden flex flex-col justify-end" style={{ height: '100%' }}>
@@ -164,6 +171,7 @@ export default function ReportsPage() {
                     <thead className="bg-slate-50 dark:bg-[#182229] text-slate-500 dark:text-[#8696a0] border-b border-slate-200 dark:border-[#222e35]">
                       <tr>
                         <th className="px-6 py-3 font-medium">Date</th>
+                        <th className="px-6 py-3 font-medium">Revenue</th>
                         <th className="px-6 py-3 font-medium">Total Messages</th>
                         <th className="px-6 py-3 font-medium">Customer Messages</th>
                         <th className="px-6 py-3 font-medium">Agent Replies</th>
@@ -175,6 +183,9 @@ export default function ReportsPage() {
                         <tr key={stat.date} className="hover:bg-slate-50/50 dark:hover:bg-[#1c272e] transition-colors">
                           <td className="px-6 py-4 font-medium text-slate-800 dark:text-[#e9edef]">
                             {new Date(stat.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </td>
+                          <td className="px-6 py-4 font-medium text-[#10b981]">
+                            ৳{(stat.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </td>
                           <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.messages.toLocaleString()}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.customerMessages.toLocaleString()}</td>
