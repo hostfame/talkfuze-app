@@ -58,7 +58,7 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
     {
       href: "/reports",
       label: "Volume Reports",
-      icon: BarChart3,
+      icon: TrendingUp,
       isActive: pathname.startsWith("/reports"),
       visible: !isAgent
     },

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { getVolumeStats } from "@/actions/reports"
-import { BarChart3, MessageSquare, Activity, CalendarDays, LineChart } from "lucide-react"
+import { MessageSquare, Activity, CalendarDays, LineChart, Hash, BarChart } from "lucide-react"
 
 export default function ReportsPage() {
   const user = useAuth()
@@ -29,13 +29,19 @@ export default function ReportsPage() {
 
   const maxMessages = stats.length > 0 ? Math.max(...stats.map(s => s.messages)) : 0
 
+  const totalMessages = stats.reduce((sum, s) => sum + s.messages, 0)
+  const totalCustomer = stats.reduce((sum, s) => sum + s.customerMessages, 0)
+  const totalAgent = stats.reduce((sum, s) => sum + s.agentMessages, 0)
+  const totalNewChats = stats.reduce((sum, s) => sum + s.newChats, 0)
+  const avgDaily = stats.length ? Math.round(totalMessages / stats.length) : 0
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b141a]">
       {/* Header */}
       <div className="flex items-center justify-between p-6 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222e35]">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-[#e9edef] flex items-center gap-2">
-            <BarChart3 className="text-[#0070f3]" size={24} /> Volume Reports
+            Volume Reports
           </h1>
           <p className="text-sm text-slate-500 dark:text-[#8696a0] mt-1">Compare peak and off-peak days</p>
         </div>
@@ -63,6 +69,11 @@ export default function ReportsPage() {
           
           {loading ? (
             <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-24 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] animate-pulse" />
+                ))}
+              </div>
               <div className="h-64 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] animate-pulse" />
             </div>
           ) : stats.length === 0 ? (
@@ -72,10 +83,38 @@ export default function ReportsPage() {
           ) : (
             <div className="space-y-6">
               
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
+                  <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare size={14} className="text-slate-400" /> Total Messages
+                  </p>
+                  <p className="text-3xl font-bold text-slate-800 dark:text-[#e9edef] mt-2">{totalMessages.toLocaleString()}</p>
+                </div>
+                <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
+                  <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <Activity size={14} className="text-slate-400" /> Avg Daily Volume
+                  </p>
+                  <p className="text-3xl font-bold text-slate-800 dark:text-[#e9edef] mt-2">{avgDaily.toLocaleString()}</p>
+                </div>
+                <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
+                  <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <LineChart size={14} className="text-[#0070f3]" /> Agent Replies
+                  </p>
+                  <p className="text-3xl font-bold text-[#0070f3] mt-2">{totalAgent.toLocaleString()}</p>
+                </div>
+                <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm hover:shadow-md transition-shadow">
+                  <p className="text-xs text-slate-500 dark:text-[#8696a0] font-medium mb-1 uppercase tracking-wider flex items-center gap-2">
+                    <Hash size={14} className="text-slate-400" /> New Conversations
+                  </p>
+                  <p className="text-3xl font-bold text-slate-800 dark:text-[#e9edef] mt-2">{totalNewChats.toLocaleString()}</p>
+                </div>
+              </div>
+
               {/* Daily Volume Bar Chart */}
               <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-6 shadow-sm">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-[#e9edef] mb-6 flex items-center gap-2">
-                  <Activity size={18} className="text-[#0070f3]" /> Daily Message Volume
+                  <BarChart size={18} className="text-[#0070f3]" /> Daily Message Volume
                 </h2>
                 
                 <div className="h-64 flex items-end gap-2">
@@ -86,14 +125,14 @@ export default function ReportsPage() {
                     return (
                       <div key={stat.date} className="flex-1 flex flex-col items-center gap-2 group relative">
                         {/* Tooltip */}
-                        <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10 pointer-events-none">
-                          {stat.date}<br/>
-                          {stat.messages} msgs | {stat.newChats} chats
+                        <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1.5 px-2.5 rounded-md shadow-lg whitespace-nowrap z-10 pointer-events-none flex flex-col gap-1 items-center">
+                          <span className="font-medium">{new Date(stat.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                          <span className="text-slate-300">{stat.messages} msgs | {stat.newChats} chats</span>
                         </div>
                         
-                        <div className="w-full bg-slate-100 dark:bg-[#202c33] rounded-t-sm overflow-hidden flex flex-col justify-end" style={{ height: '100%' }}>
+                        <div className="w-full bg-slate-100 dark:bg-[#202c33] rounded-t-md overflow-hidden flex flex-col justify-end" style={{ height: '100%' }}>
                           <div 
-                            className={`w-full rounded-t-sm transition-all duration-500 ${isWeekend ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[#0070f3]'}`} 
+                            className={`w-full rounded-t-md transition-all duration-500 hover:opacity-80 ${isWeekend ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[#0070f3]'}`} 
                             style={{ height: `${height}%` }}
                           />
                         </div>
@@ -137,10 +176,10 @@ export default function ReportsPage() {
                           <td className="px-6 py-4 font-medium text-slate-800 dark:text-[#e9edef]">
                             {new Date(stat.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                           </td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.messages}</td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.customerMessages}</td>
-                          <td className="px-6 py-4 text-[#0070f3] font-medium">{stat.agentMessages}</td>
-                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.newChats}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.messages.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.customerMessages.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-[#0070f3] font-medium">{stat.agentMessages.toLocaleString()}</td>
+                          <td className="px-6 py-4 text-slate-600 dark:text-[#d1d7db]">{stat.newChats.toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -155,3 +194,4 @@ export default function ReportsPage() {
     </div>
   )
 }
+

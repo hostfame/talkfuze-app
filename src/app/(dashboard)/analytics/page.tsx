@@ -78,54 +78,33 @@ export default async function AnalyticsPage(props: PageProps) {
   return (
     <div className="flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-[#0b141a]">
       <div className="flex-1 flex flex-col w-full p-4 md:p-6 space-y-4 md:space-y-5 overflow-hidden">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Top Header & Stats Bar */}
+        <div className="bg-white dark:bg-[#111b21] p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-              AI Performance Analytics
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight">
+              AI Performance
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
-              Tracking Knowledge Engine accuracy and agent interactions.
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Tracking Knowledge Engine accuracy.
             </p>
           </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
-            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
-              Total Drafts
+          
+          <div className="flex flex-wrap items-center gap-4 lg:gap-8">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Drafts</span>
+              <span className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{totalCount}</span>
             </div>
-            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{totalCount}</div>
-          </div>
-
-          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
-            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
-              Sent As-Is
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Sent As-Is</span>
+              <span className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{sentAsIs || 0}</span>
             </div>
-            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs || 0}</div>
-          </div>
-
-          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
-            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
-              Edited by Agent
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Edited</span>
+              <span className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none mt-1">{edited || 0}</span>
             </div>
-            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{edited || 0}</div>
-          </div>
-
-          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
-            <div className="flex justify-between items-end mb-1">
-              <div className="text-slate-500 dark:text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
-                AI Accuracy
-              </div>
-              <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">{accuracy}%</div>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-[#222e35] rounded-full h-1.5 mt-2 overflow-hidden">
-              <div 
-                className="bg-blue-600 h-1.5 rounded-full" 
-                style={{ width: `${accuracy}%` }}
-              />
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Accuracy</span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400 leading-none mt-1">{accuracy}%</span>
             </div>
           </div>
         </div>
