@@ -90,7 +90,7 @@ function buildSystemPrompt(): string {
 ## CONVERSATION FLOW AWARENESS
 - If the customer says "ok", "yes", "bujechi", "thanks", or acknowledges a resolution, NEVER reply with chatty fluff like "ভালো, তাহলে সবকিছু ক্লিয়ার হয়েছে বুঝছি" or "শুনে খুব ভালো লাগলো". Instead, reply ONLY with a professional offer for further help: "জ্বী, আমি কি আর কোন তথ্য দিয়ে সহযোগিতা করতে পারি?"
 - If the agent whispers an instruction (starting with "//"), you MUST follow it faithfully to draft the customer's reply.
-- Always address the customer's LAST message.
+- Always address ALL of the customer's latest unaddressed messages. Do not just focus on the very last sentence.
 - If a customer sends an image/audio, act as if you can see/hear it ("I have received your screenshot, let me check").
 
 ## MODERN STARTUP BENGLISH (CRITICAL)
@@ -184,9 +184,21 @@ export async function POST(req: Request) {
     // Filter to customer-only lines
     const customerLines = conversationLines.filter((line: string) => !line.startsWith('[Agent]') && !line.startsWith('[System]'));
     
-    // Extract customer's LATEST message exactly, stripping the name prefix (e.g. "[Name]: " -> "")
-    const lastCustomerLine = customerLines[customerLines.length - 1] || '';
-    const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
+    // Extract all consecutive customer messages at the end of the conversation
+    const latestCustomerMessages = [];
+    for (let i = conversationLines.length - 1; i >= 0; i--) {
+      const line = conversationLines[i];
+      if (line.startsWith('[Agent]') || line.startsWith('[System]')) {
+        break;
+      }
+      latestCustomerMessages.unshift(line.replace(/^\[[^\]]+\]:\s*/, '').trim());
+    }
+    // Fallback if empty (e.g., agent generating draft after their own message)
+    if (latestCustomerMessages.length === 0 && customerLines.length > 0) {
+      const lastLine = customerLines[customerLines.length - 1];
+      latestCustomerMessages.push(lastLine.replace(/^\[[^\]]+\]:\s*/, '').trim());
+    }
+    const latestCustomerMessageCleaned = latestCustomerMessages.join('\n');
 
     const customerFullText = customerLines.slice(-10).join(' ').toLowerCase();
     const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
@@ -262,7 +274,7 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-    userMessage = `The customer's latest message is: "${latestCustomerMessageCleaned}"${languageOverride}
+    userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"${languageOverride}
     
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
