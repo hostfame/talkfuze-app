@@ -17,21 +17,61 @@ export async function getVolumeStats(orgId: string, days: number = 30) {
   let startDate = new Date(localMidnight)
   startDate.setDate(localMidnight.getDate() - days + 1)
 
-  const { data: messages, error: messagesError } = await supabaseAdmin
-    .from('messages')
-    .select('id, created_at, sender_type')
-    .eq('org_id', orgId)
-    .gte('created_at', startDate.toISOString())
-    .order('created_at', { ascending: true })
+  // Fetch all messages overcoming the 1000 row limit
+  let messages: any[] = []
+  let hasMoreMessages = true
+  let msgPage = 0
+  const pageSize = 1000
 
-  const { data: conversations, error: convError } = await supabaseAdmin
-    .from('conversations')
-    .select('id, created_at')
-    .eq('org_id', orgId)
-    .gte('created_at', startDate.toISOString())
+  while (hasMoreMessages) {
+    const { data, error } = await supabaseAdmin
+      .from('messages')
+      .select('id, created_at, sender_type')
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString())
+      .range(msgPage * pageSize, (msgPage + 1) * pageSize - 1)
+      .order('created_at', { ascending: true })
 
-  if (messagesError) console.error("Error fetching messages for reports:", messagesError)
-  if (convError) console.error("Error fetching conversations for reports:", convError)
+    if (error) {
+      console.error("Error fetching messages for reports:", error)
+      break
+    }
+    
+    if (data) {
+      messages.push(...data)
+      if (data.length < pageSize) hasMoreMessages = false
+      else msgPage++
+    } else {
+      hasMoreMessages = false
+    }
+  }
+
+  // Fetch all conversations overcoming the 1000 row limit
+  let conversations: any[] = []
+  let hasMoreConv = true
+  let convPage = 0
+
+  while (hasMoreConv) {
+    const { data, error } = await supabaseAdmin
+      .from('conversations')
+      .select('id, created_at')
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString())
+      .range(convPage * pageSize, (convPage + 1) * pageSize - 1)
+
+    if (error) {
+      console.error("Error fetching conversations for reports:", error)
+      break
+    }
+    
+    if (data) {
+      conversations.push(...data)
+      if (data.length < pageSize) hasMoreConv = false
+      else convPage++
+    } else {
+      hasMoreConv = false
+    }
+  }
 
   const grouped: Record<string, { date: string, messages: number, customerMessages: number, agentMessages: number, newChats: number }> = {}
 
