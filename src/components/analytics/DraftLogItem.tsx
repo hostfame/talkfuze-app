@@ -89,10 +89,10 @@ export default function DraftLogItem({ log }: { log: any }) {
   };
 
   return (
-    <div className="bg-white dark:bg-[#111b21] p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm mb-4 flex flex-col xl:flex-row gap-5">
+    <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm mb-3 flex flex-col xl:flex-row gap-4">
       
       {/* Left Column: Chat Context */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-3">
         
         {/* Header */}
         <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-[#222e35]">
@@ -120,25 +120,25 @@ export default function DraftLogItem({ log }: { log: any }) {
            </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Customer Asked */}
           {log.customer_context && (
-            <div className="relative pt-2.5">
-              <div className="absolute -top-1.5 left-3 bg-white dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-slate-400 border border-slate-200/60 dark:border-[#2a363d] rounded">
+            <div className="flex flex-col">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1 ml-1">
                 Customer
               </div>
-              <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[12px] bg-slate-50 dark:bg-[#1a2329] p-3 rounded-lg border border-slate-200/60 dark:border-[#2a363d] h-full">
+              <div className="flex-1 text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[11px] bg-slate-50 dark:bg-[#1a2329] p-2.5 rounded-lg border border-slate-200/60 dark:border-[#2a363d]">
                 {customerContextClean}
               </div>
             </div>
           )}
 
           {/* AI Draft */}
-          <div className="relative pt-2.5">
-            <div className="absolute -top-1.5 left-3 bg-white dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-slate-400 border border-slate-100 dark:border-[#222e35] rounded">
+          <div className="flex flex-col">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1 ml-1">
               AI Draft
             </div>
-            <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[12px] bg-white dark:bg-[#111b21] p-3 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm h-full">
+            <div className="flex-1 text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-[11px] bg-white dark:bg-[#111b21] p-2.5 rounded-lg border border-slate-100 dark:border-[#222e35] shadow-sm">
               {log.ai_draft}
             </div>
           </div>
@@ -146,11 +146,11 @@ export default function DraftLogItem({ log }: { log: any }) {
 
         {/* Final Sent */}
         {log.agent_sent && (
-          <div className="relative pt-2.5">
-            <div className="absolute -top-1.5 left-3 bg-blue-50 dark:bg-[#111b21] px-1.5 text-[9px] uppercase tracking-wider font-bold text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded">
+          <div className="flex flex-col">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-blue-600 dark:text-blue-400 mb-1 ml-1">
               Final Sent
             </div>
-            <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[12px] bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100/50 dark:border-blue-900/30">
+            <div className="text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed text-[11px] bg-blue-50/50 dark:bg-blue-900/10 p-2.5 rounded-lg border border-blue-100/50 dark:border-blue-900/30">
               {log.agent_sent}
             </div>
           </div>
@@ -159,9 +159,9 @@ export default function DraftLogItem({ log }: { log: any }) {
       </div>
 
       {/* Right Column: AI Metrics & Learned Rule */}
-      <div className="xl:w-64 flex flex-col gap-3 xl:border-l xl:pl-5 border-t xl:border-t-0 pt-4 xl:pt-0 border-slate-100 dark:border-[#222e35]">
+      <div className="xl:w-64 flex flex-col gap-2.5 xl:border-l xl:pl-4 border-t xl:border-t-0 pt-3 xl:pt-0 border-slate-100 dark:border-[#222e35]">
         
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-0.5">
            {log.was_edited ? (
              <span className="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
                Manually Edited
@@ -178,15 +178,15 @@ export default function DraftLogItem({ log }: { log: any }) {
         </div>
 
         {/* Learned Rule / Train AI Feedback */}
-        <div className="bg-slate-50 dark:bg-[#1a2329] p-4 rounded-xl border border-slate-200/60 dark:border-[#2a363d] mt-2">
-          <div className="flex justify-between items-center mb-2">
+        <div className="bg-slate-50 dark:bg-[#1a2329] p-3 rounded-xl border border-slate-200/60 dark:border-[#2a363d] mt-1">
+          <div className="flex justify-between items-center mb-1.5">
              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                {log.correction_feedback ? "AI Training Rule" : "Train AI Rule"}
              </span>
              {!isEditingRule && (
                <button 
                  onClick={() => setIsEditingRule(true)} 
-                 className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                 className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold"
                >
                  {log.correction_feedback ? "Edit" : "Add Rule"}
                </button>
@@ -198,34 +198,34 @@ export default function DraftLogItem({ log }: { log: any }) {
               <textarea 
                 value={ruleText}
                 onChange={(e) => setRuleText(e.target.value)}
-                placeholder="E.g., Always use formal greetings or mention pricing is per month."
-                className="w-full text-[12px] bg-white dark:bg-[#111b21] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2a363d] rounded-lg p-2 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="E.g., Always use formal greetings..."
+                className="w-full text-[11px] bg-white dark:bg-[#111b21] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#2a363d] rounded-lg p-2 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <div className="flex gap-2 justify-end">
                 <button 
                   onClick={() => setIsEditingRule(false)} 
-                  className="text-[11px] px-2 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                  className="text-[10px] px-2 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSaveRule} 
                   disabled={isSaving} 
-                  className="text-[11px] px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold"
+                  className="text-[10px] px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold"
                 >
-                  {isSaving ? "Saving..." : ruleText.trim() === "" ? "Delete Rule" : "Save Rule"}
+                  {isSaving ? "Saving..." : ruleText.trim() === "" ? "Delete" : "Save"}
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-[12px] text-slate-600 dark:text-slate-400 italic">
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 italic leading-relaxed">
               {log.correction_feedback ? `"${log.correction_feedback}"` : "No specific rule active. Click Add Rule to teach the AI."}
             </p>
           )}
         </div>
 
         {/* Technical Metrics & Cost Breakdown */}
-        <div className="space-y-2 pt-2">
+        <div className="space-y-1.5 pt-1">
            <div className="flex items-center justify-between text-[11px]">
              <span className="text-slate-500 dark:text-slate-400">Model</span>
              <span className="font-semibold text-slate-700 dark:text-slate-300">{log.model_used || "claude-3-5-haiku"}</span>

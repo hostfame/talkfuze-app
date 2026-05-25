@@ -77,7 +77,7 @@ export default async function AnalyticsPage(props: PageProps) {
 
   return (
     <div className="flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-[#0b141a]">
-      <div className="flex-1 flex flex-col w-full p-6 space-y-6 overflow-hidden">
+      <div className="flex-1 flex flex-col w-full p-4 md:p-6 space-y-4 md:space-y-5 overflow-hidden">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -92,39 +92,36 @@ export default async function AnalyticsPage(props: PageProps) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
+            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
               Total Drafts
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{totalCount}</div>
-            <p className="text-xs text-slate-500 mt-2">All-time generated drafts</p>
+            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{totalCount}</div>
           </div>
 
-          <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
+            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
               Sent As-Is
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs || 0}</div>
-            <p className="text-xs text-slate-500 mt-2">All-time approved without edits</p>
+            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sentAsIs || 0}</div>
           </div>
 
-          <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
+            <div className="text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-semibold uppercase tracking-wider">
               Edited by Agent
             </div>
-            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{edited || 0}</div>
-            <p className="text-xs text-slate-500 mt-2">All-time required manual correction</p>
+            <div className="text-2xl font-bold text-slate-800 dark:text-slate-100">{edited || 0}</div>
           </div>
 
-          <div className="bg-white dark:bg-[#111b21] p-5 rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm">
-            <div className="text-slate-400 dark:text-slate-500 mb-2 text-xs font-semibold uppercase tracking-wider">
-              AI Accuracy
+          <div className="bg-white dark:bg-[#111b21] p-3 md:p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col justify-center">
+            <div className="flex justify-between items-end mb-1">
+              <div className="text-slate-500 dark:text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
+                AI Accuracy
+              </div>
+              <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">{accuracy}%</div>
             </div>
-            <div className="flex items-end gap-2">
-              <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">{accuracy}%</div>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div className="w-full bg-slate-100 dark:bg-[#222e35] rounded-full h-1.5 mt-2 overflow-hidden">
               <div 
                 className="bg-blue-600 h-1.5 rounded-full" 
                 style={{ width: `${accuracy}%` }}
@@ -152,11 +149,11 @@ export default async function AnalyticsPage(props: PageProps) {
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-[#222e35] overflow-y-auto custom-scrollbar flex-1">
                   {rulesLearned.map((log) => (
-                    <div key={log.id} className="p-5 hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors">
-                      <p className="text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-[#202c33] p-3 rounded-lg border border-slate-100 dark:border-[#2a363d]">
+                    <div key={log.id} className="p-4 hover:bg-slate-50 dark:hover:bg-[#1a2329] transition-colors">
+                      <p className="text-[12px] leading-relaxed text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-[#202c33] p-2.5 rounded-lg border border-slate-100 dark:border-[#2a363d]">
                         "{log.correction_feedback}"
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-3 font-medium">
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
                         Learned {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                       </p>
                     </div>
