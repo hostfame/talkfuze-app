@@ -1699,9 +1699,10 @@ export default function ChatThread({
       .slice(-20)
       .map(m => {
         let name = 'System'
-        if (m.content_type !== 'system') {
-          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-          name = isAgent ? 'Agent' : (contactName || 'Customer')
+        if (m.sender_type === 'contact') {
+          name = contactName || 'Customer'
+        } else if (m.sender_type === 'agent' || m.sender_type === 'ai') {
+          name = 'Agent'
         }
         
         let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
@@ -2280,9 +2281,10 @@ export default function ChatThread({
       .slice(-20)
       .map(m => {
         let name = 'System'
-        if (m.content_type !== 'system') {
-          const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-          name = isAgent ? 'Agent' : (contactName || 'Customer')
+        if (m.sender_type === 'contact') {
+          name = contactName || 'Customer'
+        } else if (m.sender_type === 'agent' || m.sender_type === 'ai') {
+          name = 'Agent'
         }
         
         let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
@@ -2549,9 +2551,10 @@ export default function ChatThread({
             .slice(-20)
             .map(m => {
               let name = 'System'
-              if (m.content_type !== 'system') {
-                const isAgent = m.sender_type === 'agent' || m.sender_type === 'ai'
-                name = isAgent ? 'Agent' : (contactName || 'Customer')
+              if (m.sender_type === 'contact') {
+                name = contactName || 'Customer'
+              } else if (m.sender_type === 'agent' || m.sender_type === 'ai') {
+                name = 'Agent'
               }
               
               let contentStr = m.content_type === 'text' || m.content_type === 'system' ? m.content : `[${m.content_type}]`
