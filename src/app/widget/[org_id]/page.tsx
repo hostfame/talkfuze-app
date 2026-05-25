@@ -2741,7 +2741,7 @@ export default function WidgetPage() {
             {/* Glowing Avatar Frame */}
             <div className={`w-[120px] h-[120px] rounded-full p-[3px] bg-gradient-to-tr ${isActive ? 'from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/20' : isRinging ? 'from-amber-500 to-red-500 shadow-lg shadow-amber-500/20' : 'from-[#0070f3] to-blue-400 shadow-lg shadow-blue-500/20'} relative z-20`}>
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                <img src="/team/h.jpg" className="w-full h-full object-cover bg-white" alt="Hostnin Support" />
+                <img src="/team/1.avif" className="w-full h-full object-cover bg-white" alt="Hostnin Support" />
               </div>
               {/* Pulse status indicator dot */}
               <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-slate-950 flex items-center justify-center ${isActive ? 'bg-emerald-500' : isRinging ? 'bg-amber-500' : isCalling ? 'bg-blue-500' : 'bg-slate-500'}`}>
@@ -2942,7 +2942,7 @@ export default function WidgetPage() {
                       </div>
                     ) : (
                       <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                         <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Logo" />
+                         <img src="/team/1.avif" className="w-full h-full object-cover" alt="Agent" />
                       </div>
                     )}
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -3007,7 +3007,7 @@ export default function WidgetPage() {
                            </div>
                          ) : (
                            <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                              <img src="/team/h.jpg" className="w-full h-full object-cover" alt="Agent" />
+                              <img src="/team/1.avif" className="w-full h-full object-cover" alt="Agent" />
                            </div>
                          )}
                       </div>
@@ -3103,10 +3103,23 @@ export default function WidgetPage() {
                    </button>
                    
                    {isHeaderMenuOpen && (
-                     <div className="absolute right-0 top-full mt-1 w-max bg-white border border-slate-100 rounded-xl shadow-lg z-50 py-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                       <button onClick={handleConvertToTicket} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Convert to Ticket</button>
-                       <button onClick={handleOpenIdentityModal} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Update Information</button>
-                       <button onClick={handleDownloadTranscript} className="text-left px-4 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap">Download Transcript</button>
+                     <div className="absolute right-0 top-full mt-1 w-max bg-white border border-slate-100 rounded-xl shadow-lg z-50 py-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                       <button onClick={handleConvertToTicket} className="text-left px-4 py-2.5 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap flex items-center gap-2.5 group">
+                         <Ticket size={15} strokeWidth={2.5} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+                         Convert to Ticket
+                       </button>
+                       <button onClick={handleOpenIdentityModal} className="text-left px-4 py-2.5 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap flex items-center gap-2.5 group">
+                         <User size={15} strokeWidth={2.5} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+                         Update Information
+                       </button>
+                       <button onClick={handleDownloadTranscript} className="text-left px-4 py-2.5 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors font-medium whitespace-nowrap flex items-center gap-2.5 group">
+                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-blue-600 transition-colors">
+                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                           <polyline points="7 10 12 15 17 10"></polyline>
+                           <line x1="12" y1="15" x2="12" y2="3"></line>
+                         </svg>
+                         Download Transcript
+                       </button>
                      </div>
                    )}
                  </div>
@@ -3156,12 +3169,12 @@ export default function WidgetPage() {
               {/* Persistent Welcome Greeting */}
               <div className="flex flex-col gap-1 items-start mb-1 mt-2">
                 <div className="flex gap-2 items-end">
-                  <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
+                  <img src={activeAgent?.avatar_url || "/team/1.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
                   <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
                     Hello! How can I assist you today?
                   </div>
                 </div>
-                <span className="text-[11px] text-slate-400 ml-[32px]">Support Team</span>
+                <span className="text-[11px] text-slate-400 ml-[32px]">{activeAgent?.name || 'Support Team'}</span>
               </div>
 
               {messages.length === 0 && activeConversationId === 'new' && (
@@ -3360,7 +3373,7 @@ export default function WidgetPage() {
                       {msg.agent?.avatar_url ? (
                         <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
                       ) : (
-                        <img src="/team/h.jpg" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
+                        <img src="/team/1.avif" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
                       )}
                       <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
                         {renderMessageContent(msg, false, setLightboxImage)}
@@ -3405,7 +3418,7 @@ export default function WidgetPage() {
               {(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in duration-300 mb-6" id="tf-typing-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
+                    <img src={activeAgent?.avatar_url || "/team/1.avif"} className="w-full h-full object-cover" />
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1 min-h-[36px]">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -3419,7 +3432,7 @@ export default function WidgetPage() {
               {isAgentRecording && !(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300 mb-6" id="tf-recording-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={activeAgent?.avatar_url || "/team/h.jpg"} className="w-full h-full object-cover" />
+                    <img src={activeAgent?.avatar_url || "/team/1.avif"} className="w-full h-full object-cover" />
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2.5 px-4 shadow-sm flex items-center gap-2.5 min-h-[40px]">
                     <div className="relative flex items-center justify-center w-5 h-5">
@@ -3449,7 +3462,7 @@ export default function WidgetPage() {
               {!hasProvidedContact && messages.filter(m => m.sender_type === 'contact').length > 0 && (
                 <div className="flex gap-2.5 my-3 relative animate-in slide-in-from-bottom-2 fade-in duration-300 select-none">
                   <div className="w-7 h-7 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0 mt-1">
-                    <img src="/team/h.jpg" className="w-full h-full object-cover" />
+                    <img src="/team/1.avif" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex flex-col gap-1 w-full pr-8">
                     <div className="flex items-center gap-2">
