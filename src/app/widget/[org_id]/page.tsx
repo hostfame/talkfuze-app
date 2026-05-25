@@ -1446,27 +1446,65 @@ export default function WidgetPage() {
     try {
       const data = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now())
       if (data) {
+        const dbMessages = data as WidgetMessage[];
+        const now = Date.now();
+        
+        const immediateMsgs: WidgetMessage[] = [];
+        const delayedMsgs: WidgetMessage[] = [];
+        
+        for (const m of dbMessages) {
+          let safeMeta = m.metadata as any;
+          try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch(e) {}
+          if (safeMeta?.scheduled_delay && (m.sender_type === 'agent' || m.sender_type === 'ai')) {
+             const showAfter = new Date(m.created_at).getTime() + safeMeta.scheduled_delay;
+             const waitTime = showAfter - now;
+             if (waitTime > 0) {
+                m.metadata = safeMeta;
+                (m as any).waitTime = waitTime;
+                delayedMsgs.push(m);
+                continue;
+             }
+          }
+          immediateMsgs.push(m);
+        }
+
         setMessages(prev => {
-          const dbMessages = data as WidgetMessage[];
-          
-          // Preserve any optimistic messages that haven't been returned by the DB yet
           const optimisticMessages = prev.filter(m => m.id.startsWith('temp-'));
           const pendingOptimistic = optimisticMessages.filter(optMsg => 
-            !dbMessages.some(dbMsg => dbMsg.content === optMsg.content && dbMsg.sender_type === 'contact')
+            !immediateMsgs.some(dbMsg => dbMsg.content === optMsg.content && dbMsg.sender_type === 'contact')
           );
 
-          const newMessages = [...dbMessages, ...pendingOptimistic];
+          const newMessages = [...immediateMsgs, ...pendingOptimistic];
           
           const prevLen = prev.filter(m => !m.id.startsWith('temp-')).length;
-          const newLen = dbMessages.length;
+          const newLen = immediateMsgs.length;
           if (newLen > prevLen) {
-             const lastMsg = dbMessages[dbMessages.length - 1];
+             const lastMsg = immediateMsgs[immediateMsgs.length - 1];
              if (lastMsg && lastMsg.sender_type !== 'contact' && !prev.some(m => m.id === lastMsg.id)) {
                  playUISound('receive', 'intercom');
              }
           }
-          return newMessages;
-        })
+          return newMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
+
+        delayedMsgs.forEach(m => {
+           const delayMs = (m as any).waitTime;
+           setIsAgentTyping(true);
+           setTimeout(async () => {
+              if (m.sender_type === 'agent' || m.sender_type === 'system') {
+                 const agentData = await getAgentProfile(m.sender_id);
+                 if (agentData) m.agent = agentData;
+              }
+              setMessages(prev => {
+                 if (prev.some(x => x.id === m.id)) return prev;
+                 if (m.sender_type !== 'contact') {
+                    playUISound('receive', 'intercom');
+                    setIsAgentTyping(false);
+                 }
+                 return [...prev, m].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+              });
+           }, delayMs);
+        });
       }
     } catch (e) {
       console.error("Fetch messages error", e)
@@ -1612,48 +1650,69 @@ export default function WidgetPage() {
         const newMsg = payload.new as any;
         if (newMsg && newMsg.conversation_id === activeConversationId && !newMsg.is_internal) {
           
-          // Fetch agent details for realtime incoming agent/system messages
-          if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
-            let existingAgent = null;
+          let delayMs = 0;
+          let safeMeta = newMsg.metadata;
+          try {
+            if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
+            if (safeMeta?.scheduled_delay) {
+               const showAfter = new Date(newMsg.created_at).getTime() + safeMeta.scheduled_delay;
+               const waitTime = showAfter - Date.now();
+               if (waitTime > 0) delayMs = waitTime;
+            }
+          } catch(e) {}
+
+          const processIncoming = async () => {
+            if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
+              let existingAgent = null;
+              setMessages(prev => {
+                const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
+                if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
+                return prev;
+              });
+
+              if (existingAgent) {
+                newMsg.agent = existingAgent;
+              } else {
+                const agentData = await getAgentProfile(newMsg.sender_id);
+                if (agentData) {
+                  newMsg.agent = agentData;
+                }
+              }
+            }
+
             setMessages(prev => {
-              const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
-              if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
-              return prev;
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              
+              if (newMsg.sender_type !== 'contact') {
+                  playUISound('receive', 'intercom');
+                  setIsAgentTyping(false);
+                  setIsAgentRecording(false);
+              }
+              
+              if (newMsg.sender_type === 'contact') {
+                const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.content === newMsg.content);
+                if (tempIndex !== -1) {
+                  const next = [...prev];
+                  next[tempIndex] = newMsg as WidgetMessage;
+                  return next;
+                }
+              }
+              
+              const nextState = [...prev, newMsg as WidgetMessage];
+              return nextState.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
             });
+          };
 
-            if (existingAgent) {
-              newMsg.agent = existingAgent;
-            } else {
-              const agentData = await getAgentProfile(newMsg.sender_id);
-              if (agentData) {
-                newMsg.agent = agentData;
-              }
+          if (delayMs > 0) {
+            if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai') {
+               setIsAgentTyping(true);
             }
+            setTimeout(() => {
+              processIncoming();
+            }, delayMs);
+          } else {
+            processIncoming();
           }
-
-          setMessages(prev => {
-            // Prevent duplicate insertion
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            
-            // Play receive sound for incoming messages
-            if (newMsg.sender_type !== 'contact') {
-                playUISound('receive', 'intercom');
-                // Immediately clear agent typing/recording state to prevent UI flicker
-                setIsAgentTyping(false);
-                setIsAgentRecording(false);
-            }
-            
-            if (newMsg.sender_type === 'contact') {
-              const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.content === newMsg.content);
-              if (tempIndex !== -1) {
-                const next = [...prev];
-                next[tempIndex] = newMsg as WidgetMessage;
-                return next;
-              }
-            }
-            
-            return [...prev, newMsg as WidgetMessage];
-          });
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, async (payload) => {
