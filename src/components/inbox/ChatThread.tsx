@@ -5038,9 +5038,9 @@ export default function ChatThread({
 
       {/* Custom Alert Toast */}
       {customAlert && typeof document !== 'undefined' && createPortal(
-        <div className="fixed bottom-6 right-6 z-[999999] pointer-events-none">
+        <div className="fixed top-6 right-6 z-[999999] pointer-events-none">
           <div 
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-4 flex items-start gap-3 animate-in slide-in-from-right-8 fade-in duration-300 pointer-events-auto min-w-[280px] max-w-sm"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-4 flex items-start gap-3 animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto min-w-[280px] max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className={`shrink-0 flex items-center justify-center mt-0.5 ${
