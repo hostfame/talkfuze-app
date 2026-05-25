@@ -2300,7 +2300,7 @@ export default function ChatThread({
       }).join('\n')
 
     // Extract CRM data for AI context
-    const cleanPhone = contact?.wa_number?.replace(/\D/g, '');
+    const cleanPhone = (contact as any)?.phone?.replace(/\D/g, '');
     const cacheKey = cleanPhone || conversationId;
     const cachedCrm = useInboxStore.getState().crmCache[cacheKey];
     
