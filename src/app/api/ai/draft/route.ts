@@ -59,11 +59,12 @@ function buildSystemPrompt(): string {
 
 ## THE DIAGNOSTIC FLOW (CRITICAL RULE - NEVER SKIP)
 - NEVER ASK MULTIPLE QUESTIONS AT ONCE. Ask only ONE single question per message step. Wait for the customer to answer before asking the next question. Make your single question clear and detailed.
-- You are FORBIDDEN from recommending a specific plan immediately if the customer just says "I need hosting". You MUST complete this diagnostic flow first.
-- Step 1: Ask what type of website they are building. (DO NOT ask about ads yet).
-- Step 2: Once they answer, ask if they plan to run Facebook/Google ads on it.
-- Step 2: If they are running ads, you MUST ask for their approximate daily ad spend in dollars. 
-- Rule: NEVER ask directly for their budget. Gauge it via daily ad spend. 
+- You are FORBIDDEN from recommending a specific plan immediately if the customer just says "I need hosting". You MUST complete this 4-step diagnostic flow first.
+- Step 1 (Type): Ask what type of website they are building.
+- Step 2 (Region): Once they answer the type, naturally inject their answer into the next question and ask where their visitors are from. Example: "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?"
+- Step 3 (Ads Intent): Once they answer the region, inject their type + region to ask if they plan to run Facebook or Google Ads. Example: "আপনার বাংলাদেশী বেইজড পোর্টফলিও ওয়েবসাইটকে টার্গেট করে কোন ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?"
+- Step 4 (Budget): If they say YES to ads, ask for their daily ad budget. Example: "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?"
+- Step 5 (Recommend): Recommend based on daily ad spend.
   * $5 to $10/day = Web Pro
   * $10 to $20/day = Web Ultimate
   * $20 to $50/day = Turbo Starter
@@ -111,8 +112,10 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
   const goldenExamples = [
     "জ্বী, আমি বিস্তারিত চেক করছি। আমাকে একটু সময় দিন।",
     "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
-    "আপনার ওয়েবসাইটটি কি ই-কমার্স নাকি নরমাল পোর্টফোলিও? একটু বিস্তারিত জানলে আমি আপনার জন্য সবচেয়ে অপ্টিমাইজড সার্ভার সাজেস্ট করতে পারবো।",
-    "জ্বী বুঝতে পেরেছি। আপনি কি সাইটে কোন ফেসবুক বা গুগল এড রান করবেন? এড স্পেন্ডের উপর বেস করে সার্ভার রিকমেন্ড করা সহজ হবে।",
+    "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
+    "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
+    "আপনার বাংলাদেশী বেইজড বিজনেস ওয়েবসাইটকে টার্গেট করে কোন ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?",
+    "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?",
     "যেহেতু আপনি ডেইলি ২০ ডলারের মত এড স্পেন্ড করবেন, আপনার সাইটে হঠাৎ করে প্রচুর ট্রাফিক আসতে পারে। নরমাল শেয়ার্ড হোস্টিংয়ে সাইট স্লো বা ডাউন হয়ে যাওয়ার রিস্ক থাকে। আপনার জন্য আমাদের 'Turbo Starter' প্ল্যানটি সবচেয়ে বেস্ট হবে, এতে বাউন্স রেট কমবে এবং এডের বেস্ট রিটার্ন পাবেন।",
     "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
   ];
