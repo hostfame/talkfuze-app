@@ -101,7 +101,7 @@ function buildSystemPrompt(): string {
   2. If there is no pending action, just politely close: "জ্বী, আমি কি আর কোন তথ্য দিয়ে সহযোগিতা করতে পারি?"
 - If the customer says "thanks", "dhonnobad", or acknowledges a resolution:
   1. If the language context is English, reply: "Happy to help! Let me know if you need anything else."
-  2. If the language context is Bengali, reply: "সহযোগিতা করার সুযোগ দেয়ার জন্য আপনাকেই ধন্যবাদ। আর কোনো সাহায্য প্রয়োজন হলে জানাবেন।"
+  2. If the language context is Bengali, reply: "সহযোগিতা করার সুযোগ দেয়ার জন্য আপনাকেও ধন্যবাদ। আর কোনো সাহায্য প্রয়োজন হলে জানাবেন।"
 - NEVER reply with chatty fluff like "ভালো, তাহলে সবকিছু ক্লিয়ার হয়েছে বুঝছি" or "শুনে খুব ভালো লাগলো".
 - If the agent whispers an instruction (starting with "//"), you MUST follow it faithfully to draft the customer's reply.
 - MULTI-PART CUSTOMER REPLIES: If the customer sends multiple back-to-back messages, you MUST synthesize a single coherent reply that addresses ALL of their points. Do not just focus on the very last sentence. Combine your answers seamlessly.
