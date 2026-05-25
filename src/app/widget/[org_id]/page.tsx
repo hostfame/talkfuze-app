@@ -1578,7 +1578,9 @@ export default function WidgetPage() {
   }, [messages, org_id, deviceId, settings, activeConversationId]);
 
   useEffect(() => {
-    setHasSubmittedFeedback(false)
+    // Check if this conversation already has feedback submitted in this browser
+    const storedFeedbackStatus = localStorage.getItem(`tf_feedback_${activeConversationId}`);
+    setHasSubmittedFeedback(storedFeedbackStatus === 'true')
     setFeedbackRating(null)
     setFeedbackComment("")
     setMessages(prev => {
@@ -2168,6 +2170,7 @@ export default function WidgetPage() {
         commentStr || null
       )
       setHasSubmittedFeedback(true)
+      localStorage.setItem(`tf_feedback_${activeConversationId}`, 'true')
     } catch (e) {
       console.error("Failed to submit CSAT feedback:", e)
     } finally {
@@ -3042,7 +3045,7 @@ export default function WidgetPage() {
           </div>
 
         {/* CHAT TAB (THREAD) - instant show over home/messages, z-40 */}
-        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col z-40 ${activeTab === 'chat' ? 'visible' : 'invisible pointer-events-none'}`}>
+        <div className={`absolute inset-0 overflow-hidden bg-white flex flex-col z-40 ${activeTab === 'chat' ? 'flex' : 'hidden'}`}>
             {activeConversationId && (
               <div className="h-full flex flex-col relative z-30">
             
@@ -3166,16 +3169,18 @@ export default function WidgetPage() {
             )}
 
             <div ref={chatScrollContainerRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto p-5 pb-[120px] flex flex-col gap-3 bg-[#f9fafb]">
-              {/* Persistent Welcome Greeting */}
-              <div className="flex flex-col gap-1 items-start mb-1 mt-2">
-                <div className="flex gap-2 items-end">
-                  <img src={activeAgent?.avatar_url || "/team/4.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
-                  <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
-                    Hello! How can I assist you today?
+              {/* Persistent Welcome Greeting - Only show for new conversations to avoid polluting chat history */}
+              {activeConversationId === 'new' && (
+                <div className="flex flex-col gap-1 items-start mb-1 mt-2">
+                  <div className="flex gap-2 items-end">
+                    <img src={activeAgent?.avatar_url || "/team/4.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Support Team" />
+                    <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
+                      Hello! How can I assist you today?
+                    </div>
                   </div>
+                  <span className="text-[11px] text-slate-400 ml-[32px]">{activeAgent?.name || 'Support Team'}</span>
                 </div>
-                <span className="text-[11px] text-slate-400 ml-[32px]">{activeAgent?.name || 'Support Team'}</span>
-              </div>
+              )}
 
               {messages.length === 0 && activeConversationId === 'new' && (
                 <div className="flex flex-col gap-2.5 mt-2 ml-[32px] max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300">
