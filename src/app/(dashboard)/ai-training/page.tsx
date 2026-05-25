@@ -194,67 +194,67 @@ export default function AITrainingDashboard() {
   }, [activeTab])
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-[#0b141a] overflow-y-auto">
-      <div className="max-w-5xl w-full mx-auto p-6 md:p-10">
-        
-        {/* Dashboard Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-[#0b141a] overflow-hidden">
+      
+      {/* Application Toolbar / Header */}
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111b21] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 z-10">
+        <div className="flex items-center gap-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800 dark:text-[#e9edef] flex items-center gap-3">
-              <BrainCircuit className="text-[#0070f3]" />
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-[#e9edef]">
               AI Observer & Learning Suite
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Real-time monitoring, auto-distillation, and rule validation engine.
-            </p>
           </div>
           
-          <div className="flex gap-2">
-            {activeTab === 'observer' && (
-              <button 
-                onClick={handleTestPipeline}
-                disabled={testing}
-                className="px-4 py-2 flex items-center gap-2 rounded-lg bg-[#0070f3] text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                <Play size={16} />
-                {testing ? "Triggering..." : "Simulate 24h Auto-Archive"}
-              </button>
-            )}
-            <button 
-              onClick={activeTab === 'observer' ? fetchLogs : fetchValidationData}
-              className="p-2 rounded-lg bg-white dark:bg-[#202c33] border border-slate-200 dark:border-[#2a3942] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2a3942] transition-colors"
+          <div className="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+          {/* Segmented Control */}
+          <div className="flex bg-slate-100 dark:bg-[#0b141a] p-1 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
+            <button
+              onClick={() => setActiveTab('observer')}
+              className={`py-1.5 px-4 rounded-md text-xs font-semibold transition-all ${
+                activeTab === 'observer'
+                  ? "bg-white dark:bg-[#202c33] text-slate-800 dark:text-[#e9edef] shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-[#e9edef]"
+              }`}
             >
-              <RefreshCcw size={18} className={(loading || loadingValidation) ? "animate-spin" : ""} />
+              Observer Logs
+            </button>
+            <button
+              onClick={() => setActiveTab('validation')}
+              className={`py-1.5 px-4 rounded-md text-xs font-semibold transition-all ${
+                activeTab === 'validation'
+                  ? "bg-white dark:bg-[#202c33] text-slate-800 dark:text-[#e9edef] shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-[#e9edef]"
+              }`}
+            >
+              Validation Playground
             </button>
           </div>
         </div>
-
-        {/* Apple-style minimalist tab selector */}
-        <div className="flex bg-slate-100 dark:bg-[#111b21] p-1 rounded-xl self-start mb-8 max-w-sm border border-slate-200/50 dark:border-slate-800">
-          <button
-            onClick={() => setActiveTab('observer')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'observer'
-                ? "bg-white dark:bg-[#202c33] text-slate-800 dark:text-[#e9edef] shadow-sm"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-[#e9edef]"
-            }`}
+        
+        <div className="flex items-center gap-2">
+          {activeTab === 'observer' && (
+            <button 
+              onClick={handleTestPipeline}
+              disabled={testing}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {testing ? "Triggering..." : "Simulate 24h Auto-Archive"}
+            </button>
+          )}
+          <button 
+            onClick={activeTab === 'observer' ? fetchLogs : fetchValidationData}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-[#2a3942] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#2a3942] transition-colors"
           >
-            <Activity size={14} />
-            Observer Logs
-          </button>
-          <button
-            onClick={() => setActiveTab('validation')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'validation'
-                ? "bg-white dark:bg-[#202c33] text-slate-800 dark:text-[#e9edef] shadow-sm"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-[#e9edef]"
-            }`}
-          >
-            <Zap size={14} />
-            Rule Validation Playground
+            <RefreshCcw size={14} className={(loading || loadingValidation) ? "animate-spin" : ""} />
           </button>
         </div>
+      </div>
 
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl w-full mx-auto p-6">
+        
         {/* Tab 1: Observer Dashboard View */}
         {activeTab === 'observer' && (
           <>
