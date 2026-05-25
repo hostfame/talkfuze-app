@@ -273,14 +273,14 @@ export default function AITrainingDashboard() {
               </div>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <table className="w-full min-w-[1000px] text-left text-sm text-slate-600 dark:text-slate-300">
                   <thead className="bg-slate-50 dark:bg-[#202c33]/50 text-slate-500 dark:text-slate-400 uppercase text-xs">
                     <tr>
-                      <th className="px-6 py-3 font-medium">Status</th>
-                      <th className="px-6 py-3 font-medium">Time</th>
+                      <th className="px-6 py-3 font-medium w-[100px]">Status</th>
+                      <th className="px-6 py-3 font-medium w-[180px]">Time</th>
                       <th className="px-6 py-3 font-medium">Distilled Summary</th>
-                      <th className="px-6 py-3 font-medium">Learned Tags</th>
-                      <th className="px-6 py-3 font-medium text-right">Raw Msgs</th>
+                      <th className="px-6 py-3 font-medium w-[150px]">Learned Tags</th>
+                      <th className="px-6 py-3 font-medium w-[100px] text-right">Raw Msgs</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-[#202c33]">
@@ -293,27 +293,29 @@ export default function AITrainingDashboard() {
                     ) : (
                       logs.map((log) => (
                         <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-[#202c33]/30 transition-colors">
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 align-top">
                             <StatusBadge status={log.status} />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 align-top">
                             {new Date(log.created_at).toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 max-w-md">
+                          <td className="px-6 py-4 min-w-[300px]">
                             {log.distilled_summary ? (
-                              <p className="truncate" title={log.distilled_summary}>{log.distilled_summary}</p>
+                              <div className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                                {log.distilled_summary}
+                              </div>
                             ) : (
-                              <span className="text-slate-400 italic">Waiting for processing...</span>
+                              <span className="text-slate-400 italic text-xs">Waiting for processing...</span>
                             )}
                             {log.error_message && (
-                              <p className="text-red-500 text-xs mt-1 truncate" title={log.error_message}>{log.error_message}</p>
+                              <p className="text-red-500 text-xs mt-2 break-words">{log.error_message}</p>
                             )}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 align-top">
                             <div className="flex flex-wrap gap-1">
                               {log.learned_tags && log.learned_tags.length > 0 ? (
                                 log.learned_tags.map((tag, i) => (
-                                  <span key={i} className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-[#0070f3] dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30">
+                                  <span key={i} className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                                     {tag}
                                   </span>
                                 ))
@@ -322,7 +324,7 @@ export default function AITrainingDashboard() {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right font-medium">
+                          <td className="px-6 py-4 text-right font-medium align-top">
                             {log.raw_messages_count > 0 ? log.raw_messages_count : '-'}
                           </td>
                         </tr>
@@ -377,7 +379,7 @@ export default function AITrainingDashboard() {
                       <div className="p-5 space-y-4">
                         <div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Customer Asked</span>
-                          <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                          <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto custom-scrollbar">
                             {draft.customer_context}
                           </div>
                         </div>
@@ -385,13 +387,13 @@ export default function AITrainingDashboard() {
                         <div className="grid grid-cols-1 gap-3">
                           <div>
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mistaken AI Draft</span>
-                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-500 line-through leading-relaxed">
+                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-500 line-through leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto custom-scrollbar">
                               {draft.ai_draft}
                             </div>
                           </div>
                           <div>
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Agent Final Target</span>
-                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                            <div className="mt-1 p-3 rounded-lg bg-slate-50 dark:bg-[#202c33]/30 border border-slate-100 dark:border-slate-800/50 text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto custom-scrollbar">
                               {draft.agent_sent}
                             </div>
                           </div>
@@ -407,22 +409,18 @@ export default function AITrainingDashboard() {
                               {/* Score Badges */}
                               <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">New Live AI Draft</span>
-                                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                                  draft.validation_score >= 90
-                                    ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                                    : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                                }`}>
+                                <div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
                                   Score: {draft.validation_score}%
                                 </div>
                               </div>
 
                               {/* New Live Draft Box */}
-                              <div className="p-3 rounded-lg bg-white dark:bg-[#202c33]/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
+                              <div className="p-3 rounded-lg bg-white dark:bg-[#202c33]/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words max-h-60 overflow-y-auto custom-scrollbar">
                                 {draft.validation_draft}
                               </div>
 
                               {/* Critique Box */}
-                              <div className="p-3 rounded-lg bg-slate-100/50 dark:bg-[#182229] border border-slate-200/50 dark:border-[#2a3942] text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic">
+                              <div className="p-3 rounded-lg bg-slate-100/50 dark:bg-[#182229] border border-slate-200/50 dark:border-[#2a3942] text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic whitespace-pre-wrap break-words">
                                 <span className="font-semibold not-italic text-slate-600 dark:text-slate-300 block mb-1">Validation Critique:</span>
                                 "{draft.validation_verdict}"
                               </div>
@@ -478,14 +476,16 @@ function StatCard({ title, value }: { title: string, value: number }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const commonClasses = "inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border";
+  
   switch (status) {
     case 'completed':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">Trained</span>
+      return <span className={`${commonClasses} bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700`}>Trained</span>
     case 'processing':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#0070f3] dark:bg-blue-900/20 dark:text-[#0070f3] border border-blue-200 dark:border-blue-800/30">Distilling</span>
+      return <span className={`${commonClasses} bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700`}>Processing</span>
     case 'failed':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30">Failed</span>
+      return <span className={`${commonClasses} bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700`}>Failed</span>
     default:
-      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Pending</span>
+      return <span className={`${commonClasses} bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700`}>Pending</span>
   }
 }

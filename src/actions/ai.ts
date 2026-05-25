@@ -163,7 +163,11 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
     if (!response.ok) {
       const err = await response.text();
       console.error("Anthropic API Error:", err);
-      return { success: false, error: "Failed to generate AI draft. Please try again." };
+      let parsedErr = err;
+      try {
+        parsedErr = JSON.parse(err).error?.message || err;
+      } catch(e) {}
+      return { success: false, error: `Anthropic API Error: ${parsedErr}` };
     }
 
     const data = await response.json();
