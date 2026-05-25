@@ -2513,6 +2513,11 @@ export default function ChatThread({
       }
     };
 
+    let usedAiDraft = false;
+    if (!isInternal && (aiDraftLogPromiseRef.current || aiDraftLogIdRef.current || pendingDraftLogIdRef.current || draftLogTimerRef.current)) {
+      usedAiDraft = true;
+    }
+
     if ((aiDraftLogPromiseRef.current || aiDraftLogIdRef.current) && !isInternal) {
       // First send after an AI draft - start the debounce window
       let resolvedId = aiDraftLogIdRef.current;
@@ -2600,7 +2605,8 @@ export default function ChatThread({
             content_type: 'text',
             metadata: {
               ...(replyMeta ? { reply_to: replyMeta } : {}),
-              scheduled_delay: isScheduled ? accumulatedDelay : undefined
+              scheduled_delay: isScheduled ? accumulatedDelay : undefined,
+              used_ai_draft: usedAiDraft ? true : undefined
             } as any,
             is_internal: isInternal,
             status: 'sending',
@@ -2613,6 +2619,9 @@ export default function ChatThread({
           }
           if (isScheduled) {
             metaPayload.scheduled_delay = accumulatedDelay;
+          }
+          if (usedAiDraft) {
+            metaPayload.used_ai_draft = true;
           }
 
           replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload, optimisticCreatedAt)
@@ -3887,6 +3896,12 @@ export default function ChatThread({
                 
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
                 <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
+                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && !safeMeta.used_ai_draft && (
+                    <Edit2 size={10} className="text-slate-300 dark:text-slate-600 mr-0.5" title="Manual Reply (No AI)" />
+                  )}
+                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && safeMeta.used_ai_draft && (
+                    <Bot size={11} className="text-blue-300 dark:text-blue-800 mr-0.5" title="AI Draft Used" />
+                  )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
