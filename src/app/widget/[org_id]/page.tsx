@@ -1492,8 +1492,10 @@ export default function WidgetPage() {
            setIsAgentTyping(true);
            setTimeout(async () => {
               if (m.sender_type === 'agent' || m.sender_type === 'system') {
-                 const agentData = await getAgentProfile(m.sender_id);
-                 if (agentData) m.agent = agentData;
+                 if (m.sender_id) {
+                   const agentData = await getAgentProfile(m.sender_id);
+                   if (agentData) m.agent = agentData;
+                 }
               }
               setMessages(prev => {
                  if (prev.some(x => x.id === m.id)) return prev;
