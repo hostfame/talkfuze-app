@@ -2429,6 +2429,7 @@ export default function ChatThread({
 
   // Auto-Draft Copilot on Conversation Open / New Message
   useEffect(() => {
+    return; // Auto-draft temporarily disabled per user request
     if (!conversationId || messages.length === 0) return;
     
     // 1. Get the last message
