@@ -63,8 +63,8 @@ export default function LeaderboardPage() {
   }
 
   // Get goals targets based on active period
-  const getPeriodTargets = (p: 'daily' | 'weekly' | 'monthly') => {
-    if (p === 'daily') {
+  const getPeriodTargets = (p: 'daily' | 'weekly' | 'monthly' | 'custom') => {
+    if (p === 'daily' || p === 'custom') {
       return { messages: 100, chats: 30, activeMinutes: 240 } // 4 hours
     } else if (p === 'weekly') {
       return { messages: 200, chats: 40, activeMinutes: 1200 } // 20 hours
