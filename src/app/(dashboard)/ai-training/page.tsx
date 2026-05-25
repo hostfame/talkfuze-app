@@ -462,6 +462,7 @@ export default function AITrainingDashboard() {
           </div>
         )}
 
+        </div>
       </div>
     </div>
   )
