@@ -137,10 +137,15 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "আপনার বাংলাদেশী বেইজড বিজনেস ওয়েবসাইটকে টার্গেট করে কোন ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?",
     "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?",
     "যেহেতু আপনি ডেইলি ২০ ডলারের মত এড স্পেন্ড করবেন, আপনার সাইটে হঠাৎ করে প্রচুর ট্রাফিক আসতে পারে। নরমাল শেয়ার্ড হোস্টিংয়ে সাইট স্লো বা ডাউন হয়ে যাওয়ার রিস্ক থাকে। আপনার জন্য আমাদের 'টার্বো স্টার্টার' প্ল্যানটি সবচেয়ে বেস্ট হবে, এতে বাউন্স রেট কমবে এবং এডের বেস্ট রিটার্ন পাবেন।",
-    "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
+    "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।",
+    "জ্বী, গিটহাব কানেক্ট করা যাবে। কিন্তু ড্যাশবোর্ডে সরাসরি অপশন নেই।\n\nSSH দিয়ে গিট ক্লোন করে নিতে হয়, প্রসেসটা একটু টেকনিক্যাল।\n\nআমি কি আপনাকে গাইড করবো যাতে আপনি নিজে করে নিতে পারেন নাকি আমাদের টিমকে দিয়ে সেটআপ করিয়ে নিবেন?"
   ];
   
-  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (These examples show the exact tone, brevity, and workflow you must mimic. If the customer is speaking English, you MUST translate this vibe/meaning into English and NEVER output Bengali):\n${goldenExamples.join('\n---\n')}`;
+  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (These examples show the exact tone, brevity, and workflow you must mimic. If the customer is speaking English, you MUST translate this vibe/meaning into English and NEVER output Bengali):\n${goldenExamples.join('\n---\n')}
+  
+NEGATIVE CONSTRAINTS (FORBIDDEN PHRASES):
+- NEVER use the words "Bhaiya", "Bhai", "Apu", "Sir", or "Madam". It is strictly against company policy. Address them directly or use "জ্বী".
+- NEVER use overly formal/robotic Bengali transitions like "তবে এটি" or "আপনাকে". Write exactly like the casual, punchy Golden Examples above.`;
   return { fewShotBlock };
 }
 
