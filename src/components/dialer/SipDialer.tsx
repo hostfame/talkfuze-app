@@ -46,10 +46,27 @@ export default function SipDialer() {
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
   const activeCallSessionRef = useRef<any>(null)
   const currentUserRef = useRef<any>(null)
+  const voiceCallChannelRef = useRef<any>(null)
   
   // Sync the ref on every render to bypass stale closures in event listeners
   activeCallSessionRef.current = activeCallSession
   currentUserRef.current = currentUser
+  
+  // Keep an active, subscribed realtime channel for voice call broadcasts
+  useEffect(() => {
+    if (currentUser?.org_id) {
+      const channel = supabase.channel(`voicecall_global:${currentUser.org_id}`)
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          voiceCallChannelRef.current = channel
+        }
+      })
+      return () => {
+        supabase.removeChannel(channel)
+        voiceCallChannelRef.current = null
+      }
+    }
+  }, [currentUser?.org_id])
   
   const [isTabConflict, setIsTabConflict] = useState(false)
   const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null)
@@ -352,11 +369,23 @@ export default function SipDialer() {
         setTransferNumber('')
         setShowInCallKeypad(false)
         cleanupMediaTracks(session)
+        
+        // Broadcast that call has ended so other agents' UI resets
+        if (convId && user?.org_id && voiceCallChannelRef.current) {
+          voiceCallChannelRef.current.send({
+            type: 'broadcast',
+            event: 'voice_call_ended',
+            payload: { conversationId: convId }
+          }).catch(console.error);
+        }
+      } else if (newState === 'Establishing') {
+        // Handled robustly by useEffect
       } else if (newState === 'Established') {
         setStatus('Connected')
         setSessionState(SessionState.Established)
         stopSynthesizedRing()
         startTimer()
+        // Broadcast handled robustly by useEffect
       }
     })
   }
@@ -372,6 +401,25 @@ export default function SipDialer() {
         .catch(err => console.error("Failed to load teammates for transfer:", err))
     }
   }, [isRegistered, sipUser?.id])
+
+  // Robust broadcast trigger: Handles race condition where findConversationByPhone
+  // resolves AFTER the SIP session has already hit 'Establishing' or 'Established'.
+  useEffect(() => {
+    const user = currentUserRef.current
+    const convId = matchedConversationId
+    
+    if (convId && user?.org_id && (sessionState === SessionState.Establishing || sessionState === SessionState.Established) && voiceCallChannelRef.current) {
+      voiceCallChannelRef.current.send({
+        type: 'broadcast',
+        event: 'voice_call_started',
+        payload: {
+          conversationId: convId,
+          agentName: user.name,
+          agentAvatar: user.avatar_url
+        }
+      }).catch(console.error);
+    }
+  }, [matchedConversationId, sessionState])
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

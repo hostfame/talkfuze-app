@@ -4269,6 +4269,34 @@ export default function ChatThread({
           </div>
         )}
         
+        {conversationId && activeCalls[conversationId] && (callStatus !== 'active' && callStatus !== 'calling') && (
+          <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-end gap-2.5 flex-row-reverse">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mb-1 bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 font-bold overflow-hidden border border-red-200 dark:border-red-700/50 shadow-sm">
+                {activeCalls[conversationId].agentAvatar ? (
+                  <img src={activeCalls[conversationId].agentAvatar} alt="Agent" className="w-full h-full object-cover" />
+                ) : (
+                  activeCalls[conversationId].agentName.charAt(0)
+                )}
+              </div>
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-100/50 dark:border-red-500/20 rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[70%] flex items-center gap-2 shadow-sm">
+                <div className="relative flex items-center justify-center w-3 h-3 mr-0.5">
+                  <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                </div>
+                <span className="text-[13px] font-medium text-red-700 dark:text-red-400">
+                  <strong className="font-bold">{activeCalls[conversationId].agentName}</strong> started a call
+                </span>
+                <div className="flex gap-[3px] items-center ml-1">
+                  <span className="w-1 h-1 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1 h-1 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1 h-1 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 

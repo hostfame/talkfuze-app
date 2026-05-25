@@ -436,19 +436,22 @@ export default function ConversationList({
                   
                   {/* Call Indicator or Time */}
                   {activeCalls[conv.id] ? (
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-full pl-2 pr-1 py-0.5 shadow-sm">
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight flex items-center gap-1 uppercase">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-full pl-2 pr-1 py-0.5 shadow-sm">
+                      <span className="text-[10px] font-bold text-red-600 dark:text-red-400 tracking-tight flex items-center gap-1.5 uppercase">
+                        <div className="relative flex items-center justify-center w-2 h-2">
+                          <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                        </div>
                         In call
                       </span>
                       {activeCalls[conv.id].agentAvatar ? (
                         <img 
                           src={activeCalls[conv.id].agentAvatar} 
-                          className="w-4 h-4 rounded-full border border-emerald-200 dark:border-emerald-500/30 object-cover" 
+                          className="w-4 h-4 rounded-full border border-red-200 dark:border-red-500/30 object-cover" 
                           alt={activeCalls[conv.id].agentName} 
                         />
                       ) : (
-                        <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[8px] font-bold border border-emerald-200 dark:border-emerald-500/30">
+                        <div className="w-4 h-4 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center text-[8px] font-bold border border-red-200 dark:border-red-500/30">
                           {activeCalls[conv.id].agentName.charAt(0)}
                         </div>
                       )}

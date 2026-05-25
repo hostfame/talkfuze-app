@@ -43,7 +43,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Starter",
@@ -89,7 +90,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Pro",
@@ -139,7 +141,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Ultimate",
@@ -190,7 +193,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Basic",
@@ -235,7 +239,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Starter",
@@ -281,7 +286,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Pro",
@@ -331,7 +337,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Ultimate",
@@ -381,7 +388,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Basic",
@@ -425,7 +433,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Starter",
@@ -470,7 +479,8 @@
         "7 Days Backup Retention (We keep 7 days of backups so you can restore your site to any point in the past 7 days. One-click restore makes recovery fast and stress-free.)",
         "Multiple Hosting Locations (Choose from 7 strategic server locations to host your site closer to your visitors. Better location = faster loading times and improved SEO rankings.)",
         "Host PHP & Laravel Script (Full support for PHP 7.4 to 8.3 and Laravel framework. Run any PHP script, custom application, or modern Laravel project with Composer and Artisan support.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Pro",
@@ -519,7 +529,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Ultimate",
@@ -568,7 +579,8 @@
         "E-Commerce Optimized (Server configurations tuned specifically for WooCommerce and online stores: higher PHP limits, optimized database settings, and priority processing for checkout pages.)",
         "SSH/Terminal Access (Secure command-line access to your hosting account. Run Git commands, use WP-CLI, execute scripts, and manage files like a pro developer.)",
         "Shell Access (Jailed) (Sandboxed terminal access that lets you run commands safely without affecting other accounts. Perfect for developers who need CLI tools in a shared environment.)"
-      ]
+      ],
+      "type": "Web Hosting"
     },
     {
       "name": "Basic",
@@ -622,7 +634,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Starter",
@@ -680,7 +693,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Pro",
@@ -745,7 +759,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Ultimate",
@@ -812,7 +827,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Basic",
@@ -866,7 +882,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Starter",
@@ -924,7 +941,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Pro",
@@ -989,7 +1007,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Ultimate",
@@ -1056,7 +1075,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Basic",
@@ -1109,7 +1129,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Starter",
@@ -1166,7 +1187,8 @@
         "Python & Node.js (Full support for Python and Node.js applications. Run Django, Flask, Express, Next.js, and any modern JavaScript/Python framework with npm, pip, and virtual environment support.)",
         "WordPress Auto-Rollback (If a WordPress update or plugin change breaks your site, instantly roll back to the previous working version with one click. Combined with daily backups, your site is always recoverable in seconds.)",
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Pro",
@@ -1230,7 +1252,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Ultimate",
@@ -1296,7 +1319,8 @@
         "7 Days Backup Retention (We keep 7 days of daily backups so you can restore your Turbo site to any point in the past week. One-click restore makes recovery fast and stress-free.)",
         "Core Web Vitals Guarantee (We guarantee your Turbo-hosted site will pass Google's Core Web Vitals assessment (LCP, FID, CLS). Our infrastructure is specifically tuned for sub-2.5s LCP and near-zero CLS. If your optimized site doesn't pass, we'll fix it free.)",
         "Weekly Performance Report (Receive a detailed weekly email report covering uptime percentage, average response time, traffic trends, Core Web Vitals scores, and security events. Stay informed without lifting a finger.)"
-      ]
+      ],
+      "type": "Turbo Hosting"
     },
     {
       "name": "Basic",
@@ -1334,7 +1358,8 @@
         "15 Entry Process (15 simultaneous connections your site can handle at once. More entry processes mean more visitors can load pages at the exact same moment,crucial for sites with concurrent traffic during launches or sales.)",
         "PhpMyAdmin Tool (Visual database management interface to browse, edit, import/export your MySQL databases without writing SQL commands. Essential for WordPress migrations, cleanups, and troubleshooting database issues.)",
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Starter",
@@ -1374,7 +1399,8 @@
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)",
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Pro",
@@ -1417,7 +1443,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Ultimate",
@@ -1460,7 +1487,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Basic",
@@ -1498,7 +1526,8 @@
         "15 Entry Process (15 simultaneous connections your site can handle at once. More entry processes mean more visitors can load pages at the exact same moment,crucial for sites with concurrent traffic during launches or sales.)",
         "PhpMyAdmin Tool (Visual database management interface to browse, edit, import/export your MySQL databases without writing SQL commands. Essential for WordPress migrations, cleanups, and troubleshooting database issues.)",
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Starter",
@@ -1538,7 +1567,8 @@
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)",
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Pro",
@@ -1581,7 +1611,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Ultimate",
@@ -1624,7 +1655,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Basic",
@@ -1661,7 +1693,8 @@
         "15 Entry Process (15 simultaneous connections your site can handle at once. More entry processes mean more visitors can load pages at the exact same moment,crucial for sites with concurrent traffic during launches or sales.)",
         "PhpMyAdmin Tool (Visual database management interface to browse, edit, import/export your MySQL databases without writing SQL commands. Essential for WordPress migrations, cleanups, and troubleshooting database issues.)",
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Starter",
@@ -1700,7 +1733,8 @@
         "MySQL Database (Industry-standard MySQL 8.0 database system that powers WordPress, WooCommerce, Laravel, and virtually all modern web applications. Fully managed with automatic optimization.)",
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Pro",
@@ -1742,7 +1776,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "name": "Ultimate",
@@ -1784,7 +1819,8 @@
         "Multiple Locations (Choose from 7 strategic datacenter locations worldwide to host your site closer to your visitors: USA, UK, Germany, Singapore, India, Australia, and Bangladesh. Closer servers mean faster loading times.)",
         "PHP & Laravel (Full support for PHP 7.4 through 8.3 and Laravel framework with Composer package manager and Artisan CLI. Run any modern PHP application with optimal configurations for speed and security.)",
         "GIT Version Control (Built-in Git integration for professional development workflows. Clone repositories, manage branches, and deploy code changes directly from your hosting panel. Perfect for team collaboration.)"
-      ]
+      ],
+      "type": "BDIX Hosting"
     },
     {
       "type": "VPS Hosting",
@@ -2446,6 +2482,447 @@
         "PostgreSQL Database",
         "200 Max Processes",
         "SSH/Terminal Access Included"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Starter",
+      "period": "monthly",
+      "price": 4999,
+      "monthlyBreakdown": 4999,
+      "currency": "৳",
+      "features": [
+        "50 GB NVMe SSD Storage",
+        "1000 GB Bandwidth",
+        "20 cPanel Accounts",
+        "1 GB RAM / cPanel",
+        "1 Core CPU / cPanel",
+        "20 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Standard",
+      "period": "monthly",
+      "price": 7999,
+      "monthlyBreakdown": 7999,
+      "currency": "৳",
+      "features": [
+        "100 GB NVMe SSD Storage",
+        "Unlimited Bandwidth",
+        "50 cPanel Accounts",
+        "1 GB RAM / cPanel",
+        "1 Core CPU / cPanel",
+        "20 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Ultimate",
+      "period": "monthly",
+      "price": 9999,
+      "monthlyBreakdown": 9999,
+      "currency": "৳",
+      "features": [
+        "250 GB NVMe SSD Storage",
+        "Unlimited Bandwidth",
+        "100 cPanel Accounts",
+        "2 GB RAM / cPanel",
+        "2 Core CPU / cPanel",
+        "30 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Starter",
+      "period": "yearly",
+      "price": 29994,
+      "monthlyBreakdown": 2500,
+      "currency": "৳",
+      "features": [
+        "50 GB NVMe SSD Storage",
+        "1000 GB Bandwidth",
+        "20 cPanel Accounts",
+        "1 GB RAM / cPanel",
+        "1 Core CPU / cPanel",
+        "20 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Standard",
+      "period": "yearly",
+      "price": 47994,
+      "monthlyBreakdown": 4000,
+      "currency": "৳",
+      "features": [
+        "100 GB NVMe SSD Storage",
+        "Unlimited Bandwidth",
+        "50 cPanel Accounts",
+        "1 GB RAM / cPanel",
+        "1 Core CPU / cPanel",
+        "20 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Reseller Hosting",
+      "name": "Ultimate",
+      "period": "yearly",
+      "price": 59994,
+      "monthlyBreakdown": 5000,
+      "currency": "৳",
+      "features": [
+        "250 GB NVMe SSD Storage",
+        "Unlimited Bandwidth",
+        "100 cPanel Accounts",
+        "2 GB RAM / cPanel",
+        "2 Core CPU / cPanel",
+        "30 Entry Processes",
+        "Whitelabel Reseller",
+        "Private Nameservers",
+        "Free SSL Certificates",
+        "24/7 Priority Support",
+        "7 Days Backup Retention"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Basic",
+      "period": "3-years",
+      "price": 14364,
+      "monthlyBreakdown": 399,
+      "currency": "৳",
+      "features": [
+        "10 GB SSD Storage",
+        "2 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Starter",
+      "period": "3-years",
+      "price": 25164,
+      "monthlyBreakdown": 699,
+      "currency": "৳",
+      "features": [
+        "50 GB SSD Storage",
+        "5 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Pro",
+      "period": "3-years",
+      "price": 35964,
+      "monthlyBreakdown": 999,
+      "currency": "৳",
+      "features": [
+        "100 GB SSD Storage",
+        "10 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Ultimate",
+      "period": "3-years",
+      "price": 71964,
+      "monthlyBreakdown": 1999,
+      "currency": "৳",
+      "features": [
+        "Unlimited SSD Storage",
+        "Unlimited Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Basic",
+      "period": "yearly",
+      "price": 7188,
+      "monthlyBreakdown": 599,
+      "currency": "৳",
+      "features": [
+        "10 GB SSD Storage",
+        "2 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Starter",
+      "period": "yearly",
+      "price": 11988,
+      "monthlyBreakdown": 999,
+      "currency": "৳",
+      "features": [
+        "50 GB SSD Storage",
+        "5 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Pro",
+      "period": "yearly",
+      "price": 17988,
+      "monthlyBreakdown": 1499,
+      "currency": "৳",
+      "features": [
+        "100 GB SSD Storage",
+        "10 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Ultimate",
+      "period": "yearly",
+      "price": 35988,
+      "monthlyBreakdown": 2999,
+      "currency": "৳",
+      "features": [
+        "Unlimited SSD Storage",
+        "Unlimited Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Basic",
+      "period": "monthly",
+      "price": 1999,
+      "monthlyBreakdown": 1999,
+      "currency": "৳",
+      "features": [
+        "10 GB SSD Storage",
+        "2 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Starter",
+      "period": "monthly",
+      "price": 2999,
+      "monthlyBreakdown": 2999,
+      "currency": "৳",
+      "features": [
+        "50 GB SSD Storage",
+        "5 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Pro",
+      "period": "monthly",
+      "price": 4999,
+      "monthlyBreakdown": 4999,
+      "currency": "৳",
+      "features": [
+        "100 GB SSD Storage",
+        "10 Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "Cloud Hosting",
+      "name": "Ultimate",
+      "period": "monthly",
+      "price": 8999,
+      "monthlyBreakdown": 8999,
+      "currency": "৳",
+      "features": [
+        "Unlimited SSD Storage",
+        "Unlimited Domain Hosted",
+        "Free .COM Domain (Yearly/3-Year)",
+        "Litespeed Web Server",
+        "Imunify360 Security"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Starter",
+      "period": "3-years",
+      "price": 8604,
+      "monthlyBreakdown": 239,
+      "currency": "৳",
+      "features": [
+        "20 GB NVMe Storage",
+        "~25K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Pro",
+      "period": "3-years",
+      "price": 14364,
+      "monthlyBreakdown": 399,
+      "currency": "৳",
+      "features": [
+        "50 GB NVMe Storage",
+        "~100K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Ultimate",
+      "period": "3-years",
+      "price": 28764,
+      "monthlyBreakdown": 799,
+      "currency": "৳",
+      "features": [
+        "100 GB NVMe Storage",
+        "~250K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Starter",
+      "period": "yearly",
+      "price": 3588,
+      "monthlyBreakdown": 299,
+      "currency": "৳",
+      "features": [
+        "20 GB NVMe Storage",
+        "~25K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Pro",
+      "period": "yearly",
+      "price": 5988,
+      "monthlyBreakdown": 499,
+      "currency": "৳",
+      "features": [
+        "50 GB NVMe Storage",
+        "~100K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Ultimate",
+      "period": "yearly",
+      "price": 11988,
+      "monthlyBreakdown": 999,
+      "currency": "৳",
+      "features": [
+        "100 GB NVMe Storage",
+        "~250K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Starter",
+      "period": "monthly",
+      "price": 599,
+      "monthlyBreakdown": 599,
+      "currency": "৳",
+      "features": [
+        "20 GB NVMe Storage",
+        "~25K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Pro",
+      "period": "monthly",
+      "price": 999,
+      "monthlyBreakdown": 999,
+      "currency": "৳",
+      "features": [
+        "50 GB NVMe Storage",
+        "~100K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
+      ]
+    },
+    {
+      "type": "WordPress Hosting",
+      "name": "Ultimate",
+      "period": "monthly",
+      "price": 1999,
+      "monthlyBreakdown": 1999,
+      "currency": "৳",
+      "features": [
+        "100 GB NVMe Storage",
+        "~250K Monthly Visitors",
+        "Free .COM Domain (Yearly/3-Year)",
+        "LSCache for WordPress",
+        "Managed WordPress Updates"
       ]
     }
   ],
@@ -5090,5 +5567,743 @@
     "affiliate": "Earn generous commissions by promoting Hostnin. EXACT COMMISSIONS: Web/BDIX/WordPress (Basic: 20%, Starter: 30%, Pro: 40%, Ultimate: 50%). Turbo/WooCommerce/Node.js (Starter/Basic: 10%, Go/Starter: 20%, Pro: 30%, Ultimate: 40%). Cloud Hosting (Starter: 5%, Go: 10%, Pro: 20%, Ultimate: 30%). Bonus: +10% to all if monthly sales exceed ৳50,000. EXCLUSIONS: Domains, Reseller, VPS, and Dedicated Servers are NOT eligible for commissions. Minimum Withdrawal: 5000 BDT or $50 USD. Maturation: 30 Days. Payout Methods: bKash, Nagad, Rocket, Upay, Bank Transfer. WE DO NOT PAYOUT TO PAYPAL. After requesting withdrawal, payouts are processed within 1-3 business days.",
     "payment_methods": "For purchasing services, we accept SSLCommerz (which covers all Bangladeshi cards, bKash, Nagad, Rocket) and Stripe (for international/foreign cards). WE DO NOT ACCEPT PAYPAL.",
     "payment_failure_protocol": "If a customer's card fails (e.g. foreign card error), immediately offer manual bank transfer details. Bank: ISLAMI BANK, Name: SPOTLIGHT CREATIVE, Account Type: Business/Current, BRANCH: PAHARTALI, CHATTOGRAM, ACCOUNT NUMBER: 20502020100506002"
-  }
+  },
+  "sales_objections": [
+    {
+      "question": "লিংকে ডুকছে না",
+      "answer": "দুঃখিত, আপনি যদি সমস্যার সম্মুখীন হন তবে আমি আপনাকে এখানে সাহায্য করতে পারি। আপনি কি আরও বিশদে জানাতে পারবেন কেন লিঙ্কটি কাজ করছে না?"
+    },
+    {
+      "question": "deploy এর জন্য কি আপনাদের সাপোর্ট পাওয়া যাবে?",
+      "answer": "জ্বী অবশ্যই, আপনি ১ বছরের জন্য বুক করতে পারবেন। "
+    },
+    {
+      "question": "কিন্তু খারাপ অভিজ্ঞতা হলে যেন লস টা কম হয়, পলিসি কি মানা হয়?",
+      "answer": "জ্বী, আমাদের ওয়েব প্রো প্যাকেজটিতে আপনি ১ বছরের জন্য হোস্টিং নিলে একটি .com ডোমেইন সম্পূর্ণ ফ্রি পাবেন। বর্তমানে সর্বোচ্চ ডিসকাউন্ট থাকায় অতিরিক্ত কোন ছাড় দেওয়া যাচ্ছে না বলে আমরা আন্তরিকভাবে দু:খিত।"
+    },
+    {
+      "question": "info@.....? এই মেইল সহ কি হোস্টিং পাবো",
+      "answer": "জ্বী, অবশ্যই। আপনি হোস্টিং বুক করার পর ওয়েবমেইল ক্রিয়েট করতে পারবেন কন্ট্রোল প্যানেল থেকে।"
+    },
+    {
+      "question": "পরবর্তীতে রিনিউ cost কিরকম হতে পারে",
+      "answer": "আমাদের সর্বনিম্ন ৫ জিবি এর ওয়েব হোস্টিং বেসিক প্যাকেজ রয়েছে। ২ জিবির কোনো প্যাকেজ নেই। তবে আপনি ২ জিবির প্রাইসেই ৫ জিবির প্ল্যান পাচ্ছেন যা খুবই এফোর্ডেবল।"
+    },
+    {
+      "question": "ডোমেইন হোস্টিং এর জন্য এই সেম খরচের থাকবে ২৯৯৫ টাকা?",
+      "answer": "জ্বী করতে পারবেন। এক্ষেত্রে আমাদের ওয়েব হোষ্টিং প্রো, আল্টিমেট বা নোড জেএস প্ল্যানগুলো নিতে হবে।"
+    },
+    {
+      "question": "Website fully custom হবে নাকি template based?",
+      "answer": "আপনার ব্যাকএন্ড যদি ভার্সেল এ থাকে এবং আমাদের শেয়ার্ড হোস্টিং এর ডাটাবেস ইউজ করতে চান, তাহলে সরাসরি রিমোট মাইএসকিউএল এক্সেস শেয়ার্ড হোস্টিং এ সম্ভব। এছাড়া নোড জেএস এর জন্য আমাদের ডেডিকেটেড নোড জেএস হোষ্টিং রয়েছে।"
+    },
+    {
+      "question": "Approximate delivery timeline কতদিন?",
+      "answer": "ডেডিকেটেড আইপি ছাড়া ম্যানেজড হোষ্টিং চাইলে আমি ওয়েব হোষ্টিং প্রো বা আল্টিমেট প্ল্যান রিকমেন্ড করবো। এগুলো ফুলী ম্যানেজড, ডেডিকেটেড আইপি নয় এবং খুবই এফোর্ডেবল হাই রিসোর্স পাচ্ছেন।"
+    },
+    {
+      "question": "vai amar budget kom.kive ki nile sobceye kom khoroce valo bave kaj korte pari tar ekta guideline den please",
+      "answer": "টার্বো স্টার্টারে অনেক বেশী ভিজিটর আসলে আপনি খুব সহজেই মাত্র ৩০ সেকেন্ডের মধ্যে আমাদের আপগ্রেডেড প্ল্যান টার্বো প্রো বা আল্টিমেট প্ল্যান এ আপগ্রেড করতে পারবেন। এছাড়া আপনার ডেইলী এড বাজেট যদি ২০০ ডলারের বেশী হয় তবে ভিপিএস বা ডেডিকেডেড সার্ভার প্ল্যানগুলোতে আপগ্রেড করতে পারবেন।"
+    },
+    {
+      "question": "kisti system e nite cai 3 year er plan ta.vaii dekhen na .takar somossa na hoile to ar boltam na",
+      "answer": "এটি পসিবল না। তিন বছরের জন্য নিতে হলে তিন বছরের জন্য একসাথে বুক করতে হবে।"
+    },
+    {
+      "question": "amar hosting lagbe amake ki vai ekta valo price dewya jai",
+      "answer": "জ্বী, বুঝেছি। লোকাল টোয়িং সার্ভিস বিজনেস এর জন্য দৈনিক ২০০-৩০০ ভিজিটর আসতে পারে। একটি পারফেক্ট প্ল্যান সাজেস্ট করতে পারবো।"
+    },
+    {
+      "question": "এখানে কি ডোমেইন, হোস্টিং, Ssl সা‌র্টিফি‌কেট সহ প্যা‌কেজ?",
+      "answer": "জ্বী, ওয়েব হোস্টিং প্রো তে ফ্রি এসএসএল সার্টিফিকেট ইনক্লুডেড আছে। ডোমেইন আর হোস্টিং আলাদা আলাদা কিনতে হবে অথবা একসাথে ১ বছরের জন্য কিনলে আপনি ফ্রি ডোমেইন পাবেন।"
+    },
+    {
+      "question": "shop এক্সটেনশন এর ডো‌মেইন চা‌চ্ছি। সব সহ কত খরচ আস‌বে?",
+      "answer": "আপনি ওয়েবসাইট থেকে কারেন্ট প্রাইস চেক করতে পারেন। আমাদের ইয়ারলি প্ল্যানে অলরেডি ডিসকাউন্ট দেওয়া রয়েছে এবং সাথে .COM ডোমেইন সম্পুর্ণ ফ্রি। এক্সট্রা কোনো হিডেন চার্জ নেই।"
+    },
+    {
+      "question": "আপনাদের ভিপিএস এর দাম অনেক বেশি",
+      "answer": "আমরা সুপার ফাষ্ট এন্টারপ্রাইজ গ্রেডের সার্ভার ও ২৪ ঘন্টা নিরবিচ্ছিন্ন এক্সপার্ট সাপোর্ট দিয়ে থাকি যার ফলে আমাদের প্রাইসগুলো অন্যান কম দামী প্যাকেজ থেকে কিছুটা বেশী মনে হতে পারে। তবে আপনি যদি আমাদের সার্ভিস এবং সাপোর্ট নিয়ে থাকেন সেক্ষেত্রে খুব সহজেই বুঝতে পারবেন যে আমাদের সার্ভিস ও সাপোর্টের কোয়ালিটি অনুযায়ী আমাদের প্রাইসগুলো খুবই এফোর্ডেবল।"
+    },
+    {
+      "question": "এভাবে পসিবল?",
+      "answer": "বর্তমানে সর্বোচ্চ ডিসকাউন্ট থাকায় অতিরিক্ত কোন ছাড় দেওয়া যাচ্ছে না বলে আমরা আন্তরিকভাবে দু:খিত। তবে বর্তমানে আমাদের লিমিটেড সময়ের একটি প্রমোকোড রয়েছে। আপনি WELCOME10 প্রমোকোডটি ইউজ করতে পারবেন।"
+    },
+    {
+      "question": "Domain amr name cheap account a transfer Kore dite cacchi hosting kinar por",
+      "answer": "বর্তমানে আমাদের প্রায় সব ইয়ারলি প্ল্যানের সাথে একটি .COM ডোমেইন ফ্রি রয়েছে এবং এর সাথে WELCOME10 প্রোমো কোড ব্যাবহার করে নতুন গ্রাহক হিসেবে আরও ১০% পর্যন্ত ডিস্কাউন্ট নিতে পারবেন।"
+    },
+    {
+      "question": "Bangladesh based cloud hoy na?",
+      "answer": "জ্বী কিনতে পারবেন।\n\nআপনি অন্য প্রোভাইডার থেকে ডোমেইন নিয়ে আমাদের হোস্টিংয়ে এড করে খুব সহজেই কানেক্ট করে কাজ করতে পারবেন।"
+    },
+    {
+      "question": "আপনার কাছে যে নোড সাপোর্ট হোষ্টিং আছে সেটা যদি আমি কিনি এবং আমি যদি নেমচিপের সাথে টক্কর নেই তাহলে কি আপনার সার্ভার পারবে টেক্কা সামলাতে",
+      "answer": "হোষ্টিং নেমসার্ভার প্ল্যান অনুযায়ী ভিন্ন ভিন্ন হয়ে থাকে। আপনার হোষ্টিং এর প্রাইমারী ডোমেইনটি দিলে আমি এটি বিস্তািরত চেক করতে পারবো বা আপনার হোষ্টিং ম্যানেজমেন্ট পেইজেও এটি উল্লেখ রয়েছে।\n\nএছাড়া ডোমেইনে নেমসার্ভার আপডেট করার প্রসেস দেখতে এই ভিডিওটি ফলো করুন: https://www.youtube.com/watch?v=bMeG3lbcH2s&t=4s"
+    },
+    {
+      "question": "আপনার কথা ঠিক আছে কিন্ত দরেন আমি এখন ক্রয় করলাম যদি ওয়েব সাইট লোডিং টািইম ১ সেকেন্ড বা ২ সেকেন্ড সময় নেয় তখন আমার লোকের মেজাজ খারাপ হয়ে যাবে এমতাবস্থায় আমি যদি আপনাদের কে ক্লেম করি তখন আপনারা বলবেন যে ১ দিবস থেকে ৩০ দিবস এর মধ্যে আপনি আপনার টাকা রিফান্ড পেয়ে যাবেন কিন্ত আমার মালিকের কথা হলো যে যদি সার্ভিস ভালো না হয় তাহলে ইনস্টান্ট আমি অন্য কোথাও লাইভ করবো উদাহরন নেমচিপ",
+      "answer": "সব কোম্পানিরই কিছু নির্দিষ্ট পলিসি থাকে। আপনি রিফান্ড ক্লেম করার সাথে সাথে কোনো কোম্পানিই সাধারণত ইনস্ট্যান্ট রিফান্ড প্রসেস করতে পারে না। বেশিরভাগ ক্ষেত্রে এটি সম্পন্ন হতে ৩–৫ বিজনেস ডে সময় লাগে, কারণ পেমেন্ট ভেরিফিকেশন এবং প্রসেসিং সম্পন্ন করতে হয়।"
+    },
+    {
+      "question": "আমাদের এখানে একটা আমি লিখছি আরেকজন এসে চ্যাট করে চলে যাচ্ছে, আমার টেকনিক্যাল সাপোর্ট লাগবে।",
+      "answer": "If you opt out from Cloudflare Pro plan features, you may use the SHOWPE20 promocode to get 20% discount on the total hosting amount."
+    },
+    {
+      "question": "turbo hosying a 10 gb ram amar 24 gb lagbe possible?",
+      "answer": "জ্বী অবশ্যই, আপনি ১ বছরের জন্য বুক করতে পারবেন। "
+    },
+    {
+      "question": "bandwith ki unlimited?",
+      "answer": "জ্বী, বান্ডউইথ আনলিমিটেড। এটি আপনার ওয়েবসাইটের হাই-ট্রাফিক এবং রিকোয়েস্ট ভলিউম ইজিলি হ্যান্ডেল করার জন্য পারফেক্ট।"
+    },
+    {
+      "question": "ভাই সাইটে কি প্রব্লেম সেটা বলেন, ঈদের আগে উনার ফেসবুক + টিকটকে এ্যাড চলে",
+      "answer": "আমি আপনার এই চ্যাটটি টিকিটে কনভা‍র্ট করে দিয়েছি যাতে আমাদের টেকনিক্যাল টিম এটি নিয়ে বিস্তারিত চেক করতে পারেন।"
+    },
+    {
+      "question": "মিয়া মজা নিচ্ছেন! গতকাল সেম সমস্যা হইছে সেল ডাউন হয়ে গেছে একেবারে, آجও সেম প্রব্লেম, ঈদের আগে শুধু কালকের দিন অর্ডার নেয়া যাবে, তার মধ্যে এই সমস্যা! দুই দিনের আমার ২০০ ডলার লস!  এটার জরিমানা দিতে হবে।",
+      "answer": "আমি সম্পূর্ণভাবে আপনার রাগের কারনটি বুঝতে পারছি। আপনার ২০০ ডলারের লস এবং ঈদের আগে সেলস নষ্ট হওয়ার বিষয়টি আমরা হালকাভাবে নিচ্ছি না।"
+    },
+    {
+      "question": ".ai domain er dam ato beshi kno?",
+      "answer": "এটি রেজিস্ট্রি প্রাইসের উপর নি‍র্ভর করে বেশি হয়ে থাকে"
+    },
+    {
+      "question": "kintu .com er theke ba onno extension er theke onek beshi",
+      "answer": ".COM রেজিস্ট্রি প্রাইসটি স্ট্যান্ডার্ড রেট হয়ে থাকে, যার ফলে এটি অন্যান্য অনেক আনকমন ডোমেইন থেকে প্রাইস তুলনামুলক কম এবং অন্যান্য এক্সটেনশনের ডোমেইনের প্রাইস বেশি হয়। "
+    },
+    {
+      "question": "আমার জন্য উকমার্স বেশি প্রাইস পরে যাচ্ছে। সেক্ষেত্রে মান্থলি সাবস্ক্রাইব কি করা যাবে?",
+      "answer": "জ্বী আমাদের মান্থলী প্রাইস রয়েছে। তবে সেটি রেগুলার প্রাইস হওয়ায় ইয়ারলীতে বা ৩ বছরের জন্য বুক করলে ম্যাসিভ ডিসকাউন্ট পাওয়া যায়।"
+    },
+    {
+      "question": "আপনাদের উকমার্স এর লাইসেন্স কি শেষ হয়ে যাবে নাকি মাঝপথে?",
+      "answer": "জ্বী না। আমরা সিপ্যানেল এর অফিসিয়াল পার্টনার কোম্পানী এবং অন্যান্য অনেক কোম্পানীর মতো আমরা চিপ, ক্র্যাক বা নালড লাইসেন্স ব্যবহার করে হোষ্টিং প্রোভাইড করি না যার ফলে লাইসেন্স বন্ধ হয়ে যাওয়ার কোন সুযোগ নেই।"
+    },
+    {
+      "question": "vai apni 1yr nite bollen amak . kintu ami to 3 mas por pore dibo bill erkm hote pare?",
+      "answer": "আমাদের বর্তমানে মাসিক, ইয়ারলী বা ট্রিনিয়ালী বিলিং সাইকেল রয়েছে। অর্থাৎ আপনি চাইলে মাসিক বা পুরো বছরের জন্য এবং ম্যাক্সিমাম ডিসকাউন্টের জন্য ৩ বছরের জন্য বুক করতে পারবেন। ৩ মাসের জন্য আমাদের কোন বিলিং না থাকায় আপনি মাসিক প্ল্যানটিই প্রতি মাসে রিনিউ করতে পারবেন। উল্লেখ্য যে মাসিক প্রাইসগুলো রেগুলার প্রাইস হওয়ায় সেখানে কোন ডিসকাউন্ট থাকে না। "
+    },
+    {
+      "question": "ভাই এটা কি ভুয়া সাইট নাকি",
+      "answer": "জ্বী না। আমাদের সাইট ভুয়া নয়, আমরা একটি প্রফেশনাল হোস্টিং প্রোভাইডার। আমরা ডোমেইন হোস্টিং ইন্ডাস্ট্রিতে ৫ বছরের বেশি সময় ধরে বিশ্বস্ততার সাথে সার্ভিস দিয়ে আসছি। গুগলে আমাদের নাম লিখে সার্চ করলে অসংখ্য পজিটিভ রিভিউ পেয়ে যাবেন, যা প্রমাণ করে আমাদের সেবা কতটা জনপ্রিয়।"
+    },
+    {
+      "question": "ami basic nile hobe na . ai ta neowar kano boltecan bujtacina . basic e 1k limit . amar ki 1k lagbe ? apnar dharona ki bole",
+      "answer": "বেসিক প্ল্যানটি আমরা মুলত প্র্যাকটিস পারপোজে রিকমেন্ড করে থাকি। এটির রিসোর্স এন্ট্রি লেভেলের হওয়ায় প্রফেশনালী পোর্টফলিও ওয়েবসাইট হোষ্ট করলে বিভিন্ন সময় রিসোর্স এক্সোষ্টেড এবং ক্র্যাশ করার সম্ভাবনা থাকে। প্রফেশনালী শুরু করার ক্ষেত্রে আমরা মিনিমাম স্টার্টার প্ল্যানটি রিকমেন্ড করছি। "
+    },
+    {
+      "question": "ajker jnno kono discount dea zabe vaia? choto vai er abdar. ar kuno din bolbo nah",
+      "answer": "বর্তমানে সর্বোচ্চ ডিসকাউন্ট থাকায় অতিরিক্ত কোন ছাড় দেওয়া যাচ্ছে না বলে আমরা আন্তরিকভাবে দু:খিত। তবে বর্তমানে আমাদের লিমিটেড সময়ের একটি প্রমোকোড রয়েছে। আপনি WELCOME10 প্রমোকোডটি ইউজ করতে পারবেন।"
+    },
+    {
+      "question": "na vai ar kunu code chalu koren. plsss",
+      "answer": "আমরা আন্তরিকভাবে দু:খিত যে এর বাইরে বর্তমানে আমাদের আর কোনো প্রমোকোড নেই।"
+    },
+    {
+      "question": "Vai hosting er free 1.5 k te asce nah... Total cost e 10% less hoyeche. So 11k bill asce",
+      "answer": "ডোমেইন ফ্রি হলে সেটি ডিসকাউন্ট থেকে আলাদা হবে না বরং আপনার হোষ্টিং এর পার্চেসের মধ্যে ১০% ডিসকাউন্টটি এপ্লাই হচ্ছে। "
+    },
+    {
+      "question": "Monthly invoice korle hobe ?",
+      "answer": "জ্বী, মান্থলি ইনভয়েস করতে পারবেন। সেক্ষেত্রে আপনাকে মান্থলি প্যাকেজ সিলেক্ট করতে হবে।"
+    },
+    {
+      "question": "2 year er nibo naki... Vai price ekdm fixed?",
+      "answer": "জ্বী। আপনি ২ বছরের জন্য নিতে পারেন, সেখানেও ডিসকাউন্ট এভেইলেবল আছে।"
+    },
+    {
+      "question": "eta te domain koto diner jonno free",
+      "answer": "১ বছরের জন্য ডোমেইন ফ্রি পাবেন।"
+    },
+    {
+      "question": "ভাই হোস্টিংটা ১ মাসের জন্য নিয়ে দেখতে চাই",
+      "answer": "জ্বী, আপনি মান্থলি নিতে পারেন। আমাদের ৩০ দিনের মানিব্যাক গ্যারান্টিও রয়েছে যাতে আপনি থাকেন সম্পুর্ণ রিস্ক ফ্রি।"
+    },
+    {
+      "question": "tobe ai price amar budget er baire",
+      "answer": "বাজেট খুবই টাইট থাকলে আপনি স্টার্টার প্ল্যান দিয়ে শুরু করতে পারেন। এটি শুরু করার জন্য বেষ্ট হবে। "
+    },
+    {
+      "question": "mane domain free pabo?",
+      "answer": "জ্বী, ওয়েব বেসিক ব্যতিত যেকোন প্ল্যান ইয়ারলি বা তার বেশী সময়ের জন্য নিলে সাথে একটি ডোমেইন ফ্রি পাবেন। ফ্রি ডোমেইন অফারটি প্রথম বছরের জন্য প্রযোজ্য, পরবর্তী বছর থেকে রেগুলার প্রাইসে রিনিউ করতে পারবেন। "
+    },
+    {
+      "question": "hosting ami kinle cpanel deoa hobe",
+      "answer": "জ্বী অবশ্যই, হোস্টিং কিনলে আপনাকে ফুল সিপ্যানেল এক্সেস দেয়া হবে। আমরা সিপ্যানেল এর অফিসিয়াল পার্টনার কোম্পানী যার ফলে সিপ্যানেল সম্পুর্ণ জেনুইন পাবেন এবং কোন ধরনের হিডেন গিমমিক থাকবে না। "
+    },
+    {
+      "question": "Vhi, eita ki ekbare lifetime, na month ba year contract e nita hoye? First time open krbo to, tai jante chacchi.",
+      "answer": "হোস্টিং সার্ভিসগুলো লাইফটাইম হয় না। আপনাকে মাসিক অথবা বার্ষিক ভাবে রিনিউ করতে হবে। এছাড়া সর্বোচ্চ ডিসকাউন্ট পেতে আপনি চাইলে সর্বোচ্চ ৩ বছরের জন্যেও একসাথে বুক করতে পারবেন। "
+    },
+    {
+      "question": "3 year jonnno nile total koto tk asbe",
+      "answer": "৩ বছরের জন্য নিলে সর্বোচ্চ ডিসকাউন্টটি পাবেন। প্রাইসিং দেখতে আমাদের ওয়েবসাইট ভিজিট করতে পারেন বা আপনি কোন প্ল্যানটি নিতে চাচ্ছেন বিস্তারিত জানালে আমি আপনাকে প্রাইসিংটি এখানে শেয়ার করতে পারবো। "
+    },
+    {
+      "question": "ami ak maser jonno hostnin basic pakage nibo",
+      "answer": "জ্বী নিতে পারেন, তবে মান্থলিতে আপনি ফ্রি ডোমেইন পাবেন না।"
+    },
+    {
+      "question": "bro, 1st 3 month er lagbe .. emn kono custom plan kore dea jabe?",
+      "answer": "দুঃখিত, আমাদের ৩ মাসের কোনো কাস্টম প্ল্যান নেই। তবে আপনি মান্থলি অথবা ইয়ারলি নিতে পারবেন। সর্বোচ্চ ডিসকাউন্ট পেতে আপনি চাইলে একসাথে ৩ বছরের জন্য বুক করতে পারবেন। "
+    },
+    {
+      "question": "apnara ki amader requirement onujayi pricing fixed kore dite parben?",
+      "answer": "রিকোয়ার্টমেন্ট অনুযায়ী কাষ্টম প্রাইসিং এর ক্ষেত্রে আপনি আমাদের সেলস টিমকে বিস্তারিত শেয়ার করলে তারা আপনার প্রয়োজন অনুযায়ী বেষ্ট প্ল্যানটি রিকমেন্ড করতে পারবে। বিস্তারিত শেয়ার করতে sales@hostnin.com ব্যবহার করতে পারেন। "
+    },
+    {
+      "question": "No. I dont need any premium option for now. Share me the lowest and cheapest option. Cause Traffic will be incrediablly low. Somedays even can on one visit",
+      "answer": "For your website with that kind of traffic, our Web Starter plan is perfect for you. It's the most affordable option and handles everything you need, with unlimited bandwidth, free SSL Certificate, daily backups, and cPanel."
+    },
+    {
+      "question": "Why are there two big difference options? I'm talking about 999 and 395",
+      "answer": "If you select monthly billing, the regular monthly price applies. But if you pay for the whole year upfront, you get a massive discount, significantly reducing the monthly breakdown cost."
+    },
+    {
+      "question": "monthly nite cacchilam, but apnader monthlly price onek beshi dekhai",
+      "answer": "মাসিক প্রাইসগুলো রেগুলার প্রাইস হওয়ায় আপনার কাছে বেশী মনে হয়েছে। সর্বোচ্চ ডিসকাউন্ট পেতে আপনি ইয়ার্লী অথবা ট্রিনিয়ালী নিতে পারেন।"
+    },
+    {
+      "question": "Your hosting price is way too high, can you reduce it?",
+      "answer": "I totally get where you're coming from! Let me break down why our pricing actually gives you incredible value: 24/7 expert WhatsApp support, we help with website issues too, BDIX connectivity for super fast loading in Bangladesh, and no surprise price hikes on renewal. If you need something more affordable, check out our sister company Hostfame. Current pricing: Our Basic plan is just ৳249/month when paid yearly."
+    },
+    {
+      "question": "If I pay yearly I will get 1650 tk credit, right?",
+      "answer": "Yes, that's right. The 1650tk credit is a one-time credit for the free domain, which is applicable for the first year only."
+    },
+    {
+      "question": "1yr hobe nah , boss ?",
+      "answer": "জ্বী"
+    },
+    {
+      "question": "Accha bhai 36 months er jeita oita ki 4,827 diye ei toh kinte hobe, nani ?",
+      "answer": "জ্বী, প্ল্যান অনুযায়ী যে প্রাইসিংটি দেখতে পাচ্ছেন সেটি দিয়ে বুক করতে পারবেন। "
+    },
+    {
+      "question": "hosting price?",
+      "answer": "Based on your e-commerce site's product count and traffic volume, our Turbo NVMe Pro or Ultimate plan is solid for scaling."
+    },
+    {
+      "question": "any promo code available?",
+      "answer": "Hey! We don't have active promo codes running right now, but our pricing is already pretty competitive."
+    },
+    {
+      "question": ".ai price high",
+      "answer": "You're right, .ai domains are pricey across the board. We've got great alternatives like .com at 1650 BDT. Would it work for you?"
+    },
+    {
+      "question": "any promo code?",
+      "answer": "No promo codes active right now, but if you grab a domain and hosting bundle together, I can work something out for you."
+    },
+    {
+      "question": "no offer?",
+      "answer": "No active promos at the moment, but if you bundle .COM domain with any hosting plan, I can definitely work out a special deal for you."
+    },
+    {
+      "question": "code ta ki amar email a pabo?",
+      "answer": "আপনি কোন কোড এর ব্যাপারে জানতে চাচ্ছেন তা কি বিস্তারিত আমাকে জানাতে পারেন?"
+    },
+    {
+      "question": "domain chara kuno package ache ki akhn?",
+      "answer": "জ্বী এটিই ডোমেইন ছাড়া নিতে পারবেন। আপনার প্ল্যানে ফ্রি ডোমেইন থাকলে এবং ডোমেইন না নিতে চাইলে ডোমেইনের প্রাইসটি আপনার ক্রেডিট ব্যালেন্সে পাবেন যা ব্যবহার করে পরবর্তীতে নতুন হোস্টিং বা ডোমেইন পার্চেস বা এক্সিষ্টিং প্ল্যানটি রিনিউ করতে পারবেন। "
+    },
+    {
+      "question": "sathe domain na Nile price komano jabe? karon yearly pro er ta pray 3k...amar sodo hosting proyojon chilo, domain amar already ache...",
+      "answer": "জ্বী। আপনার ডোমেইন প্রয়োজন না হলে আপনি ডোমেইনের এমাউন্টটি ক্রেডিট এ রিফান্ড পাবেন।"
+    },
+    {
+      "question": "oi tk ta ki accountei thakbe",
+      "answer": "জ্বী, আপনার হোস্টনিন ক্রেডিট একাউন্ট এ থাকবে।"
+    },
+    {
+      "question": "পরে যদি মনে হয় আরও powerful প্ল্যান দরকার, তাহলে কি আমি ৳799/month প্ল্যানে upgrade করতে পারবো? সেক্ষেত্রে pricing কীভাবে কাজ করবে?",
+      "answer": "জ্বী, অবশ্যই আপনি যেকোনো সময় আপগ্রেড করতে পারবেন। এক্ষেত্রে আপনি যতদিন ব্যবহার করেছেন এবং যতটাকা পে করেছেন তা এডজাস্ট হবে।"
+    },
+    {
+      "question": "৳149/month eta ki all time emon thakbe naki pore price barbe. naki first time offer?",
+      "answer": "বর্তমান অফারে বুক করলে আপনি সেইম প্রাইসে রিনিউ করতে পারবেন।"
+    },
+    {
+      "question": "monthly koto pay korte hobe?",
+      "answer": "আপনি যে প্ল্যানটি নিতে চাচ্ছেন সেটির উপরে একটি সুইচিং টগল দেখতে পাবেন যেখানে মান্থলী ইয়ারলী বা ট্রিনিয়ালী লেখা রয়েছে। সুইচ করলে প্রাইসিংগুলো বিস্তারিত চেক করতে পারবেন। "
+    },
+    {
+      "question": "apnader seo servise ki alada newa jabe?",
+      "answer": "আন্তরিকভাবে দুঃখিত, আমাদের বর্তমানে SEO সার্ভিস নেই তবে আমরা আমাদের যেকোন হোষ্টিং প্ল্যানের সাথে ২০ টির বেশী এসইও টুলস প্রোভাইড করছি যা হোষ্টিংয়ের সাথে এভেইল করতে পারবেন। "
+    },
+    {
+      "question": "ami brand new ekta domain create korte chai ... apnader starter plan e koyta domain create kora jay ?? r proti ta domain er under e ki unlimited sub-domain create kora jay ?",
+      "answer": "জ্বী, ওয়েব স্টার্টার এ আপনি ৫ টি ডোমেইন এড করতে পারবেন এবং আনলিমিটেড সাব ডোমেইন ক্রিয়েট করতে পারবেন"
+    },
+    {
+      "question": "for 1 year price ?",
+      "answer": "প্রাইস এবং বিস্তারিত পাবেন এই লিংক এ : https://hostnin.com/hosting/web-hosting"
+    },
+    {
+      "question": "I find other sites are providing much cheaper price than this. For .com domain it's costing me 1650tk whereas Webhost and Hostsheb are 1400 & 1200 tk.",
+      "answer": "I hear you on the pricing difference. Here's the thing though, those cheaper registrars often have hidden renewal costs or less reliable support down the line. Our 1650 tk includes full management, and you've got us backing you up if anything goes wrong."
+    },
+    {
+      "question": "ami 1 mo jonno akta Basic servie nitay chai price koto asbe",
+      "answer": "আপনি কোন হোস্টিংয়ের বেসিক প্ল্যানটির বিষয়ে বলছেন? আমাদের মাল্টিপল হোস্টিং স্যাগমেন্ট রয়েছে যেমন ওয়েব হোষ্টিং বেসিক, টার্বো হোষ্টিং বেসিক। "
+    },
+    {
+      "question": "250 visitor hobe monthly? Kemon hobe tahle?",
+      "answer": "লো ট্রাফিক হলে শুরু করার জন্য আমাদের স্টার্টার প্ল্যানটি বেষ্ট হবে। তবে হাই ট্রাফিকেও একই ফাষ্ট স্পীড ও যদি হোষ্টিং ইন্ড থেকে কোন সমস্যা ছাড়াই কন্টিনিউ করতে চান তবে প্রো প্ল্যানটি বেস্ট। "
+    },
+    {
+      "question": "vai apnade service gulo bhalo ... but amar ekta question j ... server speed ki shob time same thakbe ? mane amar site ta ki fast loading hobe ?",
+      "answer": "জ্বী, আমাদের সার্ভার স্পিড সবসময়ই কনসিস্টেন্ট থাকে। আমরা লাইটস্পিড ওয়েব সার্ভার ইউজ করি এবং সার্ভার ক্যাপাসিটি অনুযায়ী লিমিটেড ইউজার রাখায় ওভারইউজেস এবং ওভারলোড এর মতো ব্যাপার থাকে না। যার ফলে আপনার সাইট দিনে বা রাতে, যেকোন সময়ই সুপার ফাস্ট স্পীডে লোড হবে।"
+    },
+    {
+      "question": "monthly 1000 visitor er kotha bollen... amar jodi 1200 hoy tahole ki amar site bondho kore diben naki exra charge korben ?",
+      "answer": "জ্বী না, সাইট বন্ধ হবে না এবং এক্সট্রা কোনো চার্জও করা হবে না। মাসিক ভিজিটর মুলত হোষ্টিং এর রিসোর্স অনুযায়ী কত ভিজিটর হ্যান্ডেল করতে পারবে তার একটি প্রেডিক্টেবল সংখ্যা। নির্দিষ্ট ভিজিটর ক্যাপাসিটি পার পর্যন্ত রিসোর্স এর অভাবে হলে সাইট বাফার হতে থাকে এবং যতক্ষণ না ভিজিটর লিমিট আবার কমছে ততক্ষণ পর্যন্ত ভিজিট করা যায় না। "
+    },
+    {
+      "question": "ar basic plan nile ki pore pro te upgrade kora jabe ?",
+      "answer": "জ্বী, আপনি যেকোনো সময় যেকোনো প্ল্যানে আপগ্রেড করতে পারবেন। আপগ্রেডের ক্ষেত্রে ব্যবহৃত সময়ের জন্য নির্দিষ্ট এমাউন্ট বাদ হয়ে নতুন প্ল্যানের সাথে বাকী টাকা যুক্ত হবে। উদাহরনস্বরুপ আপনার প্ল্যানের প্রাইস যদি ৩৬৫ টাকা হয় এবং আপনি ২০০ দিন ব্যবহারের পর আপগ্রেড করতে চান তবে ২০০ টাকা বাদ হয়ে বাকী ১৬৫ টাকা নতুন প্ল্যানের সাথে যুক্ত হবে। "
+    },
+    {
+      "question": "Bhai basic plan er sathe ki ssl certificate pabo? R amk ki cPanel dewa hobe?",
+      "answer": "জ্বী, আপনি আমাদেের যেকোন হোষ্টিং প্ল্যানের সাথে ফ্রি লাইফটাইম এসএসএল সার্টিফিকেট পাবেন এবং ফুল সিপ্যানেল এক্সেস পাবেন।"
+    },
+    {
+      "question": "hosting a backup kivabe kaj kore?",
+      "answer": "আমাদের সার্ভারে ডেইলি ব্যাকআপ সিস্টেম আছে, যা আপনার ওয়েবসাইটের ডেটা অটোমেটিকালি সেভ করে রাখে। এটি মাল্টিপল লোকেশনে ননস্টপ সাপ্তাহিক এবং মাসিক ব্যসিসে রাখা হয়। "
+    },
+    {
+      "question": "vai webmail e storage limit koto?",
+      "answer": "ক্লাউড প্ল্যানগুলো ছাড়া ওয়েবমেইল স্টোরেজ আপনার মেইন হোস্টিং স্টোরেজের সাথেই লিমিটেড। অর্থাৎ হোষ্টিং প্ল্যানে যদি ৫০ জিবি থাকে তবে সেই ৫০ জিবির মধ্যেই ওয়েবসাইট ফাইল, ইমেইল স্টোরেজ স্টোর হবে।  "
+    },
+    {
+      "question": "amr toh boro e-commerce site, monthly 20-30k visitor ashe. kon plan ta bhalo hobe?",
+      "answer": "আপনার ই-কমার্স সাইটের জন্য টার্বো প্রো বা আল্টিমেট প্ল্যানটি সবচেয়ে ভালো হবে, কারণ এটি হাই ট্রাফিক এবং অনেক প্রোডাক্ট ইজিলি হ্যান্ডেল করতে পারে।"
+    },
+    {
+      "question": "hosting kinle ki apnara wordpress install kore diben?",
+      "answer": "জ্বী, হোস্টিং কেনার পর আমরা আপনাকে সম্পূর্ণ ফ্রিতে ওয়ার্ডপ্রেস ইন্সটল করে দিবো।"
+    },
+    {
+      "question": "vai, dedicated ip keno nibe manush?",
+      "answer": "ডেডিকেটেড আইপি নিলে আপনার ইমেইল ডেলিভারি রেট ভালো থাকে, এসইও তে সুবিধা পাওয়া যায়, এবং সিকিউরিটি বাড়ে।"
+    },
+    {
+      "question": "Node JS support kore ki?",
+      "answer": "জ্বী, আমাদের টার্বো হোস্টিং প্যাকেজে আপনি Node.js সাপোর্ট পাবেন।"
+    },
+    {
+      "question": "ami jodi aj hosting kine 5 mas por use kori, tahole validity kobe theke count hobe?",
+      "answer": "আপনি যেদিন থেকে পার্চেস করবেন সেদিন থেকেই এটির মেয়াদ শুরু হবে। তবে আপনি যদি এখন অর্ডার করে নির্দিষ্ট সময় গ্যাপ দিয়ে ব্যবহার করতে চান তবে সেটিও করতে পারবেন, সেক্ষেত্রে আমাদের ইনফর্ম করলে আমরা এটি আপনার জন্য হোল্ড করে রাখবো এবং আপনি যখন থেকে শুরু করতে চাইবেন তা আমাদের জানালে আমরা সেটি একটিভ করে দিবো।"
+    },
+    {
+      "question": "apnader hosting kothakar server use kore?",
+      "answer": "আমাদের বর্তমানে বিশ্বের প্রায় ৭+ লোকেশনে ডেডিকেটেড সার্ভার রয়েছে। \nতন্মোধ্যে উল্লেখযোগ্য হলো: \n-Alasaka, USA \n-London, UK \n-North-Eastern Island, Singapore \n-Federated state, Germany \n-Dhaka, Bangladesh"
+    },
+    {
+      "question": "apnader support kivabe kaj kore? ami ki whatsapp a support pabo?",
+      "answer": "জ্বী, আমাদের ২৪/৭ হোয়াটসঅ্যাপ সাপোর্ট রয়েছে। যেকোনো সমস্যায় সরাসরি হোয়াটসঅ্যাপে নক দিতে পারেন।\n\nএছাড়া আমাদের সম্পুর্ণ ফ্রিতে ২৪ ঘন্টা হটলাইন কলব্যাক সাপোর্ট এভেইলেবল রয়েছে। আপনি Call Support লিখে মেসেজ করলে আমাদের একজন প্রতিনিধি আপনাকে কলব্যাক করবেন। "
+    },
+    {
+      "question": "amar site onno company te ache, ami ki apnader aikhane migrate korte parbo?",
+      "answer": "জ্বী, আপনি আমাদের এখানে মাইগ্রেট করতে পারবেন এবং আমরা সম্পূর্ণ ফ্রিতে মাইগ্রেশন প্রসেস কমপ্লিট করে দিবো।"
+    },
+    {
+      "question": "apnader ki kono discount offear ache?",
+      "answer": "বর্তমানে সর্বোচ্চ ডিসকাউন্ট থাকায় অতিরিক্ত কোন ছাড় দেওয়া যাচ্ছে না বলে আমরা আন্তরিকভাবে দু:খিত তবে আপনি চাইলে ইয়ারলি বা একসাথে ৩ বছরের প্যাকেজ নিয়ে ম্যাসিভ ডিসকাউন্ট পেতে পারেন।"
+    },
+    {
+      "question": "ami ki ssl certificate onno kothao theke kine apnader ekhane add korte parbo?",
+      "answer": "জ্বী, আপনি অন্য যেকোনো জায়গা থেকে এসএসএল কিনে আমাদের সিপ্যানেলে অ্যাড করতে পারবেন।"
+    },
+    {
+      "question": "apnader service thikmoto na dile refund pabo kivabe?",
+      "answer": "আমাদের ৩০ দিনের মানিব্যাক গ্যারান্টি আছে। সার্ভিস পছন্দ না হলে কোনো প্রশ্ন ছাড়াই রিফান্ড পেয়ে যাবেন।\n\nরিফান্ড পলিসির বিস্তারিত এই লিংক এ পাবেন : https://hostnin.com/refund-policy"
+    },
+    {
+      "question": "domain name ki pore change kora jabe?",
+      "answer": "ডোমেইন নেম রেজিস্ট্রেশনের পর আর চেঞ্জ করা যায় না। তবে আপনি চাইলে নতুন ডোমেইন কিনে হোস্টিংয়ের সাথে কানেক্ট করতে পারবেন।"
+    },
+    {
+      "question": "vai 10 gb er vps kon dam e pabo",
+      "answer": "ভিপিএস এর জন্য আমাদের বেসিক থেকে আল্টিমেট পর্যন্ত বিভিন্ন কনফিগ রয়েছে যেখান থেকে আপনার পছন্দের কনফিগটি পিক করতে পারবেন。\n\nবিস্তারিত এই লিংকে পাবেন:\nhttps://hostnin.com/hosting/vps-hosting"
+    },
+    {
+      "question": "amr akta .com domain ar 1GB hosting dorkar.. koto porbe?",
+      "answer": "আমাদের সর্বনিম্ন প্যাকেজ ৫ জিবি স্টোরেজের। ১ জিবির কোনো প্যাকেজ নেই।\n\nবিস্তারিত ফিচার্সগুলো পাবেন এই লিংকে:\nhttps://hostnin.com/hosting/web-hosting"
+    },
+    {
+      "question": "apnader to 1 gb r kono package e nai",
+      "answer": "জ্বী, আমাদের বেসিক প্যাকেজটি ৫ জিবির।"
+    },
+    {
+      "question": "Accha bhai apni ekta suggest koren konta nile amar jonno best hobe. Amar akta blog site, traffic ekhon din e 500 er moto. Pore barbe.",
+      "answer": "আপনার ব্লগের জন্য আমাদের ওয়েব প্রো প্ল্যানটি একদম পারফেক্ট হবে। এটি বর্তমান ট্রাফিক ইজিলি হ্যান্ডেল করবে এবং ভবিষ্যতে ট্রাফিক বাড়লেও স্মুথ পারফরম্যান্স দিবে।"
+    },
+    {
+      "question": "Ami ki Amar existing domain apnader hosting e transfer korte parbo? r kono charge lagbe ki tar jonno?",
+      "answer": "জ্বী, আপনি আপনার ডোমেইন ট্রান্সফার করতে পারবেন এবং এর জন্য কোনো এক্সট্রা চার্জ নেই।"
+    },
+    {
+      "question": "ami ki amar existing hosting onno kothao theke nite parbo?",
+      "answer": "আপনি আপনার হোস্টিং অন্য যেকোনো জায়গায় ট্রান্সফার করে নিতে পারবেন। সিপ্যানেল থেকে আপনি সম্পূর্ণ ব্যাকআপ ডাউনলোড করে নিতে পারবেন এবং একটিভ হোষ্টিংয়ে ব্যাকআপ জেনারেট করতে আমরা আলাদা কোন চার্জ এপ্লাই করি না।"
+    },
+    {
+      "question": "Bhai apnar ekhane ki SSL free dea hobe?",
+      "answer": "জ্বী, আমাদের সকল প্যাকেজের সাথেই লাইফটাইম ফ্রি এসএসএল সার্টিফিকেট দেয়া হয়।"
+    },
+    {
+      "question": "ami ki amar account ta pause kore rakhte parbo?",
+      "answer": "দুঃখিত, একাউন্ট পজ করে রাখার কোনো সুযোগ নেই তবে আপনি যদি কোন অসুবিধার মধ্যে থাকেন সেক্ষেত্রে বিস্তারিত লিখে sales@hostnin.com এ জানালে আমাদের টিম সেটি কনসিডার করবেন। "
+    },
+    {
+      "question": "Dynamic web r jonno knn hosting nute hobe price kemon monthly",
+      "answer": "আপনি কি ডায়নামিক ওয়েব এর ব্যাপারে আরেকটু বিস্তারিত জানাতে পারেন যাতে আমরা আপনার জন্য পারফেক্ট প্ল্যানটি রিকমেন্ড করতে পারি?"
+    },
+    {
+      "question": "1 years package price kmn asbe?",
+      "answer": "Our web hosting packages are designed for different budgets. From Basic to Ultimate, we are offering a free .com domain on all plans when you purchase an annual package."
+    },
+    {
+      "question": ".org er renew chrg kto proe apnadr?",
+      "answer": "Domain registration and renewal pricing vary based on the extension and current promotions. Please check the domain search page or ask me about a specific TLD for the current active price."
+    },
+    {
+      "question": "AI likhche 1650 taka jeta site e dekhay",
+      "answer": "Domain registration and renewal pricing vary based on the extension and current promotions. Please check the domain search page or ask me about a specific TLD for the current active price."
+    },
+    {
+      "question": "What is the price for the .fr domain registration?",
+      "answer": "Domain registration and renewal pricing vary based on the extension and current promotions. Please check the domain search page or ask me about a specific TLD for the current active price."
+    },
+    {
+      "question": "4 core a 8GB VPS yearly koto porbe?",
+      "answer": "ইয়ারলী প্রাইসিং দেখতে উপরের বিলিং অপশনের টগলে সুইচ করে ইয়ারলী প্রাইসিংগুলো চেক করতে পারবেন। ভিপিএস এর ইয়ারলী প্ল্যানগুলোতে বর্তমানে ২০% ডিসকাউন্ট রয়েছে। "
+    },
+    {
+      "question": "2 core 8GB koto asbe?",
+      "answer": "২ কোর এবং ৮ জিবি র‍্যামের ব‍র্তমান কোনো প্যাকেজ নেই। আপনি কাস্টম পাকেজে নিতে চাইলে sales@hostnin.com এ মেইল করে আপনার রিকয়ারমেন্ট জানাতে পারেন।"
+    },
+    {
+      "question": "Etar affiliate commission koto?",
+      "answer": "এফিলিয়েট কমিশন প্ল্যান অনুযায়ী ভিন্ন ভিন্ন হয়ে থাকে যেমন ওয়েব হোষ্টিং বেসিক এ ২০% এবং আল্টিমেট এ ৫০%। উল্লেখ্য যে সেল্ফ রেফারালে এফিলিয়েট এমাউন্ট বাদের পাশাপাশি আপনার হোস্টিং বাতিল করা হতে পারে। \n\nএফিলিয়েট এর বিস্তারিত কমিশন স্ট্রাকচার পাবেন এই লিংকে:\nhttps://hostnin.com/affiliate"
+    },
+    {
+      "question": "কোন প্যাকেজটা নিলে ভালো হবে?",
+      "answer": "আপনি ই কমার্স সিপিএ মার্কেটিং এবং ব্লগিংয়ের জন্য আমাদের প্রো প্লানটি বুক করতে পারেন যা পারফরম্যান্স এর জন্য টপ নচ। ফাষ্ট স্পীড থাকায় অর্গানিক ট্রাফিকের জন্য এটি খুবই ভালো কাজ করে। "
+    },
+    {
+      "question": "ameke age kineh hobe tai to",
+      "answer": "জ্বী।"
+    },
+    {
+      "question": "bhai etar Inode limit koto ?",
+      "answer": "আনলিমিটেড"
+    },
+    {
+      "question": "apnader ekhane package chage e kono charge neya hoy ki ?",
+      "answer": "এক্ষেত্রে যাস্ট আপগ্রেড ফি দিলেই প্যাকেজ আপগ্রেড করতে পারবেন।"
+    },
+    {
+      "question": "Amar age ekti affiliate site chilo oitar domain, hosting er meyad shesh hoye giyechilo. Oitate add kora jabe?",
+      "answer": "জ্বী, আপনার কাছে ব্যাকআপ থাকলে এড করতে পারবেন। আর ডোমেইনটি কি এভেইল্যাবল আছে?"
+    },
+    {
+      "question": "Apnader pro package er 1 bochorer Jonno total amount kotho hobe?",
+      "answer": "আমাদের ওয়েব হোষ্টিং প্রো প্যাকেজের ১ বছরের জন্য টোটাল এমাউন্ট হবে ৭,১৮৮ টাকা যা মাসিক ব্রেকডাউনে মাত্র ৫৯৯ টাকা আসবে।"
+    },
+    {
+      "question": "amar vps e loging er user name pass kothay pabo ar kivabe change korbo?",
+      "answer": "আপনার ভিপিএস এর একসেস যে মেইল দিয়ে বুক করেছিলেন সেটিতে পাঠানো হয়ে থাকবে, কাইন্ডলী মেইল চেক করুন এবং না পেলে আমাদের জানালে আমরা চেক করে আবারো পাঠাতে পারবো। "
+    },
+    {
+      "question": "amr j mail ta diye ekhanc eaccount kora oi mail ta hack hye gese. amr kse access ase hosting er but ami okhan theke support open korlei to abr oi mail e mail jabe, jeta abr hacker ter pele problem",
+      "answer": "আপনার ইমেইল হ্যাক হয়েছে বুঝতে পেরেছি, এটা খুবই সিরিয়াস বিষয়। প্লিজ এখনই support@hostnin.com এ ডিরেক্ট ইমেইল করুন এবং বলুন যে আপনার অ্যাকাউন্ট সিকিউরিটি কমপ্রোমাইজড। আমাদের টিম বিস্তারিত চেক করবে এবং আপনার অ্যাকাউন্ট এর নতুন ক্রেডেনশিয়াল সেট করবে।"
+    },
+    {
+      "question": "mail to recover korte hbe na, change korte hbe hosting er mail ta. oi mail recover er kono way nai.",
+      "answer": "জী বুঝছি, আপনার মেইলটা রিকভার করাই এখন প্রধান ফোকাস। আমাদের টিম আপনার নম্বর ভেরিফিকেশনের মাধ্যমে দ্রুত প্রসেস করবে। সেলসের টিম শীঘ্রই যোগাযোগ করবে আপনার সাথে, তারা আপনার অ্যাকাউন্ট আনলক এবং মেইল রিকভারি করবে।"
+    },
+    {
+      "question": "এই প্রাইস আমি আরো জনপ্রিয় সাইট যেমন থেকেই পাচ্ছি। তাহলে দেশি কোম্পানীয়ে সুবিধা কি?",
+      "answer": "স্টার্টার প্ল্যান এ আপনি যা পাচ্ছেন সেটাই পার্থক্য। আমরা এন্টারপ্রাইজ গ্রেড সার্ভার প্রোভাইড করছি যা বিশেষ করে বাংলাদেশ ট্রাফিকের জন্য অপটিমাইজড। এর মানে আপনার সাইটের লোডিং স্পিড হবে প্রায় দ্বিগুণ, এবং ইউজার এক্সপেরিয়েন্স অনেক ভালো হবে। সাথে ডেইলী ব্যাকআপ, ফ্রি মাইগ্রেশন, আর লাইফটাইম এসএসএল সব ইনক্লুডেড আছে।"
+    },
+    {
+      "question": "লিংকে ডুকছে না",
+      "answer": "দুঃখিত, আপনি যদি সমস্যার সম্মুখীন হন তবে আমি আপনাকে এখানে সাহায্য করতে পারি। আপনি কি আরও বিশদে জানাতে পারবেন কেন লিঙ্কটি কাজ করছে না?"
+    },
+    {
+      "question": "deploy এর জন্য কি আপনাদের সাপোর্ট পাওয়া যাবে?",
+      "answer": "জ্বী অবশ্যই, ডিপ্লয় রিলেটেড যেকোন ধরনের ইস্যুতে আমাদের ডেভেলপমেন্ট টিম সরাসরি আপনাকে সহযোগিতা করবেন এবং আমাদের টেকনিক্যাল সাপোর্ট মাত্র ১৫ মিনিটের মধ্যেই ৯৩% ইস্যু সমাধান করে থাকেন।"
+    },
+    {
+      "question": "না আমি শুধু হোস্টিং নিব",
+      "answer": "জ্বী অবশ্যই। আপনি চাইলে শুধুমাত্র হোষ্টিং বুক করতে পারবেন। "
+    },
+    {
+      "question": "আমি যদি এখন ওয়েব প্রো প্যাকেজটি ১ বছরের জন্য কিনি এবং ১ বছর পর রিনিউ করি তাহলে কত টাকা দিতে হবে?",
+      "answer": "বর্তমান অফারে বুক করলে লাইফটাইম সেইসম রিনিউ অর্থ্যাত পরবর্তী বছর একই প্রাইসে রিনিউ করতে পারবেন। "
+    },
+    {
+      "question": "আমি যদি এখন ওয়েব প্রো প্যাকেজটি ১ বছরের জন্য কিনি এবং ১ বছর পর রিনিউ করি তাহলে রিনিউয়াল প্রাইস কি সেইম থাকবে?",
+      "answer": "জ্বী, বর্তমান অফারে বুক করলে পরবর্তী বছর একই প্রাইসে রিনিউ করতে পারবেন। "
+    },
+    {
+      "question": "আপনাদের সার্ভিস গুলো কি?",
+      "answer": "আমাদের বিভিন্ন ওয়েব সল্যুশন সার্ভিস আছে যেখানে আপনি ডোমেইন, হোস্টিং, ভিপিএস, ডেডিকেটেড সার্ভার বিভিন্ন কাষ্টম ডেভেলপমেন্ট সল্যুশন পাবেন।"
+    },
+    {
+      "question": "আপনাদের সার্ভিস গুলো কি কি?",
+      "answer": "আমরা ডোমেইন, হোস্টিং, ভিপিএস, ডেডিকেটেড সার্ভারসহ ওয়েবসাইট, এপ্লিকেশন ডিজাইন ও ডেভেলপমেন্ট সার্ভিস প্রদান করে থাকি।"
+    },
+    {
+      "question": "আপনাদের হোস্টিং প্যাকেজ গুলো কি কি?",
+      "answer": "প্রজেক্ট ডিমান্ড ও রিকোর্টমেন্ট অনুযায়ী আমাদের বিভিন্ন হোষ্টিং সেগমেন্ট রয়েছে যেমন ওয়েব, টার্বো, ক্লাউড বা ভিপিএস।"
+    },
+    {
+      "question": "আপনাদের ওয়েব হোস্টিং প্যাকেজ গুলো কি কি?",
+      "answer": "আমাদের ওয়েব হোস্টিং প্যাকেজ গুলো হলো বেসিক, স্টার্টার, প্রো এবং আল্টিমেট।"
+    },
+    {
+      "question": "আমি আপনাদের প্যাকেজ গুলো কিভাবে দেখতে পারি?",
+      "answer": "আপনি আমাদের ওয়েবসাইট ভিজিট করে প্যাকেজ গুলো দেখতে পারেন অথবা আপনি কি ধরনের ওয়েবসাইট তৈরি করতে চাচ্ছেন তা জানালে আমরা আপনাকে সঠিক প্যাকেজটি নির্বাচন করতে সাহায্য করতে পারি।"
+    },
+    {
+      "question": "আমি কিভাবে আপনাদের প্যাকেজ গুলো কিনতে পারি?",
+      "answer": "আপনি আমাদের ওয়েবসাইট ভিজিট করে প্যাকেজ গুলো কিনতে পারেন অথবা আপনি কি ধরনের ওয়েবসাইট তৈরি করতে চাচ্ছেন তা জানালে আমরা আপনাকে সঠিক প্যাকেজটি নির্বাচন করতে সাহায্য করতে পারি।"
+    },
+    {
+      "question": "আপনাদের পেমেন্ট মেথড গুলো কি কি?",
+      "answer": "বিকাশ, রকেট, নগদ, সেলফিন, উপায়সহ ক্রেডিট, ডেবিট, ভিসা এবং মাস্টারকার্ড এর মাধ্যমে পেমেন্ট করার সুযোগ রয়েছে।\n\nএছাড়া আপনি যদি দেশের বাইরে থাকেন তবে স্ট্রাইপ এবং ব্যাংক ট্রান্সফারের মাধ্যমে পেমেন্ট করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি বিকাশ দিয়ে পেমেন্ট করতে পারবো?",
+      "answer": "জ্বী, আপনি বিকাশ দিয়ে পেমেন্ট করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি নগদ দিয়ে পেমেন্ট করতে পারবো?",
+      "answer": "জ্বী, আপনি নগদ দিয়ে পেমেন্ট করতে পারবেন।"
+    },
+    {
+      "question": "আপনাদের পেমেন্ট গেটওয়ে কি?",
+      "answer": "বাংলাদেশের যেকোন পেমেন্ট মেথড এর জন্য আমরা এসএসএলকমার্জ গেটওয়ে এবং ইন্টারন্যাশনাল ক্রেডিট বা ডেবিট কার্ড পেমেন্ট এর জন্য আমরা স্ট্রাইপ ব্যবহার করে থাকি। "
+    },
+    {
+      "question": "আমার টাকা কেটে নিয়েছে কিন্তু সার্ভিস এক্টিভ হয়নি, আমি কি করবো?",
+      "answer": "অনুগ্রহপুর্বক আপনার ইমেইল এড্রেসটি আমাদের শেয়ার করবেন যাতে আমরা বিস্তারিত চেক করতে পারি। এছাড়া আপনি কোন প্ল্যানটি বুক করেছিলেন, কত টাকা কেটে এ বিষয়ে আরো বিস্তারিত জানাতে পারলে আমরা এটি চেক করতে সহজ হবে। "
+    },
+    {
+      "question": "আপনাদের সাপোর্ট সিস্টেম কেমন?",
+      "answer": "আমরা ২৪/৭ সাপোর্ট প্রদান করে থাকি। আপনি টিকেট, লাইভ চ্যাট এবং ফোন কলের মাধ্যমে সাপোর্ট পেতে পারেন।"
+    },
+    {
+      "question": "আমি কিভাবে আপনাদের সাথে যোগাযোগ করতে পারি?",
+      "answer": "আপনি আমাদের সাথে টিকেট, লাইভ চ্যাট এবং ফোন কলের মাধ্যমে যোগাযোগ করতে পারেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের সাথে লাইভ চ্যাটে যোগাযোগ করতে পারি?",
+      "answer": "যেকোন সমস্যা বা সহযোগিতায় আমাদের রয়েছে ইন্সট্যান্ট সাপোর্ট সিস্টেম। সরাসরি কল, চ্যাট ও টিকিট সাপোর্ট থাকছে দিনের ২৪ ঘন্টা, সপ্তাহে ৭ দিন। \n\nএছাড়া সর্বোচ্চ ১ ঘন্টার মধ্যে টিকিট ও মেইল সাপোর্ট নিশ্চিত করা হয়।"
+    },
+    {
+      "question": "আমি কি আপনাদের সাথে ফোন কলের মাধ্যমে যোগাযোগ করতে পারি?",
+      "answer": "জ্বী, আপনি আমাদের সাথে ফোন কলের মাধ্যমে যোগাযোগ করতে পারেন।\n\nযেকোন সময় কল সাপোর্ট পেতে অনুগ্রহপূর্বক \"Call Support\" লিখে মেসেজ করলে আমাদের একজন সাপোর্ট এজেন্ট আপনাকে কলব্যাক করবেন。\n\nএছাড়া ২৪ ঘন্টা যেকোন সময় ইন্সট্যান্ট কল সাপোর্ট পেতে ব্যবহার করুন:\n09617875955"
+    },
+    {
+      "question": "আমি কি আপনাদের সাথে হোয়াটসঅ্যাপে যোগাযোগ করতে পারি?",
+      "answer": "জ্বী, আপনি আমাদের সাথে হোয়াটসঅ্যাপে যোগাযোগ করতে পারেন।"
+    },
+    {
+      "question": "আপনাদের হোয়াটসঅ্যাপ নাম্বার কি?",
+      "answer": "আমাদের অফিসিয়াল হোয়াটসএ্যাপ নাম্বার হলো 01325 875 955\n\nএছাড়া সরাসরি হোয়াটসঅ্যাপ কল বা সাপোর্ট এর জন্য অনুগ্রহপূর্বক নীচের লিংক থেকে মেসেজ করুন। https://hostnin.com/whatsapp"
+    },
+    {
+      "question": "আপনাদের ইমেইল এড্রেস কি?",
+      "answer": "আমাদের সেলস টিমের ইমেইল এড্রেস হলো sales@hostnin.com এবং সাপোর্ট টিমের ইমেইল এড্রেস হলো support@hostnin.com।"
+    },
+    {
+      "question": "আপনাদের অফিস কোথায়?",
+      "answer": "৮ম তলা, প্রশান্তি আবাসিক এলাকা গেইট সংলগ্ন, ডি.টি. রোড, কর্নেলহাট, চট্টগ্রাম। \n\nঅফিস পথ নির্দেশিকা: চট্টগ্রাম শহরের সিটি গেইট থেকে আগে এবং এ.কে খান এর মধ্যবর্তী স্থানে কর্ণেলহাট এ আমাদের অফিস অবস্থিত। এছাড়া আমাদের USA এর Wyoming State এও অফিস রয়েছে।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে সার্ভিস নিতে পারি?",
+      "answer": "জ্বী না, আন্তরিকভাবে দু:খিত যে আমরা অফিস থেকে সাপোর্ট প্রোভাইড করি না। আমাদের সাপোর্ট ইন্সট্যান্ট এবং অফিসে এসে সাপোর্ট প্রয়োজন হয় না। "
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে কথা বলতে পারি?",
+      "answer": "জ্বী না। আপনি চাইলে সরাসরি আমাদের হটলাইন নাম্বারে ২৪ ঘন্টা কল সাপোর্ট নিতে পারেন যার ফলে আলাদা করে অফিসে এসে কথা বলার প্রয়োজন হয় না। "
+    },
+    {
+      "question": "আপনাদের অফিস খোলার সময় কখন?",
+      "answer": "আমাদের অফিস ২৪ ঘন্টাই মাল্টিপল শিফটে রানিং থাকে তবে চ্যাট ও কলে আমরা ইন্সট্যান্ট সাপোর্ট প্রদান করায় এটি সর্বসাধারনের সাপোর্টের জন্য উন্মুক্ত নয়। "
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে পেমেন্ট করতে পারবো?",
+      "answer": "জ্বী না, আমরা বাংলাদেশের স্বনামধন্য পেমেন্ট গেটওয়ে এসএসএলকমার্জ এবং ইন্টারন্যাশনালী স্ট্রাইপ ব্যবহার করে থাকি তাই আলাদাভাবে অফিসে এসে পেমেন্ট করার সুযোগ নেই বলে আন্তরিকভাবে দু:খিত। "
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে সার্ভিস ক্যান্সেল করতে পারবো?",
+      "answer": "জ্বী না, আপনি সরাসরি আমাকে জানালে আমরা এখনোই এটি ক্যান্সেল করতে পারবো। আলাদা করে অফিসে আসার প্রয়োজন নেই।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে রিফান্ড নিতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে রিফান্ড নিতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার সার্ভিস আপগ্রেড করতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার সার্ভিস আপগ্রেড করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার সার্ভিস ডাউনগ্রেড করতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার সার্ভিস ডাউনগ্রেড করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার ডোমেইন ট্রান্সফার করতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার ডোমেইন ট্রান্সফার করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার ওয়েবসাইট মাইগ্রেট করতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার ওয়েবসাইট মাইগ্রেট করতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার ওয়েবসাইট ডিজাইন করাতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার ওয়েবসাইট ডিজাইন করাতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার এসইও করাতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার এসইও করাতে পারবেন।"
+    },
+    {
+      "question": "আমি কি আপনাদের অফিসে এসে আমার ডিজিটাল মার্কেটিং করাতে পারবো?",
+      "answer": "জ্বী, আপনি আমাদের অফিসে এসে আপনার ডিজিটাল মার্কেটিং করাতে পারবেন।"
+    },
+    {
+      "question": "amar existing domain ta apnader e transfer korte chai",
+      "answer": "Sure, you can transfer your domain to Hostnin. Here is the domain transfer guide..."
+    },
+    {
+      "question": "Can I pay via Bank Transfer?",
+      "answer": "Yes, you can pay via Bank Transfer."
+    },
+    {
+      "question": "What if my site gets hacked? Do you clean it?",
+      "answer": "We provide security, but if your site gets hacked due to vulnerable code, we help you to clean the mallecious completely free of charge and help you to restore."
+    },
+    {
+      "question": "Do you provide dedicated IP addresses?",
+      "answer": "We provide the Dedicated IP with VPS and Dedicated Server only. Shared Hosting isn't comes with dedicated IP feature. "
+    },
+    {
+      "question": "I want to cancel my account. How do I do that?",
+      "answer": "You can submit a cancellation request from your client area or i can convert this chat into a support ticket so our team can handle the rest. "
+    },
+    {
+      "question": "Can you help me install a WordPress plugin?",
+      "answer": "Sure, we can help you with that. Please share your plugin in a sharable link such a drive link so i can convert this chat into a suport ticket and our team will do it for you. "
+    },
+    {
+      "question": "Are your servers managed or unmanaged?",
+      "answer": "Our shared hosting servers are  unmanaged by default but you can get managed service by paying additional 2000 BDT per month."
+    },
+    {
+      "question": "How do I point my domain to your hosting if I bought it elsewhere?",
+      "answer": "You can point your domain by updating the nameservers at your registrar."
+    },
+    {
+      "question": "Do you have any promotional offers right now?",
+      "answer": "No further discount is necessary since we are already offering this at a significant discount.\n\nHowever, you can unlock even more savings by opting for a longer billing period. With a 3-year plan, you’ll receive a domain completely free for the first year."
+    },
+    {
+      "question": "Why can't I manage DNS if I'm using custom nameservers?",
+      "answer": "Unfortunately not. If you need to use custom nameservers, then DNS management will not work. But you can manage the same thing from your hosting panel, like cPanel 'Zone Editor."
+    },
+    {
+      "question": "Why am I facing errors while adding multiple DNS records?",
+      "answer": "Our team will add it for you. I can conver this support chat into a ticket so our team can handle the rest. Would you like me to do that? "
+    },
+    {
+      "question": "I cannot access my cpanel, probably my ip has been blocked?",
+      "answer": "If you think your IP is blokced please visit the hostnin.com/ip link and share the IP with us so we can unblock it instantly. "
+    },
+    {
+      "question": "kivabe",
+      "answer": "Are you looking to point your domain to Hostnin hosting, or are you trying to update nameservers for a domain registered elsewhere?"
+    },
+    {
+      "question": "Abar Mail dite hobe?",
+      "answer": "Yes"
+    },
+    {
+      "question": "Login details pai nai",
+      "answer": "আপনার ডোমেইন এড্রেসটি দিলে আমরা আপনার সিপ্যানেল একসেসগুলো প্রোভাইড করতে পারবো। "
+    },
+    {
+      "question": "maybe problem in hosting permission layer",
+      "answer": "Alright. Let me convert this chat to support ticket. Our senior technical team will check it further and provide you a proper solution within 15 minutes."
+    },
+    {
+      "question": "What does the 'Action Failed Unable to auto-login' error mean?",
+      "answer": "This is typically a temporary authentication issue, not a serious problem. It usually happens when there's a session timeout or a brief connectivity hiccup between your browser and our server. \n\nDo you want me to convert this chat into a support ticket so our technical team can check and refine it for you? "
+    },
+    {
+      "question": "How long might it take to resolve this issue?",
+      "answer": "We usually resolve more than 90% issues within 15 minutes or less but for some complex ones, it can take a bit of time. "
+    },
+    {
+      "question": "I am unable to log in to my cPanel account. Please help me resolve this issue.",
+      "answer": "I have converted your chat to a ticket so that our technical team can check it in detail. The technical team will provide detailed updates via email."
+    },
+    {
+      "question": "no webmail down",
+      "answer": "We are not finding any issue from our end. However, I have converted this chat into a ticket. Our technical team will check the issue and reply to you through the ticket."
+    },
+    {
+      "question": "I have tried to reset my password yesterday. But did not receive any link in my email.",
+      "answer": "Can you please share your email address so we can check it for you? \n\nalso i can convert this chat into a ticket so our team can help you resolve it faster. "
+    },
+    {
+      "question": "I had this same problem last time few months back.",
+      "answer": "https://remotedesktop.google.com/support/\n\nCan you go to this link and Generate the code for us? So we can connect through your Device and guide you on how to do that.\n\nYou can find detailed instructions on how to generate a remote code here:\n\nhttps://youtu.be/G_BgDE4_sXI"
+    },
+    {
+      "question": "Duita eksathe kora jai na. Separately mone rakha jhamelar",
+      "answer": "জ্বী করা যায়। তবে যেহেতু ডোমেইন খুবই গুরত্বপূর্ন একটি এসেট তাই আামদের টিম থেকে আর্লী ব্যাসিসে এটার জন্য রিনিউ ইনভয়েস পাঠানো হয়।"
+    },
+    {
+      "question": "Hosting er sathe ki domain free na?",
+      "answer": "জ্বী, বেসিক ব্যতিত যেকোন হোষ্টিং ইয়ারলী বা ৩ বছরের জন্য বুক করলে সাথে ফ্রি ডোমেইন পাচ্ছেন। "
+    },
+    {
+      "question": "যেকোনো পোস্টে ক্লিক করলে এটা দেখায় কেন ভাই?",
+      "answer": "I can see dailyspeech.net is showing a 404 error page right now. This typically happens when a page or post URL isn't configured properly, or the content's been moved/deleted."
+    },
+    {
+      "question": "আজ আমি আপনার সার্ভার ব্যবহার করার চেষ্টা করছিলাম কেন কিনেছিলাম।",
+      "answer": "শুভ সংবাদ! আপনি আপনার হোস্টিং সেট আপ করেছেন। আপনি সার্ভারের ক্ষেত্রে কোন সমস্যা সম্মুখীন হচ্ছেন?"
+    },
+    {
+      "question": "email পাঠানো যাচ্ছেনা",
+      "answer": "ঠিক আছে, আমি এই ইস্যুটা আমাদের সিনিয়র টেকনিক্যাল টিমের কাছে টিকিটে কনভার্ট করে দিচ্ছি যাতে তারা আপনার ইমেইল সেটআপটা চেক করতে পারেন।"
+    },
+    {
+      "question": "আমার ডোমেইন এখনো expired দেখাচ্ছে, কেন?",
+      "answer": "এক্সপায়া‍র্ড হয়ে যাওয়ায় এটি একটিভ হতে কিছুটা সময় নিবে। আশাকরছি আজকের মধ্যেই একটিভ হয়ে যাবে।"
+    },
+    {
+      "question": "Why is the cPanel Zone Editor not showing the NS record type?",
+      "answer": "The issue is clear now, let me convert this to a support ticket so our senior team can investigate the NS record visibility issue in detail."
+    },
+    {
+      "question": "amar cpanel er username ki hobe",
+      "answer": "আপনার ইমেইল এড্রেসটি দিলে আমরা এটি বিস্তারিত চেক করতে পারবো।"
+    },
+    {
+      "question": "আমি কিভাবে আমার ই ভয়েসটি দেখবো। এবং আমি যে কিছুখন আগে যে প্যাকেজটি নিলাম। সেটার সার্ভিস গুলো কি কি সেটা কিভাবে দেখতে পারবো",
+      "answer": "আপনার ক্লায়েন্ট পোর্টাল থেকে ইনভয়েসগুলো দেখতে পারবেন এবং ম্যানেজ করতে পারবেন। আপনি চাইলে আমরা এখানেও আপনার ইনভয়েস লিংকটি দিতে পারি, আমি কি পাঠিয়ে দিবো?"
+    },
+    {
+      "question": "সেখানে একটি free.com domain দেওয়া আছে। কিন্তু সেটা claim করতে পারছি না।",
+      "answer": "আপনার ইমেইল এড্রেসটি দিন"
+    }
+  ]
 }

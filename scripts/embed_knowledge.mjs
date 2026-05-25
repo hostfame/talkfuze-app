@@ -110,15 +110,31 @@ async function run() {
     }
   }
 
-  console.log("Inserting Hosting Plans and Server Specs...");
+  console.log("Grouping and Inserting Hosting Plans...");
+  // Group plans by type and name to prevent cross-contamination hallucinations!
+  const groupedPlans = {};
   for (const plan of knowledgeData.plans) {
-    const specs = (plan.server || []).join(', ');
-    const features = (plan.features || []).join(', ');
-    const setupFee = plan.setupFee ? `\nSetup Fee: ৳${plan.setupFee}` : '';
-    
+    const key = `${plan.type} - ${plan.name}`;
+    if (!groupedPlans[key]) {
+      groupedPlans[key] = {
+        name: plan.name,
+        type: plan.type,
+        specs: (plan.server || []).join(', '),
+        features: (plan.features || []).join(', '),
+        pricing: []
+      };
+    }
+    const setupFee = plan.setupFee ? ` (Setup Fee: ৳${plan.setupFee})` : '';
+    let monthlyText = plan.monthlyBreakdown ? `(৳${plan.monthlyBreakdown}/month breakdown)` : '';
+    groupedPlans[key].pricing.push(`- ${plan.period}: ৳${plan.price} ${monthlyText}${setupFee}`);
+  }
+
+  for (const key in groupedPlans) {
+    const p = groupedPlans[key];
+    const pricingStr = p.pricing.join('\n');
     await insertKnowledge(
-      `What is the price, server hardware specs, processor, RAM, and features of the ${plan.name} ${plan.type} (${plan.period} billing)?`,
-      `Plan: ${plan.name} ${plan.type}\nBilling Period: ${plan.period}\nPrice: ${plan.currency}${plan.price} (${plan.currency}${plan.monthlyBreakdown}/month breakdown)${setupFee}\nFeatures: ${features}\nHardware Specs & Limits: ${specs}`
+      `What is the price, server hardware specs, processor, RAM, and features of the ${p.name} ${p.type}?`,
+      `Plan: ${p.name} ${p.type}\n\nAvailable Billing Periods & Pricing:\n${pricingStr}\n\nFeatures: ${p.features}\nHardware Specs & Limits: ${p.specs}`
     );
   }
 
@@ -135,6 +151,16 @@ async function run() {
       await insertKnowledge(
         `Hosting comparison: ${comp.substring(0, 50)}...`,
         comp
+      );
+    }
+  }
+
+  console.log("Inserting Sales Objections...");
+  if (knowledgeData.sales_objections) {
+    for (const obj of knowledgeData.sales_objections) {
+      await insertKnowledge(
+        `Customer Question/Objection: ${obj.question}`,
+        `Hostnin Agent Patch/Response: ${obj.answer}`
       );
     }
   }

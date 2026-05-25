@@ -256,8 +256,9 @@ export async function POST(req: Request) {
           });
           
           if (vectorDocs && vectorDocs.length > 0) {
-            knowledgeContext += '\n\n## Knowledge Base & Reference Answers (Use this information to draft your reply)\n' + 
-              vectorDocs.map((d: any) => `User Question / Context: ${d.question}\nRelevant Answer / Info: ${d.answer}`).join('\n\n---\n\n');
+            knowledgeContext += '\n\n## Knowledge Base & Reference Answers (Use this information to draft your reply)\n';
+            knowledgeContext += 'CRITICAL INSTRUCTION: The answers below contain general Hostnin policies. DO NOT copy them blindly. You MUST personalize the final response to perfectly match the exact numbers, metrics (e.g., specific RAM or visitor limits), and situation mentioned by the CUSTOMER in the current chat.\n\n';
+            knowledgeContext += vectorDocs.map((d: any) => `User Question / Context: ${d.question}\nRelevant Answer / Info: ${d.answer}`).join('\n\n---\n\n');
             vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
           }
         }
@@ -313,6 +314,7 @@ The customer has uploaded an image/screenshot (attached to this message).
 You MUST analyze the contents of this image carefully. 
 - If it is a pricing table, plan comparison, or website screenshot: Answer their query based on the visible plans, features, and prices.
 - If it is an error log, CPGuard notification, or cPanel screenshot: Explain the technical issue shown and how it will be resolved.
+- If it is a payment receipt: Analyze the SPECIFIC image uploaded right now. Do not assume it is the same payment method used earlier in the chat. Acknowledge the exact payment method (e.g., bKash, SSLCommerz, Bank Transfer) and amount visibly shown IN THIS IMAGE. DO NOT assume or state it is a 'Bank Transfer' unless explicitly written on this new receipt.
 ALWAYS base your response strictly on what is visibly present in the image. DO NOT invent or hallucinate tickets, bookings, or unrelated scenarios.` : ''}
 
 Draft a smart, helpful reply as the support agent.`;
