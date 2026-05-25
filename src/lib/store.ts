@@ -142,6 +142,8 @@ interface InboxState {
   setActiveCall: (conversationId: string, callData: { agentName: string, agentAvatar?: string } | null) => void
   pendingIpUnblock: string | null
   setPendingIpUnblock: (ip: string | null) => void
+  crmCache: Record<string, { whmcsClient: any, whmcsServices: any, whmcsTickets: any, whmcsInvoices: any, legacyData: any, timestamp: number }>
+  setCrmCache: (key: string, data: { whmcsClient: any, whmcsServices: any, whmcsTickets: any, whmcsInvoices: any, legacyData: any, timestamp: number }) => void
 }
 
 export const useInboxStore = create<InboxState>((set) => ({
@@ -160,6 +162,10 @@ export const useInboxStore = create<InboxState>((set) => ({
   convertingTickets: {},
   isFetchingMessages: {},
   pendingIpUnblock: null,
+  crmCache: {},
+  setCrmCache: (key, data) => set((state) => ({
+    crmCache: { ...state.crmCache, [key]: data }
+  })),
   setConversations: (conversations) => set({ conversations, isLoaded: true }),
   setArchivedConversations: (archivedConversations) => set({ archivedConversations, isFetchingArchived: false }),
   setIsFetchingArchived: (loading) => set({ isFetchingArchived: loading }),

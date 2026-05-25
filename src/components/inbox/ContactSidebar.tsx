@@ -153,7 +153,7 @@ export default function ContactSidebar({
   isOpen?: boolean,
   onClose?: () => void
 }) {
-  const { triggerDial, convertingTickets, setConvertingTicket, pendingIpUnblock, setPendingIpUnblock } = useInboxStore()
+  const { triggerDial, convertingTickets, setConvertingTicket, pendingIpUnblock, setPendingIpUnblock, crmCache, setCrmCache } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
   const [contactNameOverrides, setContactNameOverrides] = useState<Record<string, string>>({})
   const contactName = contact?.id ? contactNameOverrides[contact.id] || contact.name : contact?.name || "Unknown"
@@ -906,7 +906,7 @@ export default function ContactSidebar({
   useEffect(() => {
     let mounted = true
     
-    // Reset CRM state immediately when conversation changes to prevent data leak
+    // Reset local state first to prevent data leak
     setWhmcsClient(null)
     setWhmcsServices(null)
     setWhmcsTickets([])
@@ -922,8 +922,20 @@ export default function ContactSidebar({
         setCrmSearchQuery("")
       }
 
+      // 1. Immediately load from cache if available (SWR)
+      const cacheKey = cleanPhone || conversation.id;
+      const cached = crmCache[cacheKey];
+      if (cached) {
+        setWhmcsClient(cached.whmcsClient);
+        setWhmcsServices(cached.whmcsServices);
+        setWhmcsTickets(cached.whmcsTickets);
+        setWhmcsInvoices(cached.whmcsInvoices);
+        setCrmData(cached.legacyData);
+      }
+
       const loadAllCrmData = async () => {
-        setIsCrmLoading(true)
+        setIsCrmLoading(true);
+        
         try {
           const isRealEmail = cleanPhone.includes('@') && !cleanPhone.endsWith('@lid')
           const digitsOnly = cleanPhone.replace(/\D/g, '')
@@ -974,12 +986,31 @@ export default function ContactSidebar({
               setWhmcsServices(services)
               setWhmcsTickets(tickets)
               setWhmcsInvoices(invoices)
+              
+              // Update global cache
+              setCrmCache(cacheKey, {
+                whmcsClient: whmcsClientResult,
+                whmcsServices: services,
+                whmcsTickets: tickets,
+                whmcsInvoices: invoices,
+                legacyData: legacyData,
+                timestamp: Date.now()
+              });
             }
           } else if (mounted) {
             setWhmcsClient(null)
             setWhmcsServices(null)
             setWhmcsTickets([])
             setWhmcsInvoices([])
+            // Update global cache for not found
+            setCrmCache(cacheKey, {
+              whmcsClient: null,
+              whmcsServices: null,
+              whmcsTickets: [],
+              whmcsInvoices: [],
+              legacyData: legacyData,
+              timestamp: Date.now()
+            });
           }
         } catch (error) {
           console.error("Error loading CRM/WHMCS data:", error)
@@ -989,7 +1020,12 @@ export default function ContactSidebar({
           }
         }
       }
-      loadAllCrmData()
+      
+      // If we have recent cache (within 5 minutes), skip refetch to save API calls
+      const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+      if (!cached || Date.now() - cached.timestamp > CACHE_TTL) {
+        loadAllCrmData();
+      }
     } else {
       setCrmSearchQuery("")
     }
