@@ -136,15 +136,17 @@ export async function fetchWhmcsUnpaidInvoices(clientId: number) {
 
 export async function fetchWhmcsDashboardData(clientId: number) {
   try {
-    const data = await getClientDashboardData(clientId)
-    if (data.result === 'success') {
-      return {
-        services: data.services || { products: [], domains: [] },
-        tickets: data.tickets || [],
-        invoices: data.invoices || []
-      }
-    }
-    return { services: { products: [], domains: [] }, tickets: [], invoices: [] }
+    const [services, tickets, invoices] = await Promise.all([
+      fetchWhmcsServices(clientId),
+      fetchWhmcsTickets(clientId),
+      fetchWhmcsUnpaidInvoices(clientId)
+    ]);
+    
+    return {
+      services: services || { products: [], domains: [] },
+      tickets: tickets || [],
+      invoices: invoices || []
+    };
   } catch (error) {
     console.error("Failed to fetch WHMCS dashboard data:", error)
     return { services: { products: [], domains: [] }, tickets: [], invoices: [] }
@@ -162,37 +164,32 @@ export async function fetchWhmcsDashboardDataBySearch(searchQuery: string) {
     const client = await fetchWhmcsClient(cleanSearch);
 
     if (client && client.id) {
-      // 2. Fetch dashboard data using client ID which is extremely fast
-      const dashboardData = await getClientDashboardData(client.id);
-      
-      if (dashboardData.result === 'success') {
+      // 2. Fetch dashboard data using client ID in parallel via working endpoints
+      try {
+        const [services, tickets, invoices] = await Promise.all([
+          fetchWhmcsServices(client.id),
+          fetchWhmcsTickets(client.id),
+          fetchWhmcsUnpaidInvoices(client.id)
+        ]);
+        
         return {
           client: client,
-          services: dashboardData.services || { products: [], domains: [] },
-          tickets: dashboardData.tickets || [],
-          invoices: dashboardData.invoices || []
-        }
-      }
-      
-      // If dashboard data fails but we have client, still return client
-      return {
-          client: client,
-          services: { products: [], domains: [] },
-          tickets: [],
-          invoices: []
-      }
-    }
-
-    // Fallback to the slow bridge action if fetchWhmcsClient fails (should rarely happen)
-    const data = await getClientDashboardDataByPhoneOrEmail(searchQuery)
-    if (data.result === 'success') {
-      return {
-        client: data.client || null,
-        services: data.services || { products: [], domains: [] },
-        tickets: data.tickets || [],
-        invoices: data.invoices || []
+          services: services || { products: [], domains: [] },
+          tickets: tickets || [],
+          invoices: invoices || []
+        };
+      } catch (innerError) {
+        console.error("Failed to fetch inner WHMCS services for client:", innerError);
+        // If services fail, we still have the client object to return!
+        return {
+            client: client,
+            services: { products: [], domains: [] },
+            tickets: [],
+            invoices: []
+        };
       }
     }
+    
     return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
   } catch (error) {
     console.error("Failed to fetch WHMCS dashboard data by search:", error)
