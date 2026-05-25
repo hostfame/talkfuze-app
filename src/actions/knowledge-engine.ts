@@ -109,7 +109,33 @@ const PRICING: Record<string, string> = {
   n8n: buildPricingMD('N8n App Hosting'),
 };
 
-const DOMAINS = `## Domain Pricing (BDT/year)\n${(knowledge as any).domains.map((d: any) => `${d.tld}: ৳${d.price}`).join(' | ')}\nFor other extensions: https://hostnin.com/domain`;
+function buildDomainContext(userMessage: string): string {
+  const allDomains = (knowledge as any).domains || [];
+  if (allDomains.length === 0) return '';
+  
+  // Always include top popular domains for BD market
+  const topTlds = new Set(['.com', '.net', '.org', '.xyz', '.info', '.com.bd', '.online', '.store', '.shop', '.co']);
+  
+  // Extract mentioned domains from user message (e.g., .tech, .io)
+  const mentionedTlds = new Set<string>();
+  const matches = userMessage.match(/\.[a-z]{2,}/ig);
+  if (matches) {
+    matches.forEach(m => mentionedTlds.add(m.toLowerCase()));
+  }
+
+  const selectedDomains = allDomains.filter((d: any) => topTlds.has(d.tld) || mentionedTlds.has(d.tld));
+  const finalDomains = selectedDomains.length > 0 ? selectedDomains : allDomains.slice(0, 10);
+  
+  const pricingLines = finalDomains.map((d: any) => {
+    let p = `${d.tld} (Reg: ৳${d.price}`;
+    if (d.renew && d.renew !== d.price) p += `, Ren: ৳${d.renew}`;
+    if (d.transfer && d.transfer !== d.price) p += `, Trans: ৳${d.transfer}`;
+    p += ')';
+    return p;
+  });
+
+  return `## Domain Pricing (BDT/year)\n${pricingLines.join(' | ')}\nFor other extensions, say: "Check availability and exact pricing at https://hostnin.com/domain"`;
+}
 
 const COMPARISONS = `## Hosting Comparisons\n${(knowledge as any).comparisons.join('\n')}`;
 
@@ -263,7 +289,7 @@ export function buildKnowledgeContext(contextMessages: string): { context: strin
       sections.push(PRICING[pricingKey]);
       sources.push(`${pricingKey} Pricing`);
     }
-    if (intent === 'domain') { sections.push(DOMAINS); sources.push('Domain Pricing'); }
+    if (intent === 'domain') { sections.push(buildDomainContext(contextMessages)); sources.push('Domain Pricing'); }
     if (intent === 'comparison') { sections.push(COMPARISONS); sources.push('Hosting Comparisons'); }
     if (intent === 'pricing_objection') {
       // Force-inject the /expensive canned response as THE reference reply

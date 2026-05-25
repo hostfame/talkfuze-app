@@ -2450,14 +2450,2616 @@
     }
   ],
   "domains": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "tld": ".com",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1650
+    },
+    {
+      "tld": ".fr",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1550
+    },
+    {
+      "tld": ".be",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1650
+    },
+    {
+      "tld": ".ac",
+      "price": 4020,
+      "renew": 4020,
+      "transfer": 4020
+    },
+    {
+      "tld": ".academy",
+      "price": 2320.28,
+      "renew": 5182.6,
+      "transfer": 5233.3
+    },
+    {
+      "tld": ".accountants",
+      "price": 2621.29,
+      "renew": 11226.14,
+      "transfer": 11226.14
+    },
+    {
+      "tld": ".actor",
+      "price": 2205,
+      "renew": 4900.5,
+      "transfer": 4948.6
+    },
+    {
+      "tld": ".agency",
+      "price": 999,
+      "renew": 3590,
+      "transfer": 3590
+    },
+    {
+      "tld": ".ai",
+      "price": 10684.28,
+      "renew": 9988.7,
+      "transfer": 19477.4
+    },
+    {
+      "tld": ".airforce",
+      "price": 3970.01,
+      "renew": 3970.01,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".apartments",
+      "price": 6541.43,
+      "renew": 6541.43,
+      "transfer": 6141.43
+    },
+    {
+      "tld": ".app",
+      "price": 2599,
+      "renew": 2799.99,
+      "transfer": 2599
+    },
+    {
+      "tld": ".archi",
+      "price": 2273.2,
+      "renew": 10684.2,
+      "transfer": 10797.3
+    },
+    {
+      "tld": ".army",
+      "price": 2343.4,
+      "renew": 4336.3,
+      "transfer": 4377.9
+    },
+    {
+      "tld": ".art",
+      "price": 3321,
+      "renew": 3348.3,
+      "transfer": 3348.3
+    },
+    {
+      "tld": ".asia",
+      "price": 1020,
+      "renew": 2060,
+      "transfer": 2060
+    },
+    {
+      "tld": ".associates",
+      "price": 2343.4,
+      "renew": 4478,
+      "transfer": 4520.9
+    },
+    {
+      "tld": ".attorney",
+      "price": 6612.85,
+      "renew": 6612.85,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".auction",
+      "price": 3827.15,
+      "renew": 4530,
+      "transfer": 4530
+    },
+    {
+      "tld": ".audio",
+      "price": 14969.99,
+      "renew": 16398.58,
+      "transfer": 16141.42
+    },
+    {
+      "tld": ".band",
+      "price": 2104.28,
+      "renew": 3327.14,
+      "transfer": 3212.86
+    },
+    {
+      "tld": ".bar",
+      "price": 398.57,
+      "renew": 7827.14,
+      "transfer": 7855.72
+    },
+    {
+      "tld": ".bargains",
+      "price": 1282.85,
+      "renew": 3755.71,
+      "transfer": 3570
+    },
+    {
+      "tld": ".bayern",
+      "price": 4255.72,
+      "renew": 4255.72,
+      "transfer": 4141.42
+    },
+    {
+      "tld": ".beauty",
+      "price": 667.7,
+      "renew": 2234.2,
+      "transfer": 2234.2
+    },
+    {
+      "tld": ".beer",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".best",
+      "price": 2622.9,
+      "renew": 2643.7,
+      "transfer": 2643.7
+    },
+    {
+      "tld": ".bid",
+      "price": 1299,
+      "renew": 1499,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".bike",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".bingo",
+      "price": 6112.86,
+      "renew": 6112.86,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".bio",
+      "price": 1226.7,
+      "renew": 8015.3,
+      "transfer": 8015.3
+    },
+    {
+      "tld": ".biz",
+      "price": 2651.5,
+      "renew": 2651.5,
+      "transfer": 2651.5
+    },
+    {
+      "tld": ".black",
+      "price": 2599.86,
+      "renew": 6970,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".blackfriday",
+      "price": 16398.58,
+      "renew": 16398.58,
+      "transfer": 16141.42
+    },
+    {
+      "tld": ".blog",
+      "price": 3321,
+      "renew": 3350,
+      "transfer": 3350
+    },
+    {
+      "tld": ".blue",
+      "price": 1857.14,
+      "renew": 2541.44,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".boats",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".bond",
+      "price": 950,
+      "renew": 2220,
+      "transfer": 2220
+    },
+    {
+      "tld": ".boston",
+      "price": 827.14,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".boutique",
+      "price": 1085,
+      "renew": 4090,
+      "transfer": 4090
+    },
+    {
+      "tld": ".builders",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".business",
+      "price": 2615,
+      "renew": 3360,
+      "transfer": 3360
+    },
+    {
+      "tld": ".buzz",
+      "price": 999,
+      "renew": 3970.01,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".ca",
+      "price": 1650,
+      "renew": 3500,
+      "transfer": 3500
+    },
+    {
+      "tld": ".cab",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3355.72
+    },
+    {
+      "tld": ".cafe",
+      "price": 1227,
+      "renew": 5042,
+      "transfer": 4530
+    },
+    {
+      "tld": ".camera",
+      "price": 6541.43,
+      "renew": 6541.43,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".camp",
+      "price": 6255.72,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".capital",
+      "price": 1282.85,
+      "renew": 7541.43,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".cards",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".care",
+      "price": 2623,
+      "renew": 4805,
+      "transfer": 4805
+    },
+    {
+      "tld": ".careers",
+      "price": 4157.14,
+      "renew": 7612.85,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".casa",
+      "price": 684.28,
+      "renew": 1041.43,
+      "transfer": 998.57
+    },
+    {
+      "tld": ".cash",
+      "price": 1650,
+      "renew": 4050,
+      "transfer": 4050
+    },
+    {
+      "tld": ".casino",
+      "price": 954.29,
+      "renew": 17112.86,
+      "transfer": 16427.14
+    },
+    {
+      "tld": ".catering",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".cc",
+      "price": 999,
+      "renew": 1398.57,
+      "transfer": 1355.72
+    },
+    {
+      "tld": ".center",
+      "price": 1650,
+      "renew": 3900,
+      "transfer": 3900
+    },
+    {
+      "tld": ".cfd",
+      "price": 1700,
+      "renew": 970,
+      "transfer": 927.15
+    },
+    {
+      "tld": ".charity",
+      "price": 1041.43,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".chat",
+      "price": 1575,
+      "renew": 4378,
+      "transfer": 4378
+    },
+    {
+      "tld": ".cheap",
+      "price": 871.43,
+      "renew": 3755.71,
+      "transfer": 3641.43
+    },
+    {
+      "tld": ".christmas",
+      "price": 255.71,
+      "renew": 4970,
+      "transfer": 4855.71
+    },
+    {
+      "tld": ".church",
+      "price": 1282.85,
+      "renew": 4612.86,
+      "transfer": 4498.57
+    },
+    {
+      "tld": ".city",
+      "price": 707.15,
+      "renew": 2827.15,
+      "transfer": 2712.85
+    },
+    {
+      "tld": ".claims",
+      "price": 1692.86,
+      "renew": 7541.43,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".cleaning",
+      "price": 6255.72,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".click",
+      "price": 999,
+      "renew": 1950,
+      "transfer": 1950
+    },
+    {
+      "tld": ".clinic",
+      "price": 1925,
+      "renew": 6880,
+      "transfer": 6520
+    },
+    {
+      "tld": ".clothing",
+      "price": 3827.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".cloud",
+      "price": 999,
+      "renew": 3224,
+      "transfer": 3224
+    },
+    {
+      "tld": ".club",
+      "price": 2240,
+      "renew": 2240,
+      "transfer": 2240
+    },
+    {
+      "tld": ".coach",
+      "price": 1692.86,
+      "renew": 6970,
+      "transfer": 6712.86
+    },
+    {
+      "tld": ".codes",
+      "price": 1399,
+      "renew": 8427,
+      "transfer": 6712.86
+    },
+    {
+      "tld": ".coffee",
+      "price": 1528.57,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".college",
+      "price": 2541.44,
+      "renew": 7541.43,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".community",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".company",
+      "price": 2755,
+      "renew": 2755,
+      "transfer": 2755
+    },
+    {
+      "tld": ".computer",
+      "price": 1692.86,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".condos",
+      "price": 5898.57,
+      "renew": 5898.57,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".construction",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".consulting",
+      "price": 2268.57,
+      "renew": 4970,
+      "transfer": 4855.71
+    },
+    {
+      "tld": ".contact",
+      "price": 1527.15,
+      "renew": 1527.15,
+      "transfer": 1427.14
+    },
+    {
+      "tld": ".contractors",
+      "price": 3827.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".cooking",
+      "price": 3867,
+      "renew": 3867,
+      "transfer": 3867
+    },
+    {
+      "tld": ".cool",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".coupons",
+      "price": 707.15,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".courses",
+      "price": 3970.01,
+      "renew": 3970.01,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".credit",
+      "price": 1035.71,
+      "renew": 12112.85,
+      "transfer": 11427.14
+    },
+    {
+      "tld": ".creditcard",
+      "price": 20684.29,
+      "renew": 20684.29,
+      "transfer": 18570.01
+    },
+    {
+      "tld": ".cricket",
+      "price": 3341.43,
+      "renew": 3341.43,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".cruises",
+      "price": 5898.57,
+      "renew": 5898.57,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".cyou",
+      "price": 699,
+      "renew": 2225,
+      "transfer": 2199
+    },
+    {
+      "tld": ".dance",
+      "price": 1528.57,
+      "renew": 2970.01,
+      "transfer": 2855.71
+    },
+    {
+      "tld": ".date",
+      "price": 721.44,
+      "renew": 864.29,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".dating",
+      "price": 2514.29,
+      "renew": 6970,
+      "transfer": 6712.86
+    },
+    {
+      "tld": ".de",
+      "price": 1927,
+      "renew": 6927,
+      "transfer": 1927
+    },
+    {
+      "tld": ".dealer",
+      "price": 39257.14,
+      "renew": 285.71,
+      "transfer": 285.71
+    },
+    {
+      "tld": ".deals",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".degree",
+      "price": 6090,
+      "renew": 6090,
+      "transfer": 6090
+    },
+    {
+      "tld": ".delivery",
+      "price": 1157,
+      "renew": 6375,
+      "transfer": 6375
+    },
+    {
+      "tld": ".democrat",
+      "price": 3684.29,
+      "renew": 3684.29,
+      "transfer": 3570
+    },
+    {
+      "tld": ".dental",
+      "price": 8875,
+      "renew": 8875,
+      "transfer": 8875
+    },
+    {
+      "tld": ".dentist",
+      "price": 7484,
+      "renew": 7484,
+      "transfer": 7484
+    },
+    {
+      "tld": ".design",
+      "price": 6093,
+      "renew": 6093,
+      "transfer": 6093
+    },
+    {
+      "tld": ".dev",
+      "price": 2125,
+      "renew": 2125,
+      "transfer": 2125
+    },
+    {
+      "tld": ".diamonds",
+      "price": 6255.72,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".diet",
+      "price": 14969.99,
+      "renew": 16398.58,
+      "transfer": 16141.42
+    },
+    {
+      "tld": ".digital",
+      "price": 999,
+      "renew": 4663,
+      "transfer": 4663
+    },
+    {
+      "tld": ".direct",
+      "price": 2274,
+      "renew": 4378,
+      "transfer": 4378
+    },
+    {
+      "tld": ".directory",
+      "price": 1087,
+      "renew": 3094,
+      "transfer": 3094
+    },
+    {
+      "tld": ".discount",
+      "price": 3728,
+      "renew": 3728,
+      "transfer": 3728
+    },
+    {
+      "tld": ".doctor",
+      "price": 1692.86,
+      "renew": 13112.85,
+      "transfer": 12284.29
+    },
+    {
+      "tld": ".dog",
+      "price": 871.43,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".domains",
+      "price": 4612.86,
+      "renew": 4612.86,
+      "transfer": 4427.14
+    },
+    {
+      "tld": ".download",
+      "price": 1082,
+      "renew": 1235,
+      "transfer": 1235
+    },
+    {
+      "tld": ".earth",
+      "price": 2684.29,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".education",
+      "price": 4285,
+      "renew": 4285,
+      "transfer": 4285
+    },
+    {
+      "tld": ".email",
+      "price": 707.15,
+      "renew": 3112.86,
+      "transfer": 2998.57
+    },
+    {
+      "tld": ".energy",
+      "price": 1855,
+      "renew": 12082,
+      "transfer": 12082
+    },
+    {
+      "tld": ".engineer",
+      "price": 4702,
+      "renew": 4702,
+      "transfer": 4702
+    },
+    {
+      "tld": ".engineering",
+      "price": 2205,
+      "renew": 7088,
+      "transfer": 7088
+    },
+    {
+      "tld": ".enterprises",
+      "price": 1365,
+      "renew": 4378,
+      "transfer": 4378
+    },
+    {
+      "tld": ".equipment",
+      "price": 2684.29,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".estate",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".eu",
+      "price": 1250,
+      "renew": 1650,
+      "transfer": 1550
+    },
+    {
+      "tld": ".events",
+      "price": 2064,
+      "renew": 4805,
+      "transfer": 4805
+    },
+    {
+      "tld": ".exchange",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".expert",
+      "price": 1575,
+      "renew": 6970,
+      "transfer": 6518
+    },
+    {
+      "tld": ".exposed",
+      "price": 2255.71,
+      "renew": 2255.71,
+      "transfer": 2212.86
+    },
+    {
+      "tld": ".express",
+      "price": 1716,
+      "renew": 4378,
+      "transfer": 4378
+    },
+    {
+      "tld": ".fail",
+      "price": 3970.01,
+      "renew": 3970.01,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".faith",
+      "price": 1684.28,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".family",
+      "price": 3827.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".fans",
+      "price": 1382.86,
+      "renew": 1382.86,
+      "transfer": 1340
+    },
+    {
+      "tld": ".farm",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".fashion",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".feedback",
+      "price": 47112.86,
+      "renew": 47112.86,
+      "transfer": 47141.43
+    },
+    {
+      "tld": ".film",
+      "price": 9398.57,
+      "renew": 9398.57,
+      "transfer": 9427.15
+    },
+    {
+      "tld": ".finance",
+      "price": 1925,
+      "renew": 6945,
+      "transfer": 6945
+    },
+    {
+      "tld": ".financial",
+      "price": 1692.86,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".fish",
+      "price": 3398.58,
+      "renew": 4612.86,
+      "transfer": 4427.14
+    },
+    {
+      "tld": ".fishing",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".fit",
+      "price": 4211.25,
+      "renew": 4211.25,
+      "transfer": 4211.25
+    },
+    {
+      "tld": ".fitness",
+      "price": 790,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".flights",
+      "price": 3321,
+      "renew": 5947,
+      "transfer": 5947
+    },
+    {
+      "tld": ".florist",
+      "price": 3684.29,
+      "renew": 3684.29,
+      "transfer": 3570
+    },
+    {
+      "tld": ".flowers",
+      "price": 14969.99,
+      "renew": 16398.58,
+      "transfer": 15998.57
+    },
+    {
+      "tld": ".football",
+      "price": 2755.71,
+      "renew": 2755.71,
+      "transfer": 2641.43
+    },
+    {
+      "tld": ".forsale",
+      "price": 1692.86,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".foundation",
+      "price": 2060,
+      "renew": 3490,
+      "transfer": 3490
+    },
+    {
+      "tld": ".fund",
+      "price": 1925,
+      "renew": 7440,
+      "transfer": 6518
+    },
+    {
+      "tld": ".furniture",
+      "price": 3321,
+      "renew": 11813,
+      "transfer": 11939
+    },
+    {
+      "tld": ".futbol",
+      "price": 1470,
+      "renew": 1470,
+      "transfer": 1427.14
+    },
+    {
+      "tld": ".fyi",
+      "price": 2512.86,
+      "renew": 2512.86,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".gallery",
+      "price": 3589,
+      "renew": 3589,
+      "transfer": 3589
+    },
+    {
+      "tld": ".game",
+      "price": 40280,
+      "renew": 42846,
+      "transfer": 42846
+    },
+    {
+      "tld": ".games",
+      "price": 1692.86,
+      "renew": 3327.14,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".garden",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".gift",
+      "price": 2699,
+      "renew": 2699,
+      "transfer": 2699
+    },
+    {
+      "tld": ".gifts",
+      "price": 3827.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".gives",
+      "price": 1041.43,
+      "renew": 3398.58,
+      "transfer": 3355.72
+    },
+    {
+      "tld": ".glass",
+      "price": 6755.71,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".global",
+      "price": 4998,
+      "renew": 9656,
+      "transfer": 9656
+    },
+    {
+      "tld": ".gmbh",
+      "price": 3970.01,
+      "renew": 3970.01,
+      "transfer": 3784.29
+    },
+    {
+      "tld": ".gold",
+      "price": 871.43,
+      "renew": 12112.85,
+      "transfer": 11427.14
+    },
+    {
+      "tld": ".golf",
+      "price": 707.15,
+      "renew": 6827.15,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".graphics",
+      "price": 2827.15,
+      "renew": 2827.15,
+      "transfer": 2712.85
+    },
+    {
+      "tld": ".gratis",
+      "price": 2255.71,
+      "renew": 2255.71,
+      "transfer": 2212.86
+    },
+    {
+      "tld": ".green",
+      "price": 871.43,
+      "renew": 8541.43,
+      "transfer": 8284.29
+    },
+    {
+      "tld": ".gripe",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3355.72
+    },
+    {
+      "tld": ".group",
+      "price": 2327.14,
+      "renew": 2327.14,
+      "transfer": 2212.86
+    },
+    {
+      "tld": ".guide",
+      "price": 4938,
+      "renew": 4938,
+      "transfer": 4938
+    },
+    {
+      "tld": ".guitars",
+      "price": 14969.99,
+      "renew": 16398.58,
+      "transfer": 15998.57
+    },
+    {
+      "tld": ".guru",
+      "price": 378.57,
+      "renew": 4398.58,
+      "transfer": 4141.42
+    },
+    {
+      "tld": ".hair",
+      "price": 665,
+      "renew": 2175,
+      "transfer": 2175
+    },
+    {
+      "tld": ".haus",
+      "price": 1870,
+      "renew": 3680,
+      "transfer": 3650
+    },
+    {
+      "tld": ".health",
+      "price": 7890,
+      "renew": 7890,
+      "transfer": 7890
+    },
+    {
+      "tld": ".healthcare",
+      "price": 9625,
+      "renew": 9625,
+      "transfer": 9625
+    },
+    {
+      "tld": ".help",
+      "price": 3890,
+      "renew": 3920,
+      "transfer": 3920
+    },
+    {
+      "tld": ".hiphop",
+      "price": 3205,
+      "renew": 3205,
+      "transfer": 3205
+    },
+    {
+      "tld": ".hockey",
+      "price": 1540,
+      "renew": 6685,
+      "transfer": 6685
+    },
+    {
+      "tld": ".holdings",
+      "price": 7220,
+      "renew": 7220,
+      "transfer": 7220
+    },
+    {
+      "tld": ".holiday",
+      "price": 1200,
+      "renew": 7220,
+      "transfer": 7220
+    },
+    {
+      "tld": ".homes",
+      "price": 665,
+      "renew": 2170,
+      "transfer": 2170
+    },
+    {
+      "tld": ".horse",
+      "price": 3740,
+      "renew": 3740,
+      "transfer": 3740
+    },
+    {
+      "tld": ".hospital",
+      "price": 6415,
+      "renew": 6415,
+      "transfer": 6415
+    },
+    {
+      "tld": ".host",
+      "price": 10600,
+      "renew": 10700,
+      "transfer": 10700
+    },
+    {
+      "tld": ".hosting",
+      "price": 40820,
+      "renew": 41220,
+      "transfer": 41220
+    },
+    {
+      "tld": ".house",
+      "price": 2005,
+      "renew": 4780,
+      "transfer": 4735
+    },
+    {
+      "tld": ".icu",
+      "price": 620,
+      "renew": 2160,
+      "transfer": 2160
+    },
+    {
+      "tld": ".immo",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3355.72
+    },
+    {
+      "tld": ".immobilien",
+      "price": 1533,
+      "renew": 4395,
+      "transfer": 4395
+    },
+    {
+      "tld": ".in",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1650
+    },
+    {
+      "tld": ".inc",
+      "price": 6970,
+      "renew": 258030,
+      "transfer": 258030
+    },
+    {
+      "tld": ".industries",
+      "price": 1700,
+      "renew": 5210,
+      "transfer": 5210
+    },
+    {
+      "tld": ".info",
+      "price": 865,
+      "renew": 3105,
+      "transfer": 3135
+    },
+    {
+      "tld": ".ink",
+      "price": 999,
+      "renew": 3205,
+      "transfer": 3205
+    },
+    {
+      "tld": ".institute",
+      "price": 1335,
+      "renew": 2605,
+      "transfer": 2635
+    },
+    {
+      "tld": ".insure",
+      "price": 1200,
+      "renew": 8020,
+      "transfer": 8020
+    },
+    {
+      "tld": ".international",
+      "price": 1535,
+      "renew": 3515,
+      "transfer": 3545
+    },
+    {
+      "tld": ".investments",
+      "price": 1692.86,
+      "renew": 12970,
+      "transfer": 12284.29
+    },
+    {
+      "tld": ".io",
+      "price": 4560,
+      "renew": 6630,
+      "transfer": 6575
+    },
+    {
+      "tld": ".irish",
+      "price": 1215.25,
+      "renew": 2565,
+      "transfer": 2585
+    },
+    {
+      "tld": ".jetzt",
+      "price": 1200,
+      "renew": 2940,
+      "transfer": 2940
+    },
+    {
+      "tld": ".jewelry",
+      "price": 1870,
+      "renew": 7220,
+      "transfer": 7220
+    },
+    {
+      "tld": ".juegos",
+      "price": 40155,
+      "renew": 40155,
+      "transfer": 40155
+    },
+    {
+      "tld": ".kaufen",
+      "price": 1200,
+      "renew": 3605,
+      "transfer": 3605
+    },
+    {
+      "tld": ".kim",
+      "price": 1535,
+      "renew": 2565,
+      "transfer": 2585
+    },
+    {
+      "tld": ".kitchen",
+      "price": 1535,
+      "renew": 6635,
+      "transfer": 6700
+    },
+    {
+      "tld": ".la",
+      "price": 3995,
+      "renew": 3995,
+      "transfer": 8000
+    },
+    {
+      "tld": ".land",
+      "price": 2005,
+      "renew": 4330,
+      "transfer": 4370
+    },
+    {
+      "tld": ".law",
+      "price": 11230,
+      "renew": 11230,
+      "transfer": 11230
+    },
+    {
+      "tld": ".lawyer",
+      "price": 6950,
+      "renew": 6950,
+      "transfer": 6950
+    },
+    {
+      "tld": ".lease",
+      "price": 1535,
+      "renew": 6280,
+      "transfer": 6280
+    },
+    {
+      "tld": ".legal",
+      "price": 1200,
+      "renew": 7885,
+      "transfer": 7885
+    },
+    {
+      "tld": ".lgbt",
+      "price": 1875,
+      "renew": 8125,
+      "transfer": 8210
+    },
+    {
+      "tld": ".life",
+      "price": 730,
+      "renew": 4095,
+      "transfer": 4095
+    },
+    {
+      "tld": ".lighting",
+      "price": 1535,
+      "renew": 2940,
+      "transfer": 2940
+    },
+    {
+      "tld": ".limited",
+      "price": 1535,
+      "renew": 4275,
+      "transfer": 4275
+    },
+    {
+      "tld": ".limo",
+      "price": 6327.14,
+      "renew": 6327.14,
+      "transfer": 6141.43
+    },
+    {
+      "tld": ".link",
+      "price": 1198.57,
+      "renew": 1198.57,
+      "transfer": 1198.57
+    },
+    {
+      "tld": ".live",
+      "price": 999,
+      "renew": 3541.43,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".llc",
+      "price": 1327.14,
+      "renew": 4255.72,
+      "transfer": 4141.42
+    },
+    {
+      "tld": ".loan",
+      "price": 721.44,
+      "renew": 864.29,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".loans",
+      "price": 1692.86,
+      "renew": 12112.85,
+      "transfer": 11427.14
+    },
+    {
+      "tld": ".lol",
+      "price": 599,
+      "renew": 3597,
+      "transfer": 3597
+    },
+    {
+      "tld": ".london",
+      "price": 4541.43,
+      "renew": 4541.43,
+      "transfer": 4427.14
+    },
+    {
+      "tld": ".love",
+      "price": 1398.57,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".ltd",
+      "price": 1364.29,
+      "renew": 3184.29,
+      "transfer": 2998.57
+    },
+    {
+      "tld": ".luxe",
+      "price": 2027.14,
+      "renew": 2027.14,
+      "transfer": 1912.86
+    },
+    {
+      "tld": ".maison",
+      "price": 6327.14,
+      "renew": 6327.14,
+      "transfer": 6141.43
+    },
+    {
+      "tld": ".makeup",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".management",
+      "price": 1650,
+      "renew": 2875,
+      "transfer": 2875
+    },
+    {
+      "tld": ".market",
+      "price": 4612.86,
+      "renew": 4612.86,
+      "transfer": 4284.28
+    },
+    {
+      "tld": ".marketing",
+      "price": 1035.71,
+      "renew": 4684.29,
+      "transfer": 4427.14
+    },
+    {
+      "tld": ".mba",
+      "price": 1692.86,
+      "renew": 4112.86,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".me",
+      "price": 2500,
+      "renew": 3300,
+      "transfer": 3300
+    },
+    {
+      "tld": ".media",
+      "price": 1154.29,
+      "renew": 4612.86,
+      "transfer": 4284.28
+    },
+    {
+      "tld": ".melbourne",
+      "price": 8257.15,
+      "renew": 8257.15,
+      "transfer": 7857.15
+    },
+    {
+      "tld": ".memorial",
+      "price": 5827.15,
+      "renew": 5827.15,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".men",
+      "price": 721.44,
+      "renew": 864.29,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".menu",
+      "price": 3970.01,
+      "renew": 3970.01,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".miami",
+      "price": 1969.99,
+      "renew": 1969.99,
+      "transfer": 1927.15
+    },
+    {
+      "tld": ".mobi",
+      "price": 625.72,
+      "renew": 3684.29,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".moda",
+      "price": 3541.43,
+      "renew": 3541.43,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".moe",
+      "price": 1969.99,
+      "renew": 1969.99,
+      "transfer": 1998.57
+    },
+    {
+      "tld": ".mom",
+      "price": 255.71,
+      "renew": 3970.01,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".money",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".monster",
+      "price": 255.71,
+      "renew": 1611.43,
+      "transfer": 1568.57
+    },
+    {
+      "tld": ".mortgage",
+      "price": 6541.43,
+      "renew": 6541.43,
+      "transfer": 6284.29
+    },
+    {
+      "tld": ".motorcycles",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".movie",
+      "price": 4157.14,
+      "renew": 34970,
+      "transfer": 34284.29
+    },
+    {
+      "tld": ".mx",
+      "price": 2684.29,
+      "renew": 5684.29,
+      "transfer": 5570.01
+    },
+    {
+      "tld": ".navy",
+      "price": 827.14,
+      "renew": 3541.43,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".network",
+      "price": 999.85,
+      "renew": 3285.49,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".news",
+      "price": 1250.71,
+      "renew": 4299,
+      "transfer": 4270
+    },
+    {
+      "tld": ".ninja",
+      "price": 1857.14,
+      "renew": 3541.43,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".nl",
+      "price": 968.57,
+      "renew": 1112.85,
+      "transfer": 998.57
+    },
+    {
+      "tld": ".nyc",
+      "price": 4500,
+      "renew": 4500,
+      "transfer": 4500
+    },
+    {
+      "tld": ".observer",
+      "price": 1541.42,
+      "renew": 1541.42,
+      "transfer": 1498.58
+    },
+    {
+      "tld": ".one",
+      "price": 1265,
+      "renew": 3581,
+      "transfer": 3581
+    },
+    {
+      "tld": ".online",
+      "price": 999,
+      "renew": 4300,
+      "transfer": 4500
+    },
+    {
+      "tld": ".ooo",
+      "price": 3541.43,
+      "renew": 3541.43,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".organic",
+      "price": 1692.86,
+      "renew": 9112.86,
+      "transfer": 8998.57
+    },
+    {
+      "tld": ".page",
+      "price": 1298.57,
+      "renew": 1327.14,
+      "transfer": 1284.28
+    },
+    {
+      "tld": ".partners",
+      "price": 2104.28,
+      "renew": 7612.85,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".parts",
+      "price": 1487.15,
+      "renew": 4184.28,
+      "transfer": 4070
+    },
+    {
+      "tld": ".party",
+      "price": 721.44,
+      "renew": 864.29,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".pet",
+      "price": 1282.85,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".ph",
+      "price": 6612.85,
+      "renew": 6612.85,
+      "transfer": 8571.43
+    },
+    {
+      "tld": ".photo",
+      "price": 3255.72,
+      "renew": 3255.72,
+      "transfer": 3212.86
+    },
+    {
+      "tld": ".photography",
+      "price": 1282.85,
+      "renew": 3827.15,
+      "transfer": 3570
+    },
+    {
+      "tld": ".photos",
+      "price": 1282.85,
+      "renew": 2827.15,
+      "transfer": 2712.85
+    },
+    {
+      "tld": ".pics",
+      "price": 255.71,
+      "renew": 3255.72,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".pictures",
+      "price": 1584.28,
+      "renew": 1584.28,
+      "transfer": 1498.58
+    },
+    {
+      "tld": ".pink",
+      "price": 1282.85,
+      "renew": 2541.44,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".pizza",
+      "price": 1692.86,
+      "renew": 6970,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".place",
+      "price": 2398.57,
+      "renew": 2398.57,
+      "transfer": 2284.28
+    },
+    {
+      "tld": ".plumbing",
+      "price": 6255.72,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".plus",
+      "price": 1527.5,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".poker",
+      "price": 1282.85,
+      "renew": 7112.86,
+      "transfer": 6998.58
+    },
+    {
+      "tld": ".press",
+      "price": 684.28,
+      "renew": 7541.43,
+      "transfer": 7427.15
+    },
+    {
+      "tld": ".pro",
+      "price": 1050,
+      "renew": 3207.9,
+      "transfer": 3236.5
+    },
+    {
+      "tld": ".productions",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".promo",
+      "price": 1692.86,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".properties",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".property",
+      "price": 2827.15,
+      "renew": 16398.58,
+      "transfer": 16141.42
+    },
+    {
+      "tld": ".pub",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".pw",
+      "price": 1041,
+      "renew": 2541.44,
+      "transfer": 1041
+    },
+    {
+      "tld": ".quest",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".racing",
+      "price": 1684.28,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".realty",
+      "price": 44114.29,
+      "renew": 44114.29,
+      "transfer": 42000
+    },
+    {
+      "tld": ".recipes",
+      "price": 994.29,
+      "renew": 6970,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".red",
+      "price": 1282.85,
+      "renew": 2541.44,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".rehab",
+      "price": 4112.86,
+      "renew": 4112.86,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".reise",
+      "price": 3955.72,
+      "renew": 10541.43,
+      "transfer": 10427.14
+    },
+    {
+      "tld": ".reisen",
+      "price": 541.42,
+      "renew": 2327.14,
+      "transfer": 2284.28
+    },
+    {
+      "tld": ".rent",
+      "price": 2541.44,
+      "renew": 7112.86,
+      "transfer": 6998.58
+    },
+    {
+      "tld": ".rentals",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".repair",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".report",
+      "price": 871.43,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".republican",
+      "price": 827.14,
+      "renew": 4112.86,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".rest",
+      "price": 999,
+      "renew": 4112.86,
+      "transfer": 41.42
+    },
+    {
+      "tld": ".restaurant",
+      "price": 1692.86,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".review",
+      "price": 1684.28,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".reviews",
+      "price": 6755.71,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".rip",
+      "price": 2541.44,
+      "renew": 2541.44,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".rocks",
+      "price": 1071.43,
+      "renew": 2398.57,
+      "transfer": 2398.57
+    },
+    {
+      "tld": ".rodeo",
+      "price": 884.29,
+      "renew": 884.29,
+      "transfer": 855.71
+    },
+    {
+      "tld": ".run",
+      "price": 461.44,
+      "renew": 2827.15,
+      "transfer": 2712.85
+    },
+    {
+      "tld": ".sale",
+      "price": 871.43,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".salon",
+      "price": 6755.71,
+      "renew": 6755.71,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".sarl",
+      "price": 3541.43,
+      "renew": 3541.43,
+      "transfer": 3427.14
+    },
+    {
+      "tld": ".sbs",
+      "price": 999,
+      "renew": 1299,
+      "transfer": 1299
+    },
+    {
+      "tld": ".school",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".schule",
+      "price": 1241.44,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".science",
+      "price": 1684.28,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".security",
+      "price": 144142.86,
+      "renew": 144142.86,
+      "transfer": 144142.86
+    },
+    {
+      "tld": ".services",
+      "price": 780.15,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".sh",
+      "price": 4827.15,
+      "renew": 4827.15,
+      "transfer": 4712.85
+    },
+    {
+      "tld": ".shiksha",
+      "price": 1692.86,
+      "renew": 2227.15,
+      "transfer": 2141.43
+    },
+    {
+      "tld": ".shoes",
+      "price": 3335.71,
+      "renew": 6755.71,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".shop",
+      "price": 249,
+      "renew": 3955,
+      "transfer": 3955
+    },
+    {
+      "tld": ".shopping",
+      "price": 3827.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".show",
+      "price": 1035.71,
+      "renew": 4684.29,
+      "transfer": 4427.14
+    },
+    {
+      "tld": ".singles",
+      "price": 871.43,
+      "renew": 3827.15,
+      "transfer": 3570
+    },
+    {
+      "tld": ".site",
+      "price": 899,
+      "renew": 4112.86,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".ski",
+      "price": 3335.71,
+      "renew": 6755.71,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".skin",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".soccer",
+      "price": 2612.86,
+      "renew": 2612.86,
+      "transfer": 2498.57
+    },
+    {
+      "tld": ".social",
+      "price": 1041.43,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".software",
+      "price": 1692.86,
+      "renew": 4184.28,
+      "transfer": 3927.14
+    },
+    {
+      "tld": ".solar",
+      "price": 6612.85,
+      "renew": 6612.85,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".solutions",
+      "price": 1282.85,
+      "renew": 3327.14,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".space",
+      "price": 541.42,
+      "renew": 3255.72,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".storage",
+      "price": 72827.14,
+      "renew": 75684.28,
+      "transfer": 74284.29
+    },
+    {
+      "tld": ".store",
+      "price": 999,
+      "renew": 6255,
+      "transfer": 8141
+    },
+    {
+      "tld": ".stream",
+      "price": 721.44,
+      "renew": 864.29,
+      "transfer": 678.57
+    },
+    {
+      "tld": ".studio",
+      "price": 1999,
+      "renew": 4997,
+      "transfer": 1999
+    },
+    {
+      "tld": ".study",
+      "price": 3255.72,
+      "renew": 3255.72,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".style",
+      "price": 2185.72,
+      "renew": 4184.28,
+      "transfer": 3927.14
+    },
+    {
+      "tld": ".sucks",
+      "price": 31255.72,
+      "renew": 31255.72,
+      "transfer": 31284.29
+    },
+    {
+      "tld": ".supplies",
+      "price": 2684.29,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".supply",
+      "price": 2684.29,
+      "renew": 2684.29,
+      "transfer": 2570
+    },
+    {
+      "tld": ".support",
+      "price": 707.15,
+      "renew": 2970.01,
+      "transfer": 2855.71
+    },
+    {
+      "tld": ".surf",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".surgery",
+      "price": 5827.15,
+      "renew": 5827.15,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".sydney",
+      "price": 8257.15,
+      "renew": 8257.15,
+      "transfer": 7857.15
+    },
+    {
+      "tld": ".systems",
+      "price": 1528.57,
+      "renew": 3470,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".tattoo",
+      "price": 4970,
+      "renew": 4970,
+      "transfer": 4998.57
+    },
+    {
+      "tld": ".tax",
+      "price": 1900,
+      "renew": 7612.85,
+      "transfer": 7141.43
+    },
+    {
+      "tld": ".taxi",
+      "price": 1282.85,
+      "renew": 6970,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".team",
+      "price": 461.44,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".tech",
+      "price": 1650,
+      "renew": 6598.57,
+      "transfer": 6284.29
+    },
+    {
+      "tld": ".technology",
+      "price": 1035.71,
+      "renew": 3327.14,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".tel",
+      "price": 1512.86,
+      "renew": 1512.86,
+      "transfer": 1541.42
+    },
+    {
+      "tld": ".tennis",
+      "price": 7112.86,
+      "renew": 7112.86,
+      "transfer": 6855.72
+    },
+    {
+      "tld": ".theater",
+      "price": 6755.71,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".theatre",
+      "price": 72827.14,
+      "renew": 75684.28,
+      "transfer": 74284.29
+    },
+    {
+      "tld": ".tickets",
+      "price": 51398.57,
+      "renew": 55684.29,
+      "transfer": 55712.85
+    },
+    {
+      "tld": ".tienda",
+      "price": 6755.71,
+      "renew": 6755.71,
+      "transfer": 6570.01
+    },
+    {
+      "tld": ".tips",
+      "price": 1282.85,
+      "renew": 3470,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".tires",
+      "price": 827.14,
+      "renew": 11255.71,
+      "transfer": 10712.86
+    },
+    {
+      "tld": ".today",
+      "price": 999.57,
+      "renew": 3167.01,
+      "transfer": 2855.71
+    },
+    {
+      "tld": ".tools",
+      "price": 1035.71,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".top",
+      "price": 999,
+      "renew": 1399,
+      "transfer": 1399
+    },
+    {
+      "tld": ".tours",
+      "price": 871.43,
+      "renew": 6755.71,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".town",
+      "price": 871.43,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".toys",
+      "price": 1692.86,
+      "renew": 6755.71,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".trade",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1650
+    },
+    {
+      "tld": ".training",
+      "price": 1282.85,
+      "renew": 4184.28,
+      "transfer": 3998.57
+    },
+    {
+      "tld": ".travel",
+      "price": 3335.71,
+      "renew": 15970.01,
+      "transfer": 14855.71
+    },
+    {
+      "tld": ".tube",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".tv",
+      "price": 3999,
+      "renew": 4390,
+      "transfer": 3940.15
+    },
+    {
+      "tld": ".uk",
+      "price": 1750,
+      "renew": 3750.57,
+      "transfer": 3750.57
+    },
+    {
+      "tld": ".university",
+      "price": 6612.85,
+      "renew": 6612.85,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".uno",
+      "price": 541.42,
+      "renew": 2541.44,
+      "transfer": 2427.14
+    },
+    {
+      "tld": ".us",
+      "price": 999,
+      "renew": 1299,
+      "transfer": 1299
+    },
+    {
+      "tld": ".vacations",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".vegas",
+      "price": 2541.44,
+      "renew": 1684.28,
+      "transfer": 6141.43
+    },
+    {
+      "tld": ".ventures",
+      "price": 1692.86,
+      "renew": 6255.72,
+      "transfer": 6141.43
+    },
+    {
+      "tld": ".vet",
+      "price": 4470,
+      "renew": 4470,
+      "transfer": 4141.42
+    },
+    {
+      "tld": ".viajes",
+      "price": 5398.58,
+      "renew": 5398.58,
+      "transfer": 5284.29
+    },
+    {
+      "tld": ".video",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".villas",
+      "price": 5827.15,
+      "renew": 5827.15,
+      "transfer": 5712.86
+    },
+    {
+      "tld": ".vin",
+      "price": 871.43,
+      "renew": 6684.29,
+      "transfer": 6427.15
+    },
+    {
+      "tld": ".vip",
+      "price": 999,
+      "renew": 1811.43,
+      "transfer": 1697.14
+    },
+    {
+      "tld": ".vision",
+      "price": 4184.28,
+      "renew": 4184.28,
+      "transfer": 3855.71
+    },
+    {
+      "tld": ".vodka",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".vote",
+      "price": 3321,
+      "renew": 9656,
+      "transfer": 9656
+    },
+    {
+      "tld": ".voyage",
+      "price": 827.14,
+      "renew": 6255.72,
+      "transfer": 5855.72
+    },
+    {
+      "tld": ".watch",
+      "price": 999,
+      "renew": 4805,
+      "transfer": 4805
+    },
+    {
+      "tld": ".webcam",
+      "price": 1684.28,
+      "renew": 1684.28,
+      "transfer": 1570
+    },
+    {
+      "tld": ".website",
+      "price": 999,
+      "renew": 3255.72,
+      "transfer": 3141.42
+    },
+    {
+      "tld": ".wedding",
+      "price": 3870,
+      "renew": 3870,
+      "transfer": 3870
+    },
+    {
+      "tld": ".whoswho",
+      "price": 714.29,
+      "renew": 714.29,
+      "transfer": 714.29
+    },
+    {
+      "tld": ".wiki",
+      "price": 3184.29,
+      "renew": 3184.29,
+      "transfer": 3070
+    },
+    {
+      "tld": ".win",
+      "price": 1236,
+      "renew": 1236,
+      "transfer": 1236
+    },
+    {
+      "tld": ".wine",
+      "price": 871.43,
+      "renew": 6255.72,
+      "transfer": 5998.58
+    },
+    {
+      "tld": ".work",
+      "price": 1650,
+      "renew": 1650,
+      "transfer": 1650
+    },
+    {
+      "tld": ".works",
+      "price": 1296,
+      "renew": 4378,
+      "transfer": 4378
+    },
+    {
+      "tld": ".world",
+      "price": 777,
+      "renew": 4663,
+      "transfer": 4663
+    },
+    {
+      "tld": ".ws",
+      "price": 827.14,
+      "renew": 3112.86,
+      "transfer": 3070
+    },
+    {
+      "tld": ".wtf",
+      "price": 707.15,
+      "renew": 3827.15,
+      "transfer": 3712.85
+    },
+    {
+      "tld": ".yachts",
+      "price": 255.71,
+      "renew": 1684.28,
+      "transfer": 1641.43
+    },
+    {
+      "tld": ".yoga",
+      "price": 3398.58,
+      "renew": 3398.58,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".zone",
+      "price": 1390.43,
+      "renew": 4184.28,
+      "transfer": 3927.14
+    },
+    {
+      "tld": ".auto",
+      "price": 331033,
+      "renew": 331033.71,
+      "transfer": 331033.71
+    },
+    {
+      "tld": ".cam",
+      "price": 1255.71,
+      "renew": 2470,
+      "transfer": 2355.72
+    },
+    {
+      "tld": ".car",
+      "price": 278728,
+      "renew": 278728,
+      "transfer": 278728
+    },
+    {
+      "tld": ".cars",
+      "price": 287500.86,
+      "renew": 285.71,
+      "transfer": 285.71
+    },
+    {
+      "tld": ".kids",
+      "price": 2827.15,
+      "renew": 2827.15,
+      "transfer": 2784.29
+    },
+    {
+      "tld": ".lat",
+      "price": 255.71,
+      "renew": 3327.14,
+      "transfer": 3284.28
+    },
+    {
+      "tld": ".co",
+      "price": 1850,
+      "renew": 4300,
+      "transfer": 4300
+    },
+    {
+      "tld": ".xyz",
+      "price": 599,
+      "renew": 2500,
+      "transfer": 2095
+    },
+    {
+      "tld": ".com.bd",
+      "price": 1650,
+      "renew": 2299,
+      "transfer": 2299
+    },
+    {
+      "tld": ".net.bd",
+      "price": 1650,
+      "renew": 2150,
+      "transfer": 2150
+    },
+    {
+      "tld": ".edu.bd",
+      "price": 1650,
+      "renew": 2350,
+      "transfer": 2350
+    },
+    {
+      "tld": ".org.bd",
+      "price": 1650,
+      "renew": 2150,
+      "transfer": 2150
+    },
+    {
+      "tld": ".info.bd",
+      "price": 865.26,
+      "renew": 2150.04,
+      "transfer": 2150.04
+    },
+    {
+      "tld": ".bd",
+      "price": 1650,
+      "renew": 3499,
+      "transfer": 3450
+    },
+    {
+      "tld": ".org",
+      "price": 1875,
+      "renew": 1875,
+      "transfer": 1875
+    },
+    {
+      "tld": ".net",
+      "price": 1850,
+      "renew": 2199,
+      "transfer": 1750
+    },
+    {
+      "tld": ".co.uk",
+      "price": 1650,
+      "renew": 1999,
+      "transfer": 1800
+    },
+    {
+      "tld": ".cn",
+      "price": 1399,
+      "renew": 1399,
+      "transfer": 1399
+    },
+    {
+      "tld": ".dk",
+      "price": 2228,
+      "renew": 2228,
+      "transfer": 2228
+    },
+    {
+      "tld": ".ai.bd",
+      "price": 5376.48,
+      "renew": 6720.6,
+      "transfer": 6720.6
+    },
+    {
+      "tld": ".co.bd",
+      "price": 6720.6,
+      "renew": 7392.66,
+      "transfer": 7392.66
+    },
+    {
+      "tld": ".id.bd",
+      "price": 1477.98,
+      "renew": 2150.04,
+      "transfer": 2150.04
+    },
+    {
+      "tld": ".sch.bd",
+      "price": 1477.98,
+      "renew": 2150.04,
+      "transfer": 2150.04
+    },
+    {
+      "tld": ".tv.bd",
+      "price": 16128.06,
+      "renew": 20160.42,
+      "transfer": 20160.42
+    },
+    {
+      "tld": ".বাংলা",
+      "price": 538.2,
+      "renew": 538.2,
+      "transfer": 538.2
+    },
+    {
+      "tld": ".ae",
+      "price": 5250,
+      "renew": 5875,
+      "transfer": 5875
+    },
+    {
+      "tld": ".my",
+      "price": 999,
+      "renew": 4500,
+      "transfer": 4500
+    }
   ],
   "comparisons": [
     "কম বাজেট থেকে থাকলে Hostfame আর ২৪/৭ এক্সপার্ট সাপোর্ট এবং বেস্ট সার্ভিসের জন্য Hostnin ১০০% রিকমেন্ডেড।",
