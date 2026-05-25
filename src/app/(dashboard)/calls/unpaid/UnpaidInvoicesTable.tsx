@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { Phone, Check, X, CreditCard, ChevronDown, Save, Loader2, Calendar } from "lucide-react"
+import { useState, useMemo, useRef } from "react"
+import { Phone, Check, X, CreditCard, ChevronDown, Save, Loader2, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 import { upsertUnpaidInvoiceCall } from "@/actions/unpaid-calls"
 import { useInboxStore } from "@/lib/store"
+import { format, isToday, isYesterday, addDays, subDays, parseISO } from "date-fns"
 
 type Invoice = {
   id: number
@@ -43,19 +44,24 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   )
 
   const [savingId, setSavingId] = useState<number | null>(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
   
-  // Local date in YYYY-MM-DD
-  const getTodayStr = () => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  }
-  
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayStr())
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+
+  const selectedDateStr = useMemo(() => {
+    return format(selectedDate, 'yyyy-MM-dd')
+  }, [selectedDate])
+
+  const formattedDateDisplay = useMemo(() => {
+    if (isToday(selectedDate)) return "Today"
+    if (isYesterday(selectedDate)) return "Yesterday"
+    return format(selectedDate, 'MMM d, yyyy')
+  }, [selectedDate])
 
   // Filter invoices created exactly on the selected date (daily cron run date)
   const filteredInvoices = useMemo(() => {
-    return invoices.filter(inv => inv.date === selectedDate)
-  }, [invoices, selectedDate])
+    return invoices.filter(inv => inv.date === selectedDateStr)
+  }, [invoices, selectedDateStr])
 
   const handleUpdate = async (invoiceId: number, clientId: number, field: string, value: string) => {
     const prev = records[invoiceId] || { invoice_id: invoiceId, client_id: clientId, status: null, will_renew: null, notes: null }
@@ -90,19 +96,63 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0b141a]/50">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Calendar className="h-4 w-4 text-slate-400" />
+        <div className="flex items-center gap-4">
+          
+          {/* Premium Date Navigator */}
+          <div className="flex items-center bg-white dark:bg-[#111b21] border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm p-1">
+            <button 
+              onClick={() => setSelectedDate(prev => subDays(prev, 1))}
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            
+            <div className="relative flex items-center">
+              <button 
+                onClick={() => dateInputRef.current?.showPicker?.()}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-slate-400" />
+                {formattedDateDisplay}
+              </button>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={selectedDateStr}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(parseISO(e.target.value))
+                  }
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                style={{ visibility: 'hidden' }}
+              />
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-[#111b21] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-            />
+
+            <button 
+              onClick={() => setSelectedDate(prev => addDays(prev, 1))}
+              disabled={isToday(selectedDate)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            
+            {!isToday(selectedDate) && (
+              <button 
+                onClick={() => setSelectedDate(new Date())}
+                className="ml-1 px-3 py-1.5 text-[11px] font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-100/50 dark:border-blue-500/20"
+              >
+                Today
+              </button>
+            )}
           </div>
-          <span className="text-xs font-medium text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm">
+
+          <div className="h-5 w-px bg-slate-200 dark:bg-slate-700/50"></div>
+
+          <span className="text-xs font-semibold text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
             {filteredInvoices.length} {filteredInvoices.length === 1 ? 'Invoice' : 'Invoices'}
           </span>
         </div>
