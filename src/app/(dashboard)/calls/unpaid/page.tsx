@@ -13,15 +13,14 @@ export default async function UnpaidCallsPage() {
   ])
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full">
-      <div className="mb-6">
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Telephony</h2>
-        <p className="text-slate-600 text-sm">
-          Manage and track daily outbound calls for unpaid invoices.
-        </p>
+    <div className="flex flex-col w-full h-full bg-white dark:bg-[#0b141a]">
+      <div className="flex items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight">Daily Unpaid Calls</h1>
       </div>
-
-      <UnpaidInvoicesTable invoices={invoices} callRecords={callRecords} />
+      
+      <div className="flex-1 overflow-hidden">
+        <UnpaidInvoicesTable invoices={invoices} callRecords={callRecords} />
+      </div>
     </div>
   )
 }

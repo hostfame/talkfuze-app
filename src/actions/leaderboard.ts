@@ -2,7 +2,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { unstable_noStore as noStore } from "next/cache"
 
-export async function getLeaderboardStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' = 'daily') {
+export async function getLeaderboardStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
   noStore();
   if (!orgId) return [];
 
@@ -14,11 +14,23 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   const localMidnight = new Date(bdMidnight.getTime() - 6 * 60 * 60 * 1000);
   
   let startDate = new Date(localMidnight);
+  let endDate = new Date();
   
   if (period === 'weekly') {
     startDate.setDate(localMidnight.getDate() - 7);
   } else if (period === 'monthly') {
     startDate.setDate(localMidnight.getDate() - 30);
+  } else if (period === 'custom' && customStartDate) {
+    startDate = new Date(customStartDate);
+    // Ensure it's treated as BD midnight for that date
+    startDate.setUTCHours(0,0,0,0);
+    startDate = new Date(startDate.getTime() - 6 * 60 * 60 * 1000);
+    
+    if (customEndDate) {
+      endDate = new Date(customEndDate);
+      endDate.setUTCHours(23,59,59,999);
+      endDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
+    }
   }
 
   // 1. Get all users
@@ -30,21 +42,32 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   if (!agents) return [];
 
   // 2. Get all messages in this period to count regular vs internal and calculate response time
-  const { data: allMessages } = await supabaseAdmin
+  let messagesQuery = supabaseAdmin
     .from('messages')
     .select('id, sender_id, sender_type, conversation_id, created_at, is_internal, content')
     .eq('org_id', orgId)
-    .gte('created_at', startDate.toISOString())
-    .order('created_at', { ascending: true });
+    .gte('created_at', startDate.toISOString());
+    
+  if (period === 'custom') {
+    messagesQuery = messagesQuery.lte('created_at', endDate.toISOString());
+  }
+  
+  const { data: allMessages } = await messagesQuery.order('created_at', { ascending: true });
 
   // 3. Get call logs in this period
   let calls: any[] = [];
   try {
-    const { data: callLogs } = await supabaseAdmin
+    let callLogsQuery = supabaseAdmin
       .from('call_logs')
       .select('agent_name, duration_seconds')
       .eq('org_id', orgId)
       .gte('created_at', startDate.toISOString());
+      
+    if (period === 'custom') {
+      callLogsQuery = callLogsQuery.lte('created_at', endDate.toISOString());
+    }
+    
+    const { data: callLogs } = await callLogsQuery;
     if (callLogs) {
       calls = callLogs;
     }
@@ -257,11 +280,17 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
   // 5. Query AI draft usage per agent in this period
   try {
-    const { data: aiDrafts } = await supabaseAdmin
+    let aiDraftsQuery = supabaseAdmin
       .from('ai_draft_logs')
       .select('agent_id')
       .eq('org_id', orgId)
       .gte('created_at', startDate.toISOString());
+      
+    if (period === 'custom') {
+      aiDraftsQuery = aiDraftsQuery.lte('created_at', endDate.toISOString());
+    }
+      
+    const { data: aiDrafts } = await aiDraftsQuery;
 
     if (aiDrafts) {
       aiDrafts.forEach(draft => {

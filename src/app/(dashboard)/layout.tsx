@@ -42,9 +42,9 @@ export default async function DashboardLayout({
       <div className="flex h-screen overflow-hidden bg-[#F8FAFC] dark:bg-[#0b141a] text-slate-800 dark:text-[#e9edef] text-sm font-sans">
         {/* 1. Far Left Thin Navigation Strip - hidden on mobile */}
         <aside className="hidden md:flex w-[64px] flex-col items-center py-5 bg-slate-50/50 dark:bg-[#111b21] border-r border-slate-200/60 dark:border-[#222e35] z-10 shrink-0">
-          <div className="w-10 h-10 mb-6 flex items-center justify-center active:scale-95 transition-all">
+          <Link href="/inbox" className="w-10 h-10 mb-6 flex items-center justify-center active:scale-95 transition-all">
             <img src="/talkfuze-logo.png" alt="TalkFuze Logo" className="w-full h-full object-contain rounded-xl" />
-          </div>
+          </Link>
           
           <SidebarNavigation isAgent={isAgent} />
           <div className="mt-auto w-full px-2 flex flex-col items-center space-y-3">

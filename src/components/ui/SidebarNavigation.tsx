@@ -50,9 +50,16 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
     },
     {
       href: "/analytics",
-      label: "Analytics",
+      label: "AI Analytics",
       icon: BarChart3,
       isActive: pathname.startsWith("/analytics"),
+      visible: !isAgent
+    },
+    {
+      href: "/reports",
+      label: "Volume Reports",
+      icon: BarChart3,
+      isActive: pathname.startsWith("/reports"),
       visible: !isAgent
     },
     {

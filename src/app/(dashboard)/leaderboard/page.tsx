@@ -22,7 +22,8 @@ import {
 
 export default function LeaderboardPage() {
   const user = useAuth()
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily')
+  const [customDate, setCustomDate] = useState<string>(() => new Date().toISOString().split('T')[0])
   const [stats, setStats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null)
@@ -32,7 +33,7 @@ export default function LeaderboardPage() {
       if (!user?.org_id) return
       setLoading(true)
       try {
-        const data = await getLeaderboardStats(user.org_id, period)
+        const data = await getLeaderboardStats(user.org_id, period, period === 'custom' ? customDate : undefined)
         setStats(data)
       } catch (e) {
         console.error(e)
@@ -41,7 +42,7 @@ export default function LeaderboardPage() {
       }
     }
     loadStats()
-  }, [user?.org_id, period])
+  }, [user?.org_id, period, customDate])
 
   const formatActiveTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
@@ -83,7 +84,7 @@ export default function LeaderboardPage() {
           <p className="text-sm text-slate-500 dark:text-[#8696a0]">Track team performance and active time</p>
         </div>
         
-        <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942]">
+        <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942] items-center">
           {(['daily', 'weekly', 'monthly'] as const).map(p => (
             <button
               key={p}
@@ -100,6 +101,22 @@ export default function LeaderboardPage() {
               {p}
             </button>
           ))}
+          <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-[#2a3942]">
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => {
+                setCustomDate(e.target.value)
+                setPeriod('custom')
+                setSelectedAgent(null)
+              }}
+              className={`px-3 py-1 text-[13px] font-medium rounded-md bg-transparent focus:outline-none transition-all ${
+                period === 'custom' 
+                  ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
+                  : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+              }`}
+            />
+          </div>
         </div>
       </div>
 
