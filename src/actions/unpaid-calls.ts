@@ -19,19 +19,21 @@ export async function getUnpaidInvoiceCalls() {
 export async function upsertUnpaidInvoiceCall(params: {
   invoice_id: number;
   client_id: number;
-  status?: string;
-  will_renew?: string;
-  notes?: string;
+  status?: string | null;
+  will_renew?: string | null;
+  notes?: string | null;
 }) {
   try {
     const { invoice_id, client_id, status, will_renew, notes } = params
     
-    // First try to check if it exists
-    const { data: existing } = await supabaseAdmin
+    // First try to check if it exists (use maybeSingle to avoid PGRST116 error on 0 rows)
+    const { data: existing, error: fetchError } = await supabaseAdmin
       .from('unpaid_invoice_calls')
       .select('id')
       .eq('invoice_id', invoice_id)
-      .single()
+      .maybeSingle()
+
+    if (fetchError) throw fetchError;
 
     const payload: any = {
       client_id,

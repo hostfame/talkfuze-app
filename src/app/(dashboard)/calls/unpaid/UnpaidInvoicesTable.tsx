@@ -80,7 +80,7 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
     return invoices.filter(inv => inv.date === selectedDateStr)
   }, [invoices, selectedDateStr])
 
-  const handleUpdate = async (invoiceId: number, clientId: number, field: string, value: string) => {
+  const handleUpdate = async (invoiceId: number, clientId: number, field: string, value: string | null) => {
     const prev = records[invoiceId] || { invoice_id: invoiceId, client_id: clientId, status: null, will_renew: null, notes: null }
     const updated = { ...prev, [field]: value }
     
@@ -322,13 +322,13 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
         <td className="px-6 py-4">
           <div className="flex items-center justify-center gap-1.5 bg-slate-50 dark:bg-[#111b21] p-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm w-max mx-auto">
             <button
-              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', 'Yes')}
+              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', record?.will_renew === 'Yes' ? null : 'Yes')}
               className={`px-3 py-1.5 rounded-md text-[11.5px] font-semibold transition-all ${record?.will_renew === 'Yes' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-slate-800'}`}
             >
               Yes
             </button>
             <button
-              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', 'No')}
+              onClick={() => onUpdate(inv.id, inv.userid, 'will_renew', record?.will_renew === 'No' ? null : 'No')}
               className={`px-3 py-1.5 rounded-md text-[11.5px] font-semibold transition-all ${record?.will_renew === 'No' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white dark:text-slate-400 dark:hover:bg-slate-800'}`}
             >
               No
@@ -447,7 +447,7 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
 }
 
 
-function CustomStatusDropdown({ value, onChange }: { value: string | null, onChange: (val: string) => void }) {
+function CustomStatusDropdown({ value, onChange }: { value: string | null, onChange: (val: string | null) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -470,7 +470,7 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
     return 'bg-white text-slate-500 border-slate-200 dark:bg-[#111b21] dark:border-slate-700 dark:text-slate-200'
   }
 
-  const options = ['Answered', 'Not Answered', 'Unreachable']
+  const options = ['Answered', 'Not Answered', 'Unreachable', 'Clear Status']
 
   return (
     <div className="relative w-full max-w-[140px]" ref={ref}>
@@ -488,10 +488,10 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
             <button
               key={opt}
               onClick={() => {
-                onChange(opt)
+                onChange(opt === 'Clear Status' ? null : opt)
                 setIsOpen(false)
               }}
-              className={`w-full text-left px-3 py-2 text-[11.5px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${value === opt ? 'bg-slate-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
+              className={`w-full text-left px-3 py-2 text-[11.5px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 ${value === opt ? 'bg-slate-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400' : opt === 'Clear Status' ? 'text-rose-500 dark:text-rose-400 border-t border-slate-100 dark:border-slate-700/50 mt-1' : 'text-slate-700 dark:text-slate-300'}`}
             >
               {opt}
             </button>
