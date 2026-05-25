@@ -89,6 +89,22 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     conversationId = newConv!.id;
   }
 
+  // CRITICAL FIX: Prevent race conditions where the client-side timer fires the busy 
+  // auto-reply right as an agent joins/replies. If an agent has already replied in this 
+  // conversation, we MUST abort the busy message on the server side.
+  if (metadata?.auto_reply) {
+    const { data: agentMsgs } = await supabaseAdmin
+      .from("messages")
+      .select("id")
+      .eq("conversation_id", conversationId)
+      .eq("sender_type", "agent")
+      .limit(1);
+    
+    if (agentMsgs && agentMsgs.length > 0) {
+      return { success: true, conversationId, skipped: true, reason: "Agent already replied" };
+    }
+  }
+
   let senderType = "contact";
   let finalContentType = contentType;
   let finalSenderId: string | null = contactId;
