@@ -2400,6 +2400,45 @@ export default function ChatThread({
     }
   }
 
+  // Auto-Draft Copilot on Conversation Open / New Message
+  useEffect(() => {
+    if (!conversationId || messages.length === 0) return;
+    
+    // 1. Get the last message
+    const lastMessage = messages[messages.length - 1];
+    
+    // 2. Only trigger if it's from the contact
+    if (lastMessage.sender_type !== 'contact') return;
+    
+    // 3. Skip if it's audio or video (requires transcription/listening)
+    if (lastMessage.content_type === 'audio' || lastMessage.content_type === 'video') return;
+    
+    // 4. Check length (skip if < 3 words) UNLESS it has media (image/document)
+    const hasMedia = lastMessage.content_type === 'image' || lastMessage.content_type === 'document';
+    const wordCount = lastMessage.content?.trim().split(/\s+/).length || 0;
+    if (!hasMedia && wordCount < 3) return;
+    
+    // 5. Check if we already auto-drafted for this exact message
+    const lastDraftedId = localStorage.getItem(`auto_drafted_msg_id_${conversationId}`);
+    if (lastDraftedId === lastMessage.id) return;
+    
+    // 6. Check if input box is empty
+    if (input.trim() !== "") return;
+    
+    // 7. Check if we are actively drafting
+    if (isAiDrafting || isAiStreaming) return;
+    
+    // Fire it with a tiny delay to ensure state is settled
+    const timer = setTimeout(() => {
+      // Mark as drafted so we don't loop
+      localStorage.setItem(`auto_drafted_msg_id_${conversationId}`, lastMessage.id);
+      console.log("[Auto-Draft Copilot] Triggering for msg:", lastMessage.id);
+      handleAiDraft();
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [messages, conversationId, input, isAiDrafting, isAiStreaming]);
+
   const handleSend = async () => {
     if ((!input.trim() && stagedAttachments.length === 0) || !conversationId) return
 
