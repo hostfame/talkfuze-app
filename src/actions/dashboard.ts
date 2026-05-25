@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { fetchWhmcsClient } from "@/actions/whmcs"
+import { processInternalAiFeedback } from "@/actions/ai-learning"
 import { unstable_noStore as noStore } from 'next/cache'
 
 type ConversationChannelRelation = Relation<{
@@ -246,6 +247,8 @@ export async function replyToConversation(
 
       // Do not send to external platforms if it's an internal note
       if (isInternal) {
+        // Kick off AI teaching pipeline in the background
+        processInternalAiFeedback(conversationId, content);
         return;
       }
 

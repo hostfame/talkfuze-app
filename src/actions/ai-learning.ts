@@ -350,3 +350,91 @@ export async function getApprovedExamples(
     return { bengali: [], english: [] };
   }
 }
+
+/**
+ * Automagically extract AI training rules from internal agent notes.
+ * Triggered when an agent sends an internal message discussing AI behavior.
+ */
+export async function processInternalAiFeedback(conversationId: string, internalNote: string): Promise<void> {
+  try {
+    const noteLower = internalNote.toLowerCase();
+    // Heuristic: only process if the note looks like it's coaching or mentioning the AI
+    if (!noteLower.includes("ai ") && !noteLower.includes("teach") && !noteLower.includes("rule") && !noteLower.includes("draft") && !noteLower.includes("bot")) {
+      return;
+    }
+
+    // Fetch the last few messages for context
+    const { data: messages } = await supabaseAdmin
+      .from("messages")
+      .select("content, sender_type, is_internal")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+      
+    if (!messages) return;
+    
+    // Reverse to chronological
+    const contextLines = messages.reverse().map(m => `[${m.is_internal ? 'Internal Note' : m.sender_type === 'agent' ? 'Agent' : 'Customer'}]: ${m.content}`).join('\n');
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 1000,
+        system: `You are an AI support trainer for a Bengali hosting company. An agent just left an internal note instructing you or other agents on how to improve the AI's responses.
+        
+Read the conversation context and the internal note. If the internal note contains a valid rule or correction for the AI's conversational style or logic, extract it.
+
+Output valid JSON strictly containing:
+'is_ai_rule': boolean (true if the note contains a rule for the AI, false otherwise)
+'extracted_rule': A concise 1-2 sentence actionable rule for the AI based on the internal note.
+'question': A 1-sentence summary of what kind of customer queries this rule applies to.
+'answer': A fictional ideal response demonstrating this rule.`,
+        messages: [
+          {
+            role: "user",
+            content: `Conversation Context:\n${contextLines}\n\nInternal Note (Feedback):\n"${internalNote}"\n\nOutput strictly as JSON: {"is_ai_rule": boolean, "extracted_rule": "...", "question": "...", "answer": "..."}`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) return;
+    const data = await response.json();
+    const textContent = data.content?.[0]?.text || "";
+    const cleanJson = textContent.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(cleanJson);
+
+    if (result.is_ai_rule && result.extracted_rule && result.question && result.answer) {
+      // Vectorize and save
+      const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'text-embedding-3-small', input: result.question })
+      });
+      const embData = await embeddingRes.json();
+      const newEmbedding = embData.data?.[0]?.embedding;
+
+      if (newEmbedding) {
+        const enrichedAnswer = `[MANUAL TEACHING RULE]: ${result.extracted_rule}\n\n[IDEAL REPLY]: ${result.answer}`;
+        
+        await supabaseAdmin.from('ai_knowledge_base').insert({
+          question: result.question,
+          answer: enrichedAnswer,
+          embedding: newEmbedding
+        });
+        console.log("Successfully extracted and injected manual AI rule from internal note.");
+      }
+    }
+  } catch (e) {
+    console.error("processInternalAiFeedback error:", e);
+  }
+}
