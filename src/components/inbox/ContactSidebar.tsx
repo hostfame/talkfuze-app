@@ -823,7 +823,7 @@ export default function ContactSidebar({
         // Bind to user so we don't need to search again next time
         if (contact?.id) {
           await updateContactEmail(contact.id, dashboardData.client.email);
-          if (!contact.phone && dashboardData.client.phonenumber && !dashboardData.client.phonenumber.includes('@')) {
+          if (!contact.phone && dashboardData.client.phonenumber && typeof dashboardData.client.phonenumber === 'string' && !dashboardData.client.phonenumber.includes('@')) {
             const cleanPhone = dashboardData.client.phonenumber.replace(/\D/g, '');
             if (cleanPhone.length >= 9) {
               await updateContactPhone(contact.id, cleanPhone);
@@ -985,7 +985,7 @@ export default function ContactSidebar({
             // Auto-bind in DB if contact has no email linked yet
             if (contact?.id && !contact?.email && whmcsClientResult.email) {
               updateContactEmail(contact.id, whmcsClientResult.email);
-              if (!contact?.phone && whmcsClientResult.phonenumber && !whmcsClientResult.phonenumber.includes('@')) {
+              if (!contact?.phone && whmcsClientResult.phonenumber && typeof whmcsClientResult.phonenumber === 'string' && !whmcsClientResult.phonenumber.includes('@')) {
                 const cleanNum = whmcsClientResult.phonenumber.replace(/\D/g, '');
                 if (cleanNum.length >= 9) {
                   updateContactPhone(contact.id, cleanNum);
