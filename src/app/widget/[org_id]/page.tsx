@@ -3552,7 +3552,7 @@ export default function WidgetPage() {
                 }
               `}</style>
               
-              {!hasProvidedContact && (messages.filter(m => m.sender_type === 'agent' || m.sender_type === 'ai').length >= 3 || messages.filter(m => m.sender_type === 'contact').length >= 3) && (
+              {!hasProvidedContact && messages.filter(m => m.sender_type === 'agent' || m.sender_type === 'ai').length >= 6 && (
                 <div className="flex gap-2.5 my-3 relative animate-in slide-in-from-bottom-2 fade-in duration-300 select-none">
                   <div className="w-7 h-7 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0 mt-1">
                     <img src="/team/4.avif" className="w-full h-full object-cover" />
