@@ -77,8 +77,9 @@ export default function DraftLogItem({ log }: { log: any }) {
     setIsSaving(true);
     try {
       const supabase = createClient();
-      await supabase.from("ai_draft_logs").update({ correction_feedback: ruleText }).eq("id", log.id);
-      log.correction_feedback = ruleText;
+      const finalVal = ruleText.trim() === "" ? null : ruleText.trim();
+      await supabase.from("ai_draft_logs").update({ correction_feedback: finalVal }).eq("id", log.id);
+      log.correction_feedback = finalVal;
       setIsEditingRule(false);
     } catch (e) {
       console.error(e);
@@ -212,7 +213,7 @@ export default function DraftLogItem({ log }: { log: any }) {
                   disabled={isSaving} 
                   className="text-[11px] px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold"
                 >
-                  {isSaving ? "Saving..." : "Save Rule"}
+                  {isSaving ? "Saving..." : ruleText.trim() === "" ? "Delete Rule" : "Save Rule"}
                 </button>
               </div>
             </div>
