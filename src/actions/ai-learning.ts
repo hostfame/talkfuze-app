@@ -200,8 +200,14 @@ export async function completeAiDraftLog(
         // Minor edit (typo/spacing/small tweak), skip expensive Sonnet call
         console.log(`Minor edit detected (${(similarity * 100).toFixed(0)}% similar), skipping learning extraction.`);
       } else {
-        // Significant rewrite, extract learning via Sonnet
-        const learningData = await extractLearningData(context, log.ai_draft, agentSent);
+        // QUALITY GATE: Skip if the agent's sent message is too short or just a generic greeting/placeholder
+        const isShortPlaceholder = sent.length < 40 || /^(hlw|hello|hi|j|ji|yes|no|ok|okay|thanks|thank you|checking|let me check|wait|1 min)/i.test(sent);
+        
+        if (isShortPlaceholder) {
+          console.log(`Agent sent a short placeholder/greeting ("${sent}"). Skipping learning extraction to prevent false positive rules.`);
+        } else {
+          // Significant rewrite, extract learning via Sonnet
+          const learningData = await extractLearningData(context, log.ai_draft, agentSent);
       
         if (learningData) {
           // Combine factual rule + style corrections into a single rich feedback
@@ -254,6 +260,7 @@ export async function completeAiDraftLog(
           } catch (err) {
             console.error("Vector insert error:", err);
           }
+        }
         }
       } // end else (significant edit)
     }

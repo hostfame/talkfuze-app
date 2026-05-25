@@ -56,11 +56,16 @@ serve(async (req) => {
             role: "system",
             content: `You are an expert AI data extraction assistant. You are reviewing a finished customer support chat.
 Task: Extract the core problem and the final successful solution/upsell provided by the agent. 
-Remove all greetings, delays, and fluff. Keep it dense and actionable.
+
+CRITICAL RULE AGAINST FALSE POSITIVES:
+If the transcript consists only of greetings (e.g. "hlw", "hi"), intermediate status updates ("I am checking", "let me see"), simple one-liners without context, or lacks a clear technical/sales resolution, you MUST flag it to be skipped. Do NOT pollute the learning database with fluff.
+
 Output JSON strictly:
 {
-  "question": "The core problem or question from the customer",
-  "answer": "The exact solution/upsell strategy used by the agent, preserving their tone and specific phrases.",
+  "skip": boolean, // true if this is a false positive/meaningless chat
+  "skip_reason": "Brief reason why it's skipped, if skip is true",
+  "question": "The core problem or question from the customer (empty if skipped)",
+  "answer": "The exact solution/upsell strategy used by the agent (empty if skipped)",
   "tags": ["technical_fix", "billing", "sales_upsell", "ssl", "nameserver"]
 }`
           },
@@ -73,6 +78,10 @@ Output JSON strictly:
     if (!distillRes.ok) throw new Error("OpenAI Distillation Failed")
     const distillData = await distillRes.json()
     const extracted = JSON.parse(distillData.choices[0].message.content)
+
+    if (extracted.skip) {
+      throw new Error(`Skipped: ${extracted.skip_reason || "No meaningful resolution found (False Positive)"}`)
+    }
 
     if (!extracted.question || !extracted.answer) {
       throw new Error("Failed to parse extracted JSON")

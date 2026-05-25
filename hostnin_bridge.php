@@ -298,6 +298,7 @@ try {
         'GetClientDashboardData', // Custom endpoint for fast CRM fetching
         'GetClientDashboardDataByPhoneOrEmail', // Custom endpoint for instant 1-trip fetching
         'GetUnpaidInvoicesWithClients', // Custom endpoint to fetch unpaid invoices with phonenumbers
+        'GetDailyRevenue', // Custom endpoint to fetch 30-day revenue
     ];
 
     if (!in_array($action, $allowedActions) && $action !== 'CheckAffiliatePromoOwner' && $action !== 'DomainRelayUpdateNS' && $action !== 'UnblockIP') {
@@ -798,13 +799,19 @@ try {
                 }
             }
 
-            // Merge phone number into invoices
+            // Map phones back to invoices
             foreach ($invoices as &$inv) {
-                $uid = $inv['userid'];
-                $inv['phonenumber'] = $clientsMap[$uid]->phonenumber ?? '';
-                $inv['email'] = $clientsMap[$uid]->email ?? '';
+                if (!empty($inv['userid']) && isset($clientsMap[$inv['userid']])) {
+                    $c = $clientsMap[$inv['userid']];
+                    $inv['client_phone'] = $c->phonenumber ?? '';
+                    $inv['client_email'] = $c->email ?? '';
+                } else {
+                    $inv['client_phone'] = '';
+                    $inv['client_email'] = '';
+                }
             }
-
+            unset($inv); // break reference
+            
             echo json_encode([
                 'result' => 'success',
                 'invoices' => $invoices
@@ -812,7 +819,50 @@ try {
         } catch (Exception $e) {
             bridgeLog('GetUnpaidInvoicesWithClients ERROR: ' . $e->getMessage());
             http_response_code(500);
-            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch invoices with clients']));
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch unpaid invoices with clients']));
+        }
+        exit;
+    }
+
+    // ============================================
+    // CUSTOM ACTION: GetDailyRevenue
+    // ============================================
+    if ($action === 'GetDailyRevenue') {
+        $days = (int) ($_POST['days'] ?? 30);
+        
+        $whmcsPath = __DIR__;
+        if (file_exists($whmcsPath . '/init.php')) {
+            require_once $whmcsPath . '/init.php';
+        }
+        
+        try {
+            // Get local midnight in UTC+6
+            $now = time() + (6 * 3600);
+            $startDate = date('Y-m-d 00:00:00', strtotime("-$days days", $now));
+            
+            $transactions = \WHMCS\Database\Capsule::table('tblaccounts')
+                ->where('date', '>=', $startDate)
+                ->where('amountin', '>', 0)
+                ->get(['date', 'amountin', 'currency']);
+                
+            $daily = [];
+            foreach ($transactions as $t) {
+                // Group by Y-m-d
+                $dateStr = substr($t->date, 0, 10);
+                if (!isset($daily[$dateStr])) {
+                    $daily[$dateStr] = 0;
+                }
+                // Default is BDT, convert to BDT roughly if currency = 2 (USD), but usually Hostnin uses BDT.
+                // Assuming all revenue is standardized or just summed raw.
+                // Better to just sum it as is for now.
+                $daily[$dateStr] += (float) $t->amountin;
+            }
+            
+            echo json_encode(['result' => 'success', 'revenue' => $daily]);
+        } catch (Exception $e) {
+            bridgeLog('GetDailyRevenue ERROR: ' . $e->getMessage());
+            http_response_code(500);
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch daily revenue']));
         }
         exit;
     }
