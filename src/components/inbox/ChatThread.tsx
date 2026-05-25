@@ -2585,6 +2585,24 @@ export default function ChatThread({
       if (msgText) {
         const msgChunks = msgText.split(/\n\s*\n/).map(chunk => chunk.trim()).filter(Boolean);
         let accumulatedDelay = 0;
+        
+        // Find existing max pending delay in queue to append these new chunks correctly
+        if (!isInternal) {
+          const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
+          let maxPendingDelay = 0;
+          currentStoreMsgs.forEach(m => {
+            const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
+            if (m.status === 'sending' && meta.scheduled_delay) {
+              const mTime = new Date(m.created_at).getTime();
+              const mSendAfter = mTime + meta.scheduled_delay;
+              const remaining = mSendAfter - Date.now();
+              if (remaining > maxPendingDelay) {
+                maxPendingDelay = remaining;
+              }
+            }
+          });
+          accumulatedDelay = Math.max(0, maxPendingDelay);
+        }
 
         for (let i = 0; i < msgChunks.length; i++) {
           const chunk = msgChunks[i];
@@ -2596,6 +2614,7 @@ export default function ChatThread({
           const optimisticCreatedAt = new Date(Math.max(Date.now() + i * 100, lastMsgTime + i * 100 + 2)).toISOString();
           
           let chunkDelay = 0;
+          let previousDelay = 0;
           if (!isInternal) {
             if (usedAiDraft || i > 0) {
               // Calculate realistic delay based on length/lines (Imran's 20s/40s/50s rule)
@@ -2614,6 +2633,7 @@ export default function ChatThread({
                 chunkDelay = 0;
               }
             }
+            previousDelay = accumulatedDelay;
             accumulatedDelay += chunkDelay;
           }
           
@@ -2628,6 +2648,8 @@ export default function ChatThread({
             metadata: {
               ...(replyMeta ? { reply_to: replyMeta } : {}),
               scheduled_delay: isScheduled ? accumulatedDelay : undefined,
+              chunk_delay: isScheduled ? chunkDelay : undefined,
+              previous_delay: isScheduled ? previousDelay : undefined,
               used_ai_draft: usedAiDraft ? true : undefined
             } as any,
             is_internal: isInternal,
@@ -2641,6 +2663,8 @@ export default function ChatThread({
           }
           if (isScheduled) {
             metaPayload.scheduled_delay = accumulatedDelay;
+            metaPayload.chunk_delay = chunkDelay;
+            metaPayload.previous_delay = previousDelay;
           }
           if (usedAiDraft) {
             metaPayload.used_ai_draft = true;
@@ -3813,10 +3837,23 @@ export default function ChatThread({
 
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
-                      style={safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed') ? {
-                        animationDuration: `${safeMeta.scheduled_delay}ms`,
-                        animationDelay: `-${msg.created_at ? Math.max(0, Date.now() - new Date(msg.created_at).getTime()) : 0}ms`
-                      } : undefined}
+                      style={(() => {
+                        if (!safeMeta?.scheduled_delay || !(msg.status === 'sending' || msg.status === 'confirmed')) return undefined;
+                        
+                        const elapsed = msg.created_at ? Math.max(0, Date.now() - new Date(msg.created_at).getTime()) : 0;
+                        let duration = safeMeta.scheduled_delay;
+                        let delay = -elapsed;
+                        
+                        if (safeMeta.chunk_delay !== undefined && safeMeta.previous_delay !== undefined) {
+                          duration = safeMeta.chunk_delay;
+                          delay = safeMeta.previous_delay - elapsed;
+                        }
+                        
+                        return {
+                          animationDuration: `${duration}ms`,
+                          animationDelay: `${delay}ms`
+                        };
+                      })()}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
