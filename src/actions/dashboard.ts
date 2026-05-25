@@ -148,7 +148,8 @@ export async function replyToConversation(
   content: string, 
   isInternal: boolean = false,
   contentType: string = 'text',
-  metadata: MessageMetadata = {}
+  metadata: MessageMetadata = {},
+  createdAt?: string
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -174,20 +175,26 @@ export async function replyToConversation(
 
   if (convError || !conv) throw new Error("Conversation not found");
 
+  const insertData: any = {
+    org_id: realOrgId,
+    conversation_id: conversationId,
+    sender_type: "agent",
+    sender_id: senderId,
+    content: content,
+    content_type: contentType,
+    metadata: metadata,
+    is_internal: isInternal,
+    status: isInternal ? 'delivered' : (metadata.scheduled_delay ? 'sending' : 'sent')
+  };
+
+  if (createdAt) {
+    insertData.created_at = createdAt;
+  }
+
   // Insert into DB first so UI updates instantly
   const { data: insertedMessage, error } = await supabaseAdmin
     .from("messages")
-    .insert({
-      org_id: realOrgId,
-      conversation_id: conversationId,
-      sender_type: "agent",
-      sender_id: senderId,
-      content: content,
-      content_type: contentType,
-      metadata: metadata,
-      is_internal: isInternal,
-      status: isInternal ? 'delivered' : (metadata.scheduled_delay ? 'sending' : 'sent')
-    })
+    .insert(insertData)
     .select("id")
     .single()
 

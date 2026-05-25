@@ -2615,7 +2615,7 @@ export default function ChatThread({
             metaPayload.scheduled_delay = accumulatedDelay;
           }
 
-          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload)
+          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload, optimisticCreatedAt)
             .then(() => markConfirmed(conversationId, tempId))
             .catch((e: unknown) => {
               console.error(e)
@@ -2687,7 +2687,7 @@ export default function ChatThread({
               filename: meta.name,
               ...(replyMeta ? { reply_to: replyMeta } : {}),
               temp_id: tempId
-            })
+            }, optimisticCreatedAt)
             markConfirmed(conversationId, tempId)
           } catch (error) {
             console.error(error)
@@ -2827,7 +2827,7 @@ export default function ChatThread({
           mimetype: meta.type,
           filename: meta.name,
           temp_id: tempId
-        });
+        }, optimisticCreatedAt);
         removeOptimisticMessage(conversationId, tempId)
       }).catch(err => {
         console.error("Upload failed:", err);

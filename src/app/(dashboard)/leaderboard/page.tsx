@@ -163,12 +163,13 @@ export default function LeaderboardPage() {
                 <div key={i} className="h-20 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] animate-pulse" />
               ))}
             </div>
-          ) : stats.length === 0 ? (
-            <div className="text-center py-20 text-slate-500 dark:text-[#8696a0]">
-              No data available for this period.
-            </div>
-          ) : (
-            stats.map((agent, index) => (
+          ) : view === 'leaderboard' ? (
+            stats.length === 0 ? (
+              <div className="text-center py-20 text-slate-500 dark:text-[#8696a0]">
+                No data available for this period.
+              </div>
+            ) : (
+              stats.map((agent, index) => (
               <div 
                 key={agent.id}
                 onClick={() => setSelectedAgent({ ...agent, rank: index + 1 })}
@@ -266,7 +267,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
             ))
-          ) : view === 'missed' ? (
+          )) : view === 'missed' ? (
             missedChats.length === 0 ? (
               <div className="text-center py-20 text-slate-500 dark:text-[#8696a0]">
                 No missed chats for this period. Great job!

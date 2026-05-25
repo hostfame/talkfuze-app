@@ -312,6 +312,8 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
   // Sort by public messagesCount descending
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
+}
+
 export async function getMissedChatsStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
   noStore();
   if (!orgId) return [];
@@ -394,10 +396,11 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
         // Not necessarily, but the conversation is effectively currently "missed" if they haven't replied.
         // What if it was resolved? Even if resolved, if the customer replied "thanks" and agent didn't reply, that's not missed, that's just a polite end.
         // Let's filter out very short messages like "ok", "thanks" if we want, but Imran wants simple missed chats tracking.
+        const contact = Array.isArray(conv.contacts) ? conv.contacts[0] : conv.contacts;
         missedChats.push({
           id: conv.id,
-          contactName: conv.contacts?.name || conv.contacts?.phone || 'Unknown',
-          contactPhone: conv.contacts?.phone || '',
+          contactName: contact?.name || contact?.phone || 'Unknown',
+          contactPhone: contact?.phone || '',
           lastMessageTime: lastMsg.created_at,
           lastMessageContent: lastMsg.content,
           status: conv.status,
