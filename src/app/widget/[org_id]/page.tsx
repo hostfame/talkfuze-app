@@ -2205,7 +2205,7 @@ export default function WidgetPage() {
   
   const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
   const activeAgent = lastAgentMessage?.agent || null;
-  const headerName = activeAgent?.name || 'Sajjad from Support Team';
+  const headerName = activeAgent?.name || 'Support Team';
   const headerSubtitle = activeAgent ? 'Active' : 'Active now';
 
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
@@ -2744,7 +2744,7 @@ export default function WidgetPage() {
             {/* Glowing Avatar Frame */}
             <div className={`w-[120px] h-[120px] rounded-full p-[3px] bg-gradient-to-tr ${isActive ? 'from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/20' : isRinging ? 'from-amber-500 to-red-500 shadow-lg shadow-amber-500/20' : 'from-[#0070f3] to-blue-400 shadow-lg shadow-blue-500/20'} relative z-20`}>
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                <img src="/team/9.avif" className="w-full h-full object-cover bg-white" alt="Sajjad from Support Team" />
+                <img src="/team/4.avif" className="w-full h-full object-cover bg-white" alt="Support Team" />
               </div>
               {/* Pulse status indicator dot */}
               <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-slate-950 flex items-center justify-center ${isActive ? 'bg-emerald-500' : isRinging ? 'bg-amber-500' : isCalling ? 'bg-blue-500' : 'bg-slate-500'}`}>
@@ -2945,7 +2945,7 @@ export default function WidgetPage() {
                       </div>
                     ) : (
                       <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                         <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad from Support Team" />
+                         <img src="/team/4.avif" className="w-full h-full object-cover" alt="Support Team" />
                       </div>
                     )}
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -3010,7 +3010,7 @@ export default function WidgetPage() {
                            </div>
                          ) : (
                            <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                              <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad from Support Team" />
+                              <img src="/team/4.avif" className="w-full h-full object-cover" alt="Support Team" />
                            </div>
                          )}
                       </div>
@@ -3073,7 +3073,7 @@ export default function WidgetPage() {
                      <>
                        {/* Ahrefs / Intercom Style Stacked Avatars */}
                        <div className="flex -space-x-2 relative mr-0.5">
-                         <img src="/team/9.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-30" alt="Team member" />
+                         <img src="/team/4.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-30" alt="Team member" />
                          <img src="/team/5.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-20" alt="Team member" />
                          <img src="/team/6.avif" className="w-[34px] h-[34px] rounded-full border-[2px] border-white object-cover shadow-sm relative z-10" alt="Team member" />
                          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full z-40 translate-x-[2px] translate-y-[2px]"></div>
@@ -3289,6 +3289,18 @@ export default function WidgetPage() {
                 const isSystem = msg.sender_type === 'system';
                 const isAgent = msg.sender_type === 'agent';
                 const isAiOrAgent = isAgent || msg.sender_type === 'ai';
+                
+                let showAvatar = true;
+                if (isAiOrAgent) {
+                  const nextMsg = arr[idx + 1];
+                  if (nextMsg && (nextMsg.sender_type === 'agent' || nextMsg.sender_type === 'ai')) {
+                    const currentAgentId = msg.agent?.id || msg.sender_id || 'default';
+                    const nextAgentId = nextMsg.agent?.id || nextMsg.sender_id || 'default';
+                    if (currentAgentId === nextAgentId) {
+                      showAvatar = false;
+                    }
+                  }
+                }
 
                 if (isSystem) {
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
@@ -3375,12 +3387,16 @@ export default function WidgetPage() {
                 return isAiOrAgent ? (
                   <div key={idx} className="flex flex-col gap-1 items-start mb-1">
                     <div className="flex gap-2 items-end">
-                      {msg.agent?.avatar_url ? (
-                        <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
+                      {showAvatar ? (
+                        msg.agent?.avatar_url ? (
+                          <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
+                        ) : (
+                          <img src="/team/9.avif" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad from Support Team" />
+                        )
                       ) : (
-                        <img src="/team/9.avif" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad from Support Team" />
+                        <div className="w-6 h-6 shrink-0" />
                       )}
-                      <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
+                      <div className={msg.content_type === 'text' ? `bg-[#f3f4f6] rounded-[18px] ${showAvatar ? 'rounded-bl-[4px]' : ''} py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight` : "max-w-[85%]"}>
                         {renderMessageContent(msg, false, setLightboxImage)}
                         {msg.metadata?.auto_reply && (
                           <button
@@ -3423,7 +3439,7 @@ export default function WidgetPage() {
               {(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in duration-300 mb-6" id="tf-typing-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-full h-full object-cover" />
+                    <img src={activeAgent?.avatar_url || "/team/4.avif"} className="w-full h-full object-cover" />
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1 min-h-[36px]">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -3467,7 +3483,7 @@ export default function WidgetPage() {
               {!hasProvidedContact && messages.filter(m => m.sender_type === 'contact').length > 0 && (
                 <div className="flex gap-2.5 my-3 relative animate-in slide-in-from-bottom-2 fade-in duration-300 select-none">
                   <div className="w-7 h-7 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0 mt-1">
-                    <img src="/team/9.avif" className="w-full h-full object-cover" />
+                    <img src="/team/4.avif" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex flex-col gap-1 w-full pr-8">
                     <div className="flex items-center gap-2">
@@ -4104,7 +4120,7 @@ export default function WidgetPage() {
                     {/* Replies */}
                     {selectedTicket.replies?.reply?.map((reply: any, idx: number) => (
                       <div key={idx} className={`flex flex-col gap-1 w-full ${reply.admin ? 'items-start' : 'items-end'}`}>
-                        {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Sajjad from Support Team'}</span>}
+                        {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Support Team'}</span>}
                         <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm`}>
                           {(() => {
                             let text = reply.message || '';
