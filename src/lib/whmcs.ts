@@ -1350,6 +1350,18 @@ export async function getClientByPhone(phoneStr: string) {
     };
 }
 
+export async function getClientDashboardData(clientId: number) {
+    const result = await whmcsRequest<{
+        result: 'success' | 'error';
+        services?: { products: any[], domains: any[] };
+        tickets?: any[];
+        invoices?: any[];
+    }>('GetClientDashboardData', {
+        clientid: clientId,
+    });
+
+    return result;
+}
 
 export async function unblockWhmcsIP(ip: string, clientId: number) {
     return whmcsRequest<{

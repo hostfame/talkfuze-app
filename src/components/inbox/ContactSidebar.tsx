@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
 import { summarizeThread, draftReply } from "@/actions/copilot"
 import { getCrmData, getParticipants, toggleContactBanStatus, replyToConversation } from "@/actions/dashboard"
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken } from "@/actions/whmcs"
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsTickets, createWhmcsTicket, fetchWhmcsUnpaidInvoices, convertChatToTicket, generateWHMCSSsoToken, generateWHMCSControlPanelSsoToken, fetchWhmcsDashboardData } from "@/actions/whmcs"
 import { unblockIPFast } from "@/actions/server-ops"
 import { updateContactName, updateContactPhone, updateContactEmail, updateContactNotes } from "@/actions/contacts"
 import AssignButton from "./AssignButton"
@@ -816,14 +816,10 @@ export default function ContactSidebar({
       const client = (await fetchWhmcsClient(query.trim())) as any;
       if (client) {
         setWhmcsClient(client);
-        const [services, tickets, invoices] = await Promise.all([
-          fetchWhmcsServices(client.id),
-          fetchWhmcsTickets(client.id),
-          fetchWhmcsUnpaidInvoices(client.id)
-        ]);
-        setWhmcsServices(services);
-        setWhmcsTickets(tickets);
-        setWhmcsInvoices(invoices);
+        const dashboardData = await fetchWhmcsDashboardData(client.id);
+        setWhmcsServices(dashboardData.services);
+        setWhmcsTickets(dashboardData.tickets);
+        setWhmcsInvoices(dashboardData.invoices);
 
         // Bind to user so we don't need to search again next time
         if (contact?.id) {
@@ -977,22 +973,19 @@ export default function ContactSidebar({
               }
             }
 
-            const [services, tickets, invoices] = await Promise.all([
-              fetchWhmcsServices(whmcsClientResult.id),
-              fetchWhmcsTickets(whmcsClientResult.id),
-              fetchWhmcsUnpaidInvoices(whmcsClientResult.id)
-            ])
+            const dashboardData = await fetchWhmcsDashboardData(whmcsClientResult.id);
+
             if (mounted) {
-              setWhmcsServices(services)
-              setWhmcsTickets(tickets)
-              setWhmcsInvoices(invoices)
+              setWhmcsServices(dashboardData.services)
+              setWhmcsTickets(dashboardData.tickets)
+              setWhmcsInvoices(dashboardData.invoices)
               
               // Update global cache
               setCrmCache(cacheKey, {
                 whmcsClient: whmcsClientResult,
-                whmcsServices: services,
-                whmcsTickets: tickets,
-                whmcsInvoices: invoices,
+                whmcsServices: dashboardData.services,
+                whmcsTickets: dashboardData.tickets,
+                whmcsInvoices: dashboardData.invoices,
                 legacyData: legacyData,
                 timestamp: Date.now()
               });

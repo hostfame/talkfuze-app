@@ -2205,7 +2205,7 @@ export default function WidgetPage() {
   
   const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
   const activeAgent = lastAgentMessage?.agent || null;
-  const headerName = activeAgent?.name || 'Sajjad';
+  const headerName = activeAgent?.name || 'Sajjad from Support Team';
   const headerSubtitle = activeAgent ? 'Active' : 'Active now';
 
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
@@ -2744,7 +2744,7 @@ export default function WidgetPage() {
             {/* Glowing Avatar Frame */}
             <div className={`w-[120px] h-[120px] rounded-full p-[3px] bg-gradient-to-tr ${isActive ? 'from-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/20' : isRinging ? 'from-amber-500 to-red-500 shadow-lg shadow-amber-500/20' : 'from-[#0070f3] to-blue-400 shadow-lg shadow-blue-500/20'} relative z-20`}>
               <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                <img src="/team/9.avif" className="w-full h-full object-cover bg-white" alt="Sajjad" />
+                <img src="/team/9.avif" className="w-full h-full object-cover bg-white" alt="Sajjad from Support Team" />
               </div>
               {/* Pulse status indicator dot */}
               <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-[3px] border-slate-950 flex items-center justify-center ${isActive ? 'bg-emerald-500' : isRinging ? 'bg-amber-500' : isCalling ? 'bg-blue-500' : 'bg-slate-500'}`}>
@@ -2945,7 +2945,7 @@ export default function WidgetPage() {
                       </div>
                     ) : (
                       <div className="w-[42px] h-[42px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                         <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad" />
+                         <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad from Support Team" />
                       </div>
                     )}
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -3010,7 +3010,7 @@ export default function WidgetPage() {
                            </div>
                          ) : (
                            <div className="w-[36px] h-[36px] rounded-full border border-slate-100 bg-white flex items-center justify-center shadow-sm overflow-hidden">
-                              <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad" />
+                              <img src="/team/9.avif" className="w-full h-full object-cover" alt="Sajjad from Support Team" />
                            </div>
                          )}
                       </div>
@@ -3173,12 +3173,12 @@ export default function WidgetPage() {
               {activeConversationId === 'new' && (
                 <div className="flex flex-col gap-1 items-start mb-1 mt-2">
                   <div className="flex gap-2 items-end">
-                    <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad" />
+                    <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad from Support Team" />
                     <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
                       Hello! How can I assist you today?
                     </div>
                   </div>
-                  <span className="text-[11px] text-slate-400 ml-[32px]">{activeAgent?.name || 'Sajjad'}</span>
+                  <span className="text-[11px] text-slate-400 ml-[32px]">{activeAgent?.name || 'Sajjad from Support Team'}</span>
                 </div>
               )}
 
@@ -3378,7 +3378,7 @@ export default function WidgetPage() {
                       {msg.agent?.avatar_url ? (
                         <img src={msg.agent.avatar_url} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Agent Avatar" />
                       ) : (
-                        <img src="/team/9.avif" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad" />
+                        <img src="/team/9.avif" className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad from Support Team" />
                       )}
                       <div className={msg.content_type === 'text' ? "bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
                         {renderMessageContent(msg, false, setLightboxImage)}
@@ -3394,7 +3394,7 @@ export default function WidgetPage() {
                       </div>
                     </div>
                     {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Sajjad'} • Just now</span>
+                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Sajjad from Support Team'} • Just now</span>
                     )}
                   </div>
                 ) : (() => {
@@ -4104,7 +4104,7 @@ export default function WidgetPage() {
                     {/* Replies */}
                     {selectedTicket.replies?.reply?.map((reply: any, idx: number) => (
                       <div key={idx} className={`flex flex-col gap-1 w-full ${reply.admin ? 'items-start' : 'items-end'}`}>
-                        {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Sajjad'}</span>}
+                        {reply.admin && <span className="text-[11px] font-medium text-slate-400 ml-3">{reply.requestor_name || 'Sajjad from Support Team'}</span>}
                         <div className={`${reply.admin ? 'bg-white border border-slate-100 text-slate-800 rounded-bl-[4px]' : 'bg-[#0070f3] text-white rounded-br-[4px]'} rounded-[18px] py-2.5 px-4 text-[14px] max-w-[85%] shadow-sm`}>
                           {(() => {
                             let text = reply.message || '';
