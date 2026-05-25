@@ -138,19 +138,12 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "prompt-caching-2024-07-31",
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-3-haiku-20240307",
         max_tokens: 600,
-        system: [
-          {
-            type: "text",
-            text: staticSystemPrompt,
-            cache_control: { type: "ephemeral" }
-          }
-        ],
+        system: staticSystemPrompt,
         messages: [
           {
             role: "user",
