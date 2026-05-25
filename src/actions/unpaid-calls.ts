@@ -67,3 +67,27 @@ export async function upsertUnpaidInvoiceCall(params: {
     return { success: false, error: error.message }
   }
 }
+
+export async function getCallHistoryForPhone(phoneNumber: string) {
+  try {
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const last10 = cleanNumber.slice(-10)
+    
+    // We only want outbound SIP calls in this context, or any call matching this phone
+    const { data, error } = await supabaseAdmin
+      .from('call_logs')
+      .select('*')
+      .or(`from_number.like.%${last10},to_number.like.%${last10}`)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (error) {
+      console.error('getCallHistoryForPhone error:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.error('getCallHistoryForPhone failed:', err)
+    return []
+  }
+}
