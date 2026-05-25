@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Inbox, Phone, Users, BarChart3, Trophy, BrainCircuit, Library, CreditCard } from "lucide-react"
+import { Inbox, Phone, Users, BarChart3, TrendingUp, Trophy, BrainCircuit, Library, CreditCard } from "lucide-react"
 
 interface SidebarNavigationProps {
   isAgent: boolean
