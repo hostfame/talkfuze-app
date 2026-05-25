@@ -801,6 +801,7 @@ export default function InboxPage() {
       {/* ChatThread + ContactSidebar: visible on desktop always, on mobile only when mobileView is 'chat' */}
       <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 min-w-0`}>
         <ChatThread 
+          key={selectedId}
           conversationId={selectedId} 
           messages={messages} 
           orgId={ORG_ID}

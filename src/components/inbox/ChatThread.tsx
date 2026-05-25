@@ -2455,8 +2455,8 @@ export default function ChatThread({
     const msgText = (overrideText ? overrideText : input).trim()
     
     // AI Copilot feature
-    if (msgText.toLowerCase().startsWith('/ai ') && msgText.length > 4) {
-      const instruction = msgText.substring(4).trim();
+    if (msgText.startsWith('//') && msgText.length > 2) {
+      const instruction = msgText.substring(2).trim();
       handleAiDraft(instruction);
       return;
     }
@@ -4712,8 +4712,8 @@ export default function ChatThread({
                   if (input.trim().startsWith('//t ') && input.trim().length > 4) {
                     const text = input.trim().substring(4).trim();
                     handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
-                  } else if (input.trim().toLowerCase().startsWith('/ai ') && input.trim().length > 4) {
-                    const instruction = input.trim().substring(4).trim();
+                  } else if (input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
+                    const instruction = input.trim().substring(2).trim();
                     handleAiDraft(instruction);
                   } else {
                     handleSend()
