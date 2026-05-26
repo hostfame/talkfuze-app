@@ -37,6 +37,18 @@ interface Props {
   callRecords: CallRecord[]
 }
 
+const getInvoiceType = (dateStr: string, duedateStr: string): 'renewal' | 'new-order' => {
+  try {
+    const date = new Date(dateStr)
+    const duedate = new Date(duedateStr)
+    const diffTime = Math.abs(duedate.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays <= 7 ? 'new-order' : 'renewal'
+  } catch (e) {
+    return 'renewal'
+  }
+}
+
 export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   const { triggerDial } = useInboxStore()
   
@@ -52,6 +64,8 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const calendarRef = useRef<HTMLDivElement>(null)
+
+  const [activeTab, setActiveTab] = useState<'all' | 'renewals' | 'new-orders'>('all')
 
   // Handle click outside to close calendar
   useEffect(() => {
@@ -79,6 +93,25 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   const filteredInvoices = useMemo(() => {
     return invoices.filter(inv => inv.date === selectedDateStr)
   }, [invoices, selectedDateStr])
+
+  const { renewals, newOrders } = useMemo(() => {
+    const renewals: Invoice[] = []
+    const newOrders: Invoice[] = []
+    filteredInvoices.forEach(inv => {
+      if (getInvoiceType(inv.date, inv.duedate) === 'new-order') {
+        newOrders.push(inv)
+      } else {
+        renewals.push(inv)
+      }
+    })
+    return { renewals, newOrders }
+  }, [filteredInvoices])
+
+  const displayedInvoices = useMemo(() => {
+    if (activeTab === 'renewals') return renewals
+    if (activeTab === 'new-orders') return newOrders
+    return filteredInvoices
+  }, [activeTab, filteredInvoices, renewals, newOrders])
 
   const handleUpdate = async (invoiceId: number, clientId: number, field: string, value: string | null) => {
     const prev = records[invoiceId] || { invoice_id: invoiceId, client_id: clientId, status: null, will_renew: null, notes: null }
@@ -197,10 +230,27 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
 
           <div className="h-5 w-px bg-slate-200 dark:bg-slate-700/50"></div>
 
-          <span className="text-xs font-semibold text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-            {filteredInvoices.length} {filteredInvoices.length === 1 ? 'Invoice' : 'Invoices'}
-          </span>
+          {/* Premium iOS-style Minimalist Tab Switcher */}
+          <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/20 shadow-inner">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'all' ? 'bg-white text-slate-800 dark:bg-[#111b21] dark:text-white shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              All ({filteredInvoices.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('renewals')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'renewals' ? 'bg-white text-[#0070f3] dark:bg-[#111b21] dark:text-blue-400 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              Renewals ({renewals.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('new-orders')}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 ${activeTab === 'new-orders' ? 'bg-white text-[#0070f3] dark:bg-[#111b21] dark:text-blue-400 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              New Orders ({newOrders.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -219,22 +269,24 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 bg-white dark:bg-[#0b141a]">
-            {filteredInvoices.length === 0 ? (
+            {displayedInvoices.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-20 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={8} className="px-6 py-20 text-center text-slate-500 dark:text-slate-400">
                   <div className="flex flex-col items-center justify-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                       <CreditCard className="w-6 h-6 text-slate-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-200">No unpaid invoices found</p>
+                      <p className="font-medium text-slate-900 dark:text-slate-200">
+                        {activeTab === 'renewals' ? 'No unpaid renewals found' : activeTab === 'new-orders' ? 'No unpaid new orders found' : 'No unpaid invoices found'}
+                      </p>
                       <p className="text-xs mt-1">Try selecting a different date from the calendar above.</p>
                     </div>
                   </div>
                 </td>
               </tr>
             ) : (
-              filteredInvoices.map((inv) => {
+              displayedInvoices.map((inv) => {
                 const record = records[inv.id]
                 const clientName = [inv.firstname, inv.lastname].filter(Boolean).join(" ") || inv.companyname || `Client #${inv.userid}`
                 const phone = inv.client_phone || inv.phonenumber || ''
@@ -309,6 +361,17 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
             #{inv.id}
           </a>
           <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5 whitespace-nowrap">Due: {inv.duedate}</div>
+          <div className="mt-1">
+            {getInvoiceType(inv.date, inv.duedate) === 'new-order' ? (
+              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0070f3] border border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
+                New Order
+              </span>
+            ) : (
+              <span className="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200/50 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-700/50">
+                Renewal
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-6 py-4">
           <div className="font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{inv.total} {inv.currencycode}</div>
