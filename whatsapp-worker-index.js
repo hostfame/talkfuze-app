@@ -1208,36 +1208,7 @@ async function processOutboundMessage(msg) {
       // Since client-side already handles delay via setTimeout before insertion, we do not delay here to avoid double-delay.
       const scheduledDelayMs = msg.metadata?.scheduled_delay || 0;
 
-      // ── CRITICAL CANCELATION PATTERN ──
-      // If the customer has replied since this outbound message was originally drafted/enqueued, 
-      // abort delivery of delayed chunks to prevent jumbled double-messaging context breaks!
-      // We calculate originalDraftTime by subtracting the scheduled delay from created_at.
-      // ──────────────────────────────────
-      const { data: lastInbound } = await supabaseRealtime
-        .from('messages')
-        .select('created_at')
-        .eq('conversation_id', msg.conversation_id)
-        .eq('sender_type', 'contact')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
 
-      const originalDraftTime = new Date(new Date(msg.created_at).getTime() - scheduledDelayMs).toISOString();
-
-      if (lastInbound && lastInbound.created_at > originalDraftTime) {
-        console.log(`[OUTBOUND] Customer replied at ${lastInbound.created_at} (after agent message was drafted at ${originalDraftTime}). Aborting out-of-context scheduled chunk.`);
-        await supabaseRealtime.from('messages')
-          .update({
-            status: 'failed',
-            metadata: {
-              ...(msg.metadata || {}),
-              delivery_error: 'Aborted: Customer replied before this delayed message was sent',
-              delivery_failed_at: new Date().toISOString()
-            }
-          })
-          .eq('id', msg.id);
-        return;
-      }
 
       let quoted = null;
       try {
