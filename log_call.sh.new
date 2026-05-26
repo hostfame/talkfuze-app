@@ -8,6 +8,8 @@ DURATION=$4
 STATUS=$5
 RECORDING=$6
 AGENT_NAME=$7
+PRESSED_DIGIT=$8
+AGENT_TALKED=$9
 
 ORG_ID="ec2f8436-05dc-4621-8a7f-57202f865b8e"
 WEBHOOK_URL="https://app.talkfuze.com/api/webhooks/calls"
@@ -23,5 +25,8 @@ curl -s -L -X POST "$WEBHOOK_URL" \
            "duration": "'$DURATION'",
            "status": "'$STATUS'",
            "recording": "'$RECORDING'",
-           "agent_name": "'"$AGENT_NAME"'"
+           "agent_name": "'"$AGENT_NAME"'",
+           "pressed_digit": "'"$PRESSED_DIGIT"'",
+           "agent_talked": "'"$AGENT_TALKED"'"
          }'
+

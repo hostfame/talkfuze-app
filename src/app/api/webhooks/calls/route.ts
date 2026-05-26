@@ -288,7 +288,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { org_id, direction, from, to, duration, status, recording, agent_name } = body
+    const { org_id, direction, from, to, duration, status, recording, agent_name, pressed_digit, agent_talked } = body
 
     if (!org_id || !direction || !from || !to) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -416,7 +416,11 @@ export async function POST(req: NextRequest) {
             await upsertUnpaidInvoiceCall({
               invoice_id: parseInt(matchedInvoice.id),
               client_id: parseInt(matchedInvoice.userid),
-              status: finalStatus
+              status: finalStatus,
+              duration_seconds: parseInt(duration) || 0,
+              recording_url: recording_url || null,
+              pressed_digit: pressed_digit || null,
+              agent_talked: agent_talked || null
             });
           } else {
             console.warn(`[Autodialer Webhook] Could not find matched unpaid invoice for phone suffix ${last9To}`);

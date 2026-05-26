@@ -22,9 +22,13 @@ export async function upsertUnpaidInvoiceCall(params: {
   status?: string | null;
   will_renew?: string | null;
   notes?: string | null;
+  duration_seconds?: number | null;
+  recording_url?: string | null;
+  pressed_digit?: string | null;
+  agent_talked?: string | null;
 }) {
   try {
-    const { invoice_id, client_id, status, will_renew, notes } = params
+    const { invoice_id, client_id, status, will_renew, notes, duration_seconds, recording_url, pressed_digit, agent_talked } = params
     
     // First try to check if it exists (use maybeSingle to avoid PGRST116 error on 0 rows)
     const { data: existing, error: fetchError } = await supabaseAdmin
@@ -42,6 +46,10 @@ export async function upsertUnpaidInvoiceCall(params: {
     if (status !== undefined) payload.status = status
     if (will_renew !== undefined) payload.will_renew = will_renew
     if (notes !== undefined) payload.notes = notes
+    if (duration_seconds !== undefined) payload.duration_seconds = duration_seconds
+    if (recording_url !== undefined) payload.recording_url = recording_url
+    if (pressed_digit !== undefined) payload.pressed_digit = pressed_digit
+    if (agent_talked !== undefined) payload.agent_talked = agent_talked
 
     if (existing) {
       const { data, error } = await supabaseAdmin

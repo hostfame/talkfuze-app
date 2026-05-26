@@ -30,6 +30,10 @@ type CallRecord = {
   status: string | null
   will_renew: string | null
   notes: string | null
+  duration_seconds?: number | null
+  recording_url?: string | null
+  pressed_digit?: string | null
+  agent_talked?: string | null
 }
 
 interface Props {
@@ -367,27 +371,37 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
               <Phone className="w-4 h-4" strokeWidth={2.5} />
             </button>
 
-            <button 
-              disabled={!isPhoneValid || robocallingId === inv.id}
-              onClick={() => onRobocall(inv.id, phone, inv.userid)}
-              className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 ${
-                isPhoneValid 
-                  ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white hover:shadow-md dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white' 
-                  : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-600'
-              }`}
-              title={isPhoneValid ? "Trigger Robocall Reminder" : "No Valid Phone Number"}
-            >
-              {robocallingId === inv.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4" strokeWidth={2.5} />
-              )}
-            </button>
           </div>
         </td>
         <td className="px-6 py-4">
           <div className="font-semibold text-slate-900 dark:text-slate-100">{clientName}</div>
           <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5 font-mono">{phone || 'No Phone'}</div>
+          {record && (record.pressed_digit || (record.duration_seconds && record.duration_seconds > 0) || record.agent_talked) && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5 items-center">
+              {record.pressed_digit === '1' && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  Pressed 1 (Bridged)
+                </span>
+              )}
+              {record.agent_talked && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200/50 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700/50">
+                  Talked: {record.agent_talked.replace('agent_', '')}
+                </span>
+              )}
+              {record.duration_seconds && record.duration_seconds > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200/50 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700/50">
+                  {record.duration_seconds}s
+                </span>
+              )}
+              {record.recording_url && (
+                <a href={record.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#0070f3] border border-blue-100 hover:bg-[#0070f3] hover:text-white transition-colors dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Play Rec
+                </a>
+              )}
+            </div>
+          )}
         </td>
         <td className="px-6 py-4">
           <a href={`https://my.hostnin.com/root/invoices.php?action=edit&id=${inv.id}`} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1.5">
