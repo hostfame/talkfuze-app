@@ -4,10 +4,22 @@ import { getApprovedExamples } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 
-function detectConversationLanguageForLog(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  const recent = messages.slice(-5);
-  for (const m of recent) {
-    if (/[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(m.content)) return 'Bengali';
+const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
+
+function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.sender === 'Agent' || m.sender === 'System') continue;
+    const clean = m.content.trim();
+    if (AMBIGUOUS_MSG.test(clean)) continue;
+    if (BENGALI_REGEX.test(clean)) return 'Bengali';
+    if (clean.length > 3) return 'English';
+  }
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].sender === 'Agent') {
+      return BENGALI_REGEX.test(messages[i].content) ? 'Bengali' : 'English';
+    }
   }
   return 'English';
 }
@@ -59,7 +71,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
     
     // Language detection for DB logging only - LLM handles actual language matching
-    const detectedLanguage = detectConversationLanguageForLog(parsedMessages);
+    const detectedLanguage = detectConversationLanguage(parsedMessages);
 
     // Extract customer's name for personalization
     let customerFirstName = '';
@@ -132,7 +144,7 @@ ${JSON.stringify(knowledge)}
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-${detectedLanguage === 'Bengali' ? '\nLanguage hint: Recent messages contain Bengali script. Reply in Bengali.' : '\nLanguage hint: Recent messages are in English. Reply in English.'}
+${detectedLanguage === 'Bengali' ? '\nLANGUAGE: Customer is writing in Bengali. Reply in Bengali script.' : '\nLANGUAGE: Customer appears to be writing in English. Reply in English. However, if you can see the customer is writing in Banglish (Bengali words in English letters), reply in Bengali script instead.'}
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).${personalizationRule}${fewShotBlock}${mistakesBlock}`;
