@@ -216,21 +216,91 @@ const VideoIcon = ({ size = 20, className = "" }) => (
 
 const formatMarkdownText = (text: string) => {
   if (!text) return text;
-  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
-  const parts = text.split(regex);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+  
+  interface Token {
+    start: number;
+    end: number;
+    type: 'bold' | 'bold_double' | 'italic';
+    content: string;
+  }
+  
+  const tokens: Token[] = [];
+  const boldDoubleRegex = /\*\*([^\s*](?:[^*]*[^\s*])?)\*\*/g;
+  const boldRegex = /\*([^\s*](?:[^*]*[^\s*])?)\*/g;
+  const italicRegex = /_([^\s_](?:[^_]*[^\s_])?)_/g;
+  
+  let match;
+  while ((match = boldDoubleRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldDoubleRegex.lastIndex,
+      type: 'bold_double',
+      content: match[1]
+    });
+  }
+  
+  while ((match = boldRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldRegex.lastIndex,
+      type: 'bold',
+      content: match[1]
+    });
+  }
+  
+  while ((match = italicRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: italicRegex.lastIndex,
+      type: 'italic',
+      content: match[1]
+    });
+  }
+  
+  tokens.sort((a, b) => a.start - b.start);
+  
+  const nonOverlappingTokens: Token[] = [];
+  let lastEnd = 0;
+  for (const token of tokens) {
+    if (token.start >= lastEnd) {
+      nonOverlappingTokens.push(token);
+      lastEnd = token.end;
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
+  }
+  
+  if (nonOverlappingTokens.length === 0) return text;
+  
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  
+  for (const token of nonOverlappingTokens) {
+    if (token.start > lastIndex) {
+      elements.push(text.substring(lastIndex, token.start));
     }
-    if (part.startsWith('_') && part.endsWith('_')) {
-      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    
+    if (token.type === 'bold' || token.type === 'bold_double') {
+      elements.push(
+        <strong key={key++} className="font-bold">
+          {token.content}
+        </strong>
+      );
+    } else {
+      elements.push(
+        <em key={key++} className="italic">
+          {token.content}
+        </em>
+      );
     }
-    return part;
-  });
+    
+    lastIndex = token.end;
+  }
+  
+  if (lastIndex < text.length) {
+    elements.push(text.substring(lastIndex));
+  }
+  
+  return elements;
 };
 
 const renderMessageContent = (msg: WidgetMessage, isDark: boolean, setLightboxImage: (url: string) => void) => {

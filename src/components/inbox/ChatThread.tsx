@@ -358,23 +358,184 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript, fullWidth = false
   );
 };
 
+function formatComposerMarkdown(text: string): React.ReactNode[] {
+  if (!text) return [];
+  
+  interface Token {
+    start: number;
+    end: number;
+    type: 'bold' | 'bold_double' | 'italic';
+    content: string;
+  }
+  
+  const tokens: Token[] = [];
+  const boldDoubleRegex = /\*\*([^\s*](?:[^*]*[^\s*])?)\*\*/g;
+  const boldRegex = /\*([^\s*](?:[^*]*[^\s*])?)\*/g;
+  const italicRegex = /_([^\s_](?:[^_]*[^\s_])?)_/g;
+  
+  let match;
+  while ((match = boldDoubleRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldDoubleRegex.lastIndex,
+      type: 'bold_double',
+      content: match[1]
+    });
+  }
+  
+  while ((match = boldRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldRegex.lastIndex,
+      type: 'bold',
+      content: match[1]
+    });
+  }
+  
+  while ((match = italicRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: italicRegex.lastIndex,
+      type: 'italic',
+      content: match[1]
+    });
+  }
+  
+  tokens.sort((a, b) => a.start - b.start);
+  
+  const nonOverlappingTokens: Token[] = [];
+  let lastEnd = 0;
+  for (const token of tokens) {
+    if (token.start >= lastEnd) {
+      nonOverlappingTokens.push(token);
+      lastEnd = token.end;
+    }
+  }
+  
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  
+  for (const token of nonOverlappingTokens) {
+    if (token.start > lastIndex) {
+      elements.push(text.substring(lastIndex, token.start));
+    }
+    
+    if (token.type === 'bold' || token.type === 'bold_double') {
+      elements.push(
+        <span key={key++} className="font-bold">
+          <span className="opacity-0 font-normal select-none pointer-events-none">{token.type === 'bold_double' ? '**' : '*'}</span>
+          {token.content}
+          <span className="opacity-0 font-normal select-none pointer-events-none">{token.type === 'bold_double' ? '**' : '*'}</span>
+        </span>
+      );
+    } else {
+      elements.push(
+        <span key={key++} className="italic">
+          <span className="opacity-0 font-normal select-none pointer-events-none">_</span>
+          {token.content}
+          <span className="opacity-0 font-normal select-none pointer-events-none">_</span>
+        </span>
+      );
+    }
+    
+    lastIndex = token.end;
+  }
+  
+  if (lastIndex < text.length) {
+    elements.push(text.substring(lastIndex));
+  }
+  
+  return elements;
+}
+
 function formatWhatsAppMarkdown(text: string) {
   if (!text) return text;
-  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
-  const parts = text.split(regex);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+  
+  interface Token {
+    start: number;
+    end: number;
+    type: 'bold' | 'bold_double' | 'italic';
+    content: string;
+  }
+  
+  const tokens: Token[] = [];
+  const boldDoubleRegex = /\*\*([^\s*](?:[^*]*[^\s*])?)\*\*/g;
+  const boldRegex = /\*([^\s*](?:[^*]*[^\s*])?)\*/g;
+  const italicRegex = /_([^\s_](?:[^_]*[^\s_])?)_/g;
+  
+  let match;
+  while ((match = boldDoubleRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldDoubleRegex.lastIndex,
+      type: 'bold_double',
+      content: match[1]
+    });
+  }
+  
+  while ((match = boldRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: boldRegex.lastIndex,
+      type: 'bold',
+      content: match[1]
+    });
+  }
+  
+  while ((match = italicRegex.exec(text)) !== null) {
+    tokens.push({
+      start: match.index,
+      end: italicRegex.lastIndex,
+      type: 'italic',
+      content: match[1]
+    });
+  }
+  
+  tokens.sort((a, b) => a.start - b.start);
+  
+  const nonOverlappingTokens: Token[] = [];
+  let lastEnd = 0;
+  for (const token of tokens) {
+    if (token.start >= lastEnd) {
+      nonOverlappingTokens.push(token);
+      lastEnd = token.end;
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
-      return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
+  }
+  
+  if (nonOverlappingTokens.length === 0) return text;
+  
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  
+  for (const token of nonOverlappingTokens) {
+    if (token.start > lastIndex) {
+      elements.push(text.substring(lastIndex, token.start));
     }
-    if (part.startsWith('_') && part.endsWith('_')) {
-      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    
+    if (token.type === 'bold' || token.type === 'bold_double') {
+      elements.push(
+        <strong key={key++} className="font-bold">
+          {token.content}
+        </strong>
+      );
+    } else {
+      elements.push(
+        <em key={key++} className="italic">
+          {token.content}
+        </em>
+      );
     }
-    return part;
-  });
+    
+    lastIndex = token.end;
+  }
+  
+  if (lastIndex < text.length) {
+    elements.push(text.substring(lastIndex));
+  }
+  
+  return elements;
 }
 
 function renderTextWithLinks(
@@ -1195,6 +1356,7 @@ export default function ChatThread({
   const [input, setInput] = useState("")
   const [selectedText, setSelectedText] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -5042,6 +5204,11 @@ export default function ChatThread({
                 ref={textareaRef}
                 value={input}
                 onChange={handleInputChange}
+                onScroll={(e) => {
+                  if (overlayRef.current) {
+                    overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+                  }
+                }}
                 onKeyUp={(e) => {
                   if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) return;
                   const target = e.target as HTMLTextAreaElement;
@@ -5123,8 +5290,24 @@ export default function ChatThread({
                 }
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-950 dark:text-amber-100 placeholder:text-amber-700/55 dark:placeholder:text-amber-500/40' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] placeholder:text-transparent ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                style={{ color: 'transparent', caretColor: 'currentColor' }}
               ></textarea>
+              
+              {/* Synchronized rich formatting backdrop overlay */}
+              <div 
+                ref={overlayRef}
+                className={`absolute inset-0 p-4 text-[14px] font-normal leading-relaxed whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none z-[1] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] text-left ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
+                style={{ height: textareaRef.current ? `${textareaRef.current.offsetHeight}px` : 'auto' }}
+              >
+                {input ? (
+                  formatComposerMarkdown(input)
+                ) : (
+                  <span className={isInternal ? 'text-amber-700/55 dark:text-amber-500/40' : 'text-slate-400 dark:text-[#8696a0]'}>
+                    {isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+                  </span>
+                )}
+              </div>
               
 
             </div>
