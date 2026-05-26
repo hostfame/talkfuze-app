@@ -547,29 +547,70 @@ export default function InboxPage() {
       .subscribe();
       
     const presenceChannel = supabase.channel(`presence:${ORG_ID}`)
+    
+    let lastTrackTime = 0;
+    
+    const trackUserPresence = async () => {
+      if (!currentUser?.id) return;
+      const now = Date.now();
+      // Throttle presence tracking to once every 2 minutes
+      if (now - lastTrackTime < 120000) return;
+      lastTrackTime = now;
+      try {
+        await presenceChannel.track({
+          user: currentUser.id,
+          online_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Failed to track presence:", err);
+      }
+    };
+
     presenceChannel.on('presence', { event: 'sync' }, () => {
       const state = presenceChannel.presenceState()
       const currentOnline = new Set<string>()
+      const now = Date.now()
+      
       for (const id in state) {
         state[id].forEach((presence: any) => {
-           if (presence.user) currentOnline.add(presence.user)
+          if (presence.user) {
+            // Check if presence is active:
+            // 1. Visitors/customers do not have last_active_at, so they always count as online
+            // 2. Agents have last_active_at. If it's older than 10 minutes, treat them as offline/idle.
+            const isStale = presence.last_active_at && (now - new Date(presence.last_active_at).getTime() > 600000);
+            if (!isStale) {
+              currentOnline.add(presence.user)
+            }
+          }
         })
       }
       setOnlineUsers(currentOnline)
     })
 
     presenceChannel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED' && currentUser?.id) {
-        await presenceChannel.track({
-          user: currentUser.id,
-          online_at: new Date().toISOString()
-        })
+      if (status === 'SUBSCRIBED') {
+        trackUserPresence();
       }
     })
+    
+    // Register event listeners to update last_active_at on user activity
+    const handleActivity = () => {
+      trackUserPresence();
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
       
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(presenceChannel);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
     }
   }, [ORG_ID, currentUser?.id]);
 

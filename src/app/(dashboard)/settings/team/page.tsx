@@ -57,25 +57,69 @@ export default function TeamSettingsPage() {
       if (!user) return
 
       presenceChannel = supabase.channel(`presence:${orgId}`)
+      
+      let lastTrackTime = 0;
+      
+      const trackUserPresence = async () => {
+        const now = Date.now();
+        // Throttle presence tracking to once every 2 minutes
+        if (now - lastTrackTime < 120000) return;
+        lastTrackTime = now;
+        try {
+          await presenceChannel.track({
+            user: user.id,
+            online_at: new Date().toISOString(),
+            last_active_at: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error("Failed to track presence:", err);
+        }
+      };
+
       presenceChannel
         .on('presence', { event: 'sync' }, () => {
           const state = presenceChannel.presenceState()
           const currentOnline = new Set<string>()
+          const now = Date.now()
+          
           for (const id in state) {
             state[id].forEach((presence: any) => {
-               if (presence.user) currentOnline.add(presence.user)
+              if (presence.user) {
+                // Check if presence is active:
+                // 1. Visitors/customers do not have last_active_at, so they always count as online
+                // 2. Agents have last_active_at. If it's older than 10 minutes, treat them as offline/idle.
+                const isStale = presence.last_active_at && (now - new Date(presence.last_active_at).getTime() > 600000);
+                if (!isStale) {
+                  currentOnline.add(presence.user)
+                }
+              }
             })
           }
           setOnlineUsers(currentOnline)
         })
         .subscribe(async (status: string) => {
           if (status === 'SUBSCRIBED') {
-            await presenceChannel.track({
-              user: user.id,
-              online_at: new Date().toISOString()
-            })
+            trackUserPresence();
           }
         })
+
+      // Register event listeners to update last_active_at on user activity
+      const handleActivity = () => {
+        trackUserPresence();
+      };
+
+      window.addEventListener('mousemove', handleActivity);
+      window.addEventListener('keydown', handleActivity);
+      window.addEventListener('click', handleActivity);
+      window.addEventListener('scroll', handleActivity);
+
+      // Save a cleanup function on window to be called on unmount
+      (window as any)._cleanupTeamPresenceActivity = () => {
+        window.removeEventListener('mousemove', handleActivity);
+        window.removeEventListener('keydown', handleActivity);
+        window.removeEventListener('click', handleActivity);
+        window.removeEventListener('scroll', handleActivity);
+      };
     }
 
     setupPresence()
@@ -83,6 +127,10 @@ export default function TeamSettingsPage() {
     return () => {
       if (presenceChannel) {
         supabase.removeChannel(presenceChannel)
+      }
+      if ((window as any)._cleanupTeamPresenceActivity) {
+        (window as any)._cleanupTeamPresenceActivity();
+        delete (window as any)._cleanupTeamPresenceActivity;
       }
     }
   }, [teammates])
