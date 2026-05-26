@@ -391,6 +391,42 @@ export async function POST(req: NextRequest) {
       ).catch(err => console.error("Error in background call recording processor:", err));
     }
 
+    // If it is the autodialer, update the unpaid invoice call status in Supabase
+    if (agent_name === 'Hostnin Autodialer') {
+      try {
+        console.log(`[Autodialer Webhook] Processing result for ${to}`);
+        const cleanTo = to.replace(/\D/g, '');
+        const last9To = cleanTo.slice(-9);
+        
+        if (last9To) {
+          const { fetchAllWhmcsUnpaidInvoices } = await import("@/actions/whmcs");
+          const { upsertUnpaidInvoiceCall } = await import("@/actions/unpaid-calls");
+          const unpaidInvoices = await fetchAllWhmcsUnpaidInvoices();
+          
+          const matchedInvoice = unpaidInvoices.find((inv: any) => {
+            const p = inv.client_phone || inv.phonenumber || '';
+            return p.replace(/\D/g, '').endsWith(last9To);
+          });
+          
+          if (matchedInvoice) {
+            const isAnswered = status === 'ANSWER' || status === 'ANSWERED' || (parseInt(duration) || 0) > 0;
+            const finalStatus = isAnswered ? 'Answered' : 'Not Answered';
+            
+            console.log(`[Autodialer Webhook] Updating invoice #${matchedInvoice.id} call status to ${finalStatus}`);
+            await upsertUnpaidInvoiceCall({
+              invoice_id: parseInt(matchedInvoice.id),
+              client_id: parseInt(matchedInvoice.userid),
+              status: finalStatus
+            });
+          } else {
+            console.warn(`[Autodialer Webhook] Could not find matched unpaid invoice for phone suffix ${last9To}`);
+          }
+        }
+      } catch (autodialerErr) {
+        console.error("[Autodialer Webhook] Failed to process autodialer update:", autodialerErr);
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error("Webhook Error:", err)
