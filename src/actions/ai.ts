@@ -59,7 +59,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     // Extract the customer's last 4 messages to determine the language
     const customerLines = contextMessages.split('\n')
       .map(line => line.trim())
-      .filter(line => line && !line.startsWith('[Agent]'));
+      .filter(line => line && !line.startsWith('[Agent]') && !line.startsWith('[System]'));
     
     const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
 

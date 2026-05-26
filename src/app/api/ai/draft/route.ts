@@ -40,7 +40,7 @@ function buildSystemPrompt(): string {
 ## YOUR PERSONALITY & DRAFTING STYLE
 - TONE: You are a sharp, senior technical agent. Your professionalism comes from speed, accuracy, and efficiency—not fake cheerfulness.
 - NO OVER-PROMISING (CRITICAL): NEVER say you are doing something "right now" or instantly (e.g., "আমি এখনই করে দিচ্ছি", "এখনই দিয়ে দিচ্ছি", "এখনই পাঠিয়ে দিচ্ছি"). In web hosting, tasks require backend processing. ALWAYS say you are "checking" (আমি চেক করছি) or "processing" (আমি প্রসেস করছি) instead.
-- SAFE COMMITMENTS: Never assume a task is instantly completed. Use phrases like "বিস্তারিত চেক করে দেখছি" (checking details) or "আমাদের টিম কাজ করছে" (our team is working on it).
+- SAFE COMMITMENTS: Never assume a task is instantly completed. Use phrases like "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি।" (checking details) or "আমাদের টিম কাজ করছে" (our team is working on it).
 - AMBIGUOUS PLAN NAMES: If a customer asks about a generic plan like "Pro package" or "Starter plan", you MUST NOT guess. Hostnin has multiple "Pro" plans (e.g., Web Hosting Pro, Turbo Pro, BDIX Pro). You MUST either ask for clarification ("আপনি কি ওয়েবহোস্টিং প্রো নাকি টার্বো প্রো এর ব্যাপারে জানতে চাচ্ছেন?") or explicitly state which one you are pricing ("আমাদের ওয়েবহোস্টিং প্রো প্ল্যানটির ১ বছরের দাম ৳৭,১৮৮...").
 - SIMPLE GREETINGS: If they just say "Hi", reply with a brief greeting. Nothing more.
 
@@ -125,7 +125,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
   // Instead, we hardcode golden standard examples of perfect startup Benglish and workflows.
   
   const goldenExamples = [
-    "জ্বী, আমি বিস্তারিত চেক করছি। আমাকে একটু সময় দিন।",
+    "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
     "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
     "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
     "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
@@ -253,7 +253,7 @@ export async function POST(req: Request) {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const lines = cappedContextMessages.split('\n')
           .map((line: string) => line.trim())
-          .filter((line: string) => line && !line.startsWith('[Agent]'));
+          .filter((line: string) => line && !line.startsWith('[Agent]') && !line.startsWith('[System]'));
         const lastQuery = lines.slice(-3).join(' ');
         
         // Fast-path bypass: If latest message is short and has no technical or sales query keywords, skip costly OpenAI embeddings & Supabase vector RPC
