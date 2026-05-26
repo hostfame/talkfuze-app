@@ -18,6 +18,10 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (m.sender === 'Agent' || m.sender === 'System') continue;
     const clean = m.content.trim();
     if (AMBIGUOUS_MSG.test(clean)) continue;
+    // Skip URLs, links, file names - they're language-neutral
+    if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
+    // Skip image/audio attachments
+    if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
     // Bengali script found = definitive Bengali
     if (BENGALI_REGEX.test(clean)) return 'Bengali';
     // Only treat as definitive English if 15+ chars (short msgs like "cpu core?" could be in either language)

@@ -13,6 +13,8 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (m.sender === 'Agent' || m.sender === 'System') continue;
     const clean = m.content.trim();
     if (AMBIGUOUS_MSG.test(clean)) continue;
+    if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
+    if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
     if (BENGALI_REGEX.test(clean)) return 'Bengali';
     if (clean.length >= 15) return 'English';
   }
