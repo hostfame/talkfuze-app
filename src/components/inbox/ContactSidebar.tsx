@@ -145,13 +145,15 @@ export default function ContactSidebar({
   orgId, 
   messages = [],
   isOpen = true,
-  onClose
+  onClose,
+  onlineUsers = new Set()
 }: { 
   conversation?: ConversationWithDetails | null, 
   orgId: string, 
   messages?: any[],
   isOpen?: boolean,
-  onClose?: () => void
+  onClose?: () => void,
+  onlineUsers?: Set<string>
 }) {
   const { triggerDial, convertingTickets, setConvertingTicket, pendingIpUnblock, setPendingIpUnblock, crmCache, setCrmCache } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
@@ -1495,28 +1497,36 @@ export default function ContactSidebar({
             {isAgentsExpanded && (
               <div className="mt-3.5 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
                 {participants.length > 0 ? (
-                  participants.map((p, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-center gap-3 px-1 py-0.5"
-                    >
-                      <div className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0 shadow-xs">
-                        {p.user?.avatar_url ? (
-                          <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          p.user?.name?.charAt(0).toUpperCase() || 'A'
-                        )}
+                  participants.map((p, idx) => {
+                    const isOnline = p.user?.id && onlineUsers.has(p.user.id);
+                    return (
+                      <div 
+                        key={idx} 
+                        className="flex items-center gap-3 px-1 py-0.5"
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shadow-xs">
+                            {p.user?.avatar_url ? (
+                              <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              p.user?.name?.charAt(0).toUpperCase() || 'A'
+                            )}
+                          </div>
+                          {isOnline && (
+                            <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-800" />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[12.5px] font-medium text-slate-850 dark:text-[#d1d7db] truncate">
+                            {p.user?.name || 'Agent'}
+                          </span>
+                          <span className="text-[9.5px] text-slate-400 dark:text-[#8696a0] font-mono capitalize">
+                            {p.user?.role || 'agent'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[12.5px] font-medium text-slate-850 dark:text-[#d1d7db] truncate">
-                          {p.user?.name || 'Agent'}
-                        </span>
-                        <span className="text-[9.5px] text-slate-400 dark:text-[#8696a0] font-mono capitalize">
-                          {p.user?.role || 'agent'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-[11.5px] text-slate-500 dark:text-[#8696a0] italic py-1 pl-1">
                     No agents joined.
