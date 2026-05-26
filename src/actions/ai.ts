@@ -92,7 +92,10 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const customerFullText = customerLines.slice(-4).join(' ').toLowerCase();
     const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
     const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-    const isBenglish = words.some(w => BENGLISH_WORDS.has(w)) || detectSalam(customerFullText);
+    const nonGreetingWords = words.filter(w => w && !detectSalam(w));
+    const isBenglish = nonGreetingWords.length === 0
+      ? detectSalam(customerFullText)
+      : nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
     const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.

@@ -240,7 +240,10 @@ export async function POST(req: Request) {
       const customerFullText = customerLines.slice(-10).join(' ').toLowerCase();
       const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
       const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w)) || detectSalam(customerFullText);
+      const nonGreetingWords = words.filter((w: string) => w && !detectSalam(w));
+      const isBenglish = nonGreetingWords.length === 0
+        ? detectSalam(customerFullText)
+        : nonGreetingWords.some((w: string) => BENGLISH_WORDS.has(w));
       strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
     }
     const languageOverride = strictLanguage === 'Bengali' 
