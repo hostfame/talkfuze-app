@@ -1506,8 +1506,7 @@ export default function ChatThread({
     hasJoinedOptimistically ||
     participants.length > 0 || 
     hasPropParticipants || 
-    hasPropAssignee || 
-    messages.some(m => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content && m.content.includes('joined the conversation')))
+    hasPropAssignee
   );
 
   const isLoadedConversation = !isFetching && !isLoadingParticipants;
