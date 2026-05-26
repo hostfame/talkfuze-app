@@ -313,9 +313,15 @@ export async function POST(req: Request) {
     } else {
       // Auto mode: Fall back to detecting the customer's conversation language
       let textToDetect = latestCustomerMessageCleaned.trim().toLowerCase();
-      // If the latest message is too short or just an acknowledgement/greeting, scan up to 5 recent customer messages to determine the ongoing language context
-      if (textToDetect.length < 15 || /^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm)$/i.test(textToDetect)) {
-        textToDetect = customerMessages.slice(-5).map(m => m.content).join(' ').toLowerCase();
+      // If the latest message is too short or just an acknowledgement/greeting, scan the recent conversation history in reverse order (both agent and contact) to detect the active script context
+      if (textToDetect.length < 15 || /^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm|send)$/i.test(textToDetect)) {
+        for (let i = parsedMessages.length - 1; i >= 0; i--) {
+          const content = parsedMessages[i].content.trim().toLowerCase();
+          if (content.length >= 15 && !/^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm|send)$/i.test(content)) {
+            textToDetect = content;
+            break;
+          }
+        }
       }
       
       const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(textToDetect);
