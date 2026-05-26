@@ -530,8 +530,31 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
         mimeType = 'video/mp4';
         ext = 'mp4';
       } else {
-        mimeType = 'application/octet-stream';
-        ext = 'bin';
+        // For documents, try to extract original filename and mimetype from documentMessage to prevent .bin fallback
+        const docMsg = unwrapMessage(msg)?.documentMessage;
+        if (docMsg) {
+          const originalMime = docMsg.mimetype;
+          const originalFileName = docMsg.fileName || docMsg.filename || '';
+          let detectedExt = '';
+          if (originalFileName && originalFileName.includes('.')) {
+            detectedExt = originalFileName.split('.').pop().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+          }
+          
+          if (originalMime && mimeRegex.test(originalMime)) {
+            mimeType = originalMime;
+          } else {
+            mimeType = 'application/octet-stream';
+          }
+          
+          if (detectedExt) {
+            ext = detectedExt;
+          } else {
+            ext = 'bin';
+          }
+        } else {
+          mimeType = 'application/octet-stream';
+          ext = 'bin';
+        }
       }
     }
 
