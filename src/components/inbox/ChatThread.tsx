@@ -2671,7 +2671,7 @@ export default function ChatThread({
             const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
             if (m.status === 'sending' && meta.scheduled_delay) {
               const mTime = new Date(m.created_at).getTime();
-              const mSendAfter = mTime + meta.scheduled_delay;
+              const mSendAfter = mTime;
               const remaining = mSendAfter - Date.now();
               if (remaining > maxPendingDelay) {
                 maxPendingDelay = remaining;
@@ -2693,15 +2693,15 @@ export default function ChatThread({
           let previousDelay = 0;
           if (!isInternal) {
             if (i > 0) {
-              // Calculate realistic delay based on length/lines (Imran's 20s/40s/50s rule)
+              // Calculate realistic delay based on length/lines (Imran's 4s/7s/10s rule)
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
               
               if (lineCount <= 1) {
-                chunkDelay = 20000; // 20s
+                chunkDelay = 4000; // 4s
               } else if (lineCount === 2) {
-                chunkDelay = 40000; // 40s
+                chunkDelay = 7000; // 7s
               } else {
-                chunkDelay = 50000; // 50s
+                chunkDelay = 10000; // 10s
               }
             }
             previousDelay = accumulatedDelay;

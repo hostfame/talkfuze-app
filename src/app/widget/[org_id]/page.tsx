@@ -1457,7 +1457,7 @@ export default function WidgetPage() {
           let safeMeta = m.metadata as any;
           try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch(e) {}
           if (safeMeta?.chunk_delay && (m.sender_type === 'agent' || m.sender_type === 'ai')) {
-             const showAfter = new Date(m.created_at).getTime() + safeMeta.chunk_delay;
+             const showAfter = new Date(m.created_at).getTime();
              const waitTime = showAfter - now;
              if (waitTime > 0) {
                 m.metadata = safeMeta;
@@ -1666,7 +1666,7 @@ export default function WidgetPage() {
           try {
             if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
             if (safeMeta?.chunk_delay) {
-               const showAfter = new Date(newMsg.created_at).getTime() + safeMeta.chunk_delay;
+               const showAfter = new Date(newMsg.created_at).getTime();
                const waitTime = showAfter - Date.now();
                if (waitTime > 0) delayMs = waitTime;
             }
@@ -3339,14 +3339,7 @@ export default function WidgetPage() {
                 });
                 return [...realMessages, ...processedOptimistic].sort((a, b) => {
                   let timeA = new Date(a.created_at).getTime();
-                  let safeMetaA = a.metadata as any;
-                  try { if (typeof safeMetaA === 'string') safeMetaA = JSON.parse(safeMetaA); } catch(e) {}
-                  if (safeMetaA?.chunk_delay) timeA += safeMetaA.chunk_delay;
-
                   let timeB = new Date(b.created_at).getTime();
-                  let safeMetaB = b.metadata as any;
-                  try { if (typeof safeMetaB === 'string') safeMetaB = JSON.parse(safeMetaB); } catch(e) {}
-                  if (safeMetaB?.chunk_delay) timeB += safeMetaB.chunk_delay;
 
                   if (timeA === timeB) {
                     // System messages should appear before other messages if they have the same timestamp
