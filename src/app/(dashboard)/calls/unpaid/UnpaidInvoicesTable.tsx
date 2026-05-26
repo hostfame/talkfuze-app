@@ -521,6 +521,7 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
 
 function CustomStatusDropdown({ value, onChange }: { value: string | null, onChange: (val: string | null) => void }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<'down' | 'up'>('down')
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -531,6 +532,18 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
     }
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
+      
+      // Calculate remaining space below trigger to decide between drop-down and drop-up
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        const spaceBelow = window.innerHeight - rect.bottom
+        // Menu height is ~140px. Use 160px buffer for flawless rendering.
+        if (spaceBelow < 160) {
+          setDropdownPosition('up')
+        } else {
+          setDropdownPosition('down')
+        }
+      }
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isOpen])
@@ -555,7 +568,11 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 w-full mt-1.5 z-50 bg-white dark:bg-[#182229] border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className={`absolute left-0 w-full z-50 bg-white dark:bg-[#182229] border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in duration-150 ${
+          dropdownPosition === 'up' 
+            ? 'bottom-full mb-1.5 slide-in-from-bottom-2' 
+            : 'top-full mt-1.5 slide-in-from-top-2'
+        }`}>
           {options.map((opt) => (
             <button
               key={opt}
