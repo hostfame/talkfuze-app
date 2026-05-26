@@ -1980,6 +1980,7 @@ export default function ChatThread({
   const prevMsgLength = useRef(messages.length)
   const prevOptMsgLength = useRef(optimisticMessages.length)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const lastScrolledConvRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Skip scroll when there are no messages (loading state)
@@ -1990,11 +1991,12 @@ export default function ChatThread({
 
     const isBulkLoad = Math.abs(messages.length - prevMsgLength.current) > 1
     const isNewOptMsg = optimisticMessages.length > prevOptMsgLength.current
+    const isNewConv = conversationId !== lastScrolledConvRef.current
     
     let shouldScroll = true
     
-    // Only prevent auto-scroll if it's a single incoming message AND we are scrolled up
-    if (!isBulkLoad && !isNewOptMsg) {
+    // Only prevent auto-scroll if it's a single incoming message AND we are scrolled up AND it's not a new conversation
+    if (!isBulkLoad && !isNewOptMsg && !isNewConv) {
       const container = scrollContainerRef.current
       if (container) {
         // 150px threshold for being "at the bottom" (enough to cover the typing bubble or a small message)
@@ -2009,14 +2011,17 @@ export default function ChatThread({
       // Use rAF to batch with paint and avoid layout thrashing
       requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ 
-          behavior: isBulkLoad ? 'auto' : 'smooth' 
+          behavior: (isBulkLoad || isNewConv) ? 'auto' : 'smooth' 
         })
       })
+      if (isNewConv) {
+        lastScrolledConvRef.current = conversationId
+      }
     }
     
     prevMsgLength.current = messages.length
     prevOptMsgLength.current = optimisticMessages.length
-  }, [messages.length, optimisticMessages.length])
+  }, [messages.length, optimisticMessages.length, conversationId])
 
   // Handle scrolling for typing indicators so they aren't cut off
   useEffect(() => {
