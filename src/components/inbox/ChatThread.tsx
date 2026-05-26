@@ -715,11 +715,22 @@ export default function ChatThread({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const voiceChannelRef = useRef<any>(null)
   const voiceChannelSubscribedRef = useRef<boolean>(false)
+  const [locallyDeliveredIds, setLocallyDeliveredIds] = useState<Set<string>>(new Set())
+  const activeTimersRef = useRef<NodeJS.Timeout[]>([])
   const messageInitTimeRef = useRef<Record<string, number>>({})
 
   useEffect(() => {
+    activeTimersRef.current.forEach(clearTimeout);
+    activeTimersRef.current = [];
+    setLocallyDeliveredIds(new Set());
     messageInitTimeRef.current = {};
   }, [conversationId]);
+
+  useEffect(() => {
+    return () => {
+      activeTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const subscribeToVoiceCall = (convId: string) => {
     // Force remove existing channel to guarantee a clean WebRTC state
@@ -1938,7 +1949,7 @@ export default function ChatThread({
       if (typeof safeMeta === 'string') {
         try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
       }
-      return !isWhatsApp || !(safeMeta as any)?.scheduled_delay;
+      return !(safeMeta as any)?.scheduled_delay;
     });
     if (nonScheduledMessages.length > 0) {
       maxRealTime = Math.max(...nonScheduledMessages.map(m => new Date(m.created_at).getTime()));
@@ -1972,7 +1983,7 @@ export default function ChatThread({
       if (typeof safeMeta === 'string') {
         try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
       }
-      const isScheduled = isWhatsApp && !!(safeMeta as any)?.scheduled_delay;
+      const isScheduled = !!(safeMeta as any)?.scheduled_delay;
       // Ensure optimistic time is strictly greater than the latest real message to prevent bouncing backwards
       // BUT for scheduled/delayed chunks, their timestamps are already future-scheduled, so we preserve them to maintain correct chunk order!
       const adjustedTime = isScheduled ? originalTime : Math.max(originalTime, maxRealTime + 1 + index);
@@ -2783,7 +2794,7 @@ export default function ChatThread({
         let accumulatedDelay = 0;
         
         // Find existing max pending delay in queue to append these new chunks correctly
-        if (!isInternal && isWhatsApp) {
+        if (!isInternal) {
           const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
           let maxPendingDelay = 0;
           currentStoreMsgs.forEach(m => {
@@ -2810,7 +2821,7 @@ export default function ChatThread({
           
           let chunkDelay = 0;
           let previousDelay = 0;
-          if (!isInternal && isWhatsApp) {
+          if (!isInternal) {
             if (i > 0) {
               // Calculate realistic delay based on length/lines (Imran's 3s/5s/7s/10s rule)
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
@@ -2852,6 +2863,17 @@ export default function ChatThread({
             status: 'sending',
             created_at: optimisticCreatedAt
           })
+
+          if (isScheduled) {
+            const timer = setTimeout(() => {
+              setLocallyDeliveredIds(prev => {
+                const next = new Set(prev);
+                next.add(tempId);
+                return next;
+              });
+            }, accumulatedDelay);
+            activeTimersRef.current.push(timer);
+          }
           
           const metaPayload: any = {
             ...(replyMeta ? { reply_to: replyMeta } : {}),
@@ -4122,6 +4144,20 @@ export default function ChatThread({
               agentAvatar = "/team/h.jpg";
             }
 
+            const hasScheduledDelay = !!safeMeta?.scheduled_delay;
+            let isPendingDelay = false;
+            if (hasScheduledDelay && (msg.status === 'sending' || msg.status === 'confirmed')) {
+              const tempId = safeMeta?.temp_id || msg.id;
+              const isLocallyDelivered = locallyDeliveredIds.has(tempId);
+              if (!isLocallyDelivered) {
+                const timeElapsed = msg.created_at ? Date.now() - new Date(msg.created_at).getTime() : 0;
+                const delayDuration = Number(safeMeta.scheduled_delay);
+                if (timeElapsed < delayDuration) {
+                  isPendingDelay = true;
+                }
+              }
+            }
+
             messageNode = (
               <div id={`msg-${msg.id}`} key={safeMeta?.temp_id || msg.id || idx} className={`flex flex-col items-end ${isGroupedWithNext ? 'mb-1' : 'mb-4'} ${msg.is_internal && !isGroupedWithPrev ? 'mt-2' : ''}`}>
                 {/* Agent Name Banner */}
@@ -4154,8 +4190,8 @@ export default function ChatThread({
                               : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                              : isWhatsApp && safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
-                                ? 'px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-500'
+                              : isPendingDelay
+                                ? 'bg-[#bfdbfe] dark:bg-[#334155] text-[#1e3a8a] dark:text-[#f8fafc] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-500'
                                 : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 transition-all duration-500'
                       }`}
                     >
