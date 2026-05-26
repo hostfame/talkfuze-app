@@ -290,6 +290,8 @@ export async function POST(req: Request) {
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(cappedContextMessages);
 
+    let highPrioritySemanticRules = "";
+
     // 2.5 Vector DB RAG Search + 3. Learning Data - run in PARALLEL for speed
     const vectorSearchPromise = (async () => {
       try {
@@ -322,10 +324,42 @@ export async function POST(req: Request) {
           });
           
           if (vectorDocs && vectorDocs.length > 0) {
-            knowledgeContext += '\n\n## Knowledge Base & Reference Answers (Use this information to draft your reply)\n';
-            knowledgeContext += 'CRITICAL INSTRUCTION: The answers below contain general Hostnin policies. DO NOT copy them blindly. You MUST personalize the final response to perfectly match the exact numbers, metrics (e.g., specific RAM or visitor limits), and situation mentioned by the CUSTOMER in the current chat.\n\n';
-            knowledgeContext += vectorDocs.map((d: any) => `User Question / Context: ${d.question}\nRelevant Answer / Info: ${d.answer}`).join('\n\n---\n\n');
-            vectorDocs.forEach((d: any) => knowledgeSources.push('Vector Match'));
+            const cleanVectorDocs = [];
+            
+            for (const d of vectorDocs) {
+              const isLearnedRule = d.answer.includes('[CRITICAL RULE]') || d.answer.includes('[STYLE CORRECTION]');
+              if (isLearnedRule) {
+                // Parse dynamic rule
+                const critMatch = d.answer.match(/\[CRITICAL RULE\]:\s*([\s\S]*?)(?=\n\[STYLE CORRECTION\]|\n\n\[VERIFIED REPLY\]|$)/i);
+                const styleMatch = d.answer.match(/\[STYLE CORRECTION\]:\s*([\s\S]*?)(?=\n\n\[VERIFIED REPLY\]|$)/i);
+                const replyMatch = d.answer.match(/\[VERIFIED REPLY\]:\s*([\s\S]*?)$/i);
+
+                const rule = critMatch ? critMatch[1].trim() : "";
+                const style = styleMatch ? styleMatch[1].trim() : "";
+                const reply = replyMatch ? replyMatch[1].trim() : "";
+
+                highPrioritySemanticRules += `\n---\n[MATCHED MISTAKE/CORRECTION RULE FOR THIS SCENARIO]\n- Customer Issue: ${d.question}\n`;
+                if (rule) highPrioritySemanticRules += `- Core Rule: ${rule}\n`;
+                if (style) highPrioritySemanticRules += `- Style Correction: ${style}\n`;
+                if (reply) highPrioritySemanticRules += `- Verified Ideal Reply (Mimic this structure): ${reply}\n`;
+
+                if (reply) {
+                  cleanVectorDocs.push({
+                    question: d.question,
+                    answer: reply
+                  });
+                }
+              } else {
+                cleanVectorDocs.push(d);
+              }
+            }
+
+            if (cleanVectorDocs.length > 0) {
+              knowledgeContext += '\n\n## Knowledge Base & Reference Answers (Use this information to draft your reply)\n';
+              knowledgeContext += 'CRITICAL INSTRUCTION: The answers below contain general Hostnin policies. DO NOT copy them blindly. You MUST personalize the final response to perfectly match the exact numbers, metrics, and situation mentioned by the CUSTOMER in the current chat.\n\n';
+              knowledgeContext += cleanVectorDocs.map((d: any) => `User Question / Context: ${d.question}\nRelevant Answer / Info: ${d.answer}`).join('\n\n---\n\n');
+              cleanVectorDocs.forEach(() => knowledgeSources.push('Vector Match'));
+            }
           }
         }
       } catch (e) {
@@ -363,6 +397,7 @@ FORMATTING & BREVITY:
 - Example for a short reply: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
 - Keep response 3-4 short sentences max. Short bursts, not essays.
 ${fewShotBlock}
+${highPrioritySemanticRules ? `\n\nHIGH-PRIORITY SITUATIONAL STYLE RULES MATCHED FOR THIS CHAT:\n${highPrioritySemanticRules}\n` : ''}
 ${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
 The human support agent has provided a DIRECT INSTRUCTION for what the reply must contain.
 >>> "${instruction}" <<<
