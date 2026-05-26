@@ -154,234 +154,305 @@ export default function InboxPage() {
       fetchConvosAndTeam()
     }
     
-    const channel = supabase
-      .channel('inbox:conversations:list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-        const currentFilter = useInboxStore.getState().activeFilter as any
-        
-        // Always refresh the main 'all' list to keep badge counts accurate
-        getConversations(ORG_ID, 'all', currentUser?.id).then(data => {
-          setConversations((data || []) as ConversationWithDetails[])
-        })
-        
-        // If we are currently viewing an archived state, also refresh that specific store
+    const syncDatabaseState = async () => {
+      console.log('[Realtime Sync] Reconnection or sync triggered. Refreshing inbox states...');
+      const currentStore = useInboxStore.getState();
+      const currentFilter = currentStore.activeFilter;
+      const currentSelectedId = currentStore.selectedId;
+
+      try {
+        const data = await getConversations(ORG_ID, 'all', currentUser?.id);
+        if (data) {
+          setConversations(data as ConversationWithDetails[]);
+        }
+
         if (currentFilter === 'archived' || currentFilter === 'ticketed') {
-          getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => {
-            useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[])
+          const archData = await getConversations(ORG_ID, currentFilter, currentUser?.id);
+          if (archData) {
+            useInboxStore.getState().setArchivedConversations(archData as ConversationWithDetails[]);
+          }
+        }
+
+        if (currentSelectedId) {
+          const { data: msgData } = await supabase
+            .rpc('get_conversation_messages', {
+              conv_id: currentSelectedId,
+              msg_limit: 50
+            });
+          if (msgData && msgData.length > 0) {
+            useInboxStore.getState().setMessages(currentSelectedId, (msgData as AppMessage[]).reverse());
+          } else {
+            const fallbackData = await getMessages(currentSelectedId);
+            if (fallbackData) {
+              useInboxStore.getState().setMessages(currentSelectedId, fallbackData as AppMessage[]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Realtime Sync] Failed to sync db state:', err);
+      }
+    };
+
+    let activeChannel: any = null;
+    let hasConnectedOnce = false;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const subscribeToChannel = () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+
+      const ch = supabase
+        .channel('inbox:conversations:list')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
+          const currentFilter = useInboxStore.getState().activeFilter as any
+          
+          // Always refresh the main 'all' list to keep badge counts accurate
+          getConversations(ORG_ID, 'all', currentUser?.id).then(data => {
+            setConversations((data || []) as ConversationWithDetails[])
           })
-        }
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        const newMsg = payload.new as any;
-        
-        // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
-        if (newMsg && newMsg.conversation_id) {
-           useInboxStore.getState().addMessage(newMsg.conversation_id, newMsg as AppMessage);
-           
-           // Extract temp_id to clean up optimistic messages instantly and avoid race conditions/flickering
-           let safeMeta = newMsg.metadata;
-           if (typeof safeMeta === 'string') {
+          
+          // If we are currently viewing an archived state, also refresh that specific store
+          if (currentFilter === 'archived' || currentFilter === 'ticketed') {
+            getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => {
+              useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[])
+            })
+          }
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+          const newMsg = payload.new as any;
+          
+          // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
+          if (newMsg && newMsg.conversation_id) {
+             useInboxStore.getState().addMessage(newMsg.conversation_id, newMsg as AppMessage);
+             
+             // Extract temp_id to clean up optimistic messages instantly and avoid race conditions/flickering
+             let safeMeta = newMsg.metadata;
+             if (typeof safeMeta === 'string') {
+               try {
+                 safeMeta = JSON.parse(safeMeta);
+               } catch (e) {}
+             }
+             if (safeMeta && safeMeta.temp_id) {
+               useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, safeMeta.temp_id);
+             }
+          }
+
+          // Update conversation list locally instead of re-fetching everything
+          if (newMsg && newMsg.conversation_id) {
+             let safeMeta = newMsg.metadata;
              try {
-               safeMeta = JSON.parse(safeMeta);
+               if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
              } catch (e) {}
-           }
-           if (safeMeta && safeMeta.temp_id) {
-             useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, safeMeta.temp_id);
-           }
-        }
+             const isPageView = safeMeta?.event === 'page_view' || newMsg.content?.startsWith('Viewed:');
 
-        // Update conversation list locally instead of re-fetching everything
-        if (newMsg && newMsg.conversation_id) {
-           let safeMeta = newMsg.metadata;
-           try {
-             if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
-           } catch (e) {}
-           const isPageView = safeMeta?.event === 'page_view' || newMsg.content?.startsWith('Viewed:');
+             const prev = useInboxStore.getState().conversations;
+             const archPrev = useInboxStore.getState().archivedConversations || [];
+             const next = [...(prev || [])];
+             
+             const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
+             let isMessenger = false;
+             
+             let existingConv = null;
+             if (convIndex !== -1) {
+               existingConv = next[convIndex];
+             } else {
+               const archIndex = archPrev.findIndex(c => c.id === newMsg.conversation_id);
+               if (archIndex !== -1) existingConv = archPrev[archIndex];
+             }
+             
+             if (existingConv) {
+               const channelsArray = Array.isArray((existingConv as any).channels) ? (existingConv as any).channels : ((existingConv as any).channels ? [(existingConv as any).channels] : ((existingConv as any).channel ? [(existingConv as any).channel] : []));
+               const channelData = (channelsArray as any).flat()[0] as any;
+               if (channelData?.type === 'messenger') isMessenger = true;
+             }
 
-           const prev = useInboxStore.getState().conversations;
-           const archPrev = useInboxStore.getState().archivedConversations || [];
-           const next = [...(prev || [])];
-           
-           const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
-           let isMessenger = false;
-           
-           let existingConv = null;
-           if (convIndex !== -1) {
-             existingConv = next[convIndex];
-           } else {
-             const archIndex = archPrev.findIndex(c => c.id === newMsg.conversation_id);
-             if (archIndex !== -1) existingConv = archPrev[archIndex];
-           }
-           
-           if (existingConv) {
-             const channelsArray = Array.isArray((existingConv as any).channels) ? (existingConv as any).channels : ((existingConv as any).channels ? [(existingConv as any).channels] : ((existingConv as any).channel ? [(existingConv as any).channel] : []));
-             const channelData = (channelsArray as any).flat()[0] as any;
-             if (channelData?.type === 'messenger') isMessenger = true;
-           }
-
-           if (convIndex !== -1) {
-              const conv = { ...next[convIndex] } as any;
-              
-              if (!isPageView) {
-                conv.last_message_at = newMsg.created_at;
-                conv.latestMessage = [newMsg];
-                conv.messages = [newMsg, ...(conv.messages || [])];
+             if (convIndex !== -1) {
+                const conv = { ...next[convIndex] } as any;
                 
-                if (newMsg.sender_type === 'contact') {
+                if (!isPageView) {
+                  conv.last_message_at = newMsg.created_at;
+                  conv.latestMessage = [newMsg];
+                  conv.messages = [newMsg, ...(conv.messages || [])];
+                  
+                  if (newMsg.sender_type === 'contact') {
+                    if (isMessenger) {
+                       conv.is_unread = false;
+                       conv.is_archived = true;
+                    } else {
+                       conv.is_unread = true;
+                       conv.is_archived = false;
+                       if (conv.status === 'resolved') conv.status = 'open';
+                    }
+                  }
+
+                  // Move to top
+                  next.splice(convIndex, 1);
+                  
                   if (isMessenger) {
-                     conv.is_unread = false;
-                     conv.is_archived = true;
+                    // If it's messenger, it should be removed from active and let backend refresh the archived list
+                    getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
                   } else {
-                     conv.is_unread = true;
-                     conv.is_archived = false;
-                     if (conv.status === 'resolved') conv.status = 'open';
+                    next.unshift(conv);
                   }
                 }
-
-                // Move to top
-                next.splice(convIndex, 1);
                 
+                setConversations(next);
+             } else if (!isPageView) {
+                // It's a brand new conversation, or an archived one being replied to
                 if (isMessenger) {
-                  // If it's messenger, it should be removed from active and let backend refresh the archived list
+                  // Just refresh archived quietly
                   getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
                 } else {
-                  next.unshift(conv);
+                  getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
+                  const currentFilter = useInboxStore.getState().activeFilter as any;
+                  if (currentFilter === 'archived' || currentFilter === 'ticketed') {
+                    getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+                  }
                 }
-              }
-              
-              setConversations(next);
-           } else if (!isPageView) {
-              // It's a brand new conversation, or an archived one being replied to
-              if (isMessenger) {
-                // Just refresh archived quietly
-                getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
-              } else {
-                getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
-                const currentFilter = useInboxStore.getState().activeFilter as any;
-                if (currentFilter === 'archived' || currentFilter === 'ticketed') {
-                  getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
-                }
-              }
-           }
-        }
-        
-        // Find conv again for notification checks
-        let isMessengerForNotif = false;
-        const c1 = conversations.find(c => c.id === newMsg?.conversation_id);
-        const c2 = useInboxStore.getState().archivedConversations?.find(c => c.id === newMsg?.conversation_id);
-        const targetConv = c1 || c2;
-        if (targetConv) {
-          const channelsArray = Array.isArray(targetConv.channels) ? targetConv.channels : (targetConv.channels ? [targetConv.channels] : ((targetConv as any).channel ? [(targetConv as any).channel] : []));
-          const channelData = channelsArray.flat()[0] as any;
-          if (channelData?.type === 'messenger') isMessengerForNotif = true;
-        }
-
-        // Play sound if the message is from a contact (and NOT messenger)
-        if (newMsg && newMsg.sender_type === 'contact' && !isMessengerForNotif) {
-           playUISound('receive')
-           // Desktop notification
-           const contact = targetConv?.contact;
-           const convName = (Array.isArray(contact) ? contact[0]?.name : contact?.name) || 'Customer';
-           sendDesktopNotification(`New message from ${convName}`, newMsg.content_type === 'text' ? newMsg.content : 'Sent an attachment');
-           // Tab badge - count unread conversations
-           const unreadCount = conversations.filter(c => c.is_unread).length + 1;
-           updateTabBadge(unreadCount);
-           // Immediately clear typing state to prevent UI flicker
-           setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
-           setTypingTextState(prev => ({ ...prev, [newMsg.conversation_id]: "" }));
-           if (typingTimeoutRefs.current[newMsg.conversation_id]) {
-             clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
-           }
-        }
-
-        // Check for Mentions in internal whispers
-        const currentStoreState = useInboxStore.getState();
-        const activeUser = currentStoreState.currentUser;
-        
-        if (newMsg && newMsg.sender_type === 'agent' && newMsg.is_internal && newMsg.sender_id !== activeUser?.id) {
-          if (activeUser && activeUser.name && newMsg.content) {
-             const mentionTag = `@${activeUser.name.replace(/\s+/g, '')}`;
-             if (newMsg.content.toLowerCase().includes(mentionTag.toLowerCase())) {
-               playUISound('receive', 'loud');
-               const senderName = currentStoreState.teamMembers.find(t => t.id === newMsg.sender_id)?.name || 'An agent';
-               
-               setMentionNotification({
-                 conversationId: newMsg.conversation_id,
-                 senderName,
-                 content: newMsg.content
-               });
-               
-               sendDesktopNotification(`Mentioned by ${senderName}`, newMsg.content);
              }
           }
-        }
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
-        const newMsg = payload.new as any;
-        if (newMsg && newMsg.conversation_id) {
-          const currentMsgs = useInboxStore.getState().messagesMap[newMsg.conversation_id] || [];
-          if (currentMsgs.length > 0) {
-             useInboxStore.getState().setMessages(newMsg.conversation_id, currentMsgs.map(m => {
-               if (m.id === newMsg.id) {
-                 const recentEdit = recentEdits.get(newMsg.id);
-                 if (recentEdit && Date.now() - recentEdit.timestamp < 10000) {
-                   // Shield optimistic message edits from concurrent status updates
-                   return { ...m, ...newMsg, content: recentEdit.content };
-                 }
-                 return { ...m, ...newMsg };
+          
+          // Find conv again for notification checks
+          let isMessengerForNotif = false;
+          const c1 = conversations.find(c => c.id === newMsg?.conversation_id);
+          const c2 = useInboxStore.getState().archivedConversations?.find(c => c.id === newMsg?.conversation_id);
+          const targetConv = c1 || c2;
+          if (targetConv) {
+            const channelsArray = Array.isArray(targetConv.channels) ? targetConv.channels : (targetConv.channels ? [targetConv.channels] : ((targetConv as any).channel ? [(targetConv as any).channel] : []));
+            const channelData = channelsArray.flat()[0] as any;
+            if (channelData?.type === 'messenger') isMessengerForNotif = true;
+          }
+
+          // Play sound if the message is from a contact (and NOT messenger)
+          if (newMsg && newMsg.sender_type === 'contact' && !isMessengerForNotif) {
+             playUISound('receive')
+             // Desktop notification
+             const contact = targetConv?.contact;
+             const convName = (Array.isArray(contact) ? contact[0]?.name : contact?.name) || 'Customer';
+             sendDesktopNotification(`New message from ${convName}`, newMsg.content_type === 'text' ? newMsg.content : 'Sent an attachment');
+             // Tab badge - count unread conversations
+             const unreadCount = conversations.filter(c => c.is_unread).length + 1;
+             updateTabBadge(unreadCount);
+             // Immediately clear typing state to prevent UI flicker
+             setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
+             setTypingTextState(prev => ({ ...prev, [newMsg.conversation_id]: "" }));
+             if (typingTimeoutRefs.current[newMsg.conversation_id]) {
+               clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
+             }
+          }
+
+          // Check for Mentions in internal whispers
+          const currentStoreState = useInboxStore.getState();
+          const activeUser = currentStoreState.currentUser;
+          
+          if (newMsg && newMsg.sender_type === 'agent' && newMsg.is_internal && newMsg.sender_id !== activeUser?.id) {
+            if (activeUser && activeUser.name && newMsg.content) {
+               const mentionTag = `@${activeUser.name.replace(/\s+/g, '')}`;
+               if (newMsg.content.toLowerCase().includes(mentionTag.toLowerCase())) {
+                 playUISound('receive', 'loud');
+                 const senderName = currentStoreState.teamMembers.find(t => t.id === newMsg.sender_id)?.name || 'An agent';
+                 
+                 setMentionNotification({
+                   conversationId: newMsg.conversation_id,
+                   senderName,
+                   content: newMsg.content
+                 });
+                 
+                 sendDesktopNotification(`Mentioned by ${senderName}`, newMsg.content);
                }
-               return m;
-             }));
+            }
           }
-        }
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
-        const oldMsg = payload.old as any;
-        // In default Postgres, DELETE only returns the primary key (id).
-        // We will scan all conversations in the store and remove the message if found.
-        if (oldMsg && oldMsg.id) {
-           const store = useInboxStore.getState();
-           const msgsMap = store.messagesMap;
-           for (const convId in msgsMap) {
-              const currentMsgs = msgsMap[convId];
-              if (currentMsgs.some(m => m.id === oldMsg.id)) {
-                 store.setMessages(convId, currentMsgs.filter(m => m.id !== oldMsg.id));
-                 break;
-              }
-           }
-        }
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, (payload) => {
-        const newContact = payload.new as any;
-        if (newContact && newContact.id) {
-           const store = useInboxStore.getState();
-           
-           // Update active conversations
-           const prev = store.conversations;
-           const next = prev.map(c => {
-             const contactObj = Array.isArray(c.contact) ? c.contact[0] : c.contact;
-             if (contactObj && contactObj.id === newContact.id) {
-               return { ...c, contact: Array.isArray(c.contact) ? [newContact] : newContact };
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+          const newMsg = payload.new as any;
+          if (newMsg && newMsg.conversation_id) {
+            const currentMsgs = useInboxStore.getState().messagesMap[newMsg.conversation_id] || [];
+            if (currentMsgs.length > 0) {
+               useInboxStore.getState().setMessages(newMsg.conversation_id, currentMsgs.map(m => {
+                 if (m.id === newMsg.id) {
+                   const recentEdit = recentEdits.get(newMsg.id);
+                   if (recentEdit && Date.now() - recentEdit.timestamp < 10000) {
+                     // Shield optimistic message edits from concurrent status updates
+                     return { ...m, ...newMsg, content: recentEdit.content };
+                   }
+                   return { ...m, ...newMsg };
+                 }
+                 return m;
+               }));
+            }
+          }
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
+          const oldMsg = payload.old as any;
+          if (oldMsg && oldMsg.id) {
+             const store = useInboxStore.getState();
+             const msgsMap = store.messagesMap;
+             for (const convId in msgsMap) {
+                const currentMsgs = msgsMap[convId];
+                if (currentMsgs.some(m => m.id === oldMsg.id)) {
+                   store.setMessages(convId, currentMsgs.filter(m => m.id !== oldMsg.id));
+                   break;
+                }
              }
-             return c;
-           });
-           setConversations(next);
-
-           // Update archived conversations
-           const archPrev = store.archivedConversations;
-           if (archPrev && archPrev.length > 0) {
-             const archNext = archPrev.map(c => {
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, (payload) => {
+          const newContact = payload.new as any;
+          if (newContact && newContact.id) {
+             const store = useInboxStore.getState();
+             
+             // Update active conversations
+             const prev = store.conversations;
+             const next = prev.map(c => {
                const contactObj = Array.isArray(c.contact) ? c.contact[0] : c.contact;
                if (contactObj && contactObj.id === newContact.id) {
                  return { ...c, contact: Array.isArray(c.contact) ? [newContact] : newContact };
                }
                return c;
              });
-             store.setArchivedConversations(archNext);
-           }
-        }
-      })
-      .subscribe()
+             setConversations(next);
+
+             // Update archived conversations
+             const archPrev = store.archivedConversations;
+             if (archPrev && archPrev.length > 0) {
+               const archNext = archPrev.map(c => {
+                 const contactObj = Array.isArray(c.contact) ? c.contact[0] : c.contact;
+                 if (contactObj && contactObj.id === newContact.id) {
+                   return { ...c, contact: Array.isArray(c.contact) ? [newContact] : newContact };
+                 }
+                 return c;
+               });
+               store.setArchivedConversations(archNext);
+             }
+          }
+        })
+        .subscribe((status, err) => {
+          console.log(`[Inbox Realtime] channel status: ${status}`, err || '');
+          if (status === 'SUBSCRIBED') {
+            if (hasConnectedOnce) {
+              console.log('[Inbox Realtime] Channel reconnected. Syncing missed state...');
+              syncDatabaseState();
+            } else {
+              hasConnectedOnce = true;
+            }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.error(`[Inbox Realtime] Connection issue detected (${status}). Resubscribing in 5s...`);
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(() => {
+              console.log('[Inbox Realtime] Executing clean resubscription...');
+              if (activeChannel) {
+                try {
+                  supabase.removeChannel(activeChannel);
+                } catch (e) {}
+              }
+              activeChannel = subscribeToChannel();
+            }, 5000);
+          }
+        });
+
+      return ch;
+    };
+
+    activeChannel = subscribeToChannel();
       
     // Global voice call listener
     const globalCallChannel = supabase.channel(`voicecall_global:${ORG_ID}`)
@@ -419,8 +490,15 @@ export default function InboxPage() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
-      supabase.removeChannel(globalCallChannel)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (activeChannel) {
+        try {
+          supabase.removeChannel(activeChannel);
+        } catch (e) {}
+      }
+      try {
+        supabase.removeChannel(globalCallChannel);
+      } catch (e) {}
     }
   }, [ORG_ID])
 

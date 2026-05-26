@@ -1732,8 +1732,6 @@ export default function WidgetPage() {
       }
       return prev;
     });
-    fetchConversations()
-    fetchMsgs()
     const presenceChannel = supabase.channel(`presence:${org_id}`)
     presenceChannel.on('presence', { event: 'sync' }, () => {})
     presenceChannel.subscribe(async (status) => {
@@ -1745,128 +1743,181 @@ export default function WidgetPage() {
         })
       }
     })
-      
-    const channel = supabase
-      .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
-        fetchConversations()
-        
-        const newMsg = payload.new as any;
-        if (newMsg && newMsg.conversation_id === activeConversationId && !newMsg.is_internal) {
-          
-          let delayMs = 0;
-          let safeMeta = newMsg.metadata;
-          try {
-            if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
-            if (safeMeta?.chunk_delay) {
-               const showAfter = new Date(newMsg.created_at).getTime();
-               const waitTime = showAfter - Date.now();
-               if (waitTime > 0) delayMs = waitTime;
-            }
-          } catch(e) {}
 
-          const processIncoming = async () => {
-            if (newMsg.conversation_id !== activeConversationIdRef.current) return;
+    const syncDatabaseState = async () => {
+      console.log('[Widget Realtime Sync] Reconnection or sync triggered. Syncing widget states...');
+      try {
+        await Promise.all([
+          fetchConversations(),
+          fetchMsgs()
+        ]);
+      } catch (err) {
+        console.error('[Widget Realtime Sync] Failed to sync db state:', err);
+      }
+    };
+
+    let activeChannel: any = null;
+    let hasConnectedOnce = false;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const subscribeToChannel = () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+
+      const ch = supabase
+        .channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+          fetchConversations()
+          
+          const newMsg = payload.new as any;
+          if (newMsg && newMsg.conversation_id === activeConversationId && !newMsg.is_internal) {
             
-            if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
+            let delayMs = 0;
+            let safeMeta = newMsg.metadata;
+            try {
+              if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
+              if (safeMeta?.chunk_delay) {
+                 const showAfter = new Date(newMsg.created_at).getTime();
+                 const waitTime = showAfter - Date.now();
+                 if (waitTime > 0) delayMs = waitTime;
+              }
+            } catch(e) {}
+
+            const processIncoming = async () => {
+              if (newMsg.conversation_id !== activeConversationIdRef.current) return;
+              
+              if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
+                let existingAgent = null;
+                setMessages(prev => {
+                  const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
+                  if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
+                  return prev;
+                });
+
+                if (existingAgent) {
+                  newMsg.agent = existingAgent;
+                } else {
+                  const agentData = await getAgentProfile(newMsg.sender_id);
+                  if (agentData) {
+                    newMsg.agent = agentData;
+                  }
+                }
+              }
+
+              setMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                
+                if (newMsg.sender_type !== 'contact') {
+                    playUISound('receive', 'intercom');
+                    if (pendingDelaysRef.current === 0) {
+                        setIsAgentTyping(false);
+                        setIsAgentRecording(false);
+                    }
+                }
+                
+                if (newMsg.sender_type === 'contact') {
+                  const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.content === newMsg.content);
+                  if (tempIndex !== -1) {
+                    const next = [...prev];
+                    next[tempIndex] = newMsg as WidgetMessage;
+                    return next;
+                  }
+                }
+                
+                const nextState = [...prev, newMsg as WidgetMessage];
+                return nextState.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+              });
+            };
+
+            if (delayMs > 0) {
+              if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai') {
+                 setIsAgentTyping(true);
+              }
+              pendingDelaysRef.current += 1;
+              setTimeout(() => {
+                pendingDelaysRef.current -= 1;
+                processIncoming();
+              }, delayMs);
+            } else {
+              processIncoming();
+            }
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, async (payload) => {
+          const updatedMsg = payload.new as any;
+          if (updatedMsg && updatedMsg.conversation_id === activeConversationId && !updatedMsg.is_internal) {
+            
+            // Re-fetch agent details if needed (usually already there for updates, but safe to check)
+            if (updatedMsg.sender_type === 'agent' || updatedMsg.sender_type === 'system') {
               let existingAgent = null;
               setMessages(prev => {
-                const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
+                const prevMsgWithAgent = prev.find(m => m.sender_id === updatedMsg.sender_id && m.agent);
                 if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
                 return prev;
               });
 
               if (existingAgent) {
-                newMsg.agent = existingAgent;
+                updatedMsg.agent = existingAgent;
               } else {
-                const agentData = await getAgentProfile(newMsg.sender_id);
+                const agentData = await getAgentProfile(updatedMsg.sender_id);
                 if (agentData) {
-                  newMsg.agent = agentData;
+                  updatedMsg.agent = agentData;
                 }
               }
             }
 
             setMessages(prev => {
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              
-              if (newMsg.sender_type !== 'contact') {
-                  playUISound('receive', 'intercom');
-                  if (pendingDelaysRef.current === 0) {
-                      setIsAgentTyping(false);
-                      setIsAgentRecording(false);
-                  }
+              const index = prev.findIndex(m => m.id === updatedMsg.id);
+              if (index !== -1) {
+                const next = [...prev];
+                next[index] = updatedMsg as WidgetMessage;
+                return next;
               }
-              
-              if (newMsg.sender_type === 'contact') {
-                const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.content === newMsg.content);
-                if (tempIndex !== -1) {
-                  const next = [...prev];
-                  next[tempIndex] = newMsg as WidgetMessage;
-                  return next;
-                }
-              }
-              
-              const nextState = [...prev, newMsg as WidgetMessage];
-              return nextState.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-            });
-          };
-
-          if (delayMs > 0) {
-            if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'ai') {
-               setIsAgentTyping(true);
-            }
-            pendingDelaysRef.current += 1;
-            setTimeout(() => {
-              pendingDelaysRef.current -= 1;
-              processIncoming();
-            }, delayMs);
-          } else {
-            processIncoming();
-          }
-        }
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, async (payload) => {
-        const updatedMsg = payload.new as any;
-        if (updatedMsg && updatedMsg.conversation_id === activeConversationId && !updatedMsg.is_internal) {
-          
-          // Re-fetch agent details if needed (usually already there for updates, but safe to check)
-          if (updatedMsg.sender_type === 'agent' || updatedMsg.sender_type === 'system') {
-            let existingAgent = null;
-            setMessages(prev => {
-              const prevMsgWithAgent = prev.find(m => m.sender_id === updatedMsg.sender_id && m.agent);
-              if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
               return prev;
             });
-
-            if (existingAgent) {
-              updatedMsg.agent = existingAgent;
-            } else {
-              const agentData = await getAgentProfile(updatedMsg.sender_id);
-              if (agentData) {
-                updatedMsg.agent = agentData;
-              }
-            }
           }
-
-          setMessages(prev => {
-            const index = prev.findIndex(m => m.id === updatedMsg.id);
-            if (index !== -1) {
-              const next = [...prev];
-              next[index] = updatedMsg as WidgetMessage;
-              return next;
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, async (payload) => {
+          fetchConversations()
+        })
+        .subscribe((status, err) => {
+          console.log(`[Widget Realtime] channel status: ${status}`, err || '');
+          if (status === 'SUBSCRIBED') {
+            if (hasConnectedOnce) {
+              console.log('[Widget Realtime] Channel reconnected. Syncing missed state...');
+              syncDatabaseState();
+            } else {
+              hasConnectedOnce = true;
             }
-            return prev;
-          });
-        }
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, async (payload) => {
-        fetchConversations()
-      })
-      .subscribe()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.error(`[Widget Realtime] Connection issue detected (${status}). Resubscribing in 5s...`);
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(() => {
+              console.log('[Widget Realtime] Executing clean resubscription...');
+              if (activeChannel) {
+                try {
+                  supabase.removeChannel(activeChannel);
+                } catch (e) {}
+              }
+              activeChannel = subscribeToChannel();
+            }, 5000);
+          }
+        });
+
+      return ch;
+    };
+
+    activeChannel = subscribeToChannel();
 
     return () => {
-      supabase.removeChannel(channel)
-      supabase.removeChannel(presenceChannel)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (activeChannel) {
+        try {
+          supabase.removeChannel(activeChannel);
+        } catch (e) {}
+      }
+      try {
+        supabase.removeChannel(presenceChannel);
+      } catch (e) {}
     }
   }, [org_id, deviceId, activeConversationId])
 
