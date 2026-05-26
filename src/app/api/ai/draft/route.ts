@@ -18,9 +18,10 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (m.sender === 'Agent' || m.sender === 'System') continue;
     const clean = m.content.trim();
     if (AMBIGUOUS_MSG.test(clean)) continue;
-    // Found a substantive customer message - check for Bengali script
+    // Bengali script found = definitive Bengali
     if (BENGALI_REGEX.test(clean)) return 'Bengali';
-    if (clean.length > 3) return 'English';
+    // Only treat as definitive English if 15+ chars (short msgs like "cpu core?" could be in either language)
+    if (clean.length >= 15) return 'English';
   }
   
   // 2. All customer messages were ambiguous - follow the last Agent message

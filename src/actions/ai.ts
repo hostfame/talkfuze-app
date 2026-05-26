@@ -14,7 +14,7 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     const clean = m.content.trim();
     if (AMBIGUOUS_MSG.test(clean)) continue;
     if (BENGALI_REGEX.test(clean)) return 'Bengali';
-    if (clean.length > 3) return 'English';
+    if (clean.length >= 15) return 'English';
   }
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].sender === 'Agent') {
