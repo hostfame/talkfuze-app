@@ -1932,7 +1932,16 @@ export default function ChatThread({
   // To prevent clock skew bouncing, ensure optimistic messages are always sorted AFTER the latest known real message
   let maxRealTime = 0;
   if (messages.length > 0) {
-    maxRealTime = Math.max(...messages.map(m => new Date(m.created_at).getTime()));
+    const nonScheduledMessages = messages.filter(m => {
+      let safeMeta = m.metadata;
+      if (typeof safeMeta === 'string') {
+        try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
+      }
+      return !(safeMeta as any)?.scheduled_delay;
+    });
+    if (nonScheduledMessages.length > 0) {
+      maxRealTime = Math.max(...nonScheduledMessages.map(m => new Date(m.created_at).getTime()));
+    }
   }
 
   const processedOptimisticMessages = optimisticMessages
@@ -1945,8 +1954,14 @@ export default function ChatThread({
     })
     .map((om, index) => {
       const originalTime = new Date(om.created_at).getTime();
+      let safeMeta = om.metadata;
+      if (typeof safeMeta === 'string') {
+        try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
+      }
+      const isScheduled = !!(safeMeta as any)?.scheduled_delay;
       // Ensure optimistic time is strictly greater than the latest real message to prevent bouncing backwards
-      const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
+      // BUT for scheduled/delayed chunks, their timestamps are already future-scheduled, so we preserve them to maintain correct chunk order!
+      const adjustedTime = isScheduled ? originalTime : Math.max(originalTime, maxRealTime + 1 + index);
       return {
         ...om,
         // Show confirmed messages as 'sent' (single checkmark) instead of spinning clock
@@ -3391,10 +3406,11 @@ export default function ChatThread({
         .sending-anim {
           animation-name: grayToBlue;
           animation-timing-function: ease-in-out;
-          animation-fill-mode: forwards;
+          animation-fill-mode: both;
         }
         .dark .sending-anim {
           animation-name: grayToBlueDark;
+          animation-fill-mode: both;
         }
       `}</style>
       {/* Header */}
@@ -4113,7 +4129,7 @@ export default function ChatThread({
                           return baseStyle;
                         }
                         
-                        const msgId = msg.id || safeMeta?.temp_id || String(idx);
+                        const msgId = safeMeta?.temp_id || msg.id || String(idx);
                         if (!messageInitTimeRef.current[msgId]) {
                           messageInitTimeRef.current[msgId] = Date.now();
                         }
