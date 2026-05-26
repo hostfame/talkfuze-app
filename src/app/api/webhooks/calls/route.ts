@@ -1,7 +1,152 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import OpenAI from "openai"
 
 const WEBHOOK_SECRET = process.env.WHMCS_BRIDGE_SECRET || ''
+
+// Background processor to handle audio download, Whisper transcription, and DeepSeek summarization
+async function processCallRecording(
+  orgId: string,
+  recordingUrl: string,
+  durationSeconds: number,
+  direction: string,
+  fromNum: string,
+  toNum: string,
+  agentName: string
+) {
+  try {
+    console.log(`[Call AI] Starting background processing for recording: ${recordingUrl}`);
+    
+    // 1. Resolve contact and conversation_id
+    let conversationId: string | null = null;
+    const searchPhone = direction === 'inbound' ? fromNum : toNum;
+    const cleanDigits = searchPhone.replace(/\D/g, '');
+    const last9Digits = cleanDigits.slice(-9);
+
+    if (last9Digits) {
+      const { data: contactData } = await supabaseAdmin
+        .from('contacts')
+        .select('id')
+        .eq('org_id', orgId)
+        .like('phone', `%${last9Digits}`)
+        .limit(1);
+
+      if (contactData && contactData.length > 0) {
+        const { data: convData } = await supabaseAdmin
+          .from('conversations')
+          .select('id')
+          .eq('contact_id', contactData[0].id)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (convData && convData.length > 0) {
+          conversationId = convData[0].id;
+        }
+      }
+    }
+
+    if (!conversationId) {
+      console.warn(`[Call AI] Could not find an active conversation for phone suffix: ${last9Digits}. Skipping summary.`);
+      return;
+    }
+
+    // 2. Download audio file from recording URL
+    const response = await fetch(recordingUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download recording audio. Status: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // 3. Transcribe via OpenAI Whisper
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const isMp3 = recordingUrl.toLowerCase().endsWith('.mp3');
+    const file = await OpenAI.toFile(buffer, isMp3 ? 'recording.mp3' : 'recording.wav');
+    
+    console.log(`[Call AI] Sending to Whisper...`);
+    const transcription = await openai.audio.transcriptions.create({
+      model: 'whisper-1',
+      file: file,
+    });
+    
+    const transcriptText = transcription.text?.trim();
+    if (!transcriptText) {
+      console.log(`[Call AI] Empty transcription. Call might be silent. Skipping summary.`);
+      return;
+    }
+    console.log(`[Call AI] Transcription succeeded: "${transcriptText.substring(0, 100)}..."`);
+
+    // 4. Generate summary and follow-up draft using OpenAI GPT-4o-mini
+    console.log(`[Call AI] Requesting AI Summary and WhatsApp Draft...`);
+    const aiResponse = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an elite customer support quality auditor and AI manager for Hostnin, a leading Bangladeshi hosting company.
+Analyze this telephone call transcript between our support agent and a customer.
+Output valid JSON containing:
+1. 'summary': A concise bullet-point summary (3-4 points max) in English outlining:
+   - What issue the customer reported.
+   - What the agent checked or resolved.
+   - Any next actions or pending tasks.
+2. 'follow_up_draft': A warm, highly professional WhatsApp follow-up message in BENGALI SCRIPT (বাংলা) or ENGLISH (depending on what language the customer spoke in the transcript) to send to the customer. 
+   - Acknowledge the call.
+   - Summarize what we agreed/did.
+   - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".
+   - Wrap the output in clean JSON keys: 'summary' and 'follow_up_draft'.`
+        },
+        {
+          role: 'user',
+          content: `Call Details:
+- Agent Name: ${agentName || 'TalkFuze Agent'}
+- Duration: ${durationSeconds} seconds
+- Direction: ${direction}
+
+Transcript:
+"${transcriptText}"`
+        }
+      ],
+      response_format: { type: 'json_object' }
+    });
+
+    const resultText = aiResponse.choices[0]?.message?.content?.trim();
+    if (!resultText) throw new Error('Empty completion result from AI summarizer');
+    
+    const { summary, follow_up_draft } = JSON.parse(resultText);
+
+    // 5. Save call summary as an internal note (whisper) in messages table
+    const { error: insertError } = await supabaseAdmin
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        org_id: orgId,
+        sender_type: 'system',
+        content: `📞 **Call AI Summary & WhatsApp Follow-up**`,
+        content_type: 'text',
+        is_internal: true, // Internal whisper note!
+        status: 'delivered',
+        metadata: {
+          is_call_summary: true,
+          duration_seconds: durationSeconds,
+          transcript: transcriptText,
+          summary: summary,
+          follow_up_draft: follow_up_draft,
+          recording_url: recordingUrl,
+          agent_name: agentName || 'TalkFuze Agent'
+        }
+      });
+
+    if (insertError) {
+      console.error('[Call AI] Failed to insert summary message:', insertError);
+    } else {
+      console.log('[Call AI] Call summary message successfully saved as internal whisper!');
+    }
+  } catch (err) {
+    console.error('[Call AI] Background process error:', err);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -100,6 +245,19 @@ export async function POST(req: NextRequest) {
         console.error("Failed to insert call log:", error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
+    }
+
+    // Fire background call recording processing if recording URL is present and duration > 5 seconds
+    if (recording_url && parseInt(duration) > 5) {
+      processCallRecording(
+        org_id,
+        recording_url,
+        parseInt(duration) || 0,
+        direction,
+        from,
+        to,
+        agent_name || ''
+      ).catch(err => console.error("Error in background call recording processor:", err));
     }
 
     return NextResponse.json({ success: true })

@@ -368,7 +368,13 @@ ${crmContext ? `## Customer CRM Profile (WHMCS Data)
 - Active Services: ${crmContext.services?.length ? JSON.stringify(crmContext.services) : 'None found'}
 - Invoices: ${crmContext.invoices?.length ? JSON.stringify(crmContext.invoices) : 'None found'}
 
-Rule: Use this CRM data to provide accurate details (like Invoice IDs, due dates, or Domain names) when requested or when it adds critical context.` : ''}
+CRITICAL PROACTIVE RULES FOR CRM DATA:
+1. **ACTIVE SERVICE MAPPING:** If the customer is discussing a hosting, speed, or setup issue, check the 'Active Services' list. Explicitly mention their active plan name and domain (e.g. 'I see you are using our Turbo NVMe Starter plan on domain elzzone.com...') to make the reply feel custom-tailored.
+2. **PROACTIVE BILLING ALERT:** Check the 'Invoices' list. If there are any unpaid or overdue invoices:
+   - Do NOT mention this if the customer is reporting a critical emergency (e.g., website completely down or server crash).
+   - If their technical query is answered, or if they are discussing invoices/payments, politely append a natural, friendly billing reminder at the very end of your reply.
+     *Format:* 'By the way, I noticed invoice #[invoicenum] of [total] is currently outstanding. To ensure your service remains active, you can clear it here: https://my.hostnin.com/viewinvoice.php?id=[id]'
+     *Language:* If replying in Bengali, translate currency figures into Bengali script (e.g., ৳১,২০০ instead of 1200 BDT) to keep it perfectly warm and conversational.` : ''}
 
 Customer Name: ${contactName}
 

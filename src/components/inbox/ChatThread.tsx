@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Brain, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Brain, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2, Sparkles, ChevronDown, ChevronUp, Volume2 } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -1526,6 +1526,7 @@ export default function ChatThread({
 
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const [customAlert, setCustomAlert] = useState<{ title: string; message: string; type: 'error' | 'success' | 'info' } | null>(null)
+  const [expandedTranscriptMsgId, setExpandedTranscriptMsgId] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [isAiDrafting, setIsAiDrafting] = useState(false)
@@ -3774,6 +3775,107 @@ export default function ChatThread({
           // System messages: render as centered event label
           if (msg.sender_type === 'system' || msg.content_type === 'system') {
             const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            
+            if (safeMeta?.is_call_summary) {
+              const duration = safeMeta.duration_seconds || 0;
+              const mins = Math.floor(duration / 60);
+              const secs = duration % 60;
+              const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+              const transcript = safeMeta.transcript || "";
+              const summaryPoints = Array.isArray(safeMeta.summary) ? safeMeta.summary : [];
+              const draft = safeMeta.follow_up_draft || "";
+              const agentName = safeMeta.agent_name || "TalkFuze Agent";
+              const isExpanded = expandedTranscriptMsgId === msg.id;
+
+              return (
+                <div key={safeMeta?.temp_id || msg.id || idx} className="flex justify-center my-6 w-full px-4 select-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="w-full max-w-[520px] bg-slate-50/50 dark:bg-slate-900/10 border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm p-4 overflow-hidden select-none">
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 pb-3 mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/30 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                          <Phone size={15} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <div className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">AI Call Summary</div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500">Agent: {agentName}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-right">
+                        <div className="text-[11px] font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md">
+                          {durationStr}
+                        </div>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{msgTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Summary Bullet Points */}
+                    {summaryPoints.length > 0 && (
+                      <div className="mb-3.5 space-y-1.5">
+                        {summaryPoints.map((point: string, pIdx: number) => (
+                          <div key={pIdx} className="flex items-start gap-2 text-[12.5px] leading-relaxed text-slate-600 dark:text-slate-400">
+                            <span className="text-slate-400 dark:text-slate-600 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
+                            <span>{point}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Transcription Collapsible Section */}
+                    {transcript && (
+                      <div className="border-t border-slate-100 dark:border-slate-800/30 pt-2.5 mt-2.5">
+                        <button
+                          onClick={() => setExpandedTranscriptMsgId(isExpanded ? null : msg.id)}
+                          className="flex items-center justify-between w-full text-[11px] font-semibold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 transition-colors py-1"
+                        >
+                          <div className="flex items-center gap-1">
+                            <Volume2 size={12} strokeWidth={2.5} />
+                            <span>{isExpanded ? "Hide Call Transcript" : "Show Full Transcript"}</span>
+                          </div>
+                          {isExpanded ? <ChevronUp size={12} strokeWidth={2.5} /> : <ChevronDown size={12} strokeWidth={2.5} />}
+                        </button>
+
+                        {isExpanded && (
+                          <div className="mt-2 text-[12px] leading-relaxed text-slate-500 dark:text-slate-400 italic bg-white/40 dark:bg-slate-950/20 border border-slate-100/30 dark:border-slate-900/10 p-2.5 rounded-xl max-h-[150px] overflow-y-auto font-normal">
+                            "{transcript}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* WhatsApp Actionable Follow-up Draft Box */}
+                    {draft && (
+                      <div className="mt-3.5 bg-white/60 dark:bg-[#0b141a]/15 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-3.5 animate-in fade-in duration-300">
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 tracking-tight uppercase">
+                          <Sparkles size={11} className="text-amber-500" strokeWidth={2.5} />
+                          <span>WhatsApp Follow-up Draft</span>
+                        </div>
+                        <div className="text-[12.5px] leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-normal break-words selection:bg-blue-100">
+                          {draft}
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(draft);
+                            setInput(draft);
+                            setIsInternal(false);
+                            setCustomAlert({
+                              title: "Draft Copied & Loaded",
+                              message: "Call follow-up loaded into composer input.",
+                              type: "success"
+                            });
+                          }}
+                          className="mt-3 flex items-center justify-center gap-1.5 w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all active:scale-[0.98]"
+                        >
+                          <Copy size={13} strokeWidth={2.5} />
+                          <span>Insert Follow-up Draft</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
             const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
             
             if (agent && msg.content.includes('joined')) {
