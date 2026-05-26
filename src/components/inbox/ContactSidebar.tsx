@@ -1498,7 +1498,7 @@ export default function ContactSidebar({
               <div className="mt-3.5 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
                 {participants.length > 0 ? (
                   participants.map((p, idx) => {
-                    const isOnline = p.user?.id && onlineUsers.has(p.user.id);
+                    const isOnline = p.user_id && onlineUsers.has(p.user_id);
                     return (
                       <div 
                         key={idx} 
@@ -1513,7 +1513,7 @@ export default function ContactSidebar({
                             )}
                           </div>
                           {isOnline && (
-                            <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-800" />
+                            <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-[1px] ring-white dark:ring-slate-950" />
                           )}
                         </div>
                         <div className="flex flex-col min-w-0">
