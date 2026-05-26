@@ -48,8 +48,8 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean): string {
-  const salesFunnelContent = hasSalesIntent ? loadSalesFunnel() : "";
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English'): string {
+  const salesFunnelContent = loadSalesFunnel();
   const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
 
   return `You are a sharp, senior customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You are concise, highly knowledgeable, and converse like a real human—never mechanical, never using conversational filler.
@@ -221,9 +221,7 @@ export async function POST(req: Request) {
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
 
-    const SALES_INTENT_KEYWORDS = /price|cost|buy|order|how much|plan|package|hosting|domain|pricing|ডোমেইন|হোস্টিং|দাম|প্যাকেজ|কেনার|টাকা|ডলার|ক্রয়|নিবো|নেব|evisa/i;
-    const hasSalesIntent = SALES_INTENT_KEYWORDS.test(latestCustomerMessageCleaned) || 
-                           SALES_INTENT_KEYWORDS.test(cappedContextMessages);
+
 
     // Build dynamic knowledge context
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(cappedContextMessages);
@@ -552,7 +550,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent)
+                    content: buildSystemPrompt(detectedLanguage)
                   },
                   {
                     role: "user",
@@ -606,7 +604,7 @@ ${instruction
           system: [
             {
               type: "text",
-              text: buildSystemPrompt(detectedLanguage, hasSalesIntent),
+              text: buildSystemPrompt(detectedLanguage),
               cache_control: { type: "ephemeral" }
             }
           ],

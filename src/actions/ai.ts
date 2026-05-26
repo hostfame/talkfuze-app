@@ -106,11 +106,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? customerMessages[customerMessages.length - 1].content.trim()
       : '';
 
-    const SALES_INTENT_KEYWORDS = /price|cost|buy|order|how much|plan|package|hosting|domain|pricing|ডোমেইন|হোস্টিং|দাম|প্যাকেজ|কেনার|টাকা|ডলার|ক্রয়|নিবো|নেব|evisa/i;
-    const hasSalesIntent = SALES_INTENT_KEYWORDS.test(latestCustomerMessageCleaned) || 
-                           SALES_INTENT_KEYWORDS.test(contextMessages);
-
-    const salesFunnelContent = hasSalesIntent ? loadSalesFunnel() : "";
+    const salesFunnelContent = loadSalesFunnel();
     const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
 
     const complianceDirective = detectedLanguage === 'English'
