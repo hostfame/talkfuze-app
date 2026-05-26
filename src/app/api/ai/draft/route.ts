@@ -490,7 +490,7 @@ Integrate the details from the image with the latest text messages/instructions 
 CRITICAL REMINDER: You MUST explain the image in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'strictly ENGLISH'} as per the language override.` : ''}
 
 ${instruction 
-  ? `Draft the reply based STRICTLY on the Agent Instruction above. Ignore unrelated context.` 
+  ? `Draft the final reply by synthesizing the Agent Instruction with the conversation history and customer's latest message. Expand and polish the instruction's intent into a warm, natural, complete response. DO NOT ignore the historical conversation details (like pricing discussed, specific servers, or customer names) - use them to enrich the final response.` 
   : `Draft a smart, helpful reply as the support agent.`}
 FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'ENGLISH'} ONLY.`;
     }
