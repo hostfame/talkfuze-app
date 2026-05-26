@@ -3691,7 +3691,7 @@ export default function ChatThread({
       )}
 
       {/* Messages Area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
         
         {messages.length >= 50 && hasMoreMessages && (
           <div className="flex justify-center mb-6">
@@ -3948,13 +3948,13 @@ export default function ChatThread({
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
                           : msg.is_internal 
                             ? msg.sender_id === currentUser?.id
-                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0' 
+                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0'
                             : msg.content_type === 'audio' 
-                              ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                              ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0' 
                               : safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
-                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim'
-                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 sending-anim'
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -4121,8 +4121,8 @@ export default function ChatThread({
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
                           : msg.content_type === 'audio' 
-                            ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu' 
-                            : 'bg-slate-100 dark:bg-[#202c33] px-4 py-2.5 text-slate-900 dark:text-[#e9edef] rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu'
+                            ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 cursor-context-menu' 
+                            : 'bg-slate-100 dark:bg-[#202c33] px-4 py-2.5 text-slate-900 dark:text-[#e9edef] rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 cursor-context-menu'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
