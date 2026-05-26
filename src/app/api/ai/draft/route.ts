@@ -135,8 +135,23 @@ Output ONLY the draft message. No quotes, no labels.`;
 // ============================================================
 
 async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
-  // We disabled the live DB query because team members sometimes edit poorly.
-  // Instead, we hardcode golden standard examples of perfect startup Benglish and workflows.
+  // 2. Fetch the latest high-value learned dynamic style rules from Supabase (up to 5)
+  let learnedRulesBlock = "";
+  try {
+    const { data: dbRules } = await supabaseAdmin
+      .from('ai_knowledge_base')
+      .select('question, answer')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (dbRules && dbRules.length > 0) {
+      learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments and constraints when formatting your response):\n` +
+        dbRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
+    }
+  } catch (err: any) {
+    console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
+  }
   
   const goldenExamples = [
     "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
@@ -150,7 +165,7 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "জ্বী, গিটহাব কানেক্ট করা যাবে। কিন্তু ড্যাশবোর্ডে সরাসরি অপশন নেই।\n\nSSH দিয়ে গিট ক্লোন করে নিতে হয়, প্রসেসটা একটু টেকনিক্যাল।\n\nআমি কি আপনাকে গাইড করবো যাতে আপনি নিজে করে নিতে পারেন নাকি আমাদের টিমকে দিয়ে সেটআপ করিয়ে নিবেন?"
   ];
   
-  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (These examples show the exact tone, brevity, and workflow you must mimic. If the customer is speaking English, you MUST translate this vibe/meaning into English and NEVER output Bengali):\n${goldenExamples.join('\n---\n')}
+  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (These examples show the exact tone, brevity, and workflow you must mimic. If the customer is speaking English, you MUST translate this vibe/meaning into English and NEVER output Bengali):\n${goldenExamples.join('\n---\n')}${learnedRulesBlock}
   
 NEGATIVE CONSTRAINTS (FORBIDDEN PHRASES & ACTIONS):
 - NEVER use the words "Bhaiya", "Bhai", "Apu", "Sir", or "Madam". It is strictly against company policy. Address them directly or use "জ্বী".
