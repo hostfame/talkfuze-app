@@ -5206,113 +5206,115 @@ export default function ChatThread({
                 </div>
               )}
 
-              <textarea 
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onScroll={(e) => {
-                  if (overlayRef.current) {
-                    overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+              <div className="relative w-full">
+                <textarea 
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onScroll={(e) => {
+                    if (overlayRef.current) {
+                      overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+                    }
+                  }}
+                  onKeyUp={(e) => {
+                    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) return;
+                    const target = e.target as HTMLTextAreaElement;
+                    checkMacroTrigger(target.value, target.selectionStart);
+                    checkMentionTrigger(target.value, target.selectionStart);
+                  }}
+                  onClick={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    checkMacroTrigger(target.value, target.selectionStart);
+                    checkMentionTrigger(target.value, target.selectionStart);
+                  }}
+                  onPaste={(e) => {
+                    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+                      e.preventDefault();
+                      const files = Array.from(e.clipboardData.files);
+                      stageAttachments(files);
+                    }
+                  }}
+                  onSelect={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    if (target.selectionStart !== target.selectionEnd) {
+                      setSelectedText(target.value.substring(target.selectionStart, target.selectionEnd));
+                    } else {
+                      setSelectedText("");
+                    }
+                  }}
+                onKeyDown={(e) => {
+                  if (showNameserverMenu && nameserverOptions.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setNameserverSelectedIndex(prev => (prev < nameserverOptions.length - 1 ? prev + 1 : prev))
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setNameserverSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      applyNameserver(nameserverOptions[nameserverSelectedIndex])
+                    } else if (e.key === 'Escape') {
+                      setShowNameserverMenu(false)
+                    }
+                  } else if (showMacroMenu && filteredMacros.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      applyMacro(filteredMacros[selectedIndex].content)
+                    } else if (e.key === 'Escape') {
+                      setShowMacroMenu(false)
+                    }
+                  } else if (showMentionMenu && isInternal && filteredMentions.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setMentionIndex(prev => (prev < filteredMentions.length - 1 ? prev + 1 : prev))
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setMentionIndex(prev => (prev > 0 ? prev - 1 : 0))
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      applyMention(filteredMentions[mentionIndex])
+                    } else if (e.key === 'Escape') {
+                      setShowMentionMenu(false)
+                    }
+                  } else if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.nativeEvent.isComposing) return
+                    e.preventDefault()
+                    if (!isInternal && input.trim().startsWith('//t ') && input.trim().length > 4) {
+                      const text = input.trim().substring(4).trim();
+                      handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
+                    } else if (!isInternal && input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
+                      const instruction = input.trim().substring(2).trim();
+                      handleAiDraft(instruction);
+                    } else {
+                      handleSend()
+                    }
                   }
                 }}
-                onKeyUp={(e) => {
-                  if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) return;
-                  const target = e.target as HTMLTextAreaElement;
-                  checkMacroTrigger(target.value, target.selectionStart);
-                  checkMentionTrigger(target.value, target.selectionStart);
-                }}
-                onClick={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  checkMacroTrigger(target.value, target.selectionStart);
-                  checkMentionTrigger(target.value, target.selectionStart);
-                }}
-                onPaste={(e) => {
-                  if (e.clipboardData.files && e.clipboardData.files.length > 0) {
-                    e.preventDefault();
-                    const files = Array.from(e.clipboardData.files);
-                    stageAttachments(files);
-                  }
-                }}
-                onSelect={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  if (target.selectionStart !== target.selectionEnd) {
-                    setSelectedText(target.value.substring(target.selectionStart, target.selectionEnd));
-                  } else {
-                    setSelectedText("");
-                  }
-                }}
-              onKeyDown={(e) => {
-                if (showNameserverMenu && nameserverOptions.length > 0) {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault()
-                    setNameserverSelectedIndex(prev => (prev < nameserverOptions.length - 1 ? prev + 1 : prev))
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault()
-                    setNameserverSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
-                  } else if (e.key === 'Enter') {
-                    e.preventDefault()
-                    applyNameserver(nameserverOptions[nameserverSelectedIndex])
-                  } else if (e.key === 'Escape') {
-                    setShowNameserverMenu(false)
-                  }
-                } else if (showMacroMenu && filteredMacros.length > 0) {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault()
-                    setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault()
-                    setSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
-                  } else if (e.key === 'Enter') {
-                    e.preventDefault()
-                    applyMacro(filteredMacros[selectedIndex].content)
-                  } else if (e.key === 'Escape') {
-                    setShowMacroMenu(false)
-                  }
-                } else if (showMentionMenu && isInternal && filteredMentions.length > 0) {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault()
-                    setMentionIndex(prev => (prev < filteredMentions.length - 1 ? prev + 1 : prev))
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault()
-                    setMentionIndex(prev => (prev > 0 ? prev - 1 : 0))
-                  } else if (e.key === 'Enter') {
-                    e.preventDefault()
-                    applyMention(filteredMentions[mentionIndex])
-                  } else if (e.key === 'Escape') {
-                    setShowMentionMenu(false)
-                  }
-                } else if (e.key === 'Enter' && !e.shiftKey) {
-                  if (e.nativeEvent.isComposing) return
-                  e.preventDefault()
-                  if (!isInternal && input.trim().startsWith('//t ') && input.trim().length > 4) {
-                    const text = input.trim().substring(4).trim();
-                    handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
-                  } else if (!isInternal && input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
-                    const instruction = input.trim().substring(2).trim();
-                    handleAiDraft(instruction);
-                  } else {
-                    handleSend()
-                  }
-                }
-              }}
-                placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] placeholder:text-transparent ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
-                style={{ color: 'transparent', caretColor: isInternal ? '#d97706' : '#0070f3' }}
-              ></textarea>
-              
-              {/* Synchronized rich formatting backdrop overlay */}
-              <div 
-                ref={overlayRef}
-                className={`absolute inset-0 p-4 text-[14px] font-normal leading-relaxed whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none z-[1] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] text-left ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
-                style={{ height: textareaRef.current ? `${textareaRef.current.offsetHeight}px` : 'auto' }}
-              >
-                {input ? (
-                  formatComposerMarkdown(input)
-                ) : (
-                  <span className={isInternal ? 'text-amber-700/55 dark:text-amber-500/40' : 'text-slate-400 dark:text-[#8696a0]'}>
-                    {isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                  </span>
-                )}
+                  placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+                  className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] placeholder:text-transparent ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                  style={{ color: 'transparent', caretColor: isInternal ? '#d97706' : '#0070f3' }}
+                ></textarea>
+                
+                {/* Synchronized rich formatting backdrop overlay */}
+                <div 
+                  ref={overlayRef}
+                  className={`absolute inset-0 p-4 text-[14px] font-normal leading-relaxed whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none z-[1] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] text-left ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
+                  style={{ height: textareaRef.current ? `${textareaRef.current.offsetHeight}px` : 'auto' }}
+                >
+                  {input ? (
+                    formatComposerMarkdown(input)
+                  ) : (
+                    <span className={isInternal ? 'text-amber-700/55 dark:text-amber-500/40' : 'text-slate-400 dark:text-[#8696a0]'}>
+                      {isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
+                    </span>
+                  )}
+                </div>
               </div>
               
 
