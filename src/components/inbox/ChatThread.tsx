@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Brain, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2, Sparkles, ChevronDown, ChevronUp, Volume2 } from "lucide-react"
+import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2, Mic, Square, X, Brain, MoreVertical, LogOut, LogIn, Phone, PhoneOutgoing, PhoneMissed, Archive, Pin, BellOff, Mail, Trash2, Pencil, Ban, Image as ImageIcon, Video, CornerUpLeft, Database, ArrowLeft, Plus, Copy, Type, Play, PanelRightClose, PanelRightOpen, Shield, Save, Edit2, Info, Share2, Sparkles, ChevronDown, ChevronUp, Volume2, Languages } from "lucide-react"
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
@@ -4099,7 +4099,14 @@ export default function ChatThread({
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       style={(() => {
-                        if (!safeMeta?.scheduled_delay || !(msg.status === 'sending' || msg.status === 'confirmed')) return undefined;
+                        const baseStyle = {
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word'
+                        } as React.CSSProperties;
+
+                        if (!safeMeta?.scheduled_delay || !(msg.status === 'sending' || msg.status === 'confirmed')) {
+                          return baseStyle;
+                        }
                         
                         const msgId = msg.id || safeMeta?.temp_id || String(idx);
                         if (!messageInitTimeRef.current[msgId]) {
@@ -4117,6 +4124,7 @@ export default function ChatThread({
                         }
                         
                         return {
+                          ...baseStyle,
                           animationDuration: `${duration}ms`,
                           animationDelay: `${delay}ms`
                         };
@@ -4295,6 +4303,10 @@ export default function ChatThread({
                     )}
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
+                      style={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
@@ -5006,28 +5018,7 @@ export default function ChatThread({
                 className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-950 dark:text-amber-100 placeholder:text-amber-700/55 dark:placeholder:text-amber-500/40' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
               ></textarea>
               
-              {/* Highlight Translation Menu */}
-              {selectedText && textareaRef.current && (
-                <div className="absolute top-2 right-4 z-[20] animate-in fade-in slide-in-from-bottom-1">
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const textarea = textareaRef.current;
-                      if (!textarea) return;
-                      const start = textarea.selectionStart;
-                      const end = textarea.selectionEnd;
-                      const prefix = input.substring(0, start);
-                      const suffix = input.substring(end);
-                      handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${selectedText}`, true, prefix, suffix);
-                      setSelectedText("");
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xl text-[12px] font-medium transition-colors border border-slate-700/50"
-                  >
-                    <Brain size={14} className="text-blue-400" />
-                    Translate
-                  </button>
-                </div>
-              )}
+
             </div>
           )}
           
@@ -5071,6 +5062,27 @@ export default function ChatThread({
                   <Brain size={16} strokeWidth={2} />
                 )}
               </button>
+
+              {selectedText && (
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const textarea = textareaRef.current;
+                    if (!textarea) return;
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const prefix = input.substring(0, start);
+                    const suffix = input.substring(end);
+                    handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${selectedText}`, true, prefix, suffix);
+                    setSelectedText("");
+                  }}
+                  title="Translate highlighted selection"
+                  className="p-1.5 rounded-md text-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/40 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 shrink-0 select-none shadow-sm font-semibold"
+                >
+                  <Languages size={15} strokeWidth={2} />
+                  <span className="text-[11px] font-semibold tracking-wide pr-0.5">Translate Selection</span>
+                </button>
+              )}
             </div>
             {/* Action buttons and toggle */}
             <div className="flex items-center gap-3">
