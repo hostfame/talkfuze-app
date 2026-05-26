@@ -172,7 +172,7 @@ export async function getWidgetMessages(orgId: string, deviceId: string, convers
         .from("conversations")
         .select("id")
         .eq("contact_id", contacts[0].id)
-        .order('created_at', { ascending: false })
+        .order('last_message_at', { ascending: false })
         .limit(1)
         
       if (convErr) console.error("getWidgetMessages conv err:", convErr);
@@ -375,7 +375,7 @@ export async function getWidgetConversations(orgId: string, deviceId: string, _c
       .from("conversations")
       .select("id, status, created_at, last_message_at")
       .eq("contact_id", contactId)
-      .order("created_at", { ascending: false });
+      .order("last_message_at", { ascending: false });
       
     if (convErr) console.error("getWidgetConversations conv err:", convErr);
     if (!convs || convs.length === 0) return [];
