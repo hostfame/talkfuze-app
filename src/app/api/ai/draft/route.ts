@@ -205,8 +205,27 @@ export async function POST(req: Request) {
     }
     const latestCustomerMessageCleaned = latestCustomerMessages.join('\n');
 
-    // Language detection for DB logging only - LLM handles actual language matching
-    const detectedLanguage = detectConversationLanguage(parsedMessages);
+    // Language detection: TWO modes
+    // Auto-draft (no instruction): follow customer's latest message language
+    // AI Assist (instruction present): follow AGENT's instruction language (agent controls)
+    let detectedLanguage: 'Bengali' | 'English';
+    
+    if (instruction && instruction.replace(/^\/\/\s*/, '').trim().length > 0) {
+      const cleanInstruction = instruction.replace(/^\/\/\s*/, '').trim();
+      // Check if instruction has Bengali script → Bengali
+      if (BENGALI_REGEX.test(cleanInstruction)) {
+        detectedLanguage = 'Bengali';
+      } else if (AMBIGUOUS_MSG.test(cleanInstruction) || cleanInstruction.length < 15) {
+        // Short/ambiguous instruction ("done", "ok", "send ticket") → follow conversation
+        detectedLanguage = detectConversationLanguage(parsedMessages);
+      } else {
+        // Long English instruction (15+ chars) → agent wants English
+        detectedLanguage = 'English';
+      }
+    } else {
+      // Auto-draft: follow customer's latest message
+      detectedLanguage = detectConversationLanguage(parsedMessages);
+    }
 
     // Cap context to last 20 messages
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
