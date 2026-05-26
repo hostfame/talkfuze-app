@@ -281,6 +281,7 @@ Instruction: ${instruction}
 Output ONLY the translation in raw plain text.`;
     } else {
       userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"
+${detectedLanguage === 'Bengali' ? '\nLanguage hint: Recent messages contain Bengali script. Reply in Bengali.' : '\nLanguage hint: Recent messages are in English. Reply in English.'}
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).

@@ -132,6 +132,7 @@ ${JSON.stringify(knowledge)}
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
+${detectedLanguage === 'Bengali' ? '\nLanguage hint: Recent messages contain Bengali script. Reply in Bengali.' : '\nLanguage hint: Recent messages are in English. Reply in English.'}
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).${personalizationRule}${fewShotBlock}${mistakesBlock}`;
