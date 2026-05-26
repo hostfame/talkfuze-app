@@ -208,6 +208,11 @@ Transcript:
       follow_up_draft = parsedRes.follow_up_draft || "";
     }
 
+    if (!transcriptText || transcriptText.trim().length === 0) {
+      console.warn(`[Call AI] Transcript is empty. Skipping summary message insertion.`);
+      return;
+    }
+
     // Resolve exact talk duration from the browser-logged Voice call message if available (to match perfectly)
     let finalDurationSeconds = durationSeconds;
     try {
