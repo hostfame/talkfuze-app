@@ -444,6 +444,13 @@ Output ONLY the translation in raw plain text.`;
 
       userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"${languageOverride}${greetingRule}
     
+## CONVERSATIONAL CONTINUITY & COHERENCE (MANDATORY):
+1. Carefully analyze the last 2-3 messages in the chat history (what the Agent said, and what the customer just said in reply).
+2. If the customer's latest message is extremely short or vague (e.g. "send", "share", "tell me", "details", "check"), you MUST NOT treat it in isolation.
+3. Synthesize their intent in direct relation to the immediately preceding Agent message:
+   - Example: If the Agent recently asked for a maximum budget, server configuration, or domain names, and the customer just says "send" or "share", they are instructing you to send the pricing or configurations for the options discussed. Acknowledge this contextually (e.g. "যেহেতু আপনি সিঙ্গাপুর বা অন্য লোকেশনের কনফিগারেশন জানতে চেয়েছেন...", "Since you asked for the server pricing details...").
+4. Maintain a highly coherent, smart thread of thought. Carry over key context variables (like the budget discussed, specific locations like Singapore, or domain details) from the previous agent message to completely and logically address their short instruction.
+
 FORMATTING & CONCISENESS (CRITICAL):
 - EXTREME BREVITY: Keep your entire response under 2-3 short, punchy sentences max (less than 40 words total). Real humans write in quick, direct bursts. NEVER write long, verbose paragraphs or multi-sentence technical lectures.
 - NATURAL FLOW: Combine your confirmation/acknowledgement and next step/question into a single natural paragraph. Do NOT use double line breaks (\n\n) between every sentence—it looks artificial and robotic. 
