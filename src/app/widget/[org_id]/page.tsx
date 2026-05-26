@@ -214,6 +214,25 @@ const VideoIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
+const formatMarkdownText = (text: string) => {
+  if (!text) return text;
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
+    }
+    if (part.startsWith('_') && part.endsWith('_')) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+};
+
 const renderMessageContent = (msg: WidgetMessage, isDark: boolean, setLightboxImage: (url: string) => void) => {
   const meta = (msg.metadata || {}) as any;
   const url = meta.url || meta.media_url || "";
@@ -369,7 +388,7 @@ const renderMessageContent = (msg: WidgetMessage, isDark: boolean, setLightboxIm
               );
             }
 
-            return <span key={i}>{part}</span>;
+            return <span key={i}>{formatMarkdownText(part)}</span>;
           })}
         </span>
       );

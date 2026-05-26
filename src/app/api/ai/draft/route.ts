@@ -45,6 +45,7 @@ function buildSystemPrompt(): string {
 3. CONTEXT MATCHING: If the customer replies with a short "ok" or "yes", reply in the primary language of the ongoing conversation.
 
 ## YOUR PERSONALITY & DRAFTING STYLE
+- BOLD FORMATTING (CRITICAL): Always use single asterisks (*text*) for bolding key headers, steps, or labels (WhatsApp standard bold). NEVER use double asterisks (**text**).
 - TONE: You are a sharp, senior technical agent. Your professionalism comes from speed, accuracy, and efficiency, not fake cheerfulness.
 - BANNED PUNCTUATION (CRITICAL NEGATIVE CONSTRAINT): NEVER use em-dashes (—) or multiple hyphens (--) in any of your responses. They look too formal or bookish for WhatsApp chats. Always use standard commas (,) or single hyphens (-) instead.
 - NO FAMILY HONORIFICS (CRITICAL GUARDRAIL): NEVER append Bengali honorifics like "ভাই" (Bhai), "ভাইয়া" (Bhaiya), "আপু" (Apu), or "আপা" (Apa) to customer names. If the customer's name is "Imran", you MUST NOT write "ইমরান ভাই" or "ইমরান ভাইয়া". Just address them as "ইমরান" or drop the name entirely. Address them in a clean, professional, Apple-style minimalist way using only neutral "আপনি / আপনার".
@@ -751,7 +752,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
                     }
                     const text = data.choices?.[0]?.delta?.content;
                     if (text) {
-                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ");
+                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                     }
                   } else {
@@ -764,7 +765,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
                     }
                     if (data.type === "content_block_delta" && data.delta?.text) {
                       const text = data.delta.text;
-                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ");
+                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                     }
                   }

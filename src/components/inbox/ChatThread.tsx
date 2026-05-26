@@ -2610,7 +2610,11 @@ export default function ChatThread({
     const overrideText = typeof e === 'string' ? e : undefined;
     if ((!input.trim() && !overrideText && stagedAttachments.length === 0) || !conversationId) return
 
-    const msgText = (overrideText ? overrideText : input).trim()
+    let msgText = (overrideText ? overrideText : input).trim()
+    // Convert standard Markdown bold **text** to WhatsApp native bold *text*
+    if (!isInternal) {
+      msgText = msgText.replace(/\*\*(.*?)\*\*/g, '*$1*');
+    }
     
     // AI Copilot feature
     if (!isInternal && msgText.startsWith('//') && msgText.length > 2) {
