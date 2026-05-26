@@ -612,6 +612,7 @@ type ChatThreadProps = {
   orgId: string
   teamMembers?: UserProfile[]
   isCustomerTyping?: boolean
+  customerTypingText?: string
   isCustomerRecording?: boolean
   isCustomerOnline?: boolean
   activeAgents?: { name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]
@@ -679,6 +680,7 @@ export default function ChatThread({
   orgId,
   teamMembers = [],
   isCustomerTyping = false,
+  customerTypingText = "",
   isCustomerRecording = false,
   isCustomerOnline = false,
   activeAgents = [],
@@ -1599,6 +1601,7 @@ export default function ChatThread({
   const lastActivityTimeRef = useRef<number>(Date.now());
   const [isActivelyComposing, setIsActivelyComposing] = useState(false);
   const lastBroadcastRef = useRef<boolean>(false);
+  const chunksSendingUntilRef = useRef<number>(0);
   
   const currentTypingAgents = activeAgents?.filter(a => a.activity === 'typing') || [];
   const [displayTypingAgents, setDisplayTypingAgents] = useState<{ name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]>(currentTypingAgents);
@@ -1618,10 +1621,11 @@ export default function ChatThread({
     const checkActivity = () => {
       const isAiWorking = isAiDrafting || isAiStreaming;
       const isUploading = stagedAttachments.some(a => a.status === 'uploading');
+      const isSendingChunks = Date.now() < chunksSendingUntilRef.current;
       const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
       
-      // Consider "active" if AI is working, actively uploading, OR typed/changed something within last 1.5 seconds
-      const active = isAiWorking || isUploading || (timeSinceLastActivity < 1500 && input.trim().length > 0);
+      // Consider "active" if AI is working, actively uploading, sending chunks, OR typed/changed something within last 1.5 seconds
+      const active = isAiWorking || isUploading || isSendingChunks || (timeSinceLastActivity < 1500 && input.trim().length > 0);
       
       setIsActivelyComposing(active);
     };
@@ -2907,8 +2911,18 @@ export default function ChatThread({
                 console.error(e);
                 markFailed(conversationId, tempId);
               });
-          }, accumulatedDelay);
           activeTimersRef.current.push(sendTimer);
+        }
+
+        if (accumulatedDelay > 0 && !isInternal) {
+          chunksSendingUntilRef.current = Date.now() + accumulatedDelay;
+          setIsActivelyComposing(true);
+          supabase.channel(`typing:${orgId}`).send({
+            type: 'broadcast',
+            event: 'typingStatus',
+            payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
+          });
+          lastBroadcastRef.current = true;
         }
       }
 
@@ -4574,12 +4588,19 @@ export default function ChatThread({
               ) : (
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
               )}
-              <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
-                <div className="flex gap-1.5 items-center h-4">
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+              <div className="flex flex-col gap-1.5 max-w-[70%]">
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 self-start">
+                  <div className="flex gap-1.5 items-center h-4">
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                  </div>
                 </div>
+                {customerTypingText && (
+                  <div className="text-[11px] text-slate-400 dark:text-slate-500 italic px-2 max-w-full break-words select-none bg-slate-50/50 dark:bg-slate-800/30 py-1 rounded-lg border border-slate-100/50 dark:border-slate-800/30">
+                    Drafting: "{customerTypingText}"
+                  </div>
+                )}
               </div>
             </div>
           </div>

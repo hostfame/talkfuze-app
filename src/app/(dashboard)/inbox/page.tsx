@@ -30,6 +30,7 @@ export default function InboxPage() {
   } = useInboxStore()
 
   const [typingState, setTypingState] = useState<Record<string, boolean>>({})
+  const [typingTextState, setTypingTextState] = useState<Record<string, string>>({})
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true)
 
   // Auto-collapse sidebar on smaller screens (portrait monitors, small laptops) on mount
@@ -287,6 +288,7 @@ export default function InboxPage() {
            updateTabBadge(unreadCount);
            // Immediately clear typing state to prevent UI flicker
            setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
+           setTypingTextState(prev => ({ ...prev, [newMsg.conversation_id]: "" }));
            if (typingTimeoutRefs.current[newMsg.conversation_id]) {
              clearTimeout(typingTimeoutRefs.current[newMsg.conversation_id]);
            }
@@ -465,12 +467,17 @@ export default function InboxPage() {
   useEffect(() => {
     const channel = supabase.channel(`typing:${ORG_ID}`)
       .on('broadcast', { event: 'typingStatus' }, (payload) => {
-        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id, agent_avatar } = payload.payload;
+        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id, agent_avatar, text } = payload.payload;
         // Track customer typing
         if (direction === 'contact') {
           setTypingState(prev => ({
             ...prev,
             [conversation_id]: is_typing
+          }));
+          
+          setTypingTextState(prev => ({
+            ...prev,
+            [conversation_id]: is_typing ? (text || "") : ""
           }));
           
           if (is_recording !== undefined) {
@@ -489,6 +496,10 @@ export default function InboxPage() {
               setTypingState(prev => ({
                 ...prev,
                 [conversation_id]: false
+              }));
+              setTypingTextState(prev => ({
+                ...prev,
+                [conversation_id]: ""
               }));
             }, 3000);
           }
@@ -816,6 +827,7 @@ export default function InboxPage() {
           orgId={ORG_ID}
           teamMembers={teamMembers}
           isCustomerTyping={selectedId ? typingState[selectedId] : false}
+          customerTypingText={selectedId ? typingTextState[selectedId] : ""}
           isCustomerRecording={selectedId ? recordingState[selectedId] : false}
           activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
           isCustomerOnline={(() => {

@@ -3751,7 +3751,7 @@ export default function WidgetPage() {
                           supabase.channel(`typing:${org_id}`).send({
                             type: 'broadcast',
                             event: 'typingStatus',
-                            payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: true }
+                            payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: true, text: e.target.value }
                           })
                           if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
                           typingTimeoutRef.current = setTimeout(() => {
