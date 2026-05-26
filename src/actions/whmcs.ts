@@ -560,7 +560,7 @@ export async function fetchClientNameservers(phoneOrEmail: string) {
     const productsRes = await getClientsProducts(client.id, 0, 100)
     const products = productsRes.products || []
 
-    const SERVER_NS_MAP: Record<string, { ns1: string, ns2: string }> = {
+    const SERVER_NS_MAP: Record<string, { ns1: string, ns2: string, ns3?: string, ns4?: string }> = {
       "Titan": { ns1: "draco.balancedserver.com", ns2: "luna.balancedserver.com" },
       "Nebula": { ns1: "nova.balancedserver.com", ns2: "zara.balancedserver.com" },
       "Advance": { ns1: "aster.balancedserver.com", ns2: "hazel.balancedserver.com" },
@@ -571,21 +571,31 @@ export async function fetchClientNameservers(phoneOrEmail: string) {
       "Rise": { ns1: "risealpha.balancedserver.com", ns2: "risebeta.balancedserver.com" },
       "Flux": { ns1: "fluxone.balancedserver.com", ns2: "fluxtwo.balancedserver.com" },
       "Spark": { ns1: "sparkone.balancedserver.com", ns2: "sparktwo.balancedserver.com" },
-      "Secure": { ns1: "mushi.balancedserver.com", ns2: "enaya.balancedserver.com" }
+      "Secure": { ns1: "mushi.balancedserver.com", ns2: "enaya.balancedserver.com" },
+      "Cloud": {
+        ns1: "ns1.stackdns.com",
+        ns2: "ns2.stackdns.com",
+        ns3: "ns3.stackdns.com",
+        ns4: "ns4.stackdns.com"
+      }
     };
 
     return products
       .filter((p: any) => p.domain && p.status === 'Active')
       .map((p: any) => {
-        const serverName = p.servername || "";
+        const serverName = (p.servername || "").trim();
         let ns1 = (p.ns1 || "").trim();
         let ns2 = (p.ns2 || "").trim();
+        let ns3 = (p.ns3 || "").trim();
+        let ns4 = (p.ns4 || "").trim();
 
         if (!ns1 && serverName) {
           const mapped = SERVER_NS_MAP[serverName];
           if (mapped) {
             ns1 = mapped.ns1;
             ns2 = mapped.ns2;
+            ns3 = mapped.ns3 || "";
+            ns4 = mapped.ns4 || "";
           }
         }
 
@@ -595,7 +605,9 @@ export async function fetchClientNameservers(phoneOrEmail: string) {
           productName: p.name,
           serverName: serverName,
           ns1: ns1 || "ns1.hostnin.com.bd",
-          ns2: ns2 || "ns2.hostnin.com.bd"
+          ns2: ns2 || "ns2.hostnin.com.bd",
+          ns3: ns3 || undefined,
+          ns4: ns4 || undefined
         }
       })
   } catch (error) {

@@ -2158,7 +2158,8 @@ export default function ChatThread({
   const applyNameserver = (item: any) => {
     const val = input
     const textarea = textareaRef.current
-    const nameserverText = `${item.ns1}\n${item.ns2}`
+    const nsParts = [item.ns1, item.ns2, item.ns3, item.ns4].filter(Boolean)
+    const nameserverText = nsParts.join('\n')
 
     if (textarea) {
       const selectionStart = textarea.selectionStart
@@ -4791,9 +4792,11 @@ export default function ChatThread({
                       <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200">{item.domain}</span>
                       <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50">{item.productName}</span>
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-[11px] text-slate-400 font-mono">
+                    <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-1 text-[11px] text-slate-400 font-mono">
                       <span>NS1: {item.ns1}</span>
                       <span>NS2: {item.ns2}</span>
+                      {item.ns3 && <span>NS3: {item.ns3}</span>}
+                      {item.ns4 && <span>NS4: {item.ns4}</span>}
                     </div>
                   </div>
                 ))
