@@ -1974,7 +1974,17 @@ export default function ChatThread({
 
       // Filter out confirmed optimistic messages that already have a real counterpart
       if (om.status === 'confirmed') {
-        return !messages.some(m => m.content === om.content && m.sender_type === om.sender_type);
+        return !messages.some(m => {
+          let mMeta = m.metadata;
+          if (typeof mMeta === 'string') {
+            try { mMeta = JSON.parse(mMeta); } catch (e) {}
+          }
+          const mTempId = (mMeta as any)?.temp_id;
+          if (mTempId && mTempId === om.id) return true;
+          
+          const timeDiff = Math.abs(new Date(m.created_at).getTime() - new Date(om.created_at).getTime());
+          return m.content === om.content && m.sender_type === om.sender_type && timeDiff < 30000;
+        });
       }
       return true;
     })
