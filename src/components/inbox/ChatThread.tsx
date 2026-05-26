@@ -1517,11 +1517,18 @@ export default function ChatThread({
   const hasPropParticipants = propParticipants.length > 0;
   const hasPropAssignee = !!firstRelation(conversation?.assignee) || !!conversation?.assigned_to;
   
+  const hasAgentMessage = messages.some(
+    msg =>
+      msg.sender_type === 'agent' ||
+      (msg.sender_type === 'system' && msg.content && (msg.content.includes('joined the conversation') || msg.content.includes('joined the chat')))
+  );
+
   const isPickedUp = !conversationId ? true : (
     hasJoinedOptimistically ||
     participants.length > 0 || 
     hasPropParticipants || 
-    hasPropAssignee
+    hasPropAssignee ||
+    hasAgentMessage
   );
 
   const isLoadedConversation = !isFetching && !isLoadingParticipants;
@@ -1862,6 +1869,17 @@ export default function ChatThread({
       supabase.removeChannel(channel)
     }
   }, [conversationId])
+
+  // Refetch participants when a system join/leave message is received in real-time
+  useEffect(() => {
+    if (!conversationId) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.sender_type === 'system' && lastMsg.content && (lastMsg.content.includes('joined the conversation') || lastMsg.content.includes('joined the chat') || lastMsg.content.includes('left the conversation'))) {
+      getParticipants(conversationId).then(data => {
+        setParticipants(data as unknown as ConversationParticipant[]);
+      });
+    }
+  }, [messages, conversationId]);
 
   // Keep ref of staged attachments to revoke on unmount only, avoiding premature destruction
   const stagedAttachmentsRef = useRef<StagedAttachment[]>([]);
@@ -2911,6 +2929,7 @@ export default function ChatThread({
                 console.error(e);
                 markFailed(conversationId, tempId);
               });
+          }, accumulatedDelay);
           activeTimersRef.current.push(sendTimer);
         }
 
