@@ -546,7 +546,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
           console.log('[AI Draft] Image block present, bypassing DeepSeek and using Claude Haiku directly.');
           useClaudeBackup = true;
         } else {
-          console.log('[AI Draft] Attempting DeepSeek-V3 as primary...');
+          console.log('[AI Draft] Attempting DeepSeek-V4-Pro as primary...');
           deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
             method: "POST",
             headers: {
@@ -554,7 +554,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "deepseek-chat",
+              model: "deepseek-v4-pro",
               max_tokens: 600,
               temperature: 0.2,
               stream: true,
@@ -727,7 +727,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
           const totalTokens = inputTokens + outputTokens;
           if (totalTokens > 0) {
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: isDeepseek ? "deepseek-v3" : "claude-3-5-haiku", temperature: 0.2 })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: isDeepseek ? "deepseek-v4-pro" : "claude-3-5-haiku", temperature: 0.2 })}\n\n`)
             );
           }
         } catch (streamErr: any) {
