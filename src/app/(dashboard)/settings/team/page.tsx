@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Plus, MoreHorizontal, X, Loader2 } from "lucide-react"
 import { getTeammates, addTeammate, updateTeammateRole } from "@/actions/team"
+import { createClient } from "@/lib/supabase/client"
 import type { UserProfile } from "@/lib/types"
 
 export default function TeamSettingsPage() {
@@ -11,6 +12,7 @@ export default function TeamSettingsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   
   // Form State
   const [name, setName] = useState("")
@@ -40,6 +42,50 @@ export default function TeamSettingsPage() {
       isActive = false
     }
   }, [])
+
+  useEffect(() => {
+    if (teammates.length === 0) return
+
+    const orgId = teammates[0]?.org_id
+    if (!orgId) return
+
+    const supabase = createClient()
+    let presenceChannel: any = null
+
+    const setupPresence = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      presenceChannel = supabase.channel(`presence:${orgId}`)
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = presenceChannel.presenceState()
+          const currentOnline = new Set<string>()
+          for (const id in state) {
+            state[id].forEach((presence: any) => {
+               if (presence.user) currentOnline.add(presence.user)
+            })
+          }
+          setOnlineUsers(currentOnline)
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await presenceChannel.track({
+              user: user.id,
+              online_at: new Date().toISOString()
+            })
+          }
+        })
+    }
+
+    setupPresence()
+
+    return () => {
+      if (presenceChannel) {
+        supabase.removeChannel(presenceChannel)
+      }
+    }
+  }, [teammates])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -144,8 +190,8 @@ export default function TeamSettingsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <span className={`w-2 h-2 rounded-full ${member.status === 'online' ? 'bg-green-500' : 'bg-amber-400'}`}></span>
-                      {member.status === 'online' ? 'Online' : member.status}
+                      <span className={`w-2 h-2 rounded-full ${onlineUsers.has(member.id) || member.status === 'online' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
+                      {onlineUsers.has(member.id) || member.status === 'online' ? 'Online' : 'Offline'}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right relative">

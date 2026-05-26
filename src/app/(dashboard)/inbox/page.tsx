@@ -545,7 +545,16 @@ export default function InboxPage() {
         })
       }
       setOnlineUsers(currentOnline)
-    }).subscribe()
+    })
+
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED' && currentUser?.id) {
+        await presenceChannel.track({
+          user: currentUser.id,
+          online_at: new Date().toISOString()
+        })
+      }
+    })
       
     return () => {
       supabase.removeChannel(channel);
