@@ -714,6 +714,11 @@ export default function ChatThread({
   const callTimerRef = useRef<NodeJS.Timeout | null>(null)
   const voiceChannelRef = useRef<any>(null)
   const voiceChannelSubscribedRef = useRef<boolean>(false)
+  const messageInitTimeRef = useRef<Record<string, number>>({})
+
+  useEffect(() => {
+    messageInitTimeRef.current = {};
+  }, [conversationId]);
 
   const subscribeToVoiceCall = (convId: string) => {
     // Force remove existing channel to guarantee a clean WebRTC state
@@ -3918,7 +3923,13 @@ export default function ChatThread({
                       style={(() => {
                         if (!safeMeta?.scheduled_delay || !(msg.status === 'sending' || msg.status === 'confirmed')) return undefined;
                         
-                        const elapsed = msg.created_at ? Math.max(0, Date.now() - new Date(msg.created_at).getTime()) : 0;
+                        const msgId = msg.id || safeMeta?.temp_id || String(idx);
+                        if (!messageInitTimeRef.current[msgId]) {
+                          messageInitTimeRef.current[msgId] = Date.now();
+                        }
+                        const initTime = messageInitTimeRef.current[msgId];
+                        
+                        const elapsed = msg.created_at ? Math.max(0, initTime - new Date(msg.created_at).getTime()) : 0;
                         let duration = safeMeta.scheduled_delay;
                         let delay = -elapsed;
                         
