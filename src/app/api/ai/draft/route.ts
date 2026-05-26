@@ -24,6 +24,13 @@ const BENGLISH_WORDS = new Set([
   'beshi', 'kom', 'koto', 'koi', 'kikore', 'kemne', 'evabe', 'ase', 'niye', 'nile'
 ]);
 
+function detectSalam(text: string): boolean {
+  const normalized = text.toLowerCase().trim();
+  const bSalam = /(আসসালামু|আস\-সালামু|আসালামু|সালাম)/.test(normalized);
+  const eSalam = /(salam|slm|assalamu|asalamu|alaikum|alaykum|slam)/.test(normalized);
+  return bSalam || eSalam;
+}
+
 // ============================================================
 // STATIC SYSTEM PROMPT (cached by Anthropic, ~500 tokens)
 // Only personality + rules. NO knowledge data here.
@@ -233,7 +240,7 @@ export async function POST(req: Request) {
       const customerFullText = customerLines.slice(-10).join(' ').toLowerCase();
       const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
       const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-      const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w));
+      const isBenglish = words.some((w: string) => BENGLISH_WORDS.has(w)) || detectSalam(customerFullText);
       strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
     }
     const languageOverride = strictLanguage === 'Bengali' 
