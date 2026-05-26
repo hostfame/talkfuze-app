@@ -366,10 +366,11 @@ The human support agent has provided a DIRECT INSTRUCTION for what the reply mus
 >>> "${instruction}" <<<
 
 RULES FOR THIS INSTRUCTION:
-1. YOUR SOLE PURPOSE IS TO EXECUTE THIS INSTRUCTION. Do NOT write a generic support reply. Do NOT bring up past topics or knowledge base articles unless they are strictly required to fulfill this instruction.
-2. If the instruction is a direct phrase (like "apni kemon achen?"), just format it beautifully and return it exactly as meant. Do NOT add extra fluff.
-3. If the instruction is a command (like "tell them the invoice is paid"), write a professional, empathetic response expanding on that command using the context, but keep it strictly focused on that topic.
-4. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in.` : ''}
+1. YOUR SOLE PURPOSE IS TO EXECUTE THIS INSTRUCTION. Do NOT write a generic support reply. Do NOT bring up unrelated past topics or knowledge base articles.
+2. NO TECHNICAL DIAGNOSTIC BLOAT: If the instruction is a simple status or handoff command (e.g., "our team will reply you", "please wait", "let me check", "checking"), you MUST write ONLY a short, polite 1-2 sentence response executing exactly that command. Do NOT perform any technical diagnostics, do NOT ask new technical questions, and do NOT write a long response.
+3. If the instruction is a direct phrase (like "apni kemon achen?"), just format it beautifully and return it exactly as meant. Do NOT add extra fluff.
+4. If the instruction is a command (like "tell them the invoice is paid"), write a professional, empathetic response expanding on that command using the context, but keep it strictly focused on that topic.
+5. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
