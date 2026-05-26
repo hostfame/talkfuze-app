@@ -2036,6 +2036,10 @@ export default function ChatThread({
   const [macroPrefix, setMacroPrefix] = useState('/');
 
   const checkMacroTrigger = (val: string, selectionStart: number) => {
+    if (isInternal) {
+      setShowMacroMenu(false);
+      return;
+    }
     const textUpToCursor = val.slice(0, selectionStart);
     const match = textUpToCursor.match(/(?:^|\s)(\/)([a-zA-Z0-9_-]*)$/);
     if (match) {
@@ -2482,7 +2486,7 @@ export default function ChatThread({
     const msgText = (overrideText ? overrideText : input).trim()
     
     // AI Copilot feature
-    if (msgText.startsWith('//') && msgText.length > 2) {
+    if (!isInternal && msgText.startsWith('//') && msgText.length > 2) {
       const instruction = msgText.substring(2).trim();
       handleAiDraft(instruction);
       return;
@@ -4738,10 +4742,10 @@ export default function ChatThread({
                 } else if (e.key === 'Enter' && !e.shiftKey) {
                   if (e.nativeEvent.isComposing) return
                   e.preventDefault()
-                  if (input.trim().startsWith('//t ') && input.trim().length > 4) {
+                  if (!isInternal && input.trim().startsWith('//t ') && input.trim().length > 4) {
                     const text = input.trim().substring(4).trim();
                     handleAiDraft(`Translate this exactly, auto-detecting language (Bangla <-> English): ${text}`, true);
-                  } else if (input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
+                  } else if (!isInternal && input.trim().startsWith('//') && !input.trim().startsWith('//t ') && input.trim().length > 2) {
                     const instruction = input.trim().substring(2).trim();
                     handleAiDraft(instruction);
                   } else {
