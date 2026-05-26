@@ -5297,7 +5297,7 @@ export default function ChatThread({
               }}
                 placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
                 className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] placeholder:text-transparent ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
-                style={{ color: 'transparent', caretColor: 'currentColor' }}
+                style={{ color: 'transparent', caretColor: isInternal ? '#d97706' : '#0070f3' }}
               ></textarea>
               
               {/* Synchronized rich formatting backdrop overlay */}
