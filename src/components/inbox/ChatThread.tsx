@@ -4599,7 +4599,7 @@ export default function ChatThread({
         
 
 
-        {isCustomerTyping && (
+        {(isCustomerTyping || customerTypingText) && (
           <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-end gap-2.5">
               {contact?.avatar_url && !(contact?.platform_id?.endsWith('@g.us')) ? (
@@ -4609,9 +4609,23 @@ export default function ChatThread({
               )}
               <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
                 {customerTypingText ? (
-                  <span className="text-[13px] text-slate-500 dark:text-slate-400 italic break-words select-none">
-                    {customerTypingText}
-                  </span>
+                  <div className="flex flex-col gap-1 select-none">
+                    <span className="text-[13px] text-slate-600 dark:text-slate-300 italic break-words">
+                      "{customerTypingText}"
+                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
+                        {isCustomerTyping ? "Visitor typing" : "Visitor drafted"}
+                      </span>
+                      {isCustomerTyping && (
+                        <div className="flex gap-1 items-center h-2">
+                          <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                          <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                          <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
