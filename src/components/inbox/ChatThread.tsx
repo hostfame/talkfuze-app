@@ -2212,6 +2212,15 @@ export default function ChatThread({
   }, [selectedIndex, showMacroMenu]);
 
   useEffect(() => {
+    if (showNameserverMenu) {
+      const element = document.getElementById(`nameserver-item-${nameserverSelectedIndex}`);
+      if (element) {
+        element.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [nameserverSelectedIndex, showNameserverMenu]);
+
+  useEffect(() => {
     if (showMentionMenu) {
       const element = document.getElementById(`mention-item-${mentionIndex}`);
       if (element) {
@@ -2219,6 +2228,8 @@ export default function ChatThread({
       }
     }
   }, [mentionIndex, showMentionMenu]);
+
+
 
   const applyMacro = (macroContent: string) => {
     if (macroContent.startsWith('//translate-')) {
