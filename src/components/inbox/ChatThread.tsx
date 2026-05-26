@@ -9,7 +9,7 @@ import { createCannedReply, getCannedReplies } from "@/actions/snippets"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
 import { updateContactName, updateContactEmail, updateContactPhone } from "@/actions/contacts"
-import { convertChatToTicket, fetchWhmcsClient, fetchWhmcsClientByDomain } from "@/actions/whmcs"
+import { convertChatToTicket, fetchWhmcsClient, fetchWhmcsClientByDomain, fetchClientNameservers } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
 import { useMessageStore, useInboxStore, useGlobalAudioStore, recentEdits } from "@/lib/store"
@@ -1475,6 +1475,13 @@ export default function ChatThread({
   const [mentionFilter, setMentionFilter] = useState("")
   const [mentionIndex, setMentionIndex] = useState(0)
 
+  // Nameserver Shortcut State
+  const [showNameserverMenu, setShowNameserverMenu] = useState(false)
+  const [nameserverOptions, setNameserverOptions] = useState<any[]>([])
+  const [isNameserversLoading, setIsNameserversLoading] = useState(false)
+  const [nameserverSelectedIndex, setNameserverSelectedIndex] = useState(0)
+
+
   // Quick Replies Creation Modal
   const [quickReplyModalOpen, setQuickReplyModalOpen] = useState(false)
   const [quickReplyShortcut, setQuickReplyShortcut] = useState("")
@@ -2074,6 +2081,52 @@ export default function ChatThread({
     }
   };
 
+  const loadNameservers = async () => {
+    if (!contact) return
+    setIsNameserversLoading(true)
+    setNameserverOptions([])
+    try {
+      const cleanPhone = contact.phone || ""
+      const cleanEmail = contact.email || ""
+      const searchVal = cleanEmail || cleanPhone || (contact.metadata as any)?.real_phone || ""
+      if (searchVal) {
+        const res = await fetchClientNameservers(searchVal)
+        setNameserverOptions(res || [])
+      }
+    } catch (err) {
+      console.error("Failed to load client nameservers:", err)
+    } finally {
+      setIsNameserversLoading(false)
+    }
+  }
+
+  const applyNameserver = (item: any) => {
+    const val = input
+    const textarea = textareaRef.current
+    const nameserverText = `Here are the nameservers for your domain **${item.domain}**:\n- **NS1:** ${item.ns1}\n- **NS2:** ${item.ns2}`
+
+    if (textarea) {
+      const selectionStart = textarea.selectionStart
+      const selectionEnd = textarea.selectionEnd
+      const textUpToCursor = val.slice(0, selectionStart)
+      const textAfterCursor = val.slice(selectionEnd)
+      
+      const newValue = textUpToCursor + nameserverText + textAfterCursor
+      setInput(newValue)
+      setShowNameserverMenu(false)
+      
+      setTimeout(() => {
+        textarea.focus()
+        const newCursorPos = selectionStart + nameserverText.length
+        textarea.setSelectionRange(newCursorPos, newCursorPos)
+      }, 10)
+      return
+    }
+
+    setInput(val ? val + "\n" + nameserverText : nameserverText)
+    setShowNameserverMenu(false)
+  }
+
   // Handle Input Change for Macro Menu and Mentions
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -2083,6 +2136,18 @@ export default function ChatThread({
       clearInterval(streamingIntervalRef.current);
       streamingIntervalRef.current = null;
       setIsAiStreaming(false);
+    }
+
+    // Quick Nameserver shortcut (//n)
+    if (val.trim() === '//n' || val.endsWith(' //n') || val.endsWith('\n//n')) {
+      const newVal = val.replace(/(^|\s|\n)\/\/n$/, '').trim()
+      setInput(newVal)
+      setShowMacroMenu(false)
+      setShowMentionMenu(false)
+      setShowNameserverMenu(true)
+      setNameserverSelectedIndex(0)
+      loadNameservers()
+      return
     }
 
     // Quick Voice Record shortcut (//v)
@@ -3692,7 +3757,7 @@ export default function ChatThread({
       )}
 
       {/* Messages Area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-6 bg-white dark:bg-[#0b141a]">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-4 py-5 bg-white dark:bg-[#0b141a]">
         
         {messages.length >= 50 && hasMoreMessages && (
           <div className="flex justify-center mb-6">
@@ -4495,10 +4560,10 @@ export default function ChatThread({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-6 pb-6 pt-2 bg-white dark:bg-[#0b141a] relative">
+      <div className="px-4 pb-4 pt-2 bg-white dark:bg-[#0b141a] relative">
         {/* Agent Typing Bubble (Floating above composer) */}
         <div 
-          className={`absolute bottom-[calc(100%+8px)] left-6 z-40 transition-all duration-300 ease-out flex items-center ${currentTypingAgents.length > 0 ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}
+          className={`absolute bottom-[calc(100%+8px)] left-4 z-40 transition-all duration-300 ease-out flex items-center ${currentTypingAgents.length > 0 ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}
         >
           <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
             <div className="flex -space-x-1.5">
@@ -4547,7 +4612,7 @@ export default function ChatThread({
           <div className={`transition-all duration-300 ${isComposerBlocked ? 'opacity-40 blur-[2px] pointer-events-none select-none' : ''}`}>
         {/* Macro Menu */}
         {showMacroMenu && quickReplies.length > 0 && (
-          <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
             <div className="overflow-y-auto p-1">
               {filteredMacros.length === 0 ? (
                 <div className="p-3 text-center text-[13px] text-slate-500">No matching replies found.</div>
@@ -4573,7 +4638,7 @@ export default function ChatThread({
 
         {/* Mention Menu */}
         {showMentionMenu && isInternal && teamMembers.length > 0 && (
-          <div className="absolute bottom-full left-6 right-6 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
             <div className="overflow-y-auto p-1">
               {filteredMentions.length === 0 ? (
                 <div className="p-3 text-center text-[13px] text-slate-500">No team members found.</div>
