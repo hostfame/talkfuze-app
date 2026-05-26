@@ -3847,7 +3847,6 @@ export default function ChatThread({
                     {draft && (
                       <div className="mt-3.5 bg-white/60 dark:bg-[#0b141a]/15 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-3.5 animate-in fade-in duration-300">
                         <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 tracking-tight uppercase">
-                          <Sparkles size={11} className="text-amber-500" strokeWidth={2.5} />
                           <span>WhatsApp Follow-up Draft</span>
                         </div>
                         <div className="text-[12.5px] leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-normal break-words selection:bg-blue-100">
