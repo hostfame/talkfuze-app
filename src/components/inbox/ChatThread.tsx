@@ -720,8 +720,6 @@ export default function ChatThread({
   const messageInitTimeRef = useRef<Record<string, number>>({})
 
   useEffect(() => {
-    activeTimersRef.current.forEach(clearTimeout);
-    activeTimersRef.current = [];
     setLocallyDeliveredIds(new Set());
     messageInitTimeRef.current = {};
   }, [conversationId]);
@@ -2864,17 +2862,6 @@ export default function ChatThread({
             created_at: optimisticCreatedAt
           })
 
-          if (isScheduled) {
-            const timer = setTimeout(() => {
-              setLocallyDeliveredIds(prev => {
-                const next = new Set(prev);
-                next.add(tempId);
-                return next;
-              });
-            }, accumulatedDelay);
-            activeTimersRef.current.push(timer);
-          }
-          
           const metaPayload: any = {
             ...(replyMeta ? { reply_to: replyMeta } : {}),
             temp_id: tempId
@@ -2888,12 +2875,22 @@ export default function ChatThread({
             metaPayload.used_ai_draft = true;
           }
 
-          replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload, optimisticCreatedAt)
-            .then(() => markConfirmed(conversationId, tempId))
-            .catch((e: unknown) => {
-              console.error(e)
-              markFailed(conversationId, tempId)
-            })
+          const sendTimer = setTimeout(() => {
+            replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload, optimisticCreatedAt)
+              .then(() => {
+                markConfirmed(conversationId, tempId);
+                setLocallyDeliveredIds(prev => {
+                  const next = new Set(prev);
+                  next.add(tempId);
+                  return next;
+                });
+              })
+              .catch((e: unknown) => {
+                console.error(e);
+                markFailed(conversationId, tempId);
+              });
+          }, accumulatedDelay);
+          activeTimersRef.current.push(sendTimer);
         }
       }
 
