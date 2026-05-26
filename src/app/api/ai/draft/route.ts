@@ -9,7 +9,6 @@ import OpenAI from "openai";
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|amr|amar|apni|apnar|tumi|tomar|koto|dam|nibo|niben|hobe|ache|ase|diben|den|korbo|kortesi|korben|bhalo|bhalojobos|korte|chai|chaichilam|koren|bhai|bhaiya|vai|vaiya)\b/i;
 const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -23,8 +22,8 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
     // Skip image/audio attachments
     if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
-    // Bengali script or Banglish keywords found = definitive Bengali
-    if (BENGALI_REGEX.test(clean) || BANGLISH_REGEX.test(clean)) return 'Bengali';
+    // Bengali script found = definitive Bengali
+    if (BENGALI_REGEX.test(clean)) return 'Bengali';
     // Only treat as definitive English if 15+ chars (short msgs like "cpu core?" could be in either language)
     if (clean.length >= 15) return 'English';
   }
@@ -32,7 +31,7 @@ function detectConversationLanguage(messages: { sender: string; content: string 
   // 2. All customer messages were ambiguous - follow the last Agent message
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].sender === 'Agent') {
-      return (BENGALI_REGEX.test(messages[i].content) || BANGLISH_REGEX.test(messages[i].content)) ? 'Bengali' : 'English';
+      return BENGALI_REGEX.test(messages[i].content) ? 'Bengali' : 'English';
     }
   }
   
@@ -47,12 +46,13 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 function buildSystemPrompt(): string {
   return `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
 
-## LANGUAGE MATCHING (HIGHEST PRIORITY)
-Analyze the FULL conversation history to determine what language the customer is using. Reply in the SAME language:
-- Determine language from the LAST 3-4 messages (both Agent and Customer), NOT from the full history. If the Agent recently switched to English, reply in English. If the Agent recently wrote Bengali, reply in Bengali.
-- Match the language of the MOST RECENT Agent message. If the last Agent message was English, your reply MUST be English. If it was Bengali, your reply MUST be Bengali.
-- Short technical terms ("nodejs hosting", "turbo pro", "SSL", "cpu core") are language-neutral. They do NOT indicate a language switch.
-- Short replies ("ok", "yes", "send", "H", "Hlo") do NOT indicate a language switch. Check the last Agent message for language.
+## LANGUAGE PROTOCOL (CRITICAL)
+Surgically determine the customer's language from their latest message:
+1. PURE ENGLISH: If the customer writes their message in standard English (e.g., "Which hosting plan is best?"), your reply MUST be in pure, professional English.
+2. BENGALI SCRIPT: If the customer writes in Bengali script (বাংলা ফন্ট) (e.g., "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), your reply MUST be in pure Bengali script (বাংলা ফন্ট).
+3. BANGLISH: If the customer writes in Banglish (Bengali words phonetically written in English/Latin letters, e.g., "Ami new e-commerce business shuru korte chai. Kon plan nibo?", "apni ki hosting den", "amr 3 ta site ache"), this is Bengali! You MUST reply in pure Bengali script (বাংলা ফন্ট). NEVER reply in Banglish letters. It is highly unprofessional to reply using English letters to write Bengali words.
+- Short technical terms ("nodejs hosting", "turbo pro", "SSL", "cpu core") are language-neutral.
+- Short replies ("ok", "yes", "send", "H", "Hlo", "ji", "done") do NOT indicate a language switch. Follow the last substantive agent language.
 - If the customer said Salam, begin with the appropriate Salam response. If they did NOT, do NOT start with it.
 
 ## PERSONALITY & STYLE
