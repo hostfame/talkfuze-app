@@ -93,3 +93,47 @@ export async function getCallHistoryForPhone(phoneNumber: string) {
     return []
   }
 }
+
+export async function triggerAsteriskRobocall(params: {
+  invoice_id: number;
+  phone: string;
+  client_id: number;
+}) {
+  try {
+    const { invoice_id, phone, client_id } = params
+    
+    const response = await fetch(`http://103.174.51.123:5000/call`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        phone,
+        secret: "tf_worker_sec_x9k2m7pQwR4nVhJ8"
+      })
+    })
+    
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || "Failed to trigger outbound robocall")
+    }
+    
+    const result = await response.json()
+    if (!result.success) {
+      throw new Error("Failed to trigger outbound robocall daemon")
+    }
+    
+    // Log the call status as Dialing
+    await upsertUnpaidInvoiceCall({
+      invoice_id,
+      client_id,
+      status: "Dialing"
+    })
+    
+    return { success: true }
+  } catch (error: any) {
+    console.error("Failed to trigger robocall:", error)
+    return { success: false, error: error.message }
+  }
+}
+

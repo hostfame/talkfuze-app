@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Phone, Check, X, CreditCard, ChevronDown, Save, Loader2, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
-import { upsertUnpaidInvoiceCall } from "@/actions/unpaid-calls"
+import { Phone, Check, X, CreditCard, ChevronDown, Save, Loader2, Calendar, ChevronLeft, ChevronRight, Zap } from "lucide-react"
+import { upsertUnpaidInvoiceCall, triggerAsteriskRobocall } from "@/actions/unpaid-calls"
 import { useInboxStore } from "@/lib/store"
 import { format, isToday, isYesterday, addDays, subDays, parseISO } from "date-fns"
 import { DayPicker } from "react-day-picker"
@@ -60,6 +60,20 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   )
 
   const [savingId, setSavingId] = useState<number | null>(null)
+  const [robocallingId, setRobocallingId] = useState<number | null>(null)
+
+  const handleRobocall = async (invoiceId: number, phone: string, clientId: number) => {
+    setRobocallingId(invoiceId)
+    const prev = records[invoiceId] || { invoice_id: invoiceId, client_id: clientId, status: null, will_renew: null, notes: null }
+    setRecords(curr => ({ ...curr, [invoiceId]: { ...prev, status: "Dialing" } }))
+
+    const result = await triggerAsteriskRobocall({ invoice_id: invoiceId, phone, client_id: clientId })
+    if (!result.success) {
+      alert("Failed to initiate robocall: " + result.error)
+      setRecords(curr => ({ ...curr, [invoiceId]: prev }))
+    }
+    setRobocallingId(null)
+  }
   
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -293,7 +307,7 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
                 const isPhoneValid = phone && phone.replace(/\D/g, '').length >= 10
                 
                 return (
-                  <InvoiceRow key={inv.id} inv={inv} record={record} clientName={clientName} phone={phone} isPhoneValid={isPhoneValid} onUpdate={handleUpdate} onNoteBlur={handleNoteBlur} savingId={savingId} triggerDial={triggerDial} />
+                  <InvoiceRow key={inv.id} inv={inv} record={record} clientName={clientName} phone={phone} isPhoneValid={isPhoneValid} onUpdate={handleUpdate} onNoteBlur={handleNoteBlur} savingId={savingId} triggerDial={triggerDial} robocallingId={robocallingId} onRobocall={handleRobocall} />
                 )
               })
             )}
@@ -304,7 +318,7 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
   )
 }
 
-function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, onNoteBlur, savingId, triggerDial }: any) {
+function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, onNoteBlur, savingId, triggerDial, robocallingId, onRobocall }: any) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [callLogs, setCallLogs] = useState<any[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
@@ -334,23 +348,42 @@ function InvoiceRow({ inv, record, clientName, phone, isPhoneValid, onUpdate, on
     <>
       <tr className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
         <td className="px-6 py-4">
-          <button 
-            disabled={!isPhoneValid}
-            onClick={() => {
-              if (isPhoneValid) {
-                  const digits = phone.replace(/\D/g, '')
-                  triggerDial(digits)
-              }
-            }}
-            className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 ${
-              isPhoneValid 
-                ? 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white hover:shadow-md dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white' 
-                : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-600'
-            }`}
-            title={isPhoneValid ? "Call Customer" : "No Valid Phone Number"}
-          >
-            <Phone className="w-4 h-4" strokeWidth={2.5} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={!isPhoneValid}
+              onClick={() => {
+                if (isPhoneValid) {
+                    const digits = phone.replace(/\D/g, '')
+                    triggerDial(digits)
+                }
+              }}
+              className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 ${
+                isPhoneValid 
+                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white hover:shadow-md dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white' 
+                  : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-600'
+              }`}
+              title={isPhoneValid ? "Call Customer" : "No Valid Phone Number"}
+            >
+              <Phone className="w-4 h-4" strokeWidth={2.5} />
+            </button>
+
+            <button 
+              disabled={!isPhoneValid || robocallingId === inv.id}
+              onClick={() => onRobocall(inv.id, phone, inv.userid)}
+              className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-all duration-200 ${
+                isPhoneValid 
+                  ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white hover:shadow-md dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500 dark:hover:text-white' 
+                  : 'bg-slate-50 text-slate-300 cursor-not-allowed dark:bg-slate-800/50 dark:text-slate-600'
+              }`}
+              title={isPhoneValid ? "Trigger Robocall Reminder" : "No Valid Phone Number"}
+            >
+              {robocallingId === inv.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" strokeWidth={2.5} />
+              )}
+            </button>
+          </div>
         </td>
         <td className="px-6 py-4">
           <div className="font-semibold text-slate-900 dark:text-slate-100">{clientName}</div>
@@ -552,10 +585,11 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
     if (status === 'Answered') return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
     if (status === 'Not Answered') return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
     if (status === 'Unreachable') return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+    if (status === 'Dialing') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
     return 'bg-white text-slate-500 border-slate-200 dark:bg-[#111b21] dark:border-slate-700 dark:text-slate-200'
   }
 
-  const options = ['Answered', 'Not Answered', 'Unreachable', 'Clear Status']
+  const options = ['Answered', 'Not Answered', 'Unreachable', 'Dialing', 'Clear Status']
 
   return (
     <div className="relative w-full max-w-[140px]" ref={ref}>
