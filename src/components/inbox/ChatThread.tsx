@@ -1946,6 +1946,19 @@ export default function ChatThread({
 
   const processedOptimisticMessages = optimisticMessages
     .filter(om => {
+      // Filter out any optimistic message that already has a real counterpart in messages Map (by temp_id or content match)
+      const hasRealCounterpart = messages.some(m => {
+        let mMeta = m.metadata;
+        if (typeof mMeta === 'string') {
+          try { mMeta = JSON.parse(mMeta); } catch (e) {}
+        }
+        const mTempId = (mMeta as any)?.temp_id;
+        if (mTempId && mTempId === om.id) return true;
+        return m.content === om.content && m.sender_type === om.sender_type && m.created_at === om.created_at;
+      });
+
+      if (hasRealCounterpart) return false;
+
       // Filter out confirmed optimistic messages that already have a real counterpart
       if (om.status === 'confirmed') {
         return !messages.some(m => m.content === om.content && m.sender_type === om.sender_type);
@@ -2828,6 +2841,7 @@ export default function ChatThread({
             content_type: 'text',
             metadata: {
               ...(replyMeta ? { reply_to: replyMeta } : {}),
+              temp_id: tempId,
               scheduled_delay: isScheduled ? accumulatedDelay : undefined,
               chunk_delay: isScheduled ? chunkDelay : undefined,
               previous_delay: isScheduled ? previousDelay : undefined,
@@ -3395,22 +3409,29 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       <style>{`
-        @keyframes grayToBlue {
-          0% { background-color: #bfdbfe; }
-          100% { background-color: #0070f3; }
+        @keyframes pulseLightBlue {
+          0%, 100% { 
+            background-color: #bfdbfe; 
+          }
+          50% { 
+            background-color: #dbeafe; 
+          }
         }
-        @keyframes grayToBlueDark {
-          0% { background-color: #475569; }
-          100% { background-color: #005c4b; }
+        @keyframes pulseLightBlueDark {
+          0%, 100% { 
+            background-color: #334155; 
+          }
+          50% { 
+            background-color: #475569; 
+          }
         }
         .sending-anim {
-          animation-name: grayToBlue;
-          animation-timing-function: ease-in-out;
-          animation-fill-mode: both;
+          animation: pulseLightBlue 2s infinite ease-in-out;
+          color: #1e3a8a !important;
         }
         .dark .sending-anim {
-          animation-name: grayToBlueDark;
-          animation-fill-mode: both;
+          animation: pulseLightBlueDark 2s infinite ease-in-out;
+          color: #f8fafc !important;
         }
       `}</style>
       {/* Header */}
@@ -4119,37 +4140,10 @@ export default function ChatThread({
 
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
-                      style={(() => {
-                        const baseStyle = {
-                          wordBreak: 'break-word',
-                          overflowWrap: 'break-word'
-                        } as React.CSSProperties;
-
-                        if (!safeMeta?.scheduled_delay || !(msg.status === 'sending' || msg.status === 'confirmed')) {
-                          return baseStyle;
-                        }
-                        
-                        const msgId = safeMeta?.temp_id || msg.id || String(idx);
-                        if (!messageInitTimeRef.current[msgId]) {
-                          messageInitTimeRef.current[msgId] = Date.now();
-                        }
-                        const initTime = messageInitTimeRef.current[msgId];
-                        
-                        const elapsed = msg.created_at ? Math.max(0, initTime - new Date(msg.created_at).getTime()) : 0;
-                        let duration = safeMeta.scheduled_delay;
-                        let delay = -elapsed;
-                        
-                        if (safeMeta.chunk_delay !== undefined && safeMeta.previous_delay !== undefined) {
-                          duration = safeMeta.chunk_delay;
-                          delay = safeMeta.previous_delay - elapsed;
-                        }
-                        
-                        return {
-                          ...baseStyle,
-                          animationDuration: `${duration}ms`,
-                          animationDelay: `${delay}ms`
-                        };
-                      })()}
+                      style={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
                       className={`${
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
@@ -4160,8 +4154,8 @@ export default function ChatThread({
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
                               : safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
-                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim'
-                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
+                                ? 'px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-500'
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 transition-all duration-500'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
