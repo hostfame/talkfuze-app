@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink, User, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy, Server, Share2 } from "lucide-react"
+import { ChevronDown, ExternalLink, User, Users, Sparkles, MessageSquarePlus, AlignLeft, Send, Database, Loader2, Pencil, Check, X, Search, Ban, Monitor, LogIn, RefreshCw, WifiOff, Maximize2, Minimize2, Shield, Clock, Eye, Camera, PictureInPicture2, ZoomIn, ZoomOut, Wifi, Globe, Phone, PhoneCall, Mail, Copy, Server, Share2 } from "lucide-react"
 import { createPeerConnection } from "@/lib/webrtc"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect, useRef } from "react"
@@ -1474,37 +1474,64 @@ export default function ContactSidebar({
         </div>
 
         {/* Agents Joined Section */}
-        <div className="py-4 border-b border-slate-100 dark:border-[#222e35]">
-          <div 
-            className="flex justify-between items-center px-5 mb-3 cursor-pointer group"
-            onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
-          >
-            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#e9edef] flex items-center gap-2">
-              Agents Joined
-            </h3>
-            <ChevronDown size={14} className={`text-slate-400 dark:text-[#8696a0] group-hover:text-slate-600 dark:group-hover:text-[#e9edef] transition-transform duration-200 ${isAgentsExpanded ? 'rotate-180' : ''}`} />
-          </div>
-          {isAgentsExpanded && (
-            <div className="px-5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
-              {participants.length > 0 ? (
-                participants.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                      {p.user?.avatar_url ? (
-                        <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        p.user?.name?.charAt(0).toUpperCase() || 'A'
-                      )}
+        <div className="py-4 px-5 border-b border-slate-100 dark:border-[#222e35]">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button 
+              onClick={() => setIsAgentsExpanded(!isAgentsExpanded)}
+              className="w-full flex justify-between items-center text-[12.5px] font-semibold text-slate-700 dark:text-slate-350 hover:text-slate-900 dark:hover:text-slate-150 transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <Users size={13} className="text-slate-400 dark:text-slate-500" />
+                Agents Joined
+                {participants.length > 0 && (
+                  <span className="ml-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-350 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                    {participants.length}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={13} className={`transition-transform duration-200 ${isAgentsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isAgentsExpanded && (
+              <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                {participants.length > 0 ? (
+                  participants.map((p, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full border border-slate-150 dark:border-slate-800 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold overflow-hidden shrink-0 shadow-sm">
+                          {p.user?.avatar_url ? (
+                            <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            p.user?.name?.charAt(0).toUpperCase() || 'A'
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200 truncate">
+                            {p.user?.name || 'Agent'}
+                          </span>
+                          <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-mono capitalize">
+                            {p.user?.role || 'agent'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Subtle status dot or indicator */}
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shrink-0" title="Active" />
                     </div>
-                    <span className="text-[13px] text-slate-700 dark:text-[#d1d7db] truncate">{p.user?.name || 'Agent'}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-[12px] text-slate-500 dark:text-[#8696a0] italic">No agents joined.</p>
-              )}
-            </div>
-          )}
+                  ))
+                ) : (
+                  <p className="text-[11.5px] text-slate-500 dark:text-[#8696a0] italic py-1 pl-1">
+                    No agents joined.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+
 
       </>
         </div>
