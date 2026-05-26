@@ -3590,9 +3590,22 @@ export default function ChatThread({
 
                     <div className="flex justify-between items-center gap-2 mt-1">
                       <span className="opacity-70 shrink-0">AI Topic:</span>
-                      <span className="font-medium text-right truncate" title={convMeta.topic || convMeta.intent || 'Not Analyzed'}>
-                        {convMeta.topic || convMeta.intent || 'Not Analyzed'}
-                      </span>
+                      {(() => {
+                        const aiTag = conversation?.tags?.find(t => 
+                          ['sales', 'billing', 'tech', 'technical'].includes(t.toLowerCase())
+                        );
+                        let displayTopic = 'Not Analyzed';
+                        if (aiTag) {
+                          displayTopic = aiTag.toLowerCase() === 'tech' ? 'Technical' : (aiTag.charAt(0).toUpperCase() + aiTag.slice(1).toLowerCase());
+                        } else if (convMeta.topic || convMeta.intent) {
+                          displayTopic = convMeta.topic || convMeta.intent;
+                        }
+                        return (
+                          <span className="font-medium text-right truncate" title={displayTopic}>
+                            {displayTopic}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex justify-between items-center">
