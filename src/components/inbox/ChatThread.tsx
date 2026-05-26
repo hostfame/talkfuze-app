@@ -2778,15 +2778,17 @@ export default function ChatThread({
           let previousDelay = 0;
           if (!isInternal) {
             if (i > 0) {
-              // Calculate realistic delay based on length/lines (Imran's 4s/7s/10s rule)
+              // Calculate realistic delay based on length/lines (Imran's 3s/5s/7s/10s rule)
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
               
               if (lineCount <= 1) {
-                chunkDelay = 1500; // 1.5s
+                chunkDelay = 3000; // 1 line = 3s
               } else if (lineCount === 2) {
-                chunkDelay = 3000; // 3s
+                chunkDelay = 5000; // 2 lines = 5s
+              } else if (lineCount === 3 || lineCount === 4) {
+                chunkDelay = 7000; // 3 or 4 lines = 7s
               } else {
-                chunkDelay = 4500; // 4.5s
+                chunkDelay = 10000; // 5+ lines = 10s
               }
             }
             previousDelay = accumulatedDelay;
@@ -4124,13 +4126,13 @@ export default function ChatThread({
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-br-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0'
                           : msg.is_internal 
                             ? msg.sender_id === currentUser?.id
-                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0' 
-                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0'
+                              ? 'bg-amber-100/90 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800/50 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
+                              : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                             : msg.content_type === 'audio' 
-                              ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0' 
+                              ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
                               : safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
-                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 sending-anim'
-                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0'
+                                ? 'bg-slate-400 dark:bg-slate-600 text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim'
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
@@ -4297,8 +4299,8 @@ export default function ChatThread({
                         (msg.status === 'recalled' || msg.status === 'deleted')
                           ? 'bg-slate-100/60 dark:bg-[#202c33]/40 text-slate-400 dark:text-[#8696a0] border border-dashed border-slate-200 dark:border-[#222e35]/60 px-4 py-2.5 rounded-2xl rounded-bl-sm text-[13.5px] italic flex items-center gap-1.5 select-none min-w-0 cursor-context-menu'
                           : msg.content_type === 'audio' 
-                            ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 cursor-context-menu' 
-                            : 'bg-slate-100 dark:bg-[#202c33] px-4 py-2.5 text-slate-900 dark:text-[#e9edef] rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-all font-normal min-w-0 cursor-context-menu'
+                            ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu' 
+                            : 'bg-slate-100 dark:bg-[#202c33] px-4 py-2.5 text-slate-900 dark:text-[#e9edef] rounded-2xl rounded-bl-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 cursor-context-menu'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
