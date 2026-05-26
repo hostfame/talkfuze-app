@@ -2,8 +2,6 @@
 import knowledge from './hostnin-knowledge.json';
 import { getApprovedExamples } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import fs from "fs";
-import path from "path";
 
 // ============================================================
 // CONFIGURATION DYNAMIC LOADERS
@@ -12,6 +10,8 @@ import path from "path";
 
 function loadSalesFunnel(): string {
   try {
+    const fs = require("fs");
+    const path = require("path");
     const filePath = path.join(process.cwd(), "src/data/sales-funnel.md");
     return fs.readFileSync(filePath, "utf8");
   } catch (err) {
@@ -22,6 +22,8 @@ function loadSalesFunnel(): string {
 
 function loadBanglaStyle(): string {
   try {
+    const fs = require("fs");
+    const path = require("path");
     const filePath = path.join(process.cwd(), "src/data/bangla-style.md");
     return fs.readFileSync(filePath, "utf8");
   } catch (err) {
@@ -111,6 +113,10 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const salesFunnelContent = hasSalesIntent ? loadSalesFunnel() : "";
     const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
 
+    const complianceDirective = detectedLanguage === 'English'
+      ? "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in English. You MUST draft your response STRICTLY in professional, concise English. If any retrieved RAG details or pricing context are in Bengali, you MUST translate them to English (e.g. convert '১৬৫০ টাকা' to '1650 TK' or '1,650 BDT'). Output absolutely ZERO Bengali script."
+      : "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in Bengali or Banglish. You MUST draft your response STRICTLY in pure Bengali script (বাংলা ফন্ট). Output absolutely ZERO transliterated Banglish letters.";
+
     const staticSystemPrompt = `${complianceDirective}
 
 You are a sharp, senior customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You are concise, highly knowledgeable, and converse like a real human—never mechanical, never using conversational filler.
@@ -125,6 +131,8 @@ ${banglaStyleContent ? `\n\n${banglaStyleContent}` : ""}
 
 Hostnin Knowledge Base:
 ${JSON.stringify(knowledge)}
+
+Output ONLY the draft message. No quotes, no prefix, no labels.`;
 
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
  
