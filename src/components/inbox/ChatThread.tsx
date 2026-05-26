@@ -360,10 +360,13 @@ const CustomAudioPlayer = ({ url, type, messageId, transcript, fullWidth = false
 
 function formatWhatsAppMarkdown(text: string) {
   if (!text) return text;
-  const regex = /(\*[^*]+\*|_[^_]+_)/g;
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g;
   const parts = text.split(regex);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+    }
     if (part.startsWith('*') && part.endsWith('*')) {
       return <strong key={i} className="font-bold">{part.slice(1, -1)}</strong>;
     }

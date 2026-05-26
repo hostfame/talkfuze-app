@@ -249,7 +249,7 @@ export default function InboxPage() {
               }
               
               setConversations(next);
-           } else {
+           } else if (!isPageView) {
               // It's a brand new conversation, or an archived one being replied to
               if (isMessenger) {
                 // Just refresh archived quietly
