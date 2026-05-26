@@ -447,7 +447,7 @@ async function upsertContact(jid, name) {
 // Upsert conversation
 // ─────────────────────────────────────────────
 
-async function upsertConversation(contactId, channelId) {
+async function upsertConversation(contactId, channelId, createdAt) {
   const { data: existing } = await supabase
     .from('conversations')
     .select('id, status')
@@ -463,7 +463,7 @@ async function upsertConversation(contactId, channelId) {
       // Reopen the conversation if it was closed
       await supabase
         .from('conversations')
-        .update({ status: 'open', last_message_at: new Date().toISOString() })
+        .update({ status: 'open', last_message_at: createdAt || new Date().toISOString() })
         .eq('id', existing.id);
     }
     return existing.id;
@@ -473,7 +473,8 @@ async function upsertConversation(contactId, channelId) {
     org_id: ORG_ID,
     contact_id: contactId,
     channel_id: channelId,
-    status: 'open'
+    status: 'open',
+    last_message_at: createdAt || new Date().toISOString()
   }).select('id').single();
 
   return created.id;
@@ -598,6 +599,20 @@ async function processMessage(msg) {
     const msgId = msg.key?.id;
     const fromMe = isFromMe(msg);
 
+    // Get actual message timestamp from WhatsApp
+    let createdAt = new Date().toISOString();
+    if (msg.messageTimestamp) {
+      const ts = Number(msg.messageTimestamp);
+      if (!isNaN(ts) && ts > 0) {
+        createdAt = new Date(ts * 1000).toISOString();
+      }
+    } else if (msg.timestamp) {
+      const ts = Number(msg.timestamp);
+      if (!isNaN(ts) && ts > 0) {
+        createdAt = new Date(ts * 1000).toISOString();
+      }
+    }
+
     // Drop incoming text messages with empty or blank content (junk, reaction stub noise)
     if (contentType === 'text' && !text.trim()) {
       console.log(`[MSG] Skipping empty text message: ${msgId}`);
@@ -621,7 +636,7 @@ async function processMessage(msg) {
 
     const channelId = await getOrCreateChannel();
     const contactId = await upsertContact(conversationJid, (isGroup || fromMe) ? null : senderName);
-    const conversationId = await upsertConversation(contactId, channelId);
+    const conversationId = await upsertConversation(contactId, channelId, createdAt);
 
     // Smart Outbound WhatsApp Race Condition Deduplication
     if (fromMe) {
@@ -728,7 +743,8 @@ async function processMessage(msg) {
       content: text || (contentType !== 'text' ? mediaPlaceholder(contentType) : ''),
       content_type: contentType,
       metadata,
-      status: 'delivered'
+      status: 'delivered',
+      created_at: createdAt
     });
 
     // Update conversation last_message_at and strip alert tags if customer replies
@@ -742,18 +758,18 @@ async function processMessage(msg) {
         const cleanedTags = convData.tags.filter(t => t !== 'alert' && t !== 'automation');
         await supabase.from('conversations')
           .update({ 
-            last_message_at: new Date().toISOString(),
+            last_message_at: createdAt,
             tags: cleanedTags
           })
           .eq('id', conversationId);
       } else {
         await supabase.from('conversations')
-          .update({ last_message_at: new Date().toISOString() })
+          .update({ last_message_at: createdAt })
           .eq('id', conversationId);
       }
     } else {
       await supabase.from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
+        .update({ last_message_at: createdAt })
         .eq('id', conversationId);
     }
 
@@ -779,7 +795,16 @@ async function handleIncomingWhatsAppCall(callData) {
 
   const channelId = await getOrCreateChannel();
   const contactId = await upsertContact(fromJid, null);
-  const conversationId = await upsertConversation(contactId, channelId);
+
+  let callCreatedAt = new Date().toISOString();
+  if (callData.timestamp) {
+    const ts = Number(callData.timestamp);
+    if (!isNaN(ts) && ts > 0) {
+      callCreatedAt = new Date(ts * 1000).toISOString();
+    }
+  }
+
+  const conversationId = await upsertConversation(contactId, channelId, callCreatedAt);
 
   const callMsgId = `wa-call-${callData.id}`;
   const { data: existingMsg } = await supabase
@@ -808,7 +833,8 @@ async function handleIncomingWhatsAppCall(callData) {
       whatsapp_call_id: callData.id,
       timestamp: callData.timestamp
     },
-    status: 'delivered'
+    status: 'delivered',
+    created_at: callCreatedAt
   });
 
   const { data: conv } = await supabase.from('conversations')
@@ -821,7 +847,7 @@ async function handleIncomingWhatsAppCall(callData) {
   
   await supabase.from('conversations')
     .update({
-      last_message_at: new Date().toISOString(),
+      last_message_at: callCreatedAt,
       tags: updatedTags
     })
     .eq('id', conversationId);
@@ -854,7 +880,8 @@ async function handleIncomingWhatsAppCall(callData) {
         metadata: {
           is_whatsapp_autoreply: true
         },
-        status: 'sent'
+        status: 'sent',
+        created_at: new Date(Number(callData.timestamp) * 1000 + 1000).toISOString()
       });
 
       console.log(`[CALL-AUTOREPLY] Automated reply dispatched successfully!`);
