@@ -210,7 +210,7 @@ NEGATIVE CONSTRAINTS (FORBIDDEN PHRASES & ACTIONS):
 
 export async function POST(req: Request) {
   try {
-    const { contextMessages, contactName, orgId, instruction, isTranslation, imageUrl, crmContext } = await req.json();
+    const { contextMessages, contactName, orgId, instruction, isTranslation, imageUrl, imageDistance, crmContext } = await req.json();
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
@@ -445,7 +445,16 @@ ${cappedContextMessages}
 
 ${imageBlock ? `\nCRITICAL MULTIMODAL/VISION INSTRUCTION:
 The customer has uploaded an image/screenshot (attached to this message). 
-You MUST analyze the contents of this image carefully. 
+This image was sent exactly ${imageDistance ?? 0} messages ago in the chat history.
+
+${(imageDistance !== null && imageDistance >= 2) ? `
+IMPORTANT CONTEXT: This is a HISTORICAL image sent earlier in the conversation (not the immediate last message). 
+- Do NOT start your reply by reviewing or acknowledging this image unless the customer's latest message or the agent's instructions directly ask about it.
+- Focus primarily on answering the customer's LATEST text messages. Use the image ONLY as supportive reference/background context if the current discussion is still related to it.
+- If the conversation has moved on to a different topic, completely ignore the image.` : `
+IMPORTANT CONTEXT: This is a RECENT image that the customer just sent. 
+- You MUST analyze the contents of this image carefully and prioritize addressing it in your response.
+`}
 - If it is a pricing table, plan comparison, or website screenshot: Answer their query based on the visible plans, features, and prices.
 - If it is an error log, CPGuard notification, or cPanel screenshot: Explain the technical issue shown and how it will be resolved.
 - If it is a payment receipt: Analyze the SPECIFIC image uploaded right now. Do not assume it is the same payment method used earlier in the chat. Acknowledge the exact payment method (e.g., bKash, SSLCommerz, Bank Transfer) and amount visibly shown IN THIS IMAGE. DO NOT assume or state it is a 'Bank Transfer' unless explicitly written on this new receipt.
