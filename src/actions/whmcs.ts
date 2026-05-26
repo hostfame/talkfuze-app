@@ -551,14 +551,12 @@ export async function fetchAllWhmcsUnpaidInvoices() {
 
 export async function fetchClientNameservers(phoneOrEmail: string) {
   try {
-    const client = await fetchWhmcsClient(phoneOrEmail)
-    if (!client || !client.id) {
+    const { getClientDashboardDataByPhoneOrEmail } = await import('@/lib/whmcs')
+    const dashboardRes = await getClientDashboardDataByPhoneOrEmail(phoneOrEmail)
+    if (dashboardRes.result !== 'success' || !dashboardRes.services) {
       return []
     }
-
-    const { getClientsProducts } = await import('@/lib/whmcs')
-    const productsRes = await getClientsProducts(client.id, 0, 100)
-    const products = productsRes.products || []
+    const products = dashboardRes.services.products || []
 
     const SERVER_NS_MAP: Record<string, { ns1: string, ns2: string, ns3?: string, ns4?: string }> = {
       "Titan": { ns1: "draco.balancedserver.com", ns2: "luna.balancedserver.com" },
