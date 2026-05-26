@@ -692,6 +692,7 @@ export default function ChatThread({
   const avatarColor = getAvatarColor(contactName)
   const channelObj = firstRelation(conversation?.channel) || firstRelation(conversation?.channels)
   const isWebWidget = channelObj?.type === 'widget'
+  const isWhatsApp = channelObj?.type === 'whatsapp'
 
   // Voice Call Agent-Side States
   const pendingIncomingCall = useInboxStore(state => state.pendingIncomingCall)
@@ -1937,7 +1938,7 @@ export default function ChatThread({
       if (typeof safeMeta === 'string') {
         try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
       }
-      return !(safeMeta as any)?.scheduled_delay;
+      return !isWhatsApp || !(safeMeta as any)?.scheduled_delay;
     });
     if (nonScheduledMessages.length > 0) {
       maxRealTime = Math.max(...nonScheduledMessages.map(m => new Date(m.created_at).getTime()));
@@ -1971,7 +1972,7 @@ export default function ChatThread({
       if (typeof safeMeta === 'string') {
         try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
       }
-      const isScheduled = !!(safeMeta as any)?.scheduled_delay;
+      const isScheduled = isWhatsApp && !!(safeMeta as any)?.scheduled_delay;
       // Ensure optimistic time is strictly greater than the latest real message to prevent bouncing backwards
       // BUT for scheduled/delayed chunks, their timestamps are already future-scheduled, so we preserve them to maintain correct chunk order!
       const adjustedTime = isScheduled ? originalTime : Math.max(originalTime, maxRealTime + 1 + index);
@@ -2782,7 +2783,7 @@ export default function ChatThread({
         let accumulatedDelay = 0;
         
         // Find existing max pending delay in queue to append these new chunks correctly
-        if (!isInternal) {
+        if (!isInternal && isWhatsApp) {
           const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
           let maxPendingDelay = 0;
           currentStoreMsgs.forEach(m => {
@@ -2809,7 +2810,7 @@ export default function ChatThread({
           
           let chunkDelay = 0;
           let previousDelay = 0;
-          if (!isInternal) {
+          if (!isInternal && isWhatsApp) {
             if (i > 0) {
               // Calculate realistic delay based on length/lines (Imran's 3s/5s/7s/10s rule)
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
@@ -4153,7 +4154,7 @@ export default function ChatThread({
                               : 'bg-yellow-50/80 dark:bg-yellow-950/25 text-yellow-800 dark:text-yellow-200 border border-yellow-200/50 dark:border-yellow-900/20 px-4 py-2.5 shadow-sm rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0'
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
-                              : safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
+                              : isWhatsApp && safeMeta?.scheduled_delay && (msg.status === 'sending' || msg.status === 'confirmed')
                                 ? 'px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-500'
                                 : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 transition-all duration-500'
                       }`}
