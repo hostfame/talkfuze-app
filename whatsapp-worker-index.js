@@ -1344,7 +1344,8 @@ async function sendPendingOutboundMessages() {
       .in('sender_type', ['agent', 'ai'])
       .is('platform_message_id', null)
       .is('is_internal', false)
-      .gt('created_at', oneHourAgo);
+      .gt('created_at', oneHourAgo)
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('[SELF-HEAL] Failed to fetch pending messages:', error.message);
