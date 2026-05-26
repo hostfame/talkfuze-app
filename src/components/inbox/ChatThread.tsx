@@ -3429,29 +3429,16 @@ export default function ChatThread({
   return (
     <div className="flex-1 flex flex-col h-full relative bg-[#F9FAFB] dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-10 overflow-hidden">
       <style>{`
-        @keyframes pulseLightBlue {
+        @keyframes pulseOpacity {
           0%, 100% { 
-            background-color: #bfdbfe; 
+            opacity: 0.5; 
           }
           50% { 
-            background-color: #dbeafe; 
-          }
-        }
-        @keyframes pulseLightBlueDark {
-          0%, 100% { 
-            background-color: #334155; 
-          }
-          50% { 
-            background-color: #475569; 
+            opacity: 0.8; 
           }
         }
         .sending-anim {
-          animation: pulseLightBlue 2s infinite ease-in-out;
-          color: #1e3a8a !important;
-        }
-        .dark .sending-anim {
-          animation: pulseLightBlueDark 2s infinite ease-in-out;
-          color: #f8fafc !important;
+          animation: pulseOpacity 2s infinite ease-in-out;
         }
       `}</style>
       {/* Header */}
@@ -4188,8 +4175,8 @@ export default function ChatThread({
                             : msg.content_type === 'audio' 
                               ? 'bg-transparent text-slate-900 dark:text-[#e9edef] p-0 shadow-none rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0' 
                               : isPendingDelay
-                                ? 'bg-[#bfdbfe] dark:bg-[#334155] text-[#1e3a8a] dark:text-[#f8fafc] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-500'
-                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 transition-all duration-500'
+                                ? 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 sending-anim transition-all duration-700'
+                                : 'bg-[#0070f3] dark:bg-[#005c4b] text-white dark:text-[#e9edef] px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-relaxed whitespace-pre-wrap break-words font-normal min-w-0 transition-all duration-700'
                       }`}
                     >
                       {(msg.status === 'recalled' || msg.status === 'deleted') ? (
