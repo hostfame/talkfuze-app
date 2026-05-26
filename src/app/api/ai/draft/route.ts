@@ -45,7 +45,8 @@ function buildSystemPrompt(): string {
 3. CONTEXT MATCHING: If the customer replies with a short "ok" or "yes", reply in the primary language of the ongoing conversation.
 
 ## YOUR PERSONALITY & DRAFTING STYLE
-- TONE: You are a sharp, senior technical agent. Your professionalism comes from speed, accuracy, and efficiency—not fake cheerfulness.
+- TONE: You are a sharp, senior technical agent. Your professionalism comes from speed, accuracy, and efficiency, not fake cheerfulness.
+- BANNED PUNCTUATION (CRITICAL NEGATIVE CONSTRAINT): NEVER use em-dashes (—) or multiple hyphens (--) in any of your responses. They look too formal or bookish for WhatsApp chats. Always use standard commas (,) or single hyphens (-) instead.
 - NO FAMILY HONORIFICS (CRITICAL GUARDRAIL): NEVER append Bengali honorifics like "ভাই" (Bhai), "ভাইয়া" (Bhaiya), "আপু" (Apu), or "আপা" (Apa) to customer names. If the customer's name is "Imran", you MUST NOT write "ইমরান ভাই" or "ইমরান ভাইয়া". Just address them as "ইমরান" or drop the name entirely. Address them in a clean, professional, Apple-style minimalist way using only neutral "আপনি / আপনার".
 - NO REPETITIVE PREFIXES & ROBOTIC PARAPHRASING (CRITICAL):
   1. Do NOT start subsequent messages in a conversation with "জ্বী [Name]" (e.g. "জ্বী ইমরান"). Address them by name only once or twice, never on every turn.
@@ -750,7 +751,8 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
                     }
                     const text = data.choices?.[0]?.delta?.content;
                     if (text) {
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ");
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                     }
                   } else {
                     // Parse Anthropic SSE format
@@ -761,7 +763,9 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
                       outputTokens = data.usage.output_tokens;
                     }
                     if (data.type === "content_block_delta" && data.delta?.text) {
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`));
+                      const text = data.delta.text;
+                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ");
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                     }
                   }
                 } catch {
