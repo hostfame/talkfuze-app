@@ -73,18 +73,25 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     }
     
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
-    const lastCustomerText = customerMessages.slice(-4).map(m => m.content).join(' ').toLowerCase();
-
-    // 1. Detect language first
-    const customerFullText = lastCustomerText;
-    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
-    const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+    
+    // 1. Detect language first (prioritize latest customer message, fallback to history only if extremely short/greeting)
+    let latestCustomerText = customerMessages.length > 0 ? customerMessages[customerMessages.length - 1].content : '';
+    let textToDetect = latestCustomerText.trim().toLowerCase();
+    
+    if (textToDetect.length < 15 || /^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm)$/i.test(textToDetect)) {
+      textToDetect = customerMessages.slice(-4).map(m => m.content).join(' ').toLowerCase();
+    }
+    
+    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(textToDetect);
+    const words = textToDetect.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
     const nonGreetingWords = words.filter(w => w && !detectSalam(w));
-    const isBenglish = nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
+    const isBenglish = nonGreetingWords.length === 0
+      ? detectSalam(textToDetect)
+      : nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
     const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
 
     // 2. Greeting Rules based on detected language
-    const hasCustomerSaidSalam = detectSalam(lastCustomerText);
+    const hasCustomerSaidSalam = detectSalam(latestCustomerText);
     const greetingRule = hasCustomerSaidSalam 
       ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam. You MUST begin your reply with the exact response "${strictLanguage === 'Bengali' ? 'ওয়ালাইকুম আসসালাম।' : 'Walaikum assalam!'}" in the very first line of your message before anything else.`
       : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam. You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or "Walaikum assalam". Start your reply directly, warm, and naturally.`;
