@@ -56,12 +56,24 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       'ebong', 'kintu'
     ]);
 
-    // Extract the customer's last 4 messages to determine the language
-    const customerLines = contextMessages.split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('[Agent]') && !line.startsWith('[System]'));
+    // Robust parsing of context messages to handle multiline entries correctly
+    let currentSender = 'System';
+    const parsedMessages: { sender: string; content: string }[] = [];
     
-    const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
+    for (const line of contextMessages.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const match = trimmed.match(/^\[([^\]]+)\]:\s*(.*)$/);
+      if (match) {
+        currentSender = match[1];
+        parsedMessages.push({ sender: currentSender, content: match[2] });
+      } else if (parsedMessages.length > 0) {
+        parsedMessages[parsedMessages.length - 1].content += '\n' + trimmed;
+      }
+    }
+    
+    const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
+    const lastCustomerText = customerMessages.slice(-4).map(m => m.content).join(' ').toLowerCase();
 
     // 1. Detect language first
     const customerFullText = lastCustomerText;
@@ -79,10 +91,9 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
 
     // Extract customer's name from the context for personalized greetings
     let customerFirstName = '';
-    for (const line of customerLines) {
-      const nameMatch = line.match(/^\[([^\]]+)\]:/);
-      if (nameMatch && !['agent', 'system', 'website visitor'].some(s => nameMatch[1].toLowerCase().startsWith(s))) {
-        const fullName = nameMatch[1].trim();
+    for (const msg of customerMessages) {
+      if (msg.sender && !['agent', 'system', 'website visitor'].some(s => msg.sender.toLowerCase().startsWith(s))) {
+        const fullName = msg.sender.trim();
         // Extract first name only (e.g. "MD Mahadi Hassan" -> "Mahadi", "Sarwar Alam" -> "Sarwar")
         const parts = fullName.split(/\s+/).filter(p => !['md', 'md.', 'mr', 'mr.', 'mrs', 'mrs.', 'ms', 'ms.'].includes(p.toLowerCase()));
         customerFirstName = parts[0] || fullName.split(/\s+/)[0] || '';
@@ -93,9 +104,10 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? `\n\nPERSONALIZATION: The customer's name is "${customerFirstName}". When greeting, use their name naturally (e.g. "Hey ${customerFirstName}!" or "Hi ${customerFirstName}," in English, or "হ্যালো ${customerFirstName}," in Bengali). NEVER write generic greetings like "Hey there" or "Dear customer" when you know the name.`
       : '';
 
-    // Extract the customer's LATEST message exactly, stripping the name prefix (e.g. "[Name]: " -> "")
-    const lastCustomerLine = customerLines[customerLines.length - 1] || '';
-    const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
+    // Extract the customer's LATEST message exactly
+    const latestCustomerMessageCleaned = customerMessages.length > 0
+      ? customerMessages[customerMessages.length - 1].content.trim()
+      : '';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
 

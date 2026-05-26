@@ -252,26 +252,36 @@ export async function POST(req: Request) {
       return null;
     })();
 
-    // 1. Detect language using CONVERSATION CONTEXT, not just last message
-    // This prevents "Yes"/"Ok" from switching a Bengali conversation to English
-    const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
+    // Robust parsing of context messages to handle multiline entries correctly
+    let currentSender = 'System';
+    const parsedMessages: { sender: string; content: string }[] = [];
     
-    // Filter to customer-only lines
-    const customerLines = conversationLines.filter((line: string) => !line.startsWith('[Agent]') && !line.startsWith('[System]'));
+    for (const line of contextMessages.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const match = trimmed.match(/^\[([^\]]+)\]:\s*(.*)$/);
+      if (match) {
+        currentSender = match[1];
+        parsedMessages.push({ sender: currentSender, content: match[2] });
+      } else if (parsedMessages.length > 0) {
+        parsedMessages[parsedMessages.length - 1].content += '\n' + trimmed;
+      }
+    }
+    
+    const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
     
     // Extract all consecutive customer messages at the end of the conversation
     const latestCustomerMessages = [];
-    for (let i = conversationLines.length - 1; i >= 0; i--) {
-      const line = conversationLines[i];
-      if (line.startsWith('[Agent]') || line.startsWith('[System]')) {
+    for (let i = parsedMessages.length - 1; i >= 0; i--) {
+      const m = parsedMessages[i];
+      if (m.sender === 'Agent' || m.sender === 'System') {
         break;
       }
-      latestCustomerMessages.unshift(line.replace(/^\[[^\]]+\]:\s*/, '').trim());
+      latestCustomerMessages.unshift(m.content);
     }
     // Fallback if empty (e.g., agent generating draft after their own message)
-    if (latestCustomerMessages.length === 0 && customerLines.length > 0) {
-      const lastLine = customerLines[customerLines.length - 1];
-      latestCustomerMessages.push(lastLine.replace(/^\[[^\]]+\]:\s*/, '').trim());
+    if (latestCustomerMessages.length === 0 && customerMessages.length > 0) {
+      latestCustomerMessages.push(customerMessages[customerMessages.length - 1].content);
     }
     const latestCustomerMessageCleaned = latestCustomerMessages.join('\n');
 
@@ -286,7 +296,7 @@ export async function POST(req: Request) {
       strictLanguage = instructionIsBengali || instructionIsBenglish ? 'Bengali' : 'English';
     } else {
       // Auto mode: Fall back to detecting the customer's conversation language
-      const customerFullText = customerLines.slice(-10).join(' ').toLowerCase();
+      const customerFullText = customerMessages.slice(-10).map(m => m.content).join(' ').toLowerCase();
       const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
       const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
       const nonGreetingWords = words.filter((w: string) => w && !detectSalam(w));
@@ -300,6 +310,7 @@ export async function POST(req: Request) {
       : '\nCRITICAL LANGUAGE OVERRIDE: Based on algorithmic language detection, the target language is strictly ENGLISH. You MUST reply ONLY in English. Do NOT write any Bengali whatsoever.';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
+    const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
 
     // 2. Build dynamic knowledge context (intent-based, ~1-3k tokens vs old 26k)
