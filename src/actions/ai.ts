@@ -63,10 +63,19 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     
     const lastCustomerText = customerLines.slice(-4).join(' ').toLowerCase();
 
+    // 1. Detect language first
+    const customerFullText = lastCustomerText;
+    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
+    const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+    const nonGreetingWords = words.filter(w => w && !detectSalam(w));
+    const isBenglish = nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
+    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
+
+    // 2. Greeting Rules based on detected language
     const hasCustomerSaidSalam = detectSalam(lastCustomerText);
     const greetingRule = hasCustomerSaidSalam 
-      ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST begin your reply with the exact Bengali response "ওয়ালাইকুম আসসালাম।" (and unto you peace) in the very first line of your message before anything else.`
-      : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam ("Assalamu Alaikum", "সালাম", or similar). You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or any religious greeting. Start your reply directly, warm, and naturally (e.g. starting directly with "জ্বী, ..." or "হ্যালো, ..." or another helpful response).`;
+      ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam. You MUST begin your reply with the exact response "${strictLanguage === 'Bengali' ? 'ওয়ালাইকুম আসসালাম।' : 'Walaikum assalam!'}" in the very first line of your message before anything else.`
+      : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam. You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or "Walaikum assalam". Start your reply directly, warm, and naturally.`;
 
     // Extract customer's name from the context for personalized greetings
     let customerFirstName = '';
@@ -84,19 +93,9 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? `\n\nPERSONALIZATION: The customer's name is "${customerFirstName}". When greeting, use their name naturally (e.g. "Hey ${customerFirstName}!" or "Hi ${customerFirstName}," in English, or "হ্যালো ${customerFirstName}," in Bengali). NEVER write generic greetings like "Hey there" or "Dear customer" when you know the name.`
       : '';
 
-
     // Extract the customer's LATEST message exactly, stripping the name prefix (e.g. "[Name]: " -> "")
     const lastCustomerLine = customerLines[customerLines.length - 1] || '';
     const latestCustomerMessageCleaned = lastCustomerLine.replace(/^\[[^\]]+\]:\s*/, '').trim();
-
-    const customerFullText = customerLines.slice(-4).join(' ').toLowerCase();
-    const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
-    const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
-    const nonGreetingWords = words.filter(w => w && !detectSalam(w));
-    const isBenglish = nonGreetingWords.length === 0
-      ? detectSalam(customerFullText)
-      : nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
-    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
 
     const staticSystemPrompt = `You are a sharp, highly experienced senior customer support agent at Hostnin (a premium web hosting company in Bangladesh). You know your product inside-out, you genuinely care about helping customers succeed, and you talk like a real human, not a bot.
 

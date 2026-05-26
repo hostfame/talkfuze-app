@@ -316,7 +316,12 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-    userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"${languageOverride}
+      const hasCustomerSaidSalam = detectSalam(latestCustomerMessageCleaned);
+      const greetingRule = hasCustomerSaidSalam
+        ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam. You MUST begin your reply with the exact response "${strictLanguage === 'Bengali' ? 'ওয়ালাইকুম আসসালাম।' : 'Walaikum assalam!'}" in the very first line of your message before anything else.`
+        : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam. You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or "Walaikum assalam". Start your reply directly, warm, and naturally.`;
+
+      userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"${languageOverride}${greetingRule}
     
 FORMATTING & BREVITY:
 - CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
