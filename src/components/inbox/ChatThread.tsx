@@ -2139,7 +2139,7 @@ export default function ChatThread({
 
     // Quick Nameserver shortcut (//ns)
     if (val.trim() === '//ns' || val.endsWith(' //ns') || val.endsWith('\n//ns')) {
-      const newVal = val.replace(/(^|\s|\n)\/\/ns$/, '').trim()
+      const newVal = val.replace(/\/\/ns$/, '')
       setInput(newVal)
       setShowMacroMenu(false)
       setShowMentionMenu(false)
