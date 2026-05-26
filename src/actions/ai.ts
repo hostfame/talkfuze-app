@@ -5,33 +5,11 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
-const ENGLISH_STOPWORDS = /\b(the|a|an|and|or|but|if|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|should|now|i|you|he|she|it|we|they|me|him|her|us|them|my|your|his|its|our|their|mine|yours|hers|ours|theirs|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|would|could|want|like|go|get|make|take)\b/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // 1. If anyone (Agent or Customer) has used Bengali script in the conversation, established language is Bengali
-  const hasBengaliScript = messages.some(m => BENGALI_REGEX.test(m.content));
-  if (hasBengaliScript) {
-    return 'Bengali';
-  }
-
-  // 2. Scan customer messages
-  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
-  if (customerMessages.length === 0) return 'English';
-
-  const latestCustomer = customerMessages[customerMessages.length - 1].content.trim();
-  if (AMBIGUOUS_MSG.test(latestCustomer)) {
-    // If latest is ambiguous, check prior Agent language
-    const lastAgent = messages.slice().reverse().find(m => m.sender === 'Agent');
-    if (lastAgent && BENGALI_REGEX.test(lastAgent.content)) {
-      return 'Bengali';
-    }
-    return 'English';
-  }
-
-  // 3. Detect standard English: if it doesn't contain standard English stopwords, it is Bengali/Banglish
-  const hasEnglishStopwords = ENGLISH_STOPWORDS.test(latestCustomer);
-  return hasEnglishStopwords ? 'English' : 'Bengali';
+  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
+  // Otherwise default to English. No hardcoded lists are used.
+  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
 }
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {

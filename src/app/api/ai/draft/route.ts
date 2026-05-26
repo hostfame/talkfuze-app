@@ -9,33 +9,11 @@ import OpenAI from "openai";
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
-const ENGLISH_STOPWORDS = /\b(the|a|an|and|or|but|if|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|should|now|i|you|he|she|it|we|they|me|him|her|us|them|my|your|his|its|our|their|mine|yours|hers|ours|theirs|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|would|could|want|like|go|get|make|take)\b/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // 1. If anyone (Agent or Customer) has used Bengali script in the conversation, established language is Bengali
-  const hasBengaliScript = messages.some(m => BENGALI_REGEX.test(m.content));
-  if (hasBengaliScript) {
-    return 'Bengali';
-  }
-
-  // 2. Scan customer messages
-  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
-  if (customerMessages.length === 0) return 'English';
-
-  const latestCustomer = customerMessages[customerMessages.length - 1].content.trim();
-  if (AMBIGUOUS_MSG.test(latestCustomer)) {
-    // If latest is ambiguous, check prior Agent language
-    const lastAgent = messages.slice().reverse().find(m => m.sender === 'Agent');
-    if (lastAgent && BENGALI_REGEX.test(lastAgent.content)) {
-      return 'Bengali';
-    }
-    return 'English';
-  }
-
-  // 3. Detect standard English: if it doesn't contain standard English stopwords, it is Bengali/Banglish
-  const hasEnglishStopwords = ENGLISH_STOPWORDS.test(latestCustomer);
-  return hasEnglishStopwords ? 'English' : 'Bengali';
+  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
+  // Otherwise default to English. No hardcoded lists are used.
+  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
 }
 
 // ============================================================
@@ -43,22 +21,25 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 // Personality + guardrails + Bengali vocab. Situational rules via RAG.
 // ============================================================
 
-function buildSystemPrompt(language: 'Bengali' | 'English'): string {
-  const complianceDirective = language === 'English'
-    ? "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in English. You MUST draft your response STRICTLY in professional, concise English. If any retrieved RAG details or pricing context are in Bengali, you MUST translate them to English (e.g. convert '১৬৫০ টাকা' to '1650 TK' or '1,650 BDT'). Output absolutely ZERO Bengali script."
-    : "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in Bengali or Banglish. You MUST draft your response STRICTLY in pure Bengali script (বাংলা ফন্ট). Output absolutely ZERO transliterated Banglish letters.";
+function buildSystemPrompt(): string {
+  return `You are a sharp, senior customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You are concise, highly knowledgeable, and converse like a real human—never mechanical, never using conversational filler.
 
-  return `${complianceDirective}
+## CRITICAL FORMAT RULE:
+You MUST begin your response with exactly one classification tag on the very first line:
+'[Language: Bengali]' if replying in Bengali script.
+'[Language: English]' if replying in English.
 
-You are a sharp, senior customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You are concise, highly knowledgeable, and converse like a real human—never mechanical, never using conversational filler.
+Then output a blank line, and then start your actual draft response.
+
+## CRITICAL LANGUAGE RULES:
+Surgically match the customer's language natively:
+- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), you MUST output '[Language: English]' on the first line and reply in concise, professional English. You MUST translate any Bengali database/RAG info to English. Output absolutely ZERO Bengali script.
+- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), you MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট).
+- BANGLISH: If the customer writes in Banglish (Bengali words written phonetically in Latin letters, e.g. "Ami new e-commerce shuru korte chai. Kon plan nibo?"), this is Bengali! You MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট). Never reply in transliterated Banglish letters.
 
 ## 4 CORE CONVERSATIONAL PILLARS (ALWAYS ENFORCED)
 
-### 1. DYNAMIC LANGUAGE MIRRORING (English or Bengali Script Only)
-Surgically match the customer's language natively:
-- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), reply in concise, professional English. You MUST translate any Bengali matched database/RAG info to English. NEVER output Bengali script (বাংলা ফন্ট) in your response if the customer is speaking in English.
-- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), reply in pure Bengali script (বাংলা ফন্ট).
-- BANGLISH: If the customer writes in Banglish (Bengali words phonetically written in Latin letters, e.g. "Ami new e-commerce shuru korte chai. Kon plan nibo?"), this is Bengali! You MUST reply in pure Bengali script (বাংলা ফন্ট). NEVER reply in Banglish script (using Latin letters to spell Bengali words) as it looks highly unprofessional.
+### 1. DYNAMIC LANGUAGE MIRRORING
 - Short technical terms ("nodejs hosting", "cpu core", "SSL") are language-neutral. Follow the last substantive agent language for short replies ("ok", "yes", "ji").
 - If the customer said Salam, begin with the appropriate Salam response. If not, do not include it.
 - RAG TRANSLATION: Even if the matched context, database search, or RAG results contain Bengali/English text, you MUST formulate the final response strictly in the matched conversation language (i.e. translate the RAG information natively to pure English if the customer is speaking in English).
@@ -72,6 +53,7 @@ Always respect the sales/support funnel by acknowledging inputs professionally b
   3. Heavy requirements (any complex theme, large database, e-commerce dynamic cart, or custom mailboxes)
   4. Budget limits or launch timeline.
   If the customer has not explicitly provided all 4 details in the chat history, you MUST ask ONE diagnostic question targeting a missing detail. NEVER pitch, suggest, or recommend any specific plan (e.g. Web Hosting Pro, Turbo Starter, Turbo Pro) until all 4 details are known. Even if the customer directly asks "Which plan is best?" or "Budget friendly konta hobe?", you MUST reply by saying you want to check their requirements first, and ask one of the missing details.
+  CRITICAL OVERRIDE: If ANY of the 4 details are missing from the conversation history, you are ABSOLUTELY FORBIDDEN from mentioning, naming, suggesting, or hinting at any plan names or plan categories whatsoever (including "ওয়েব হোষ্টিং প্রো", "টার্বো স্টার্টার", "টার্বো প্রো", "স্টার্টার", "টার্বো", "প্রো", "Starter", "Turbo", "Pro", "স্টার্টার প্ল্যান", etc.). You MUST strictly reply by saying you want to check their requirements first, and ask exactly one of the missing details (e.g., about their heavy plugins, database, budget, or launch timeline). Diagnostics ALWAYS override reference answers, database matches, and templates!
 - SHOPIFY IS IRRELEVANT: Shopify is a fully self-hosted platform. People using Shopify do NOT need our web hosting services. Shopify users are NOT our customers and they are NOT in our target segment. Therefore, NEVER ask or mention if the customer is using Shopify. Instead, only suggest relevant hosting platform options: WordPress, WooCommerce, custom PHP/Laravel, Node.js/React, or raw HTML.
 - BDIX TARGET AUDIENCE: If the customer specifically asks about BDIX server/connectivity (e.g. "আপনাদের কি বিডিআইএক্স সার্ভার আছে?"), we already know their target audience is in Bangladesh. DO NOT ask where their target traffic/audience is from. Instead, immediately ask other diagnostic questions, such as what platform/framework they are using (WordPress, Laravel, Node.js, etc.) or their resource/performance needs.
 
@@ -90,14 +72,14 @@ If the customer conversation includes a whispered instruction from the agent (st
 - Words: "activation" = "এক্টিভেশন" (NOT অ্যাক্টিভেশন), "soon" = "খুব দ্রুতই", "has gone" = "গেছে", "patience" = "সহযোগিতার জন্য ধন্যবাদ", "ticket" = "টিকিট করা হয়েছে".
 - Tone: Use premium startup Benglish terms where natural (e.g. "এড স্পেন্ড" not "খরচ", "সুপার ফাষ্ট স্পীড" not "দ্রুত লোডিং").
 
-Output ONLY the draft message. No quotes, no prefix, no labels.`;
+Output ONLY the tag and the draft message as instructed.`;
 }
 
 // ============================================================
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string, language: 'Bengali' | 'English'): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
   let learnedRulesBlock = "";
   try {
     const { data: dbRules } = await supabaseAdmin
@@ -115,23 +97,23 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
   }
   
-  const goldenExamples = language === 'Bengali'
-    ? [
-        "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
-        "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
-        "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
-        "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
-        "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
-      ]
-    : [
-        "I am looking into this details for you. Please give me a moment.",
-        "Our technical team will investigate and follow up with you via email shortly.",
-        "What kind of website are you building? Please share your platform or project details so I can recommend the best plan for you.",
-        "Where is your target audience or visitors located? Are you targeting Bangladesh only, or is it global?",
-        "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
-      ];
+  const goldenBengali = [
+    "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
+    "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
+    "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
+    "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
+    "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
+  ];
   
-  const fewShotBlock = `\n\nGOLDEN REPLY EXAMPLES (Mimic this tone and brevity):\n${goldenExamples.join('\n---\n')}${learnedRulesBlock}`;
+  const goldenEnglish = [
+    "I am looking into this details for you. Please give me a moment.",
+    "Our technical team will investigate and follow up with you via email shortly.",
+    "What kind of website are you building? Please share your platform or project details so I can recommend the best plan for you.",
+    "Where is your target audience or visitors located? Are you targeting Bangladesh only, or is it global?",
+    "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
+  ];
+  
+  const fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
   return { fewShotBlock };
 }
 
@@ -309,7 +291,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId, detectedLanguage)
+      ? getLearningData(orgId)
       : Promise.resolve({ fewShotBlock: '' });
 
     const [imageBlock, , { fewShotBlock }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise]);
@@ -563,7 +545,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage)
+                    content: buildSystemPrompt()
                   },
                   {
                     role: "user",
@@ -617,7 +599,7 @@ ${instruction
           system: [
             {
               type: "text",
-              text: buildSystemPrompt(detectedLanguage),
+              text: buildSystemPrompt(),
               cache_control: { type: "ephemeral" }
             }
           ],
@@ -667,8 +649,6 @@ ${instruction
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: detectedLanguage, sources: knowledgeSources })}\n\n`));
-
         const reader = activeResponse.body?.getReader();
         const decoder = new TextDecoder("utf-8");
         if (!reader) { controller.close(); return; }
@@ -676,6 +656,10 @@ ${instruction
         let buffer = '';
         let inputTokens = 0;
         let outputTokens = 0;
+
+        let responseBuffer = '';
+        let languageSent = false;
+        let finalDetectedLang = 'en';
 
         try {
           let firstChunk = true;
@@ -700,17 +684,14 @@ ${instruction
               if (line.startsWith("data: ") && line !== "data: [DONE]") {
                 try {
                   const data = JSON.parse(line.slice(6));
+                  let text = '';
                   if (isDeepseek) {
                     // Parse DeepSeek OpenAI-compatible SSE format
                     if (data.usage) {
                       inputTokens = data.usage.prompt_tokens || 0;
                       outputTokens = data.usage.completion_tokens || 0;
                     }
-                    const text = data.choices?.[0]?.delta?.content;
-                    if (text) {
-                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
-                    }
+                    text = data.choices?.[0]?.delta?.content || '';
                   } else {
                     // Parse Anthropic SSE format
                     if (data.type === "message_start" && data.message?.usage?.input_tokens) {
@@ -720,7 +701,35 @@ ${instruction
                       outputTokens = data.usage.output_tokens;
                     }
                     if (data.type === "content_block_delta" && data.delta?.text) {
-                      const text = data.delta.text;
+                      text = data.delta.text;
+                    }
+                  }
+
+                  if (text) {
+                    if (!languageSent) {
+                      responseBuffer += text;
+                      const tagMatch = responseBuffer.match(/\[Language:\s*(Bengali|English|bn|en)\]/i);
+                      if (tagMatch) {
+                        const matchedTag = tagMatch[1].toLowerCase();
+                        finalDetectedLang = (matchedTag === 'bengali' || matchedTag === 'bn') ? 'bn' : 'en';
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+                        languageSent = true;
+                        
+                        const tagIndex = responseBuffer.indexOf(tagMatch[0]);
+                        let remainingText = responseBuffer.substring(tagIndex + tagMatch[0].length);
+                        remainingText = remainingText.replace(/^\s+/, '');
+                        if (remainingText) {
+                          const cleanText = remainingText.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                        }
+                      } else if (responseBuffer.length > 80) {
+                        finalDetectedLang = BENGALI_REGEX.test(responseBuffer) ? 'bn' : 'en';
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+                        languageSent = true;
+                        const cleanText = responseBuffer.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                      }
+                    } else {
                       const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
                       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                     }
@@ -729,6 +738,15 @@ ${instruction
                   // Incomplete JSON chunk
                 }
               }
+            }
+          }
+
+          if (!languageSent) {
+            finalDetectedLang = BENGALI_REGEX.test(responseBuffer) ? 'bn' : 'en';
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+            if (responseBuffer) {
+              const cleanText = responseBuffer.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
             }
           }
 
