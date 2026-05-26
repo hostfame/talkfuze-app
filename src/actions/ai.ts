@@ -141,7 +141,7 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
 
     if (deepseekKey) {
       try {
-        console.log('[generateAiDraft] Attempting DeepSeek-V4-Pro...');
+        console.log('[generateAiDraft] Attempting DeepSeek-chat...');
         const dsResponse = await fetch("https://api.deepseek.com/chat/completions", {
           method: "POST",
           headers: {
@@ -149,7 +149,7 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "deepseek-v4-pro",
+            model: "deepseek-chat",
             max_tokens: 600,
             temperature: 0.2,
             messages: [
@@ -168,7 +168,7 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
         if (dsResponse.ok) {
           const data = await dsResponse.json();
           draftText = data.choices?.[0]?.message?.content || "";
-          console.log('[generateAiDraft] Success with DeepSeek-V4-Pro');
+          console.log('[generateAiDraft] Success with DeepSeek-chat');
         } else {
           const errText = await dsResponse.text();
           console.error('[generateAiDraft] DeepSeek API error:', dsResponse.status, errText);

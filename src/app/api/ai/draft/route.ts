@@ -554,7 +554,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "deepseek-v4-pro",
+              model: "deepseek-chat",
               max_tokens: 600,
               temperature: 0.2,
               stream: true,
@@ -727,7 +727,7 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
           const totalTokens = inputTokens + outputTokens;
           if (totalTokens > 0) {
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: isDeepseek ? "deepseek-v4-pro" : "claude-3-5-haiku", temperature: 0.2 })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: isDeepseek ? "deepseek-chat" : "claude-3-5-haiku", temperature: 0.2 })}\n\n`)
             );
           }
         } catch (streamErr: any) {
