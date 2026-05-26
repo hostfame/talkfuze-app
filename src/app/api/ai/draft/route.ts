@@ -309,11 +309,11 @@ export async function POST(req: Request) {
       const instructionIsBengali = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(instructionText);
       const instructionWords = instructionText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
       const instructionIsBenglish = instructionWords.some((w: string) => BENGLISH_WORDS.has(w));
-      strictLanguage = instructionIsBengali || instructionIsBenglish ? 'Bengali' : 'Dynamic';
+      strictLanguage = instructionIsBengali || instructionIsBenglish ? 'Bengali' : 'English';
     } else {
       // Auto mode: Fall back to detecting the customer's conversation language
       let textToDetect = latestCustomerMessageCleaned.trim().toLowerCase();
-      // If the latest message is too short or just an acknowledgement/greeting, scan the recent conversation history in reverse order (both agent and contact) to detect the active script context
+      // If the latest message is too short or just an acknowledgement/greeting, scan the recent conversation history in reverse order (both agent and contact) to detect the active active context
       if (textToDetect.length < 15 || /^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm|send)$/i.test(textToDetect)) {
         for (let i = parsedMessages.length - 1; i >= 0; i--) {
           const content = parsedMessages[i].content.trim().toLowerCase();
@@ -330,11 +330,11 @@ export async function POST(req: Request) {
       const isBenglish = nonGreetingWords.length === 0
         ? detectSalam(textToDetect)
         : nonGreetingWords.some((w: string) => BENGLISH_WORDS.has(w));
-      strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'Dynamic';
+      strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
     }
     const languageOverride = strictLanguage === 'Bengali' 
-      ? '\nCRITICAL LANGUAGE OVERRIDE: The customer is using Bengali script. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' 
-      : '\nCRITICAL LANGUAGE OVERRIDE: The customer is using Roman script (English letters). You MUST analyze their message carefully:\n- If it is pure English (e.g., "what are your prices?"), you MUST reply strictly in English.\n- If it is Banglish (Bengali words written in English letters, e.g., "apnader pricing plan ta den", "price to high", "ami check korbo"), you MUST reply strictly in BENGALI SCRIPT (বাংলা অক্ষর). DO NOT write or output any English or Banglish.';
+      ? '\nCRITICAL LANGUAGE OVERRIDE: The target language is strictly BENGALI. You MUST reply ONLY in Bengali script (বাংলা অক্ষর). Do not use English.' 
+      : '\nCRITICAL LANGUAGE OVERRIDE: The target language is strictly ENGLISH. You MUST reply ONLY in English. Do NOT write any Bengali whatsoever.';
 
     // Cap context to last 20 messages for faster/cheaper Haiku generation
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
@@ -509,7 +509,7 @@ CRITICAL REMINDER: You MUST explain the image in ${strictLanguage === 'Bengali' 
 ${instruction 
   ? `Draft the final reply by synthesizing the Agent Instruction with the conversation history and customer's latest message. Expand and polish the instruction's intent into a warm, natural, complete response. DO NOT ignore the historical conversation details (like pricing discussed, specific servers, or customer names) - use them to enrich the final response.` 
   : `Draft a smart, helpful reply as the support agent.`}
-FINAL WARNING: You MUST write your reply in BENGALI SCRIPT (বাংলা) if the customer is speaking Bengali script or Banglish. If they are speaking pure English, write strictly in ENGLISH. Under no circumstances should you ever reply in English to a customer speaking Banglish.`;
+FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'ENGLISH'} ONLY.`;
     }
 
     // 5. Fire AI request (Gemini for Translation, Anthropic for Support Drafts)
