@@ -4607,9 +4607,9 @@ export default function ChatThread({
               <button
                 onClick={handleJoinThread}
                 disabled={isJoining}
-                className="cursor-pointer px-6 py-2.5 bg-[#0070f3] hover:bg-blue-600 text-white text-[13px] font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
+                className="cursor-pointer w-72 py-4 bg-slate-100 dark:bg-[#1f2c34] hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] text-[15px] font-semibold tracking-wide rounded-2xl border border-slate-300 dark:border-[#2a3942] shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 transform active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
               >
-                {isJoining && <Loader2 size={15} className="animate-spin" />}
+                {isJoining && <Loader2 size={18} className="animate-spin text-slate-500" />}
                 <span className="tracking-wide">Join Chat</span>
               </button>
             </div>
