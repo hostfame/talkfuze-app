@@ -58,33 +58,122 @@ async function processCallRecording(
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 3. Transcribe via OpenAI Whisper
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const isMp3 = recordingUrl.toLowerCase().endsWith('.mp3');
-    const file = await OpenAI.toFile(buffer, isMp3 ? 'recording.mp3' : 'recording.wav');
-    
-    console.log(`[Call AI] Sending to Whisper...`);
-    const transcription = await openai.audio.transcriptions.create({
-      model: 'whisper-1',
-      file: file,
-    });
-    
-    const transcriptText = transcription.text?.trim();
-    if (!transcriptText) {
-      console.log(`[Call AI] Empty transcription. Call might be silent. Skipping summary.`);
-      return;
-    }
-    console.log(`[Call AI] Transcription succeeded: "${transcriptText.substring(0, 100)}..."`);
+    let transcriptText = "";
+    let summary: string[] = [];
+    let follow_up_draft = "";
 
-    // 4. Generate summary and follow-up draft using OpenAI GPT-4o-mini
-    console.log(`[Call AI] Requesting AI Summary and WhatsApp Draft...`);
-    const aiResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0.3,
-      messages: [
-        {
-          role: 'system',
-          content: `You are an elite customer support quality auditor and AI manager for Hostnin, a leading Bangladeshi hosting company.
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (GEMINI_API_KEY) {
+      try {
+        console.log(`[Call AI] Gemini API Key found. Using Gemini 1.5 Flash for unified audio-native transcription and analysis.`);
+        const base64Data = buffer.toString('base64');
+        const isMp3 = recordingUrl.toLowerCase().endsWith('.mp3');
+        const mimeType = isMp3 ? 'audio/mp3' : 'audio/wav';
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        
+        const payload = {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `You are an elite customer support quality auditor and AI manager for Hostnin, a leading Bangladeshi hosting company.
+Listen to the attached telephone call audio recording between our support agent and a customer.
+Perform the following tasks:
+1. Provide a highly accurate transcription of the conversation in the 'transcript' field. Since it is a support call, it will likely be a mix of English and Bengali (Benglish) or pure Bengali. Keep the transcription highly faithful.
+2. In the 'summary' field, provide a concise bullet-point summary (3-4 points max) in English outlining:
+   - What issue the customer reported.
+   - What the agent checked or resolved.
+   - Any next actions or pending tasks.
+3. In the 'follow_up_draft' field, write a warm, highly professional WhatsApp follow-up message in BENGALI SCRIPT (বাংলা) or ENGLISH (depending on what language the customer spoke) to send to the customer.
+   - Acknowledge the call.
+   - Summarize what we agreed/did.
+   - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".`
+                },
+                {
+                  inlineData: {
+                    mimeType: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                transcript: { type: "STRING" },
+                summary: {
+                  type: "ARRAY",
+                  items: { type: "STRING" }
+                },
+                follow_up_draft: { type: "STRING" }
+              },
+              required: ["transcript", "summary", "follow_up_draft"]
+            }
+          }
+        };
+
+        const geminiRes = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!geminiRes.ok) {
+          throw new Error(`Gemini API returned error status: ${geminiRes.status} - ${await geminiRes.text()}`);
+        }
+
+        const geminiData = await geminiRes.json();
+        const rawJsonText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawJsonText) {
+          throw new Error("Empty response parts from Gemini API");
+        }
+
+        const parsed = JSON.parse(rawJsonText);
+        transcriptText = parsed.transcript || "";
+        summary = parsed.summary || [];
+        follow_up_draft = parsed.follow_up_draft || "";
+        console.log(`[Call AI] Gemini analysis succeeded natively!`);
+      } catch (geminiErr) {
+        console.error(`[Call AI] Gemini native audio pipeline failed. Falling back to Whisper + GPT-4o-mini. Error:`, geminiErr);
+      }
+    }
+
+    // Fallback: If Gemini was not executed or failed, run the standard Whisper + GPT-4o-mini pipeline
+    if (!transcriptText) {
+      console.log(`[Call AI] Running fallback Whisper + GPT-4o-mini pipeline.`);
+      
+      // 3. Transcribe via OpenAI Whisper
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const isMp3 = recordingUrl.toLowerCase().endsWith('.mp3');
+      const file = await OpenAI.toFile(buffer, isMp3 ? 'recording.mp3' : 'recording.wav');
+      
+      console.log(`[Call AI] Sending to Whisper...`);
+      const transcription = await openai.audio.transcriptions.create({
+        model: 'whisper-1',
+        file: file,
+      });
+      
+      const parsedTranscriptText = transcription.text?.trim();
+      if (!parsedTranscriptText) {
+        console.log(`[Call AI] Empty transcription in fallback. Skipping summary.`);
+        return;
+      }
+      transcriptText = parsedTranscriptText;
+      console.log(`[Call AI] Whisper transcription succeeded: "${transcriptText.substring(0, 100)}..."`);
+
+      // 4. Generate summary and follow-up draft using OpenAI GPT-4o-mini
+      console.log(`[Call AI] Requesting AI Summary and WhatsApp Draft from fallback GPT-4o-mini...`);
+      const aiResponse = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an elite customer support quality auditor and AI manager for Hostnin, a leading Bangladeshi hosting company.
 Analyze this telephone call transcript between our support agent and a customer.
 Output valid JSON containing:
 1. 'summary': A concise bullet-point summary (3-4 points max) in English outlining:
@@ -96,25 +185,28 @@ Output valid JSON containing:
    - Summarize what we agreed/did.
    - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".
    - Wrap the output in clean JSON keys: 'summary' and 'follow_up_draft'.`
-        },
-        {
-          role: 'user',
-          content: `Call Details:
+          },
+          {
+            role: 'user',
+            content: `Call Details:
 - Agent Name: ${agentName || 'TalkFuze Agent'}
 - Duration: ${durationSeconds} seconds
 - Direction: ${direction}
 
 Transcript:
 "${transcriptText}"`
-        }
-      ],
-      response_format: { type: 'json_object' }
-    });
+          }
+        ],
+        response_format: { type: 'json_object' }
+      });
 
-    const resultText = aiResponse.choices[0]?.message?.content?.trim();
-    if (!resultText) throw new Error('Empty completion result from AI summarizer');
-    
-    const { summary, follow_up_draft } = JSON.parse(resultText);
+      const resultText = aiResponse.choices[0]?.message?.content?.trim();
+      if (!resultText) throw new Error('Empty completion result from AI summarizer');
+      
+      const parsedRes = JSON.parse(resultText);
+      summary = parsedRes.summary || [];
+      follow_up_draft = parsedRes.follow_up_draft || "";
+    }
 
     // 5. Save call summary as an internal note (whisper) in messages table
     const { error: insertError } = await supabaseAdmin
