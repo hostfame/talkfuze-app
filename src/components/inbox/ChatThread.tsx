@@ -2593,12 +2593,15 @@ export default function ChatThread({
     aiDraftLogIdRef.current = null
     
     // Find the latest customer-sent image attachment in the message history to pass for vision/multimodal analysis
-    const lastCustomerImageMsg = [...allMessages]
-      .reverse()
-      .find(m => m.sender_type === 'contact' && m.content_type === 'image');
-    const imageUrl = lastCustomerImageMsg
-      ? ((lastCustomerImageMsg.metadata as any)?.media_url || (lastCustomerImageMsg.metadata as any)?.url) as string
+    // We only pass the image if it was sent recently (within the last 4 messages in the entire conversation thread)
+    const reversedMessages = [...allMessages].reverse();
+    const lastCustomerImageMsgIndex = reversedMessages.findIndex(
+      m => m.sender_type === 'contact' && m.content_type === 'image'
+    );
+    const imageUrl = (lastCustomerImageMsgIndex !== -1 && lastCustomerImageMsgIndex < 4)
+      ? ((reversedMessages[lastCustomerImageMsgIndex].metadata as any)?.media_url || (reversedMessages[lastCustomerImageMsgIndex].metadata as any)?.url) as string
       : null;
+
 
     // Format context messages - exclude whisper/internal messages (skip context for translation to save tokens/time)
     const contextMessages = isTranslation ? "" : allMessages

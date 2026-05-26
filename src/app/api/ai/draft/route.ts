@@ -449,7 +449,7 @@ You MUST analyze the contents of this image carefully.
 - If it is a pricing table, plan comparison, or website screenshot: Answer their query based on the visible plans, features, and prices.
 - If it is an error log, CPGuard notification, or cPanel screenshot: Explain the technical issue shown and how it will be resolved.
 - If it is a payment receipt: Analyze the SPECIFIC image uploaded right now. Do not assume it is the same payment method used earlier in the chat. Acknowledge the exact payment method (e.g., bKash, SSLCommerz, Bank Transfer) and amount visibly shown IN THIS IMAGE. DO NOT assume or state it is a 'Bank Transfer' unless explicitly written on this new receipt.
-ALWAYS base your response strictly on what is visibly present in the image. DO NOT invent or hallucinate tickets, bookings, or unrelated scenarios.
+Integrate the details from the image with the latest text messages/instructions in the conversation. DO NOT ignore the current conversation flow or the agent's instructions, but combine both context sources naturally. DO NOT invent or hallucinate tickets, bookings, or unrelated scenarios.
 CRITICAL REMINDER: You MUST explain the image in ${strictLanguage === 'Bengali' ? 'BENGALI SCRIPT (বাংলা)' : 'strictly ENGLISH'} as per the language override.` : ''}
 
 ${instruction 
