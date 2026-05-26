@@ -1493,33 +1493,28 @@ export default function ContactSidebar({
             </button>
             
             {isAgentsExpanded && (
-              <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="mt-3.5 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
                 {participants.length > 0 ? (
                   participants.map((p, idx) => (
                     <div 
                       key={idx} 
-                      className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150"
+                      className="flex items-center gap-3 px-1 py-0.5"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full border border-slate-150 dark:border-slate-800 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-[11px] font-bold overflow-hidden shrink-0 shadow-sm">
-                          {p.user?.avatar_url ? (
-                            <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            p.user?.name?.charAt(0).toUpperCase() || 'A'
-                          )}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200 truncate">
-                            {p.user?.name || 'Agent'}
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 dark:text-slate-500 font-mono capitalize">
-                            {p.user?.role || 'agent'}
-                          </span>
-                        </div>
+                      <div className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0 shadow-xs">
+                        {p.user?.avatar_url ? (
+                          <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          p.user?.name?.charAt(0).toUpperCase() || 'A'
+                        )}
                       </div>
-                      
-                      {/* Subtle status dot or indicator */}
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shrink-0" title="Active" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[12.5px] font-medium text-slate-850 dark:text-[#d1d7db] truncate">
+                          {p.user?.name || 'Agent'}
+                        </span>
+                        <span className="text-[9.5px] text-slate-400 dark:text-[#8696a0] font-mono capitalize">
+                          {p.user?.role || 'agent'}
+                        </span>
+                      </div>
                     </div>
                   ))
                 ) : (
