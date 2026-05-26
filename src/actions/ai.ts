@@ -96,12 +96,12 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const isBenglish = nonGreetingWords.length === 0
       ? detectSalam(textToDetect)
       : nonGreetingWords.some(w => BENGLISH_WORDS.has(w));
-    const strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
+    const strictLanguage = (isBengaliScript || isBenglish ? 'Bengali' : 'Dynamic') as 'Bengali' | 'English' | 'Dynamic';
 
     // 2. Greeting Rules based on detected language
     const hasCustomerSaidSalam = detectSalam(latestCustomerText);
     const greetingRule = hasCustomerSaidSalam 
-      ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam. You MUST begin your reply with the exact response "${strictLanguage === 'Bengali' ? 'ওয়ালাইকুম আসসালাম।' : 'Walaikum assalam!'}" in the very first line of your message before anything else.`
+      ? `\n\nCRITICAL GREETING RULE (MANDATORY): The customer has initiated the conversation with a greeting of Salam. You MUST begin your reply with the exact response "${strictLanguage === 'English' ? 'Walaikum assalam!' : 'ওয়ালাইকুম আসসালাম।'}" in the very first line of your message before anything else.`
       : `\n\nCRITICAL GREETING RULE (MANDATORY): The customer did NOT say Salam. You MUST NEVER begin your reply with "ওয়ালাইকুম আসসালাম" or "Walaikum assalam". Start your reply directly, warm, and naturally.`;
 
     // Extract customer's name from the context for personalized greetings
@@ -198,8 +198,14 @@ ${JSON.stringify(knowledge)}
 
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
+    const languageOverrideText = strictLanguage === 'Bengali'
+      ? `strictly Bengali script (বাংলা অক্ষর)`
+      : strictLanguage === 'English'
+      ? `strictly English`
+      : `BENGALI SCRIPT (বাংলা) if the customer is speaking Bengali script or Banglish, and strictly ENGLISH if they are speaking pure English. Under no circumstances should you ever reply in English to a customer speaking Banglish.`;
+
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer's language is strictly ${strictLanguage}. You MUST reply ONLY in ${strictLanguage}. Do not use any other language.${greetingRule}${personalizationRule}${fewShotBlock}${mistakesBlock}`;
+CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection, the target language is ${languageOverrideText}.${greetingRule}${personalizationRule}${fewShotBlock}${mistakesBlock}`;
 
     let draftText = "";
     let useClaudeBackup = false;
