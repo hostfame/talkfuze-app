@@ -215,7 +215,7 @@ Transcript:
         conversation_id: conversationId,
         org_id: orgId,
         sender_type: 'system',
-        content: `📞 **Call AI Summary & WhatsApp Follow-up**`,
+        content: `📞 Call AI Summary & WhatsApp Follow-up`,
         content_type: 'text',
         is_internal: true, // Internal whisper note!
         status: 'delivered',
