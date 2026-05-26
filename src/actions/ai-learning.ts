@@ -357,11 +357,15 @@ export async function getApprovedExamples(
  */
 export async function processInternalAiFeedback(conversationId: string, internalNote: string): Promise<void> {
   try {
-    const noteLower = internalNote.toLowerCase();
-    // Heuristic: only process if the note looks like it's coaching or mentioning the AI
-    if (!noteLower.includes("ai ") && !noteLower.includes("teach") && !noteLower.includes("rule") && !noteLower.includes("draft") && !noteLower.includes("bot")) {
+    const trimmedNote = internalNote.trim();
+    // Deterministic trigger: Only process if the note explicitly starts with '///'
+    if (!trimmedNote.startsWith('///')) {
       return;
     }
+    
+    // Strip the '///' prefix to analyze the actual instruction content
+    const cleanInstruction = trimmedNote.substring(3).trim();
+    if (!cleanInstruction) return;
 
     // Fetch the last few messages for context
     const { data: messages } = await supabaseAdmin
@@ -401,7 +405,7 @@ Output valid JSON strictly containing:
         messages: [
           {
             role: "user",
-            content: `Conversation Context:\n${contextLines}\n\nInternal Note (Feedback):\n"${internalNote}"\n\nOutput strictly as JSON: {"is_ai_rule": boolean, "extracted_rule": "...", "question": "...", "answer": "..."}`
+            content: `Conversation Context:\n${contextLines}\n\nInternal Note (Feedback):\n"${cleanInstruction}"\n\nOutput strictly as JSON: {"is_ai_rule": boolean, "extracted_rule": "...", "question": "...", "answer": "..."}`
           }
         ]
       })
