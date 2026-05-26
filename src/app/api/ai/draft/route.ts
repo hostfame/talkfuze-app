@@ -297,12 +297,17 @@ export async function POST(req: Request) {
       strictLanguage = instructionIsBengali || instructionIsBenglish ? 'Bengali' : 'English';
     } else {
       // Auto mode: Fall back to detecting the customer's conversation language
-      const customerFullText = customerMessages.slice(-10).map(m => m.content).join(' ').toLowerCase();
-      const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(customerFullText);
-      const words = customerFullText.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+      let textToDetect = latestCustomerMessageCleaned.trim().toLowerCase();
+      // If the latest message is too short or just an acknowledgement/greeting, scan up to 5 recent customer messages to determine the ongoing language context
+      if (textToDetect.length < 15 || /^(ok|yes|no|ji|thanks|thank you|hi|hello|hey|hmm|hmmm)$/i.test(textToDetect)) {
+        textToDetect = customerMessages.slice(-5).map(m => m.content).join(' ').toLowerCase();
+      }
+      
+      const isBengaliScript = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(textToDetect);
+      const words = textToDetect.replace(/[^a-z0-9\s]/g, '').split(/\s+/);
       const nonGreetingWords = words.filter((w: string) => w && !detectSalam(w));
       const isBenglish = nonGreetingWords.length === 0
-        ? detectSalam(customerFullText)
+        ? detectSalam(textToDetect)
         : nonGreetingWords.some((w: string) => BENGLISH_WORDS.has(w));
       strictLanguage = isBengaliScript || isBenglish ? 'Bengali' : 'English';
     }
@@ -418,11 +423,11 @@ Output ONLY the translation in raw plain text.`;
 
       userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"${languageOverride}${greetingRule}
     
-FORMATTING & BREVITY:
-- CRITICAL: Every single sentence or logical thought MUST be separated by a double line break (\\n\\n).
-- NEVER combine multiple sentences into a single paragraph, even for very short messages. ALWAYS add breathing space.
-- Example for a short reply: [Greeting] \\n\\n [Main Answer] \\n\\n [Next Step/Question]
-- Keep response 3-4 short sentences max. Short bursts, not essays.
+FORMATTING & CONCISENESS (CRITICAL):
+- EXTREME BREVITY: Keep your entire response under 2-3 short, punchy sentences max (less than 40 words total). Real humans write in quick, direct bursts. NEVER write long, verbose paragraphs or multi-sentence technical lectures.
+- NATURAL FLOW: Combine your confirmation/acknowledgement and next step/question into a single natural paragraph. Do NOT use double line breaks (\n\n) between every sentence—it looks artificial and robotic. 
+- Paragraph Limit: Limit the entire response to a maximum of 1 or 2 brief paragraphs. Only use a double line break if you need to separate a short greeting/apology from the main answer.
+
 ${fewShotBlock}
 ${highPrioritySemanticRules ? `\n\nHIGH-PRIORITY SITUATIONAL STYLE RULES MATCHED FOR THIS CHAT:\n${highPrioritySemanticRules}\n` : ''}
 ${instruction ? `\nCRITICAL AGENT INSTRUCTION (COPILOT MODE):
