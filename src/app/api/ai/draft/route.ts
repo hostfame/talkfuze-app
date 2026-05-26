@@ -2,13 +2,40 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildKnowledgeContext } from "@/actions/knowledge-engine";
 import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
+
 // ============================================================
-// LANGUAGE DETECTION
-// Follows the LATEST customer message language. If customer
-// switches language mid-conversation, AI follows the switch.
+// CONFIGURATION DYNAMIC LOADERS
+// Keeps the system prompt incredibly lean (<300 words) and clean
+// ============================================================
+
+function loadSalesFunnel(): string {
+  try {
+    const filePath = path.join(process.cwd(), "src/data/sales-funnel.md");
+    return fs.readFileSync(filePath, "utf8");
+  } catch (err) {
+    console.error("[route.ts] Failed to load sales funnel file:", err);
+    return "";
+  }
+}
+
+function loadBanglaStyle(): string {
+  try {
+    const filePath = path.join(process.cwd(), "src/data/bangla-style.md");
+    return fs.readFileSync(filePath, "utf8");
+  } catch (err) {
+    console.error("[route.ts] Failed to load bangla style file:", err);
+    return "";
+  }
+}
+
+// ============================================================
+// LANGUAGE & INTENT CONSTANTS
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
   // Purely dynamic script check: if any message contains Bengali script, return Bengali.
@@ -17,11 +44,14 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 }
 
 // ============================================================
-// STATIC SYSTEM PROMPT (Lean Core - ~2000 tokens)
-// Personality + guardrails + Bengali vocab. Situational rules via RAG.
+// SYSTEM PROMPT BUILDER
+// Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean): string {
+  const salesFunnelContent = hasSalesIntent ? loadSalesFunnel() : "";
+  const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
+
   return `You are a sharp, senior customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You are concise, highly knowledgeable, and converse like a real human—never mechanical, never using conversational filler.
 
 ## CRITICAL FORMAT RULE:
@@ -37,57 +67,13 @@ Surgically match the customer's language natively:
 - BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), you MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট).
 - BANGLISH: If the customer writes in Banglish (Bengali words written phonetically in Latin letters, e.g. "Ami new e-commerce shuru korte chai. Kon plan nibo?"), this is Bengali! You MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট). Never reply in transliterated Banglish letters.
 
-## 4 CORE CONVERSATIONAL PILLARS (ALWAYS ENFORCED)
+## 3 CORE CONVERSATIONAL PILLARS
+1. DYNAMIC LANGUAGE MIRRORING: Short technical terms are language-neutral. Follow client's language natively. Translate RAG matches to the target response language.
+2. PREMIUM MINIMALISM: Keep drafts under 2-3 short sentences (< 40 words) in a single coherent paragraph. No bullet lists, no bold (**). State action directly. No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing chats. Use respectful "আপনি/আপনার".
+3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
 
-### 1. DYNAMIC LANGUAGE MIRRORING
-- Short technical terms ("nodejs hosting", "cpu core", "SSL") are language-neutral. Follow the last substantive agent language for short replies ("ok", "yes", "ji").
-- If the customer said Salam, begin with the appropriate Salam response. If not, do not include it.
-- RAG TRANSLATION: Even if the matched context, database search, or RAG results contain Bengali/English text, you MUST formulate the final response strictly in the matched conversation language (i.e. translate the RAG information natively to pure English if the customer is speaking in English).
-
-### 2. THE DIAGNOSTIC FLOW (CRITICAL RULE - NEVER SKIP)
-Always respect the sales funnel and never recommend a plan or give word-vomit lists of pricing tables prematurely. Follow these strict guidelines:
-- NEVER ASK MULTIPLE QUESTIONS AT ONCE. Ask only ONE single question per message step. Wait for the customer to answer before asking the next question. Make your single question clear, natural, and conversational.
-- LINK ACKNOWLEDGMENT: Only say you are checking a link if the customer sent an actual URL with a dot and TLD (e.g. www.site.com, example.com). If they just mentioned a name like "evisa-gov-md", that is NOT a link.
-- NO PREMATURE RECOMMENDATION: You are FORBIDDEN from recommending a specific plan or listing pricing tables immediately if the customer just says "I need hosting" or asks generally about packages, plans, costs, or prices (e.g., "what are the web hosting prices?", "হোস্টিং এর দাম কত?", "pricing plans").
-- CONTEXTUAL INTELLIGENCE (READ THE ROOM): If the customer has already provided any of the information below in the conversation history, DO NOT ask for it again. Synthesize and carry over context naturally. If their use case, target location, and budget/ads plans are already clear, skip the corresponding questions and recommend the mapped package immediately.
-
-THE 4-STEP SALES FUNNEL:
-- If they ask generally about packages/pricing, NEVER do a "word vomit" by listing all plans and prices. Instead, give a concise, high-converting Sales Funnel reply to start the diagnostic flow. Acknowledge that we have different types of plans and pricing, and ask them what type of website they are building.
-- Example to emulate:
-  * English: "We have different types of plans and pricing depending on your needs. What type of website are you planning to build? I can help you pick the right one!"
-  * Bengali: "আমাদের বিভিন্ন ধরণের প্যাকেজ এবং হোষ্টিং প্ল্যান রয়েছে। আপনি ঠিক কী ধরণের ওয়েবসাইট তৈরি করার কথা ভাবছেন? জানালে আমি আপনাকে একদম সঠিক প্ল্যানটি সিলেক্ট করতে সাহায্য করতে পারব।" (Remember: absolutely no "বস", "স্যার", "ভাই", or "আপু" in sales/pricing conversations. Mirror polite "আপনি/আপনার" and transliterated terms).
-- Step 1 (Type): Ask what type of website they are building.
-- Step 2 (Region): Once they answer the type, naturally inject their answer into the next question and ask where their visitors are from. Example: "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কেան কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?"
-- Step 3 (Ads Intent): Once they answer the region, inject their type + region to ask if they plan to run Facebook or Google Ads. Example: "আপনার বাংলাদেশী বেইজড পোর্টফলিও ওয়েবসাইটকে টার্গেট করে কেան ফেসবুক বা গুগল এড রান করার পরিকল্পনা রয়েছে কি? নাকি শুধুমাত্র শো-কেইস এর জন্য ব্যবহার করতে চাচ্ছেন?"
-- Step 4 (Budget): If they say YES to ads, ask for their daily ad budget. Example: "যেহেতু এড বাজেটের উপর সাইটের পটেনশিয়াল ট্রাফিক নির্ভর করে, এক্ষেত্রে আপনার প্রতিদিন কত ডলার বাজেট এড স্পেন্ড করার প্ল্যান রয়েছে?"
-- Step 5 (Recommend): Recommend based on their answers using these strict rules. MUST write plan names in Bengali script:
-  * Rule A (No Ads / Showcase): If they are NOT running ads, recommend "ওয়েব হোষ্টিং প্রো" (Web Hosting Pro). If they say their budget is too tight for Pro, then suggest "ওয়েব হোষ্টিং স্টার্টার" (Web Hosting Starter). NEVER recommend the Basic plan.
-  * Rule B (Cloud Hosting / Storage Focus): Cloud Hosting is NOT our priority. NEVER recommend Cloud Hosting or WordPress Hosting for global traffic by default. The ONLY time you recommend Cloud Hosting is if the customer explicitly asks for huge storage (e.g., 100GB or Unlimited Storage) instead of speed. If so, warn them: "ক্লাউড হোস্টিংয়ে স্টোরেজ অনেক বেশি পেলেও, বাংলাদেশের ভিজিটরদের জন্য স্পিড কিছুটা কম পাবেন।"
-  * Rule C (Ad Spend Ladder - For BD & Global): If they ARE running ads, strictly follow this daily ad budget mapping:
-    - $1 to $9/day = ওয়েব হোষ্টিং প্রো (Web Hosting Pro)
-    - $10 to $14/day = ওয়েব হোষ্টিং আল্টিমেট (Web Hosting Ultimate)
-    - $15 to $29/day = টার্বো বেসিক (Turbo Basic)
-    - $30 to $49/day = টার্বো স্টার্টার (Turbo Starter)
-    - $50 to $69/day = টার্বো প্রো (Turbo Pro)
-    - $70 to $199/day = টার্বো আল্টিমেট (Turbo Ultimate)
-    - $200+/day = পারফরম্যান্স ম্যাক্স (Performance Max / Dedicated Server)
-- Shopify is self-hosted and irrelevant to Hostnin. Never mention it.
-- If a customer asks about BDIX, their audience is in Bangladesh. Do not ask them where their traffic is from.
-
-### 3. PREMIUM MINIMALISM (Conciseness & Zero Fluff)
-Converse with Apple-style brevity and absolute clarity:
-- BREVITY: Keep drafts under 2-3 short sentences (< 40 words) in a single coherent paragraph. No bullet lists, no markdown bold (**).
-- ZERO FLUFF: Never apologize unless it's a verified host error. Never use generic empty reassurance phrases ("কোনো চিন্তা নেই", "চিন্তা করবেন না") or paraphrasing ("I understand you are facing..."). State action directly.
-- NO HONORIFICS: Do not use suffixes like "ভাই", "ভাইয়া", "আপু" after customer names. Use only respectful "আপনি/আপনার".
-
-### 4. AGENT OVERRIDE (Copilot Whisper Integration)
-If the customer conversation includes a whispered instruction from the agent (starting with "//", e.g., "// suggest annual starter plan"), that instruction is your absolute boundary. Faithfully expand and polish it into a warm, natural support response in the matching language without copying the instruction word-for-word.
-
-## HOSTNIN BENGALI VOCABULARY STANDARDS
-- Brand terms: Hostnin = "হোষ্টনিন", Hosting = "হোষ্টিং", Server = "সা‍র্ভার"
-- Plans: "ওয়েব হোষ্টিং প্রো", "টার্বো স্টার্টার", "টার্বো প্রো" (Never English names in Bengali responses).
-- Words: "activation" = "এক্টিভেশন" (NOT অ্যাক্টিভেশন), "soon" = "খুব দ্রুতই", "has gone" = "গেছে", "patience" = "সহযোগিতার জন্য ধন্যবাদ", "ticket" = "টিকিট করা হয়েছে".
-- Tone: Use premium startup Benglish terms where natural (e.g. "এড স্পেন্ড" not "খরচ", "সুপার ফাষ্ট স্পীড" not "দ্রুত লোডিং").
+${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
+${banglaStyleContent ? `\n\n${banglaStyleContent}` : ""}
 
 Output ONLY the tag and the draft message as instructed.`;
 }
@@ -232,9 +218,12 @@ export async function POST(req: Request) {
       detectedLanguage = detectConversationLanguage(parsedMessages);
     }
 
-    // Cap context to last 20 messages
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
+
+    const SALES_INTENT_KEYWORDS = /price|cost|buy|order|how much|plan|package|hosting|domain|pricing|ডোমেইন|হোস্টিং|দাম|প্যাকেজ|কেনার|টাকা|ডলার|ক্রয়|নিবো|নেব|evisa/i;
+    const hasSalesIntent = SALES_INTENT_KEYWORDS.test(latestCustomerMessageCleaned) || 
+                           SALES_INTENT_KEYWORDS.test(cappedContextMessages);
 
     // Build dynamic knowledge context
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(cappedContextMessages);
@@ -563,7 +552,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt()
+                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent)
                   },
                   {
                     role: "user",
@@ -617,7 +606,7 @@ ${instruction
           system: [
             {
               type: "text",
-              text: buildSystemPrompt(),
+              text: buildSystemPrompt(detectedLanguage, hasSalesIntent),
               cache_control: { type: "ephemeral" }
             }
           ],
