@@ -36,7 +36,7 @@ async function processCallRecording(
           .from('conversations')
           .select('id')
           .eq('contact_id', contactData[0].id)
-          .order('updated_at', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(1);
 
         if (convData && convData.length > 0) {
@@ -70,7 +70,7 @@ async function processCallRecording(
         const isMp3 = recordingUrl.toLowerCase().endsWith('.mp3');
         const mimeType = isMp3 ? 'audio/mp3' : 'audio/wav';
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const payload = {
           contents: [
