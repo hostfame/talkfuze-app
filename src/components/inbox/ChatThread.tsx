@@ -2706,11 +2706,11 @@ export default function ChatThread({
               const lineCount = Math.max(chunk.split('\n').length, Math.ceil(chunk.length / 60));
               
               if (lineCount <= 1) {
-                chunkDelay = 4000; // 4s
+                chunkDelay = 1500; // 1.5s
               } else if (lineCount === 2) {
-                chunkDelay = 7000; // 7s
+                chunkDelay = 3000; // 3s
               } else {
-                chunkDelay = 10000; // 10s
+                chunkDelay = 4500; // 4.5s
               }
             }
             previousDelay = accumulatedDelay;
