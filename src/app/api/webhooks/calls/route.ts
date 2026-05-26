@@ -88,7 +88,8 @@ Perform the following tasks:
 3. In the 'follow_up_draft' field, write a warm, highly professional WhatsApp follow-up message in BENGALI SCRIPT (বাংলা) or ENGLISH (depending on what language the customer spoke) to send to the customer.
    - Acknowledge the call.
    - Summarize what we agreed/did.
-   - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".`
+   - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".
+   - CRITICAL CONSTRAINT: NEVER tell the customer to open a support ticket or visit a support link (like hostnin.com/support) themselves. Instead, tell them that we can directly convert this chat into a support ticket for them on our end in one click, and our senior technical team will resolve the issue and update them via email (e.g., "আপনার যদি আরও সহযোগিতা প্রয়োজন হয় আমাদের জানালেই হবে, আমরা সরাসরি এখান থেকে আপনার চ্যাটটি টিকিটে কনভার্ট করে দেবো। আমাদের সিনিয়র টিম বিষয়টি চেক করে ইমেইলে আপডেট জানিয়ে দেবে।").`
                 },
                 {
                   inlineData: {
@@ -184,6 +185,7 @@ Output valid JSON containing:
    - Acknowledge the call.
    - Summarize what we agreed/did.
    - Close politely without honorifics like "Bhai/Bhaiya/Apu". Address them directly or neutrally as "আপনি / আপনার".
+   - CRITICAL CONSTRAINT: NEVER tell the customer to open a support ticket or visit a support link (like hostnin.com/support) themselves. Instead, tell them that we can directly convert this chat into a support ticket for them on our end in one click, and our senior technical team will resolve the issue and update them via email (e.g., "আপনার যদি আরও সহযোগিতা প্রয়োজন হয় আমাদের জানালেই হবে, আমরা সরাসরি এখান থেকে আপনার চ্যাটটি টিকিটে কনভার্ট করে দেবো। আমাদের সিনিয়র টিম বিষয়টি চেক করে ইমেইলে আপডেট জানিয়ে দেবে।").
    - Wrap the output in clean JSON keys: 'summary' and 'follow_up_draft'.`
           },
           {
