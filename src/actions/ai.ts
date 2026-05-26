@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BANGLISH_REGEX = /\b(ami|tumi|amr|apnar|lagbe|hobe|ashe|korbo|korta|dibo|nite|chai|koto|ase|keno|ki|ar|er|hobe|hoba|korchi|korchen|shuru|bhai|bhaiya|vai|vaiya|apne|amader|apnarder|shob|sob|korte|kora|pabo|paben|kontahobe|konta|nibo|niben|hobey|lagbey|achhe|ache|thakbe|hobe|korben|parben|korte|korchi|korse|korsi|bolen|bolben|diben|chen|sathhe|sathe|kotha|kaj|dorkar|projon|proyojon|lagbe|taka|tk|bhalo|valoo|valo|thik|ache)\b/i;
 const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -15,12 +16,12 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (AMBIGUOUS_MSG.test(clean)) continue;
     if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
     if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
-    if (BENGALI_REGEX.test(clean)) return 'Bengali';
+    if (BENGALI_REGEX.test(clean) || BANGLISH_REGEX.test(clean)) return 'Bengali';
     if (clean.length >= 15) return 'English';
   }
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].sender === 'Agent') {
-      return BENGALI_REGEX.test(messages[i].content) ? 'Bengali' : 'English';
+      return (BENGALI_REGEX.test(messages[i].content) || BANGLISH_REGEX.test(messages[i].content)) ? 'Bengali' : 'English';
     }
   }
   return 'English';
@@ -113,7 +114,7 @@ Surgically match the customer's language natively:
 
 ### 2. DIAGNOSTIC FIRST (No Premature Recommendation or Solutions)
 Always respect the sales/support funnel by acknowledging inputs professionally before diving into technical configurations or pitching services:
-- URL ACKNOWLEDGMENT: If the customer sends a raw URL or link (e.g., www.site.com), you MUST start your reply by acknowledging that you are checking the link (e.g., "আপনার লিংকটি আমি চেক করছি।" or "Checking your link now.") before asking diagnostic follow-up questions.
+- URL ACKNOWLEDGMENT: Only start your reply with link checking acknowledgment (e.g., "আপনার লিংকটি আমি চেক করছি।" or "Checking your link now.") if the customer explicitly sent a raw clickable link or fully-qualified domain containing a dot/TLD extension (e.g. www.site.com, site.com, http://...). If the customer only mentions a plain name, site title, or a hyphenated string without a dot/TLD extension (e.g. "evisa-gov-md" or "my site name"), you MUST NOT say you are checking the link, because there is no link to check!
 - CRITICAL 4-QUESTION DIAGNOSTIC RULE: You MUST retrieve exactly 4 key pieces of information from the customer before you are allowed to recommend any plan:
   1. Platform / CMS (WordPress, custom Laravel, Node.js, raw HTML)
   2. Traffic scale / Target concurrent visitors
