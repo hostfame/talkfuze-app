@@ -1114,6 +1114,39 @@ const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const activeTypingConversations = new Map();
 
+// Sequential job queue per JID (conversation) to prevent race conditions and guarantee strict chronological ordering
+class KeyedSequentialQueue {
+  constructor() {
+    this.queues = new Map();
+  }
+
+  async enqueue(key, task) {
+    if (!this.queues.has(key)) {
+      this.queues.set(key, Promise.resolve());
+    }
+    const currentPromise = this.queues.get(key);
+    const nextPromise = currentPromise.then(async () => {
+      try {
+        await task();
+      } catch (err) {
+        console.error(`[QUEUE ERROR] Error executing task for key ${key}:`, err);
+      }
+    });
+    this.queues.set(key, nextPromise);
+    
+    // Cleanup to prevent memory leaks when the queue is completely drained
+    nextPromise.finally(() => {
+      if (this.queues.get(key) === nextPromise) {
+        this.queues.delete(key);
+      }
+    });
+    
+    return nextPromise;
+  }
+}
+
+const outboundQueue = new KeyedSequentialQueue();
+
 // Outbound message processor
 async function processOutboundMessage(msg) {
   if (msg.sender_type !== 'agent' && msg.sender_type !== 'ai') return;
@@ -1157,119 +1190,137 @@ async function processOutboundMessage(msg) {
 
     let jid = resolveBulletproofJid(contact);
 
-    // Implement scheduled delay if requested by UI (e.g. realistic AI typing delay)
-    const scheduledDelayMs = msg.metadata?.scheduled_delay;
-    if (scheduledDelayMs) {
-      let waitTime = 0;
-      if (msg.received_at_local) {
-        // Fresh from realtime: strictly wait relative to when we received it to prevent DB clock drift issues
-        const elapsed = Date.now() - msg.received_at_local;
-        waitTime = Math.max(0, scheduledDelayMs - elapsed);
-      } else {
-        // Pending sweep recovery: already delayed on DB side, no wait.
-        waitTime = 0;
+    // Enqueue the sending task per JID to execute sequentially and preserve strict chronological order
+    await outboundQueue.enqueue(jid, async () => {
+      // Re-fetch the message to make sure its status hasn't been modified or recalled
+      const { data: currentMsg } = await supabaseRealtime
+        .from('messages')
+        .select('status, content')
+        .eq('id', msg.id)
+        .single();
+        
+      if (currentMsg && (currentMsg.status === 'recalled' || currentMsg.status === 'deleted')) {
+        console.log(`[OUTBOUND] Aborting send for message ${msg.id} - already recalled or deleted.`);
+        return;
       }
-      
-      if (waitTime > 0) {
-        console.log(`[OUTBOUND] Message ${msg.id} scheduled. Waiting ${waitTime}ms (received_at_local strategy)...`);
-        
-        const activeCount = (activeTypingConversations.get(jid) || 0) + 1;
-        activeTypingConversations.set(jid, activeCount);
 
-        sendWhatsAppPresence(jid, 'composing', Math.min(10000, waitTime)).catch(() => {});
-        const presenceInterval = setInterval(() => {
-          sendWhatsAppPresence(jid, 'composing', 10000).catch(() => {});
-        }, 10000);
-        
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        clearInterval(presenceInterval);
-        
-        const newCount = (activeTypingConversations.get(jid) || 1) - 1;
-        activeTypingConversations.set(jid, newCount);
-        if (newCount <= 0) {
-          sendWhatsAppPresence(jid, 'paused', 100).catch(() => {});
-        }
-      }
-    }
+      // Implement scheduled delay if requested by UI (e.g. realistic AI typing delay)
+      // Since client-side already handles delay via setTimeout before insertion, we do not delay here to avoid double-delay.
+      const scheduledDelayMs = msg.metadata?.scheduled_delay || 0;
 
-    let quoted = null;
-    try {
-      const parentMessageId = msg.metadata?.reply_to?.message_id;
-      if (parentMessageId) {
-        const { data: parentMsg } = await supabaseRealtime
-          .from('messages')
-          .select('platform_message_id, sender_type, content')
-          .eq('id', parentMessageId)
-          .single();
+      // ── CRITICAL CANCELATION PATTERN ──
+      // If the customer has replied since this outbound message was originally drafted/enqueued, 
+      // abort delivery of delayed chunks to prevent jumbled double-messaging context breaks!
+      // We calculate originalDraftTime by subtracting the scheduled delay from created_at.
+      // ──────────────────────────────────
+      const { data: lastInbound } = await supabaseRealtime
+        .from('messages')
+        .select('created_at')
+        .eq('conversation_id', msg.conversation_id)
+        .eq('sender_type', 'contact')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-        if (parentMsg && parentMsg.platform_message_id) {
-          quoted = {
-            key: {
-              id: parentMsg.platform_message_id,
-              fromMe: parentMsg.sender_type === 'agent' || parentMsg.sender_type === 'ai',
-              remoteJid: jid
-            },
-            message: {
-              conversation: parentMsg.content || ''
+      const originalDraftTime = new Date(new Date(msg.created_at).getTime() - scheduledDelayMs).toISOString();
+
+      if (lastInbound && lastInbound.created_at > originalDraftTime) {
+        console.log(`[OUTBOUND] Customer replied at ${lastInbound.created_at} (after agent message was drafted at ${originalDraftTime}). Aborting out-of-context scheduled chunk.`);
+        await supabaseRealtime.from('messages')
+          .update({
+            status: 'failed',
+            metadata: {
+              ...(msg.metadata || {}),
+              delivery_error: 'Aborted: Customer replied before this delayed message was sent',
+              delivery_failed_at: new Date().toISOString()
             }
-          };
-          console.log(`[OUTBOUND] Replying to parent WhatsApp message: ${parentMsg.platform_message_id}`);
-        }
+          })
+          .eq('id', msg.id);
+        return;
       }
-    } catch (parentErr) {
-      console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
-    }
 
-    // Fetch agent name dynamically for prepending
-    let agentName = null;
-    if (msg.sender_type === 'agent' && msg.sender_id) {
+      let quoted = null;
       try {
-        const { data: agentUser } = await supabaseRealtime
-          .from('users')
-          .select('name')
-          .eq('id', msg.sender_id)
-          .maybeSingle();
-        if (agentUser && agentUser.name) {
-          agentName = agentUser.name;
+        const parentMessageId = msg.metadata?.reply_to?.message_id;
+        if (parentMessageId) {
+          const { data: parentMsg } = await supabaseRealtime
+            .from('messages')
+            .select('platform_message_id, sender_type, content')
+            .eq('id', parentMessageId)
+            .single();
+
+          if (parentMsg && parentMsg.platform_message_id) {
+            quoted = {
+              key: {
+                id: parentMsg.platform_message_id,
+                fromMe: parentMsg.sender_type === 'agent' || parentMsg.sender_type === 'ai',
+                remoteJid: jid
+              },
+              message: {
+                conversation: parentMsg.content || ''
+              }
+            };
+            console.log(`[OUTBOUND] Replying to parent WhatsApp message: ${parentMsg.platform_message_id}`);
+          }
         }
-      } catch (agentErr) {
-        console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
+      } catch (parentErr) {
+        console.warn(`[OUTBOUND] Failed to fetch parent message for reply metadata:`, parentErr.message);
       }
-    } else if (msg.sender_type === 'ai') {
-      agentName = 'Aisha Siddika';
-    }
 
-    let formattedContent = msg.content || '';
-    if (agentName) {
-      formattedContent = `*${agentName}*\n${formattedContent}`;
-    }
+      // Fetch agent name dynamically for prepending
+      let agentName = null;
+      if (msg.sender_type === 'agent' && msg.sender_id) {
+        try {
+          const { data: agentUser } = await supabaseRealtime
+            .from('users')
+            .select('name')
+            .eq('id', msg.sender_id)
+            .maybeSingle();
+          if (agentUser && agentUser.name) {
+            agentName = agentUser.name;
+          }
+        } catch (agentErr) {
+          console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
+        }
+      } else if (msg.sender_type === 'ai') {
+        agentName = 'Aisha Siddika';
+      }
 
-    let sentResult;
-    if (msg.metadata?.media_url) {
-      const captionText = msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]'
-        ? formattedContent
-        : (agentName ? `*${agentName}*` : '');
-      sentResult = await sendMediaMessage(
-        jid,
-        msg.metadata.media_url,
-        captionText,
-        msg.metadata.mimetype,
-        msg.metadata?.filename,
-        quoted
-      );
-    } else {
-      sentResult = await sendTextMessage(jid, formattedContent, quoted);
-    }
+      let formattedContent = msg.content || '';
+      if (agentName) {
+        formattedContent = `*${agentName}*\n${formattedContent}`;
+      }
 
-    // Save platform message id for dedup
-    const platformMessageId = extractSentMessageId(sentResult);
-    if (platformMessageId) {
-      await supabaseRealtime.from('messages')
-        .update({ platform_message_id: platformMessageId, status: 'delivered' })
-        .eq('id', msg.id);
-    }
+      let sentResult;
+      if (msg.metadata?.media_url) {
+        const captionText = msg.content !== '[Image]' && msg.content !== '[Video]' && msg.content !== '[Attachment]' && msg.content !== '[Audio Voice Message]'
+          ? formattedContent
+          : (agentName ? `*${agentName}*` : '');
+        sentResult = await sendMediaMessage(
+          jid,
+          msg.metadata.media_url,
+          captionText,
+          msg.metadata.mimetype,
+          msg.metadata?.filename,
+          quoted
+        );
+      } else {
+        sentResult = await sendTextMessage(jid, formattedContent, quoted);
+      }
 
-    console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
+      // Save platform message id for dedup
+      const platformMessageId = extractSentMessageId(sentResult);
+      if (platformMessageId) {
+        await supabaseRealtime.from('messages')
+          .update({ 
+            platform_message_id: platformMessageId, 
+            status: 'delivered'
+          })
+          .eq('id', msg.id);
+      }
+
+      console.log(`[OUTBOUND] Sent to ${jid}: "${msg.content?.slice(0, 60)}"`);
+    });
   } catch (err) {
     console.error('[OUTBOUND] Error:', err.message);
 
