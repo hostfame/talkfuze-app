@@ -208,6 +208,38 @@ Transcript:
       follow_up_draft = parsedRes.follow_up_draft || "";
     }
 
+    // Resolve exact talk duration from the browser-logged Voice call message if available (to match perfectly)
+    let finalDurationSeconds = durationSeconds;
+    try {
+      const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: recentVoiceMsgs } = await supabaseAdmin
+        .from('messages')
+        .select('metadata')
+        .eq('conversation_id', conversationId)
+        .in('content', ['Voice call', 'Missed voice call'])
+        .gte('created_at', fiveMinsAgo)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (recentVoiceMsgs && recentVoiceMsgs.length > 0) {
+        const msgMeta = typeof recentVoiceMsgs[0].metadata === 'string' 
+          ? JSON.parse(recentVoiceMsgs[0].metadata) 
+          : (recentVoiceMsgs[0].metadata || {});
+        
+        if (msgMeta.duration) {
+          const parts = msgMeta.duration.match(/(?:(\d+)m\s*)?(\d+)s/);
+          if (parts) {
+            const mins = parseInt(parts[1] || '0', 10);
+            const secs = parseInt(parts[2], 10);
+            finalDurationSeconds = mins * 60 + secs;
+            console.log(`[Call AI] Matched browser talk duration: ${msgMeta.duration} (${finalDurationSeconds} seconds)`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Call AI] Failed to match browser talk duration:', err);
+    }
+
     // 5. Save call summary as an internal note (whisper) in messages table
     const { error: insertError } = await supabaseAdmin
       .from('messages')
@@ -221,7 +253,7 @@ Transcript:
         status: 'delivered',
         metadata: {
           is_call_summary: true,
-          duration_seconds: durationSeconds,
+          duration_seconds: finalDurationSeconds,
           transcript: transcriptText,
           summary: summary,
           follow_up_draft: follow_up_draft,
