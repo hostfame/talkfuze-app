@@ -547,37 +547,49 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
           console.log('[AI Draft] Image block present, bypassing DeepSeek and using Claude Haiku directly.');
           useClaudeBackup = true;
         } else {
-          console.log('[AI Draft] Attempting DeepSeek-V4-Pro as primary...');
-          deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${deepseekKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "deepseek-chat",
-              max_tokens: 600,
-              temperature: 0.2,
-              stream: true,
-              stream_options: {
-                include_usage: true
-              },
-              messages: [
-                {
-                  role: "system",
-                  content: buildSystemPrompt()
-                },
-                {
-                  role: "user",
-                  content: userMessage
-                }
-              ]
-            })
-          });
+          console.log('[AI Draft] Attempting DeepSeek-V4-Pro as primary with 1.5s timeout...');
+          const abortController = new AbortController();
+          const timeoutId = setTimeout(() => abortController.abort(), 1500);
 
-          if (!deepseekResponse.ok) {
-            const errText = await deepseekResponse.text();
-            console.error('[AI Draft] DeepSeek API error:', deepseekResponse.status, errText);
+          try {
+            deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${deepseekKey}`,
+                "Content-Type": "application/json",
+              },
+              signal: abortController.signal,
+              body: JSON.stringify({
+                model: "deepseek-chat",
+                max_tokens: 600,
+                temperature: 0.2,
+                stream: true,
+                stream_options: {
+                  include_usage: true
+                },
+                messages: [
+                  {
+                    role: "system",
+                    content: buildSystemPrompt()
+                  },
+                  {
+                    role: "user",
+                    content: userMessage
+                  }
+                ]
+              })
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!deepseekResponse.ok) {
+              const errText = await deepseekResponse.text();
+              console.error('[AI Draft] DeepSeek API error:', deepseekResponse.status, errText);
+              useClaudeBackup = true;
+            }
+          } catch (fetchErr: any) {
+            clearTimeout(timeoutId);
+            console.warn('[AI Draft] DeepSeek fetch aborted or failed:', fetchErr.message);
             useClaudeBackup = true;
           }
         }

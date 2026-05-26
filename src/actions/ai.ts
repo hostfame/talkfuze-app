@@ -142,37 +142,49 @@ CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messa
 
     if (deepseekKey) {
       try {
-        console.log('[generateAiDraft] Attempting DeepSeek-chat...');
-        const dsResponse = await fetch("https://api.deepseek.com/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${deepseekKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "deepseek-chat",
-            max_tokens: 600,
-            temperature: 0.2,
-            messages: [
-              {
-                role: "system",
-                content: staticSystemPrompt
-              },
-              {
-                role: "user",
-                content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`
-              }
-            ]
-          })
-        });
+        console.log('[generateAiDraft] Attempting DeepSeek-chat with 1.5s timeout...');
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 1500);
 
-        if (dsResponse.ok) {
-          const data = await dsResponse.json();
-          draftText = data.choices?.[0]?.message?.content || "";
-          console.log('[generateAiDraft] Success with DeepSeek-chat');
-        } else {
-          const errText = await dsResponse.text();
-          console.error('[generateAiDraft] DeepSeek API error:', dsResponse.status, errText);
+        try {
+          const dsResponse = await fetch("https://api.deepseek.com/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${deepseekKey}`,
+              "Content-Type": "application/json",
+            },
+            signal: abortController.signal,
+            body: JSON.stringify({
+              model: "deepseek-chat",
+              max_tokens: 600,
+              temperature: 0.2,
+              messages: [
+                {
+                  role: "system",
+                  content: staticSystemPrompt
+                },
+                {
+                  role: "user",
+                  content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`
+                }
+              ]
+            })
+          });
+
+          clearTimeout(timeoutId);
+
+          if (dsResponse.ok) {
+            const data = await dsResponse.json();
+            draftText = data.choices?.[0]?.message?.content || "";
+            console.log('[generateAiDraft] Success with DeepSeek-chat');
+          } else {
+            const errText = await dsResponse.text();
+            console.error('[generateAiDraft] DeepSeek API error:', dsResponse.status, errText);
+            useClaudeBackup = true;
+          }
+        } catch (fetchErr: any) {
+          clearTimeout(timeoutId);
+          console.warn('[generateAiDraft] DeepSeek fetch aborted or failed:', fetchErr.message);
           useClaudeBackup = true;
         }
       } catch (dsErr: any) {
