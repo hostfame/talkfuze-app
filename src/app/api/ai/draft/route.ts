@@ -9,34 +9,33 @@ import OpenAI from "openai";
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|amr|apnar|lagbe|hobe|ashe|korbo|korta|dibo|nite|chai|koto|ase|keno|ki|ar|er|hobe|hoba|korchi|korchen|shuru|bhai|bhaiya|vai|vaiya|apne|amader|apnarder|shob|sob|korte|kora|pabo|paben|kontahobe|konta|nibo|niben|hobey|lagbey|achhe|ache|thakbe|hobe|korben|parben|korte|korchi|korse|korsi|bolen|bolben|diben|chen|sathhe|sathe|kotha|kaj|dorkar|projon|proyojon|lagbe|taka|tk|bhalo|valoo|valo|thik|ache)\b/i;
 const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
+const ENGLISH_STOPWORDS = /\b(the|a|an|and|or|but|if|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|should|now|i|you|he|she|it|we|they|me|him|her|us|them|my|your|his|its|our|their|mine|yours|hers|ours|theirs|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|would|could|want|like|go|get|make|take)\b/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // 1. Find the latest SUBSTANTIVE customer message (skip short ambiguous ones)
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m.sender === 'Agent' || m.sender === 'System') continue;
-    const clean = m.content.trim();
-    if (AMBIGUOUS_MSG.test(clean)) continue;
-    // Skip URLs, links, file names - they're language-neutral
-    if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
-    // Skip image/audio attachments
-    if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
-    // Bengali script or Banglish keywords found = Bengali
-    if (BENGALI_REGEX.test(clean) || BANGLISH_REGEX.test(clean)) return 'Bengali';
-    // Only treat as definitive English if 15+ chars (short msgs like "cpu core?" could be in either language)
-    if (clean.length >= 15) return 'English';
+  // 1. If anyone (Agent or Customer) has used Bengali script in the conversation, established language is Bengali
+  const hasBengaliScript = messages.some(m => BENGALI_REGEX.test(m.content));
+  if (hasBengaliScript) {
+    return 'Bengali';
   }
-  
-  // 2. All customer messages were ambiguous - follow the last Agent message
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].sender === 'Agent') {
-      return (BENGALI_REGEX.test(messages[i].content) || BANGLISH_REGEX.test(messages[i].content)) ? 'Bengali' : 'English';
+
+  // 2. Scan customer messages
+  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
+  if (customerMessages.length === 0) return 'English';
+
+  const latestCustomer = customerMessages[customerMessages.length - 1].content.trim();
+  if (AMBIGUOUS_MSG.test(latestCustomer)) {
+    // If latest is ambiguous, check prior Agent language
+    const lastAgent = messages.slice().reverse().find(m => m.sender === 'Agent');
+    if (lastAgent && BENGALI_REGEX.test(lastAgent.content)) {
+      return 'Bengali';
     }
+    return 'English';
   }
-  
-  return 'English';
+
+  // 3. Detect standard English: if it doesn't contain standard English stopwords, it is Bengali/Banglish
+  const hasEnglishStopwords = ENGLISH_STOPWORDS.test(latestCustomer);
+  return hasEnglishStopwords ? 'English' : 'Bengali';
 }
 
 // ============================================================
