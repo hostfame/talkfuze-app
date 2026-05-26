@@ -135,39 +135,89 @@ Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
 CRITICAL LANGUAGE OVERRIDE: Based on algorithmic detection of their recent messages, the customer's language is strictly ${strictLanguage}. You MUST reply ONLY in ${strictLanguage}. Do not use any other language.${greetingRule}${personalizationRule}${fewShotBlock}${mistakesBlock}`;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 600,
-        system: staticSystemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`,
-          },
-        ],
-      }),
-    });
+    let draftText = "";
+    let useClaudeBackup = false;
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Anthropic API Error:", err);
-      let parsedErr = err;
+    if (deepseekKey) {
       try {
-        parsedErr = JSON.parse(err).error?.message || err;
-      } catch(e) {}
-      return { success: false, error: `Anthropic API Error: ${parsedErr}` };
+        console.log('[generateAiDraft] Attempting DeepSeek-V3...');
+        const dsResponse = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${deepseekKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "deepseek-chat",
+            max_tokens: 600,
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: staticSystemPrompt
+              },
+              {
+                role: "user",
+                content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`
+              }
+            ]
+          })
+        });
+
+        if (dsResponse.ok) {
+          const data = await dsResponse.json();
+          draftText = data.choices?.[0]?.message?.content || "";
+          console.log('[generateAiDraft] Success with DeepSeek-V3');
+        } else {
+          const errText = await dsResponse.text();
+          console.error('[generateAiDraft] DeepSeek API error:', dsResponse.status, errText);
+          useClaudeBackup = true;
+        }
+      } catch (dsErr: any) {
+        console.error('[generateAiDraft] DeepSeek connection exception:', dsErr.message);
+        useClaudeBackup = true;
+      }
+    } else {
+      useClaudeBackup = true;
     }
 
-    const data = await response.json();
-    console.log("Anthropic Response Usage:", data.usage);
-    const draftText = data.content?.[0]?.text;
+    if (useClaudeBackup || !draftText) {
+      console.log('[generateAiDraft] Falling back to Claude Haiku...');
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 600,
+          system: staticSystemPrompt,
+          messages: [
+            {
+              role: "user",
+              content: `${dynamicInstructions}\n\nCustomer Name: ${contactName}\n\nConversation Context:\n${contextMessages}\n\nDraft a smart, helpful reply as the support agent.`,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("Anthropic API Error:", err);
+        let parsedErr = err;
+        try {
+          parsedErr = JSON.parse(err).error?.message || err;
+        } catch(e) {}
+        return { success: false, error: `Both DeepSeek and Claude failed. Claude error: ${parsedErr}` };
+      }
+
+      const data = await response.json();
+      console.log("Anthropic Response Usage:", data.usage);
+      draftText = data.content?.[0]?.text || "";
+    }
 
     if (!draftText) {
       return { success: false, error: "AI returned an empty response." };

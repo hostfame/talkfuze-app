@@ -534,102 +534,178 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
       });
     }
 
-    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "prompt-caching-2024-07-31",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
-        temperature: 0.1,
-        stream: true,
-        system: [
-          {
-            type: "text",
-            text: buildSystemPrompt(),
-            cache_control: { type: "ephemeral" }
-          }
-        ],
-        messages: [
-          {
-            role: "user",
-            content: imageBlock 
-              ? [
-                  {
-                    type: "image",
-                    source: {
-                      type: "base64",
-                      media_type: imageBlock.mediaType,
-                      data: imageBlock.base64Data
-                    }
-                  },
-                  {
-                    type: "text",
-                    text: userMessage
-                  }
-                ]
-              : userMessage
-          },
-        ],
-      }),
-    });
+    let activeResponse: Response;
+    let isDeepseek = false;
+    let useClaudeBackup = false;
+    let deepseekResponse;
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-    if (!anthropicResponse.ok) {
-      const errorText = await anthropicResponse.text();
-      console.error('[AI Draft] Anthropic error:', anthropicResponse.status, errorText);
-      const encoder = new TextEncoder();
-      const errorStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `Anthropic ${anthropicResponse.status}: ${errorText.substring(0, 200)}` })}\n\n`));
-          controller.close();
+    if (deepseekKey) {
+      try {
+        if (imageBlock) {
+          console.log('[AI Draft] Image block present, bypassing DeepSeek and using Claude Haiku directly.');
+          useClaudeBackup = true;
+        } else {
+          console.log('[AI Draft] Attempting DeepSeek-V3 as primary...');
+          deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${deepseekKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "deepseek-chat",
+              max_tokens: 600,
+              temperature: 0.2,
+              stream: true,
+              stream_options: {
+                include_usage: true
+              },
+              messages: [
+                {
+                  role: "system",
+                  content: buildSystemPrompt()
+                },
+                {
+                  role: "user",
+                  content: userMessage
+                }
+              ]
+            })
+          });
+
+          if (!deepseekResponse.ok) {
+            const errText = await deepseekResponse.text();
+            console.error('[AI Draft] DeepSeek API error:', deepseekResponse.status, errText);
+            useClaudeBackup = true;
+          }
         }
-      });
-      return new Response(errorStream, {
-        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
-      });
+      } catch (dsErr: any) {
+        console.error('[AI Draft] DeepSeek connection exception:', dsErr.message);
+        useClaudeBackup = true;
+      }
+    } else {
+      console.log('[AI Draft] DEEPSEEK_API_KEY not found. Using Claude as primary.');
+      useClaudeBackup = true;
     }
 
-    // 6. Pipe Anthropic SSE stream directly to client
+    if (!useClaudeBackup && deepseekResponse) {
+      activeResponse = deepseekResponse;
+      isDeepseek = true;
+      console.log('[AI Draft] Streaming from DeepSeek-V3...');
+    } else {
+      console.log('[AI Draft] Streaming from Claude backup...');
+      const backupResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "prompt-caching-2024-07-31",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          temperature: 0.1,
+          stream: true,
+          system: [
+            {
+              type: "text",
+              text: buildSystemPrompt(),
+              cache_control: { type: "ephemeral" }
+            }
+          ],
+          messages: [
+            {
+              role: "user",
+              content: imageBlock 
+                ? [
+                    {
+                      type: "image",
+                      source: {
+                        type: "base64",
+                        media_type: imageBlock.mediaType,
+                        data: imageBlock.base64Data
+                      }
+                    },
+                    {
+                      type: "text",
+                      text: userMessage
+                    }
+                  ]
+                : userMessage
+            },
+          ],
+        }),
+      });
+
+      if (!backupResponse.ok) {
+        const errorText = await backupResponse.text();
+        console.error('[AI Draft Backup] Claude backup failed:', backupResponse.status, errorText);
+        const encoder = new TextEncoder();
+        const errorStream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `AI Draft failed: Both DeepSeek and Claude returned errors.` })}\n\n`));
+            controller.close();
+          }
+        });
+        return new Response(errorStream, {
+          headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
+        });
+      }
+
+      activeResponse = backupResponse;
+    }
+
+    // Pipe the active SSE stream directly to client
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: strictLanguage, sources: knowledgeSources })}\n\n`));
 
-        const reader = anthropicResponse.body?.getReader();
+        const reader = activeResponse.body?.getReader();
         const decoder = new TextDecoder("utf-8");
         if (!reader) { controller.close(); return; }
 
         let buffer = '';
+        let inputTokens = 0;
+        let outputTokens = 0;
 
-          let inputTokens = 0;
-          let outputTokens = 0;
+        try {
+          let firstChunk = true;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          try {
-            let firstChunk = true;
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || '';
 
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || '';
-
-              for (const line of lines) {
-                if (firstChunk && line.startsWith("data: ")) {
-                  // Detect Anthropic stream-level errors
+            for (const line of lines) {
+              if (firstChunk && line.startsWith("data: ")) {
+                try {
                   const parsed = JSON.parse(line.slice(6));
                   if (parsed.type === 'error') {
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown Anthropic error' })}\n\n`));
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: parsed.error?.message || 'Unknown stream error' })}\n\n`));
                   }
-                  firstChunk = false;
-                }
-                if (line.startsWith("data: ") && line !== "data: [DONE]") {
-                  try {
-                    const data = JSON.parse(line.slice(6));
+                } catch { }
+                firstChunk = false;
+              }
+              if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  if (isDeepseek) {
+                    // Parse DeepSeek OpenAI-compatible SSE format
+                    if (data.usage) {
+                      inputTokens = data.usage.prompt_tokens || 0;
+                      outputTokens = data.usage.completion_tokens || 0;
+                    }
+                    const text = data.choices?.[0]?.delta?.content;
+                    if (text) {
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+                    }
+                  } else {
+                    // Parse Anthropic SSE format
                     if (data.type === "message_start" && data.message?.usage?.input_tokens) {
                       inputTokens = data.message.usage.input_tokens;
                     }
@@ -637,25 +713,24 @@ FINAL WARNING: You MUST write your reply in ${strictLanguage === 'Bengali' ? 'BE
                       outputTokens = data.usage.output_tokens;
                     }
                     if (data.type === "content_block_delta" && data.delta?.text) {
-                      controller.enqueue(
-                        encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`)
-                      );
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: data.delta.text })}\n\n`));
                     }
-                  } catch {
-                    // incomplete JSON chunk
                   }
+                } catch {
+                  // Incomplete JSON chunk
                 }
               }
             }
-            
-            // Send final usage metrics
-            const totalTokens = inputTokens + outputTokens;
-            if (totalTokens > 0) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: "claude-3-5-haiku", temperature: 0.7 })}\n\n`)
-              );
-            }
-          } catch (streamErr: any) {
+          }
+
+          // Send final usage metrics
+          const totalTokens = inputTokens + outputTokens;
+          if (totalTokens > 0) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ usage: { total: totalTokens }, model: isDeepseek ? "deepseek-v3" : "claude-3-5-haiku", temperature: 0.2 })}\n\n`)
+            );
+          }
+        } catch (streamErr: any) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream error: ' + (streamErr?.message || 'unknown') })}\n\n`));
         } finally {
           reader.releaseLock();
