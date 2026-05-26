@@ -4607,10 +4607,14 @@ export default function ChatThread({
               <button
                 onClick={handleJoinThread}
                 disabled={isJoining}
-                className="cursor-pointer w-72 py-4 bg-slate-100 dark:bg-[#1f2c34] hover:bg-slate-200 dark:hover:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] text-[15px] font-semibold tracking-wide rounded-2xl border border-slate-300 dark:border-[#2a3942] shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 transform active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
+                className="cursor-pointer w-72 py-4 bg-slate-50 dark:bg-[#182229] hover:bg-slate-100 dark:hover:bg-[#202c33] text-slate-800 dark:text-[#e9edef] text-[14px] font-semibold tracking-tight rounded-2xl border border-slate-250 dark:border-[#2a3942] shadow-sm hover:shadow transition-all flex items-center justify-center gap-2.5 transform active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
               >
-                {isJoining && <Loader2 size={18} className="animate-spin text-slate-500" />}
-                <span className="tracking-wide">Join Chat</span>
+                {isJoining ? (
+                  <Loader2 size={16} className="animate-spin text-slate-500" />
+                ) : (
+                  <MessageSquare size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />
+                )}
+                <span>Join Conversation</span>
               </button>
             </div>
           )}
