@@ -548,3 +548,59 @@ export async function fetchAllWhmcsUnpaidInvoices() {
     return []
   }
 }
+
+export async function fetchClientNameservers(phoneOrEmail: string) {
+  try {
+    const client = await fetchWhmcsClient(phoneOrEmail)
+    if (!client || !client.id) {
+      return []
+    }
+
+    const { getClientsProducts } = await import('@/lib/whmcs')
+    const productsRes = await getClientsProducts(client.id, 0, 100)
+    const products = productsRes.products || []
+
+    const SERVER_NS_MAP: Record<string, { ns1: string, ns2: string }> = {
+      "Titan": { ns1: "draco.balancedserver.com", ns2: "luna.balancedserver.com" },
+      "Nebula": { ns1: "nova.balancedserver.com", ns2: "zara.balancedserver.com" },
+      "Advance": { ns1: "aster.balancedserver.com", ns2: "hazel.balancedserver.com" },
+      "Apollo": { ns1: "apone.balancedserver.com", ns2: "aptwo.balancedserver.com" },
+      "Aurora": { ns1: "orion.balancedserver.com", ns2: "vega.balancedserver.com" },
+      "Velocity": { ns1: "echo.balancedserver.com", ns2: "pulse.balancedserver.com" },
+      "Ignite": { ns1: "orbit.balancedserver.com", ns2: "lumen.balancedserver.com" },
+      "Rise": { ns1: "risealpha.balancedserver.com", ns2: "risebeta.balancedserver.com" },
+      "Flux": { ns1: "fluxone.balancedserver.com", ns2: "fluxtwo.balancedserver.com" },
+      "Spark": { ns1: "sparkone.balancedserver.com", ns2: "sparktwo.balancedserver.com" },
+      "Secure": { ns1: "mushi.balancedserver.com", ns2: "enaya.balancedserver.com" }
+    };
+
+    return products
+      .filter((p: any) => p.domain && p.status === 'Active')
+      .map((p: any) => {
+        const serverName = p.servername || "";
+        let ns1 = (p.ns1 || "").trim();
+        let ns2 = (p.ns2 || "").trim();
+
+        if (!ns1 && serverName) {
+          const mapped = SERVER_NS_MAP[serverName];
+          if (mapped) {
+            ns1 = mapped.ns1;
+            ns2 = mapped.ns2;
+          }
+        }
+
+        return {
+          id: p.id,
+          domain: p.domain,
+          productName: p.name,
+          serverName: serverName,
+          ns1: ns1 || "ns1.hostnin.com.bd",
+          ns2: ns2 || "ns2.hostnin.com.bd"
+        }
+      })
+  } catch (error) {
+    console.error("Failed to fetch client nameservers:", error)
+    return []
+  }
+}
+

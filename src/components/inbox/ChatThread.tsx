@@ -4596,15 +4596,9 @@ export default function ChatThread({
               <button
                 onClick={handleJoinThread}
                 disabled={isJoining}
-                className="cursor-pointer px-8 py-3 bg-[#0070f3] hover:bg-blue-600 text-white font-semibold rounded-full shadow-[0_4px_14px_0_rgba(0,112,243,0.3)] hover:shadow-[0_6px_20px_rgba(0,112,243,0.2)] transition-all flex items-center gap-2.5 transform hover:scale-105 active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
+                className="cursor-pointer px-6 py-2.5 bg-[#0070f3] hover:bg-blue-600 text-white text-[13px] font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed"
               >
-                {isJoining ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <span className="p-1 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                    <MessageSquare size={16} className="text-white" />
-                  </span>
-                )}
+                {isJoining && <Loader2 size={15} className="animate-spin" />}
                 <span className="tracking-wide">Join Chat</span>
               </button>
             </div>
@@ -4665,6 +4659,56 @@ export default function ChatThread({
             </div>
           </div>
         )}
+
+        {/* Nameserver Menu */}
+        {showNameserverMenu && (
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden z-50 max-h-[300px] flex flex-col">
+            <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-805 bg-slate-50/50 dark:bg-slate-800/20 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Database size={12} className="text-slate-400" />
+                WHMCS Active hosting services
+              </span>
+              {nameserverOptions.length > 0 && (
+                <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md font-mono">
+                  {nameserverSelectedIndex + 1}/{nameserverOptions.length}
+                </span>
+              )}
+            </div>
+            <div className="overflow-y-auto p-1 max-h-[220px]">
+              {isNameserversLoading ? (
+                <div className="p-4 flex items-center justify-center gap-2 text-[13px] text-slate-500">
+                  <Loader2 size={14} className="animate-spin text-slate-400" />
+                  Querying WHMCS products...
+                </div>
+              ) : nameserverOptions.length === 0 ? (
+                <div className="p-4 text-center text-[13px] text-slate-500 flex flex-col gap-1 items-center">
+                  <span className="font-medium">No active hosting products found</span>
+                  <span className="text-[11px] text-slate-400">Ensure the client email/phone is linked in WHMCS</span>
+                </div>
+              ) : (
+                nameserverOptions.map((item, i) => (
+                  <div 
+                    key={item.id} 
+                    id={`nameserver-item-${i}`}
+                    onMouseEnter={() => setNameserverSelectedIndex(i)}
+                    onClick={() => applyNameserver(item)}
+                    className={`px-3 py-2 cursor-pointer rounded-lg flex flex-col gap-0.5 transition-colors ${i === nameserverSelectedIndex ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-bold text-slate-700 dark:text-slate-200">{item.domain}</span>
+                      <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50">{item.productName}</span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 text-[11px] text-slate-400 font-mono">
+                      <span>NS1: {item.ns1}</span>
+                      <span>NS2: {item.ns2}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
 
         <div className={`flex flex-col border rounded-xl overflow-hidden transition-all shadow-sm ${(isAiDrafting || isAiStreaming) ? 'ai-composer-active ai-composer-shimmer bg-white dark:bg-[#2a3942]' : isInternal ? 'bg-amber-50 dark:bg-[#1f1d17] border-amber-300 dark:border-amber-900/40 focus-within:ring-1 focus-within:border-amber-400 focus-within:ring-amber-400/30' : 'bg-white dark:bg-[#2a3942] border-slate-300 dark:border-[#2a3942] focus-within:ring-1 focus-within:border-blue-500 focus-within:ring-blue-500'}`}>
           {/* AI shimmer overlay */}
@@ -4890,7 +4934,20 @@ export default function ChatThread({
                   }
                 }}
               onKeyDown={(e) => {
-                if (showMacroMenu && filteredMacros.length > 0) {
+                if (showNameserverMenu && nameserverOptions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setNameserverSelectedIndex(prev => (prev < nameserverOptions.length - 1 ? prev + 1 : prev))
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setNameserverSelectedIndex(prev => (prev > 0 ? prev - 1 : 0))
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault()
+                    applyNameserver(nameserverOptions[nameserverSelectedIndex])
+                  } else if (e.key === 'Escape') {
+                    setShowNameserverMenu(false)
+                  }
+                } else if (showMacroMenu && filteredMacros.length > 0) {
                   if (e.key === 'ArrowDown') {
                     e.preventDefault()
                     setSelectedIndex(prev => (prev < filteredMacros.length - 1 ? prev + 1 : prev))
