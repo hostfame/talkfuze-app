@@ -2103,7 +2103,7 @@ export default function ChatThread({
   const applyNameserver = (item: any) => {
     const val = input
     const textarea = textareaRef.current
-    const nameserverText = `Here are the nameservers for your domain **${item.domain}**:\n- **NS1:** ${item.ns1}\n- **NS2:** ${item.ns2}`
+    const nameserverText = `${item.ns1}\n${item.ns2}`
 
     if (textarea) {
       const selectionStart = textarea.selectionStart
@@ -2138,9 +2138,9 @@ export default function ChatThread({
       setIsAiStreaming(false);
     }
 
-    // Quick Nameserver shortcut (//n)
-    if (val.trim() === '//n' || val.endsWith(' //n') || val.endsWith('\n//n')) {
-      const newVal = val.replace(/(^|\s|\n)\/\/n$/, '').trim()
+    // Quick Nameserver shortcut (//ns)
+    if (val.trim() === '//ns' || val.endsWith(' //ns') || val.endsWith('\n//ns')) {
+      const newVal = val.replace(/(^|\s|\n)\/\/ns$/, '').trim()
       setInput(newVal)
       setShowMacroMenu(false)
       setShowMentionMenu(false)
