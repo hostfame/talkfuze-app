@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BANGLISH_REGEX = /\b(ami|amr|amar|apni|apnar|tumi|tomar|koto|dam|nibo|niben|hobe|ache|ase|diben|den|korbo|kortesi|korben|bhalo|bhalojobos|korte|chai|chaichilam|koren|bhai|bhaiya|vai|vaiya)\b/i;
 const AMBIGUOUS_MSG = /^(ok|okay|yes|no|ji|jee|ha|na|thanks|thank you|thanku|dhonnobad|hi|hello|hey|hlo|hmm|hmmm|send|H|done|sure)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -15,12 +16,12 @@ function detectConversationLanguage(messages: { sender: string; content: string 
     if (AMBIGUOUS_MSG.test(clean)) continue;
     if (/^(https?:\/\/|www\.)\S+$/i.test(clean)) continue;
     if (/^\[?(image|audio|video|file|attachment)/i.test(clean)) continue;
-    if (BENGALI_REGEX.test(clean)) return 'Bengali';
+    if (BENGALI_REGEX.test(clean) || BANGLISH_REGEX.test(clean)) return 'Bengali';
     if (clean.length >= 15) return 'English';
   }
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].sender === 'Agent') {
-      return BENGALI_REGEX.test(messages[i].content) ? 'Bengali' : 'English';
+      return (BENGALI_REGEX.test(messages[i].content) || BANGLISH_REGEX.test(messages[i].content)) ? 'Bengali' : 'English';
     }
   }
   return 'English';
@@ -120,6 +121,8 @@ Determine language from the LAST 3-4 messages (both Agent and Customer), NOT fro
 8. ONLY DRAFT LATEST TURN: Never repeat sent agent messages.
 9. CONTEXT CONTINUITY: Short customer replies = synthesize from preceding Agent message.
 10. NO HALLUCINATED PRICES: Use exact figures from knowledge base or link to pricing page.
+11. NO BANGLISH RESPONSES: NEVER write responses in Banglish (using English letters to write Bengali words, e.g. "amra check korsi"). ALL draft text in Bengali MUST be in pure Bengali script (বাংলা ফন্ট).
+12. URL LINK ACKNOWLEDGMENT: If the customer's latest message is a raw URL or link (e.g., www.site.com), the draft MUST start with a professional acknowledgment in the matching language that you are checking the link (e.g., "আপনার লিংকটি আমি চেক করছি।" or "Checking your link now.") before you ask any diagnostic follow-up questions.
 
 ## BENGALI VOCABULARY (ALWAYS ENFORCED)
 - Hostnin = "হোষ্টনিন", Hosting = "হোষ্টিং", Server = "সা‍র্ভার"
@@ -146,7 +149,7 @@ ${JSON.stringify(knowledge)}
 Output ONLY the draft message. No quotes, no labels, no "Here's a draft:" prefix.`;
 
     const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
-${detectedLanguage === 'Bengali' ? '\nLANGUAGE: Customer is writing in Bengali. Reply in Bengali script.' : '\nLANGUAGE: Customer appears to be writing in English. Reply in English. However, if you can see the customer is writing in Banglish (Bengali words in English letters), reply in Bengali script instead.'}
+${detectedLanguage === 'Bengali' ? '\nLANGUAGE: Customer is writing in Bengali or Banglish. You MUST reply in pure Bengali script (বাংলা ফন্ট). NEVER reply in Banglish (English letters writing Bengali words).' : '\nLANGUAGE: Customer appears to be writing in English. Reply in English. However, if the customer writes in Banglish (Bengali words in English letters like "apni ki hosting den"), you MUST reply in pure Bengali script (বাংলা ফন্ট) - NEVER reply in Banglish script.'}
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).${personalizationRule}${fewShotBlock}${mistakesBlock}`;
