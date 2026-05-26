@@ -474,6 +474,7 @@ export default function WidgetPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | 'new' | null>(null)
   const activeConversationIdRef = useRef<string | 'new' | null>(null)
   const subscribedConvIdsRef = useRef<Set<string>>(new Set())
+  const typingChannelRef = useRef<any>(null)
   
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
@@ -1575,8 +1576,11 @@ export default function WidgetPage() {
       })
       .subscribe()
 
+    typingChannelRef.current = typingChannel
+
     return () => {
       if (agentTypingTimeout) clearTimeout(agentTypingTimeout)
+      typingChannelRef.current = null
       supabase.removeChannel(typingChannel)
     }
   }, [org_id])
@@ -2205,7 +2209,18 @@ export default function WidgetPage() {
     if (!textToSubmit.trim() || isSending || !deviceId) return
 
     const messageText = textToSubmit.trim()
-    if (!forcedText) setInput("")
+    if (!forcedText) {
+      setInput("")
+      if (activeConversationId && activeConversationId !== 'new') {
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+        const chan = typingChannelRef.current || supabase.channel(`typing:${org_id}`);
+        chan.send({
+          type: 'broadcast',
+          event: 'typingStatus',
+          payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false }
+        })
+      }
+    }
     playUISound('send')
     
     setTimeout(() => {
@@ -3748,14 +3763,16 @@ export default function WidgetPage() {
                       onChange={(e) => {
                         setInput(e.target.value)
                         if (activeConversationId && activeConversationId !== 'new') {
-                          supabase.channel(`typing:${org_id}`).send({
+                          const chan = typingChannelRef.current || supabase.channel(`typing:${org_id}`);
+                          chan.send({
                             type: 'broadcast',
                             event: 'typingStatus',
                             payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: true, text: e.target.value }
                           })
                           if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
                           typingTimeoutRef.current = setTimeout(() => {
-                            supabase.channel(`typing:${org_id}`).send({
+                            const inactiveChan = typingChannelRef.current || supabase.channel(`typing:${org_id}`);
+                            inactiveChan.send({
                               type: 'broadcast',
                               event: 'typingStatus',
                               payload: { conversation_id: activeConversationId, direction: 'contact', is_typing: false }

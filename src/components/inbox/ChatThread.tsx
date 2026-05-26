@@ -4607,17 +4607,16 @@ export default function ChatThread({
               ) : (
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=random&color=fff&length=1`} alt={contactName} className="w-8 h-8 rounded-full object-cover shrink-0 mb-1 bg-slate-100 dark:bg-slate-800" />
               )}
-              <div className="flex flex-col gap-1.5 max-w-[70%]">
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 self-start">
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3 max-w-[70%]">
+                {customerTypingText ? (
+                  <span className="text-[13px] text-slate-500 dark:text-slate-400 italic break-words select-none">
+                    {customerTypingText}
+                  </span>
+                ) : (
                   <div className="flex gap-1.5 items-center h-4">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                  </div>
-                </div>
-                {customerTypingText && (
-                  <div className="text-[11px] text-slate-400 dark:text-slate-500 italic px-2 max-w-full break-words select-none bg-slate-50/50 dark:bg-slate-800/30 py-1 rounded-lg border border-slate-100/50 dark:border-slate-800/30">
-                    Drafting: "{customerTypingText}"
                   </div>
                 )}
               </div>
