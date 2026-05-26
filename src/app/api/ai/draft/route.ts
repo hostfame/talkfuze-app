@@ -366,11 +366,10 @@ The human support agent has provided a DIRECT INSTRUCTION for what the reply mus
 >>> "${instruction}" <<<
 
 RULES FOR THIS INSTRUCTION:
-1. YOUR SOLE PURPOSE IS TO EXECUTE THIS INSTRUCTION. Do NOT write a generic support reply. Do NOT bring up unrelated past topics or knowledge base articles.
-2. NO TECHNICAL DIAGNOSTIC BLOAT: If the instruction is a simple status or handoff command (e.g., "our team will reply you", "please wait", "let me check", "checking"), you MUST write ONLY a short, polite 1-2 sentence response executing exactly that command. Do NOT perform any technical diagnostics, do NOT ask new technical questions, and do NOT write a long response.
-3. If the instruction is a direct phrase (like "apni kemon achen?"), just format it beautifully and return it exactly as meant. Do NOT add extra fluff.
-4. If the instruction is a command (like "tell them the invoice is paid"), write a professional, empathetic response expanding on that command using the context, but keep it strictly focused on that topic.
-5. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in.` : ''}
+1. COPILOT ROLE (PRIMARY): You are an assistant to the human support agent. The agent's whisper is the absolute core content you must refine and polish. You MUST write your draft solely by expanding, refining, and polishing this specific whisper command into our beautiful, warm, casual Hostnin tone.
+2. NO INDEPENDENT TROUBLESHOOTING: Do NOT perform any independent technical diagnoses, do NOT ask new technical questions, and do NOT write a long technical essay unless the agent's whisper explicitly tells you to do so. Your job is ONLY to state the agent's intent.
+3. If the agent's whisper is a simple status, greeting, or handoff (e.g., "our team will reply you", "please wait", "checking"), you MUST write ONLY a short, polite 1-2 sentence response confirming that action. Do NOT add any extra technical fluff or follow-up questions.
+4. CRITICAL: ALWAYS format the response in the language determined by the CUSTOMER's original messages (see CRITICAL LANGUAGE RULES), regardless of the language the instruction is written in.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant to the question)
 ${knowledgeContext}
