@@ -256,13 +256,15 @@ export default function LeaderboardPage() {
                       <Clock size={14} /> Active Time
                     </div>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{formatActiveTime(agent.activeMinutes)}</span>
-                    {agent.avgResponseTime > 0 ? (
-                      <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1 font-medium">
-                        <Clock size={10} /> {agent.avgResponseTime}m avg response
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5">No replies yet</span>
-                    )}
+                    <span className="text-[11px] text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1.5 font-medium">
+                      <span>{agent.actionsPerHour || 0} actions/hr</span>
+                      {agent.avgResponseTime > 0 && (
+                        <>
+                          <span className="text-slate-300 dark:text-[#2a3942]">•</span>
+                          <span>{agent.avgResponseTime}m response</span>
+                        </>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -432,6 +434,15 @@ export default function LeaderboardPage() {
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
                     <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Total Public Messages</span>
                     <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.messagesCount}</span>
+                  </div>
+
+                  {/* Highlights Actions per Hour / Engagement Rate silently */}
+                  <div className="col-span-2 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/20 dark:bg-blue-950/10 flex items-center justify-between shadow-sm">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wide">Engagement Efficiency</span>
+                      <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef] mt-1">{selectedAgent.actionsPerHour || 0} <span className="text-sm font-medium text-slate-500">actions / hour</span></span>
+                    </div>
+                    <Zap size={22} className="text-blue-500" />
                   </div>
                 </div>
               </div>

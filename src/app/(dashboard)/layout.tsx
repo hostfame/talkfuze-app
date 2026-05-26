@@ -8,6 +8,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import SipDialer from "@/components/dialer/SipDialer"
 import LogoutButton from "@/components/auth/LogoutButton"
 import SidebarNavigation from "@/components/ui/SidebarNavigation"
+import ActiveTimeTracker from "@/components/auth/ActiveTimeTracker"
 
 export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
 
@@ -39,6 +40,7 @@ export default async function DashboardLayout({
 
   return (
     <AuthProvider user={profile}>
+      <ActiveTimeTracker />
       <div className="flex h-screen overflow-hidden bg-[#F8FAFC] dark:bg-[#0b141a] text-slate-800 dark:text-[#e9edef] text-sm font-sans">
         {/* 1. Far Left Thin Navigation Strip - hidden on mobile */}
         <aside className="hidden md:flex w-[64px] flex-col items-center py-5 bg-slate-50/50 dark:bg-[#111b21] border-r border-slate-200/60 dark:border-[#222e35] z-10 shrink-0">

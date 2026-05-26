@@ -75,6 +75,27 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching call logs for leaderboard:", err);
   }
 
+  // 3.5. Get silent heartbeats in this period for active time
+  let heartbeats: any[] = [];
+  try {
+    let heartbeatsQuery = supabaseAdmin
+      .from('agent_activity_heartbeats')
+      .select('agent_id')
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString());
+      
+    if (period === 'custom') {
+      heartbeatsQuery = heartbeatsQuery.lte('created_at', endDate.toISOString());
+    }
+    
+    const { data: heartbeatLogs } = await heartbeatsQuery;
+    if (heartbeatLogs) {
+      heartbeats = heartbeatLogs;
+    }
+  } catch (err) {
+    console.error("Error fetching heartbeats for active time:", err);
+  }
+
   // 4. Process stats per agent
   const statsMap: Record<string, any> = {};
   
@@ -90,6 +111,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       callsCount: 0,
       totalCallDuration: 0,
       activeMinutes: 0,
+      actionsPerHour: 0,
       avgResponseTime: 0, // In minutes
       totalResponseTimeMs: 0,
       responseTimeCount: 0,
@@ -105,6 +127,15 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       aiAssistedPercent: 0
     };
   });
+
+  // Count heartbeats to calculate active time (1 heartbeat = 1 active minute)
+  if (heartbeats.length > 0) {
+    heartbeats.forEach(hb => {
+      if (statsMap[hb.agent_id]) {
+        statsMap[hb.agent_id].activeMinutes++;
+      }
+    });
+  }
 
   // Match calls by agent name - Fuzzy matching enabled (e.g. Asad matches Asad Ujjaman)
   if (calls.length > 0) {
@@ -224,7 +255,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       });
     });
 
-    // Calculate active minutes, average response times, and hosting metrics
+    // Calculate average response times and hosting metrics
     Object.keys(statsMap).forEach(agentId => {
       const stats = statsMap[agentId];
 
@@ -250,30 +281,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
         stats.emergencyResponseTime = Math.round(avgEmergencyMs / 1000);
       } else {
         stats.emergencyResponseTime = 0;
-      }
-      
-      if (agentTimestamps[agentId] && agentTimestamps[agentId].length > 0) {
-        agentTimestamps[agentId].sort((a, b) => a - b);
-        
-        let totalActiveMs = 0;
-        let sessionStart = agentTimestamps[agentId][0];
-        let lastMsgTime = agentTimestamps[agentId][0];
-        
-        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 mins
-        
-        for (let i = 1; i < agentTimestamps[agentId].length; i++) {
-          const t = agentTimestamps[agentId][i];
-          if (t - lastMsgTime > SESSION_TIMEOUT) {
-            totalActiveMs += (lastMsgTime - sessionStart);
-            sessionStart = t;
-          }
-          lastMsgTime = t;
-        }
-        
-        const finalSessionDur = (lastMsgTime - sessionStart);
-        totalActiveMs += finalSessionDur > 0 ? finalSessionDur : (5 * 60 * 1000); 
-
-        stats.activeMinutes = Math.round(totalActiveMs / (60 * 1000));
       }
     });
   }
@@ -303,10 +310,17 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching AI draft stats:", err);
   }
 
-  // Calculate AI assisted percentage
+  // Calculate AI assisted percentage and Actions Per Hour (APH)
   Object.values(statsMap).forEach((stats: any) => {
     if (stats.messagesCount > 0) {
       stats.aiAssistedPercent = Math.round((stats.aiDraftCount / stats.messagesCount) * 100);
+    }
+    const totalActions = stats.messagesCount + stats.whispersCount + stats.callsCount;
+    const activeHours = stats.activeMinutes / 60;
+    if (activeHours > 0) {
+      stats.actionsPerHour = Math.round((totalActions / activeHours) * 10) / 10;
+    } else {
+      stats.actionsPerHour = 0;
     }
   });
 
