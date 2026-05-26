@@ -43,17 +43,25 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
 
     // Comprehensive Benglish words list to avoid misclassification
     const BENGLISH_WORDS = new Set([
-      'ami', 'tumi', 'apni', 'amader', 'apnar', 'tomar', 'koto', 'bhai', 'apuni', 'apuo',
-      'hobe', 'ase', 'aseh', 'tai', 'karone', 'ekhon', 'korte', 'toh', 'sathe',
-      'keno', 'shudhu', 'dorkar', 'nai', 'kichhu', 'kichu', 'pore', 'korbo', 'sob',
-      'tarpor', 'chaile', 'parbo', 'parbona', 'karon', 'theke', 'diye', 'hoye', 'hoy',
-      'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi', 'ki', 'kiser', 'kire',
-      'ache', 'dhonnobad', 'shundor', 'sundor', 'khub', 'valo', 'bhalo', 'kharap',
-      'niben', 'nibo', 'taka', 'lakh', 'bdt', 'vai', 'vaia', 'apu', 'boltesi', 'cai',
-      'chaitechi', 'lagbe', 'nilam', 'dekhun', 'koren', 'korun', 'hbe', 'nki', 'naki',
-      'hoile', 'hole', 'hoise', 'hoyese', 'bujhlam', 'bujhte',
-      'kora', 'korar', 'amar', 'tomar', 'tar', 'unader', 'oder', 'eder', 'kno',
-      'ebong', 'kintu'
+      'ami', 'tumi', 'apni', 'amra', 'amader', 'apnar', 'tomar', 'apnader', 'apnara', 'amake', 'apnake',
+      'ta', 'to', 'toh', 'diyen', 'dien', 'diyan', 'den', 'din', 'dau', 'dao', 'daon',
+      'diben', 'dibo', 'diba', 'pabo', 'paben', 'paba', 'hobe', 'hbe', 'hoise', 'hse', 'hase',
+      'ase', 'aseh', 'asi', 'ashen', 'ashon', 'ashbo', 'ashben', 'koto', 'kto', 'dam',
+      'rate', 'price', 'pricing', 'high', 'low', 'beshi', 'kom', 'shathe', 'sathe', 'sone',
+      'shonge', 'er', 're', 'te', 'ke', 'naki', 'nki', 'ki', 'kno', 'keno', 'ken',
+      'karone', 'karon', 'krn', 'korte', 'korar', 'kora', 'korbo', 'korben', 'korsi', 'korsen',
+      'korechi', 'koresen', 'koren', 'korun', 'korba', 'bhai', 'vai', 'vaia', 'bhaiya',
+      'apu', 'apuni', 'apuo', 'sir', 'boss', 'bro', 'dhonnobad', 'thanku', 'thanks', 'sundor',
+      'shundor', 'khub', 'onek', 'valo', 'bhalo', 'bhalocose', 'kharap', 'niben', 'nibo', 'niba',
+      'nebo', 'neben', 'taka', 'tk', 'bdt', 'nilam', 'dekhun', 'dekhen', 'dakhen', 'bujhlam',
+      'bujhte', 'bujhsi', 'bujhesi', 'bujhen', 'bujhun', 'ji', 'jee', 'ha', 'na', 'no',
+      'ok', 'okay', 'yes', 'shuru', 'suru', 'kori', 'he', 'nai', 'nei', 'ache', 'achhe',
+      'achhen', 'achen', 'ekhon', 'tai', 'sathe', 'shudhu', 'dorkar', 'kichhu', 'kichu',
+      'pore', 'sob', 'tarpor', 'chaile', 'parbo', 'parbona', 'theke', 'diye', 'hoye', 'hoy',
+      'kotha', 'bolen', 'bolo', 'bolun', 'kothay', 'kemon', 'valobashi', 'kiser', 'kire',
+      'boltesi', 'cai', 'chaitechi', 'lagbe', 'hoile', 'hole', 'amar', 'tar', 'unader',
+      'oder', 'eder', 'ebong', 'kintu', 'ekta', 'jonno', 'kobe', 'ar', 'corse', 'corsen',
+      'dibe', 'korsi', 'korechi', 'kaj', 'hoyni', 'jabe', 'jaben', 'chacchi'
     ]);
 
     // Robust parsing of context messages to handle multiline entries correctly
