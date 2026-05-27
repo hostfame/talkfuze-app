@@ -2683,6 +2683,7 @@ export default function ChatThread({
       let usageTokens: number | undefined
       let usageModel: string | undefined
       let usageTemp: number | undefined
+      let matchedRuleIds: string[] = []
 
       while (true) {
         const { done, value } = await reader.read()
@@ -2716,6 +2717,9 @@ export default function ChatThread({
             if (data.sources) {
               setAiDraftSources(data.sources)
             }
+            if (data.matched_rule_ids) {
+              matchedRuleIds = data.matched_rule_ids
+            }
             if (data.usage) {
               usageTokens = data.usage.total
             }
@@ -2742,7 +2746,8 @@ export default function ChatThread({
           lang, 
           usageTokens, 
           usageModel, 
-          usageTemp
+          usageTemp,
+          matchedRuleIds
         )
           .then(logId => { 
             aiDraftLogIdRef.current = logId; 

@@ -24,7 +24,8 @@ export async function logAiDraft(
   language: string,
   tokensUsed?: number,
   modelUsed?: string,
-  temperature?: number
+  temperature?: number,
+  matchedRuleIds?: string[]
 ): Promise<string | null> {
   try {
     const supabase = await createClient();
@@ -39,6 +40,7 @@ export async function logAiDraft(
         tokens_used: tokensUsed,
         model_used: modelUsed,
         temperature,
+        matched_rules: matchedRuleIds,
       })
       .select("id")
       .single();

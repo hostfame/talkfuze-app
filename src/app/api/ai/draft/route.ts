@@ -220,6 +220,7 @@ export async function POST(req: Request) {
 
     // Build dynamic knowledge context
     let { context: knowledgeContext, sources: knowledgeSources } = buildKnowledgeContext(cappedContextMessages);
+    let matchedRuleIds: string[] = [];
 
     let highPrioritySemanticRules = "";
 
@@ -254,6 +255,8 @@ export async function POST(req: Request) {
           if (vectorDocs && vectorDocs.length > 0) {
             const cleanVectorDocs = [];
             const goldenExamples: { question: string; reply: string }[] = [];
+            
+            matchedRuleIds = vectorDocs.map((d: any) => d.id);
             
             for (const d of vectorDocs) {
               const isLearnedRule = d.answer.includes('[CRITICAL RULE]') || d.answer.includes('[STYLE CORRECTION]');
@@ -754,7 +757,7 @@ ${instruction
 
           if (!languageSent) {
             finalDetectedLang = BENGALI_REGEX.test(responseBuffer) ? 'bn' : 'en';
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources, matched_rule_ids: matchedRuleIds })}\n\n`));
             if (responseBuffer) {
               const cleanText = responseBuffer.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
