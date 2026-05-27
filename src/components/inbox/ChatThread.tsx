@@ -1724,7 +1724,9 @@ export default function ChatThread({
   const [isWaitingForTranscript, setIsWaitingForTranscript] = useState(false)
   const [aiDraftFailed, setAiDraftFailed] = useState(false)
   const [aiDraftSources, setAiDraftSources] = useState<string[]>([])
+  const [comparingMsgId, setComparingMsgId] = useState<string | null>(null)
   const aiDraftLogIdRef = useRef<string | null>(null)
+  const aiDraftOriginalTextRef = useRef<string | null>(null)
   const autoDraftTriggeredIdsRef = useRef<Set<string>>(new Set())
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
   const draftLogTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -2731,6 +2733,7 @@ export default function ChatThread({
 
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
+        aiDraftOriginalTextRef.current = fullText.trim();
         aiDraftLogPromiseRef.current = logAiDraft(
           orgId, 
           conversationId, 
@@ -3081,6 +3084,9 @@ export default function ChatThread({
           }
           if (usedAiDraft) {
             metaPayload.used_ai_draft = true;
+            if (aiDraftOriginalTextRef.current) {
+              metaPayload.ai_draft_original = aiDraftOriginalTextRef.current;
+            }
           }
 
           const sendTimer = setTimeout(() => {
@@ -4504,8 +4510,12 @@ export default function ChatThread({
                     </span>
                   )}
                   {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && safeMeta.used_ai_draft && (
-                    <span title="AI Draft Used" className="flex items-center">
-                      <Brain size={10} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-60 hover:opacity-100 transition-opacity" />
+                    <span 
+                      title="AI Draft Used - Click to Compare" 
+                      className="flex items-center cursor-pointer"
+                      onClick={() => setComparingMsgId(msg.id === comparingMsgId ? null : msg.id)}
+                    >
+                      <Brain size={10} className={`mr-0.5 transition-opacity ${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-300 dark:text-slate-700 opacity-60 hover:opacity-100'}`} />
                     </span>
                   )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
@@ -4751,6 +4761,42 @@ export default function ChatThread({
                         setAiSampleEditing(false);
                       }} 
                       className="absolute -left-9 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-105 active:scale-95"
+                      title="Close Comparison"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Fragment>
+          )
+        }
+
+        if (msg.id === comparingMsgId) {
+          return (
+            <Fragment key={msg.id}>
+              {messageNode}
+              <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
+                <div className="flex items-end gap-2.5 flex-row-reverse w-full max-w-2xl">
+                  <div className="group relative rounded-2xl px-4 py-3.5 w-full bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900/50 shadow-md transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute -top-2.5 left-4 text-[9.5px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5 rounded-sm flex items-center gap-1">
+                      <Brain size={10} /> AI Draft Comparison
+                    </div>
+                    
+                    <div className="flex gap-4 mt-2">
+                      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1.5 uppercase">AI Suggested:</div>
+                        <div className="text-[12.5px] text-slate-500 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">{safeMeta.ai_draft_original || <span className="italic text-slate-400">Original draft not saved for this message.</span>}</div>
+                      </div>
+                      <div className="flex-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                        <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1.5 uppercase">Agent Sent:</div>
+                        <div className="text-[12.5px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => setComparingMsgId(null)} 
+                      className="absolute -right-3 -top-3 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:scale-105 active:scale-95"
                       title="Close Comparison"
                     >
                       <X size={14} />
