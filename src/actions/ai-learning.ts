@@ -194,23 +194,32 @@ export async function completeAiDraftLog(
       const draft = log.ai_draft.trim();
       const sent = agentSent.trim();
       const maxLen = Math.max(draft.length, sent.length);
+      
+      // Basic length ratio
+      const minLen = Math.min(draft.length, sent.length);
+      const lengthRatio = maxLen > 0 ? minLen / maxLen : 1;
+      
+      // Basic similarity (character position match)
       let matchCount = 0;
       const shorter = draft.length <= sent.length ? draft : sent;
       const longer = draft.length > sent.length ? draft : sent;
       for (let i = 0; i < shorter.length; i++) {
         if (shorter[i] === longer[i]) matchCount++;
       }
-      const similarity = maxLen > 0 ? matchCount / maxLen : 1;
-
-      if (similarity > 0.85) {
+      const positionSimilarity = maxLen > 0 ? matchCount / maxLen : 1;
+      
+      // Lower threshold to 0.70 to capture more meaningful rewrites/reorders
+      if (positionSimilarity > 0.70 && lengthRatio > 0.80) {
         // Minor edit (typo/spacing/small tweak), skip expensive Sonnet call
-        console.log(`Minor edit detected (${(similarity * 100).toFixed(0)}% similar), skipping learning extraction.`);
+        console.log(`Minor edit detected (PosSim: ${(positionSimilarity * 100).toFixed(0)}%, LenRat: ${(lengthRatio * 100).toFixed(0)}%), skipping learning extraction.`);
       } else {
-        // QUALITY GATE: Skip if the agent's sent message is too short or just a generic greeting/placeholder
-        const isShortPlaceholder = sent.length < 40 || /^(hlw|hello|hi|j|ji|yes|no|ok|okay|thanks|thank you|checking|let me check|wait|1 min)/i.test(sent);
+        // QUALITY GATE: Skip if the agent's sent message is just a generic greeting/placeholder
+        // Removed the strict < 40 char limit because short corrections (e.g. "ঈদ মুবারক!") are valid learning points
+        const isPlaceholder = /^(hlw|hello|hi|j|ji|yes|no|ok|okay|thanks|thank you|checking|let me check|wait|1 min|hold on|give me a minute|one minute|please wait|sure)[.\s]*$/i.test(sent);
+        const isTooShortToLearn = sent.length < 10 && !/[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/.test(sent);
         
-        if (isShortPlaceholder) {
-          console.log(`Agent sent a short placeholder/greeting ("${sent}"). Skipping learning extraction to prevent false positive rules.`);
+        if (isPlaceholder || isTooShortToLearn) {
+          console.log(`Agent sent a placeholder or extremely short non-Bengali message ("${sent}"). Skipping learning extraction.`);
         } else {
           // Significant rewrite, extract learning via Sonnet
           const learningData = await extractLearningData(context, log.ai_draft, agentSent);
