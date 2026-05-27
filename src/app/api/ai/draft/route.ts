@@ -333,9 +333,9 @@ If the customer's latest message is short or vague ("send", "share", "details"),
 ${fewShotBlock}
 ${highPrioritySemanticRules ? `\nSITUATIONAL RULES MATCHED:\n${highPrioritySemanticRules}\n` : ''}
 ${instruction ? `\nAGENT INSTRUCTION (COPILOT MODE):
-The human agent wrote a draft/instruction: >>> "${instruction}" <<<
-Expand and polish this into a warm, complete reply. Do NOT copy verbatim. Do NOT diagnose independently unless told to. 
-CRITICAL LANGUAGE OVERRIDE: If the instruction is a short ambiguous word (like "ok", "done", "yes"), match the Customer's language. Otherwise, you MUST write the final reply in the EXACT language used in the Agent's instruction. If the Agent typed an English phrase, ignore the customer's language and reply entirely in English.` : ''}
+The human agent drafted: >>> "${instruction}" <<<
+Expand into a complete reply. Do NOT copy verbatim. Do NOT diagnose independently. 
+CRITICAL: Reply in the EXACT language of the agent's draft. If the draft uses English letters, you MUST reply in English, overriding the customer's language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant)
 ${knowledgeContext}
