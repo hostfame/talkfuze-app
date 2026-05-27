@@ -13,9 +13,13 @@ const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
-  // Otherwise default to English. No hardcoded lists are used.
-  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
+  // Dynamic script check on recent context (last 3 messages).
+  // If the agent recently replied in Bengali (e.g. reacting to Banglish), the conversation context becomes Bengali.
+  // If no Bengali script is in the recent context, it defaults to English. No regex word lists needed.
+  if (messages.length === 0) return 'English';
+  
+  const recentContent = messages.slice(-3).map(m => m.content).join(' ');
+  return BENGALI_REGEX.test(recentContent) ? 'Bengali' : 'English';
 }
 
 // ============================================================
@@ -65,7 +69,7 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string, language: 'Bengali' | 'English'): Promise<{ fewShotBlock: string }> {
   let learnedRulesBlock = "";
   try {
     const { data: dbRules } = await supabaseAdmin
@@ -99,7 +103,9 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
   
-  const fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
+  const fewShotBlock = language === 'Bengali'
+    ? `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}${learnedRulesBlock}`
+    : `\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
   return { fewShotBlock };
 }
 
@@ -304,7 +310,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId)
+      ? getLearningData(orgId, detectedLanguage)
       : Promise.resolve({ fewShotBlock: '' });
 
     const [imageBlock, , { fewShotBlock }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise]);
