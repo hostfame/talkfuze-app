@@ -51,15 +51,10 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
 
     // Detect active conversation state to guide LLM attention
-    const agentMessages = parsedMessages.filter(m => m.sender === 'Agent');
-    const hasAgentGreeted = agentMessages.some(m => {
-      const text = m.content.toLowerCase();
-      return text.includes("আসসালামু") || text.includes("আসসালাম") || text.includes("ওয়ালাইকুম") || text.includes("hello") || text.includes("hi ") || text.startsWith("hi") || text.includes("greetings");
-    });
-
     let activeStateInstruction = "";
-    if (hasAgentGreeted) {
-      activeStateInstruction = `[ACTIVE STATE]: A greeting (e.g., "আসসালামু আলাইকুম" / "ওয়ালাইকুম আসসালাম" / "Hello") has ALREADY been sent/exchanged by the Agent in the conversation log. You are strictly forbidden from generating any greeting or greeting back under any circumstances.`;
+    const lastMsg = parsedMessages[parsedMessages.length - 1];
+    if (lastMsg && (lastMsg.sender === 'Agent' || lastMsg.sender === 'System')) {
+      activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by the Agent. The last message in the thread is an Agent message. Do NOT repeat or duplicate greetings, acknowledgments, links, or diagnostic answers that the Agent has already sent. Focus strictly on generating a continuation or follow-up that builds upon the Agent's latest message.`;
     }
     
     // Language detection for DB logging and golden examples matching
