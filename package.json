@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.3.0",
     "emoji-picker-react": "^4.19.1",
+    "js-tiktoken": "^1.0.21",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "openai": "^6.38.0",

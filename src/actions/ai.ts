@@ -89,6 +89,12 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
 
     const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
 
+    // Detect sales/pricing intent in conversation context
+    const salesKeywords = /price|cost|buy|order|plan|package|hosting|domain|payment|renew|taka|bdt|charge|discount|coupon|offer|টাকা|দাম|প্যাকেজ|হোস্টিং|কিনি|কিনতে|সার্ভার|রিনিউ/i;
+    const hasSalesIntent = salesKeywords.test(latestCustomerMessageCleaned) || 
+                          parsedMessages.some(m => salesKeywords.test(m.content));
+    const salesContent = hasSalesIntent ? salesFunnelContent : "";
+
     const complianceDirective = detectedLanguage === 'English'
       ? "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in English. You MUST draft your response STRICTLY in professional, concise English. If any retrieved RAG details or pricing context are in Bengali, you MUST translate them to English (e.g. convert '১৬৫০ টাকা' to '1650 TK' or '1,650 BDT'). Output absolutely ZERO Bengali script."
       : "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in Bengali or Banglish. You MUST draft your response STRICTLY in pure Bengali script (বাংলা ফন্ট). Output absolutely ZERO transliterated Banglish letters.";
@@ -103,7 +109,7 @@ You are a senior, highly direct customer support and sales agent at Hostnin (a p
 3. CONVERSATIONAL PROGRESSION & STATE AWARENESS: Carefully read the conversation history to understand the active state. NEVER repeat, duplicate, or re-perform greetings, acknowledgments, or actions that the Agent has already completed. Always advance the conversation forward. If the customer repeats a question or asks about something the Agent has ALREADY answered in the thread, you MUST explicitly frame your response by referencing your previous statement (you MUST start with or include phrases like "পূর্বে যেমনটি জানিয়েছিলাম", "যেমনটি বলেছিলাম", "as I mentioned earlier", or "as stated above") before briefly reiterating the information, rather than stating it again as a fresh new fact.
 4. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
 
-${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
+${salesContent ? `\n\n${salesContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
 Hostnin Knowledge Base:

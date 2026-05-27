@@ -23,8 +23,9 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English'): string {
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean): string {
   const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
+  const salesContent = hasSalesIntent ? salesFunnelContent : "";
 
   return `You are a senior, highly direct customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You speak with premium Apple-style minimalism. You are strictly prohibited from generating any conversational preambles, introductory filler, polite setups, or pleasantry prefixes in any language. Your response MUST begin immediately with the direct answer or the direct diagnostic question as its very first word. Skip all conversational setups entirely. You are concise, highly knowledgeable, and converse like a real human—never mechanical.
 
@@ -47,7 +48,7 @@ Surgically match the customer's language natively:
 3. CONVERSATIONAL PROGRESSION & STATE AWARENESS: Carefully read the conversation history to understand the active state. NEVER repeat, duplicate, or re-perform greetings, acknowledgments, or actions that the Agent has already completed. Always advance the conversation forward. If the customer repeats a question or asks about something the Agent has ALREADY answered in the thread, you MUST explicitly frame your response by referencing your previous statement (you MUST start with or include phrases like "পূর্বে যেমনটি জানিয়েছিলাম", "যেমনটি বলেছিলাম", "as I mentioned earlier", or "as stated above") before briefly reiterating the information, rather than stating it again as a fresh new fact.
 4. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
 
-${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
+${salesContent ? `\n\n${salesContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
 Output ONLY the tag and the draft message as instructed.`;
@@ -170,6 +171,11 @@ export async function POST(req: Request) {
       latestCustomerMessages.push(customerMessages[customerMessages.length - 1].content);
     }
     const latestCustomerMessageCleaned = latestCustomerMessages.join('\n');
+
+    // Detect sales/pricing intent in conversation context
+    const salesKeywords = /price|cost|buy|order|plan|package|hosting|domain|payment|renew|taka|bdt|charge|discount|coupon|offer|টাকা|দাম|প্যাকেজ|হোস্টিং|কিনি|কিনতে|সার্ভার|রিনিউ/i;
+    const hasSalesIntent = salesKeywords.test(latestCustomerMessageCleaned) || 
+                          parsedMessages.some(m => salesKeywords.test(m.content));
 
     // Detect active conversation state to guide LLM attention
     let activeStateInstruction = "";
@@ -532,7 +538,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage)
+                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent)
                   },
                   {
                     role: "user",
@@ -586,7 +592,7 @@ ${instruction
           system: [
             {
               type: "text",
-              text: buildSystemPrompt(detectedLanguage),
+              text: buildSystemPrompt(detectedLanguage, hasSalesIntent),
               cache_control: { type: "ephemeral" }
             }
           ],
