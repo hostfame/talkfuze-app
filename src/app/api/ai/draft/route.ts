@@ -9,7 +9,8 @@ import { banglaStyleContent } from "@/data/bangla-style";
 // LANGUAGE & INTENT CONSTANTS
 // ============================================================
 
-const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BENGALI_REGEX = /[\u0980-\u09FF]/;
+const BANGLISH_HEURISTIC_REGEX = /\b(ami|amar|amr|amader|apni|apnar|apnader|bhai|bhaiya|vai|vaiya|kemon|valo|bhalo|korbo|korte|hobe|jabe|naki|nki|nibo|kinbo|taka|koto|keno|kno|kikore|tahole|achha|accha|thikache|bujhte|korsi|korchi|korechi|korben|korechen|dekhben|dekhte|ashchi|niye|niyeci|niyechi|diechi|diyechi|diben|dimu|nite|chai|chaitesi|chaici|kichu|kicchu)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -19,7 +20,7 @@ function detectConversationLanguage(messages: { sender: string; content: string 
   if (messages.length === 0) return 'English';
   
   const recentContent = messages.slice(-3).map(m => m.content).join(' ');
-  return BENGALI_REGEX.test(recentContent) ? 'Bengali' : 'English';
+  return (BENGALI_REGEX.test(recentContent) || BANGLISH_HEURISTIC_REGEX.test(recentContent)) ? 'Bengali' : 'English';
 }
 
 // ============================================================
@@ -43,11 +44,11 @@ Then output a blank line, then start your actual draft response.
 
 ## LANGUAGE MATCHING
 Match the customer's language:
+- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English.
 ${detectedLanguage === 'Bengali' 
-  ? `- BENGALI SCRIPT: The conversation is in Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.
-- BANGLISH: If the customer writes in Banglish (Latin letters), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`
-  : `- PURE ENGLISH: The conversation is in English. Output '[Language: English]' and reply in English. Zero Bengali script.
-- BANGLISH CATCHER: If the customer suddenly writes in Banglish (Bengali words in Latin letters like "ami kinbo"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`}
+  ? `- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
+- BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`
+  : `- BANGLISH CATCHER: If the customer suddenly writes in Banglish (Bengali words in Latin letters like "ami kinbo"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`}
 
 ## REPLY STYLE
 1. CONCISE: Under 2-3 short sentences (< 40 words), single paragraph. No bullet lists, no bold (**). Go straight to the point with zero filler.
