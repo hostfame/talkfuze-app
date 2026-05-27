@@ -10,7 +10,6 @@ import { banglaStyleContent } from "@/data/bangla-style";
 // ============================================================
 
 const BENGALI_REGEX = /[\u0980-\u09FF]/;
-const BANGLISH_HEURISTIC_REGEX = /\b(ami|amar|amr|amader|apni|apnar|apnader|bhai|bhaiya|vai|vaiya|kemon|valo|bhalo|korbo|korte|hobe|jabe|naki|nki|nibo|kinbo|taka|koto|keno|kno|kikore|tahole|achha|accha|thikache|bujhte|korsi|korchi|korechi|korben|korechen|dekhben|dekhte|ashchi|niye|niyeci|niyechi|diechi|diyechi|diben|dimu|nite|chai|chaitesi|chaici|kichu|kicchu)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -20,7 +19,7 @@ function detectConversationLanguage(messages: { sender: string; content: string 
   if (messages.length === 0) return 'English';
   
   const recentContent = messages.slice(-3).map(m => m.content).join(' ');
-  return (BENGALI_REGEX.test(recentContent) || BANGLISH_HEURISTIC_REGEX.test(recentContent)) ? 'Bengali' : 'English';
+  return BENGALI_REGEX.test(recentContent) ? 'Bengali' : 'English';
 }
 
 // ============================================================
