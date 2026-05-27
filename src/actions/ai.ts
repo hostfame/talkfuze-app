@@ -3,34 +3,8 @@ import knowledge from './hostnin-knowledge.json';
 import { getApprovedExamples } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-// ============================================================
-// CONFIGURATION DYNAMIC LOADERS
-// Keeps the system prompt incredibly lean (<300 words) and clean
-// ============================================================
-
-function loadSalesFunnel(): string {
-  try {
-    const fs = require("fs");
-    const path = require("path");
-    const filePath = path.join(process.cwd(), "src/data/sales-funnel.md");
-    return fs.readFileSync(filePath, "utf8");
-  } catch (err) {
-    console.error("[ai.ts] Failed to load sales funnel file:", err);
-    return "";
-  }
-}
-
-function loadBanglaStyle(): string {
-  try {
-    const fs = require("fs");
-    const path = require("path");
-    const filePath = path.join(process.cwd(), "src/data/bangla-style.md");
-    return fs.readFileSync(filePath, "utf8");
-  } catch (err) {
-    console.error("[ai.ts] Failed to load bangla style file:", err);
-    return "";
-  }
-}
+import { salesFunnelContent } from "@/data/sales-funnel";
+import { banglaStyleContent } from "@/data/bangla-style";
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
 
@@ -106,8 +80,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? customerMessages[customerMessages.length - 1].content.trim()
       : '';
 
-    const salesFunnelContent = loadSalesFunnel();
-    const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
+    const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
 
     const complianceDirective = detectedLanguage === 'English'
       ? "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in English. You MUST draft your response STRICTLY in professional, concise English. If any retrieved RAG details or pricing context are in Bengali, you MUST translate them to English (e.g. convert '১৬৫০ টাকা' to '1650 TK' or '1,650 BDT'). Output absolutely ZERO Bengali script."
@@ -123,7 +96,7 @@ You are a senior, highly direct customer support and sales agent at Hostnin (a p
 3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
 
 ${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
-${banglaStyleContent ? `\n\n${banglaStyleContent}` : ""}
+${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
 Hostnin Knowledge Base:
 ${JSON.stringify(knowledge)}

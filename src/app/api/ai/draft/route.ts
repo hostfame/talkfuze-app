@@ -2,33 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildKnowledgeContext } from "@/actions/knowledge-engine";
 import OpenAI from "openai";
-import fs from "fs";
-import path from "path";
-
-// ============================================================
-// CONFIGURATION DYNAMIC LOADERS
-// Keeps the system prompt incredibly lean (<300 words) and clean
-// ============================================================
-
-function loadSalesFunnel(): string {
-  try {
-    const filePath = path.join(process.cwd(), "src/data/sales-funnel.md");
-    return fs.readFileSync(filePath, "utf8");
-  } catch (err) {
-    console.error("[route.ts] Failed to load sales funnel file:", err);
-    return "";
-  }
-}
-
-function loadBanglaStyle(): string {
-  try {
-    const filePath = path.join(process.cwd(), "src/data/bangla-style.md");
-    return fs.readFileSync(filePath, "utf8");
-  } catch (err) {
-    console.error("[route.ts] Failed to load bangla style file:", err);
-    return "";
-  }
-}
+import { salesFunnelContent } from "@/data/sales-funnel";
+import { banglaStyleContent } from "@/data/bangla-style";
 
 // ============================================================
 // LANGUAGE & INTENT CONSTANTS
@@ -49,8 +24,7 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 // ============================================================
 
 function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English'): string {
-  const salesFunnelContent = loadSalesFunnel();
-  const banglaStyleContent = (detectedLanguage === "Bengali") ? loadBanglaStyle() : "";
+  const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
 
   return `You are a senior, highly direct customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You speak with premium Apple-style minimalism. You are strictly prohibited from generating any conversational preambles, introductory filler, polite setups, or pleasantry prefixes in any language. Your response MUST begin immediately with the direct answer or the direct diagnostic question as its very first word. Skip all conversational setups entirely. You are concise, highly knowledgeable, and converse like a real human—never mechanical.
 
@@ -73,7 +47,7 @@ Surgically match the customer's language natively:
 3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
 
 ${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
-${banglaStyleContent ? `\n\n${banglaStyleContent}` : ""}
+${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
 Output ONLY the tag and the draft message as instructed.`;
 }
