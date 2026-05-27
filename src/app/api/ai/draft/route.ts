@@ -23,11 +23,8 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', agentAlreadyGreeted: boolean = false): string {
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English'): string {
   const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
-  const greetingDirective = agentAlreadyGreeted
-    ? `\n## IMPORTANT GREETING OVERRIDE:\nThe Agent has ALREADY greeted the customer with "ওয়ালাইকুম আসসালাম" or a similar greeting in this conversation thread. You are STRICTLY FORBIDDEN from generating "ওয়ালাইকুম আসসালাম", "আসসালামু আলাইকুম", "Hi", "Hello", or any greeting prefix in your response. Begin your response immediately with the direct answer or direct diagnostic question. Never repeat greetings.`
-    : "";
 
   return `You are a senior, highly direct customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You speak with premium Apple-style minimalism. You are strictly prohibited from generating any conversational preambles, introductory filler, polite setups, or pleasantry prefixes in any language. Your response MUST begin immediately with the direct answer or the direct diagnostic question as its very first word. Skip all conversational setups entirely. You are concise, highly knowledgeable, and converse like a real human—never mechanical.
 
@@ -51,7 +48,6 @@ Surgically match the customer's language natively:
 
 ${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
-${greetingDirective}
 
 Output ONLY the tag and the draft message as instructed.`;
 }
@@ -161,12 +157,6 @@ export async function POST(req: Request) {
     }
     
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
-    const agentAlreadyGreeted = parsedMessages.some(m => 
-      m.sender === 'Agent' && 
-      (m.content.includes("ওয়ালাইকুম আসসালাম") || 
-       m.content.toLowerCase().includes("wa alaykum") || 
-       m.content.toLowerCase().includes("walaikum"))
-    );
     
     // Extract all consecutive customer messages at the end
     const latestCustomerMessages: string[] = [];
@@ -534,7 +524,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage, agentAlreadyGreeted)
+                    content: buildSystemPrompt(detectedLanguage)
                   },
                   {
                     role: "user",
@@ -588,7 +578,7 @@ ${instruction
           system: [
             {
               type: "text",
-              text: buildSystemPrompt(detectedLanguage, agentAlreadyGreeted),
+              text: buildSystemPrompt(detectedLanguage),
               cache_control: { type: "ephemeral" }
             }
           ],
