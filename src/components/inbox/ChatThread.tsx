@@ -4518,7 +4518,18 @@ export default function ChatThread({
                     <span 
                       title="AI Draft Used - Click to Compare" 
                       className="flex items-center cursor-pointer"
-                      onClick={() => setComparingMsgId(msg.id === comparingMsgId ? null : msg.id)}
+                      onClick={() => {
+                        const newId = msg.id === comparingMsgId ? null : msg.id;
+                        setComparingMsgId(newId);
+                        if (newId) {
+                          setTimeout(() => {
+                            const el = document.getElementById(`compare-${newId}`);
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                          }, 100);
+                        }
+                      }}
                     >
                       <Brain size={10} className={`mr-0.5 transition-opacity ${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-300 dark:text-slate-700 opacity-60 hover:opacity-100'}`} />
                     </span>
@@ -4781,7 +4792,7 @@ export default function ChatThread({
           return (
             <Fragment key={msg.id}>
               {messageNode}
-              <div className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
+              <div id={`compare-${msg.id}`} className="flex flex-col mb-4 items-end animate-in fade-in slide-in-from-bottom-2 mt-4">
                 <div className="flex items-end gap-2.5 flex-row-reverse w-full max-w-2xl">
                   <div className="group relative rounded-2xl px-4 py-3.5 w-full bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900/50 shadow-md transition-all duration-300 hover:shadow-lg">
                     <div className="absolute -top-2.5 left-4 text-[9.5px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5 rounded-sm flex items-center gap-1">
