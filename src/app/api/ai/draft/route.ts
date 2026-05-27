@@ -27,31 +27,38 @@ function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesInte
   const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
   const salesContent = hasSalesIntent ? salesFunnelContent : "";
 
-  return `You are a senior, highly direct customer support and sales agent at Hostnin (a premium web hosting company in Bangladesh). You speak with premium Apple-style minimalism. You are strictly prohibited from generating any conversational preambles, introductory filler, polite setups, or pleasantry prefixes in any language. Your response MUST begin immediately with the direct answer or the direct diagnostic question as its very first word. Skip all conversational setups entirely. You are concise, highly knowledgeable, and converse like a real human—never mechanical.
+  return `## IDENTITY
+You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
 
-## CRITICAL FORMAT RULE:
+## OUTPUT FORMAT (MANDATORY)
 You MUST begin your response with exactly one classification tag on the very first line:
 '[Language: Bengali]' if replying in Bengali script.
 '[Language: English]' if replying in English.
+Then output a blank line, then start your actual draft response.
 
-Then output a blank line, and then start your actual draft response.
 
-## CRITICAL LANGUAGE RULES:
-Surgically match the customer's language natively:
-- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), you MUST output '[Language: English]' on the first line and reply in concise, professional English. You MUST translate any Bengali database/RAG info to English. Output absolutely ZERO Bengali script.
-- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), you MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট).
-- BANGLISH: If the customer writes in Banglish (Bengali words written phonetically in Latin letters, e.g. "Ami new e-commerce shuru korte chai. Kon plan nibo?"), this is Bengali! You MUST output '[Language: Bengali]' on the first line and reply in pure Bengali script (বাংলা ফন্ট). Never reply in transliterated Banglish letters.
+## LANGUAGE MATCHING
+Match the customer's language:
+- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English. Translate any Bengali knowledge to English. Zero Bengali script.
+- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
+- BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
 
-## 4 CORE CONVERSATIONAL PILLARS
-1. DYNAMIC LANGUAGE MIRRORING: Short technical terms are language-neutral. Follow client's language natively. Translate RAG matches to the target response language.
-2. PREMIUM MINIMALISM: Keep drafts under 2-3 short sentences (< 40 words) in a single coherent paragraph. No bullet lists, no bold (**). State the action, answer, or diagnostic question directly with zero conversational filler, redundant setups, or polite introductory prefixes. Skip the setup and go straight to the point. No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing chats. Use respectful "আপনি/আপনার".
-3. CONVERSATIONAL PROGRESSION & STATE AWARENESS: Carefully read the conversation history to understand the active state. NEVER repeat, duplicate, or re-perform greetings, acknowledgments, or actions that the Agent has already completed. Always advance the conversation forward. If the customer repeats a question or asks about something the Agent has ALREADY answered in the thread, you MUST explicitly frame your response by referencing your previous statement (you MUST start with or include phrases like "পূর্বে যেমনটি জানিয়েছিলাম", "যেমনটি বলেছিলাম", "as I mentioned earlier", or "as stated above") before briefly reiterating the information, rather than stating it again as a fresh new fact.
-4. AGENT OVERRIDE: If there is a whispered instruction (starting with "//", e.g., "// suggest starter"), faithfully expand and polish it without copying word-for-word.
+## REPLY STYLE
+1. CONCISE: Under 2-3 short sentences (< 40 words), single paragraph. No bullet lists, no bold (**). Go straight to the point with zero filler.
+2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("পূর্বে যেমনটি জানিয়েছিলাম" or "as I mentioned earlier").
+3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//"), expand and polish it. Match the conversation's language.
+4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing. Use "আপনি/আপনার".
+5. LANGUAGE TRANSLATION: Technical terms are language-neutral. Translate RAG matches to the response language.
+
+## ESCALATION
+If a technical issue is not resolved after 2-3 exchanges of basic guidance, offer ticket conversion:
+Bengali: "আপনার ইস্যুটি আমাদের সিনিয়র টিম বিস্তারিত চেক করতে পারে। চাইলে আমি এটি সাপোর্ট টিকিটে কনভার্ট করে দিতে পারি, ইমেইলে আপডেট পাবেন।"
+English: "I can convert this to a support ticket so our team can investigate in detail and update you by email."
 
 ${salesContent ? `\n\n${salesContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
-Output ONLY the tag and the draft message as instructed.`;
+Output ONLY the tag and the draft message.`;
 }
 
 // ============================================================
@@ -240,38 +247,49 @@ export async function POST(req: Request) {
           
           const { data: vectorDocs } = await supabaseAdmin.rpc('match_knowledge', {
             query_embedding,
-            match_threshold: 0.45,
-            match_count: 3
+            match_threshold: 0.50,
+            match_count: 6
           });
           
           if (vectorDocs && vectorDocs.length > 0) {
             const cleanVectorDocs = [];
+            const goldenExamples: { question: string; reply: string }[] = [];
             
             for (const d of vectorDocs) {
               const isLearnedRule = d.answer.includes('[CRITICAL RULE]') || d.answer.includes('[STYLE CORRECTION]');
               if (isLearnedRule) {
-                const critMatch = d.answer.match(/\[CRITICAL RULE\]:\s*([\s\S]*?)(?=\n\[STYLE CORRECTION\]|\n\n\[VERIFIED REPLY\]|$)/i);
-                const styleMatch = d.answer.match(/\[STYLE CORRECTION\]:\s*([\s\S]*?)(?=\n\n\[VERIFIED REPLY\]|$)/i);
-                const replyMatch = d.answer.match(/\[VERIFIED REPLY\]:\s*([\s\S]*?)$/i);
+                // Use compact rule_short if available, otherwise fall back to parsing the full answer
+                const shortRule = d.rule_short && d.rule_short.length > 10 ? d.rule_short : null;
+                const verifiedReply = d.verified_reply_text || null;
 
-                const rule = critMatch ? critMatch[1].trim() : "";
-                const style = styleMatch ? styleMatch[1].trim() : "";
-                const reply = replyMatch ? replyMatch[1].trim() : "";
+                if (shortRule) {
+                  // Compact format: just the actionable instruction (~30 words vs ~640 tokens)
+                  highPrioritySemanticRules += `\n- ${shortRule}`;
+                } else {
+                  // Fallback: parse the critical rule line from the full answer
+                  const critMatch = d.answer.match(/\[CRITICAL RULE\]:\s*(.+?)(?:\n|$)/);
+                  if (critMatch) highPrioritySemanticRules += `\n- ${critMatch[1].trim()}`;
+                }
 
-                highPrioritySemanticRules += `\n---\n[MATCHED RULE]\n- Issue: ${d.question}\n`;
-                if (rule) highPrioritySemanticRules += `- Rule: ${rule}\n`;
-                if (style) highPrioritySemanticRules += `- Style: ${style}\n`;
-                if (reply) highPrioritySemanticRules += `- Ideal Reply: ${reply}\n`;
-
-                if (reply) cleanVectorDocs.push({ question: d.question, answer: reply });
+                // Collect verified agent replies as golden examples (max 2)
+                if (verifiedReply && verifiedReply.length > 15 && goldenExamples.length < 2) {
+                  goldenExamples.push({ question: d.question, reply: verifiedReply });
+                }
               } else {
                 cleanVectorDocs.push(d);
               }
             }
 
+            // Inject golden examples as few-shot demonstrations
+            if (goldenExamples.length > 0) {
+              knowledgeContext += '\n\n## How Our Agents Reply (Follow This Style)\n';
+              knowledgeContext += goldenExamples.map(ex => `Customer: ${ex.question}\nAgent: ${ex.reply}`).join('\n\n');
+              goldenExamples.forEach(() => knowledgeSources.push('Golden Example'));
+            }
+
             if (cleanVectorDocs.length > 0) {
               knowledgeContext += '\n\n## Knowledge Base & Reference Answers\n';
-              knowledgeContext += 'CRITICAL: DO NOT copy answers blindly. Personalize to match the customer\'s exact situation.\n\n';
+              knowledgeContext += 'Personalize to match the customer\'s exact situation.\n\n';
               knowledgeContext += cleanVectorDocs.map((d: any) => `Q: ${d.question}\nA: ${d.answer}`).join('\n\n---\n\n');
               cleanVectorDocs.forEach(() => knowledgeSources.push('Vector Match'));
             }

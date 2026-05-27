@@ -57,7 +57,7 @@ export async function logAiDraft(
 /**
  * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
  */
-async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, style_corrections: string, question: string, answer: string } | null> {
+async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, style_corrections: string, question: string, answer: string, rule_short?: string } | null> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
@@ -83,7 +83,7 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
 
 Your outputs are used to permanently train the AI to write like a natural, warm, WhatsApp-style human support agent, NOT a corporate robot.
 
-Output valid JSON strictly containing these keys: 'rule', 'style_corrections', 'question', 'answer'.
+Output valid JSON strictly containing these keys: 'rule', 'style_corrections', 'question', 'answer', 'rule_short'.
 You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.`,
         messages: [
           {
@@ -127,7 +127,13 @@ ANALYSIS TASKS:
 
 4. 'answer': The agent's verified final message (exactly as written).
 
-Output strictly as JSON: {"rule": "...", "style_corrections": "...", "question": "...", "answer": "..."}`
+5. 'rule_short': A max-30-word single-sentence actionable instruction (in English) that the AI can follow immediately. This should be a direct "Do this" or "Never do this" statement. Examples:
+   - "Never list VPS prices manually. Share the pricing page link instead."
+   - "Match the conversation's language. If agent switched to English, reply in English."
+   - "Answer direct questions first, then ask follow-ups. Do not skip the answer."
+   If the correction is purely a minor style change, write the most important vocabulary or tone fix.
+
+Output strictly as JSON: {"rule": "...", "style_corrections": "...", "question": "...", "answer": "...", "rule_short": "..."}`
           }
         ]
       })
@@ -243,7 +249,9 @@ export async function completeAiDraftLog(
                   .from('ai_knowledge_base')
                   .update({ 
                     answer: enrichedAnswer,
-                    embedding: newEmbedding
+                    embedding: newEmbedding,
+                    rule_short: learningData.rule_short || null,
+                    verified_reply_text: learningData.answer || null
                   })
                   .eq('id', similarEntries[0].id);
                 console.log("Updated stale knowledge entry with fresh agent answer and rules.");
@@ -252,7 +260,9 @@ export async function completeAiDraftLog(
                 await supabaseAdmin.from('ai_knowledge_base').insert({
                   question: learningData.question,
                   answer: enrichedAnswer,
-                  embedding: newEmbedding
+                  embedding: newEmbedding,
+                  rule_short: learningData.rule_short || null,
+                  verified_reply_text: learningData.answer || null
                 });
                 console.log("Inserted new knowledge entry with compounding rules.");
               }
