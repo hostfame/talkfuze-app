@@ -49,6 +49,12 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     }
     
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
+    const agentAlreadyGreeted = parsedMessages.some(m => 
+      m.sender === 'Agent' && 
+      (m.content.includes("ওয়ালাইকুম আসসালাম") || 
+       m.content.toLowerCase().includes("wa alaykum") || 
+       m.content.toLowerCase().includes("walaikum"))
+    );
     
     // Language detection for DB logging and golden examples matching
     const detectedLanguage = detectConversationLanguage(parsedMessages);
@@ -81,6 +87,9 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       : '';
 
     const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
+    const greetingDirective = agentAlreadyGreeted
+      ? `\n## IMPORTANT GREETING OVERRIDE:\nThe Agent has ALREADY greeted the customer with "ওয়ালাইকুম আসসালাম" or a similar greeting in this conversation thread. You are STRICTLY FORBIDDEN from generating "ওয়ালাইকুম আসসালাম", "আসসালামু আলাইকুম", "Hi", "Hello", or any greeting prefix in your response. Begin your response immediately with the direct answer or direct diagnostic question. Never repeat greetings.`
+      : "";
 
     const complianceDirective = detectedLanguage === 'English'
       ? "CRITICAL LANGUAGE COMPLIANCE: The customer is communicating in English. You MUST draft your response STRICTLY in professional, concise English. If any retrieved RAG details or pricing context are in Bengali, you MUST translate them to English (e.g. convert '১৬৫০ টাকা' to '1650 TK' or '1,650 BDT'). Output absolutely ZERO Bengali script."
@@ -97,6 +106,7 @@ You are a senior, highly direct customer support and sales agent at Hostnin (a p
 
 ${salesFunnelContent ? `\n\n${salesFunnelContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
+${greetingDirective}
 
 Hostnin Knowledge Base:
 ${JSON.stringify(knowledge)}
