@@ -171,6 +171,18 @@ export async function POST(req: Request) {
     }
     const latestCustomerMessageCleaned = latestCustomerMessages.join('\n');
 
+    // Detect active conversation state to guide LLM attention
+    const agentMessages = parsedMessages.filter(m => m.sender === 'Agent');
+    const hasAgentGreeted = agentMessages.some(m => {
+      const text = m.content.toLowerCase();
+      return text.includes("আসসালামু") || text.includes("আসসালাম") || text.includes("ওয়ালাইকুম") || text.includes("hello") || text.includes("hi ") || text.startsWith("hi") || text.includes("greetings");
+    });
+
+    let activeStateInstruction = "";
+    if (hasAgentGreeted) {
+      activeStateInstruction = `[ACTIVE STATE]: A greeting (e.g., "আসসালামু আলাইকুম" / "ওয়ালাইকুম আসসালাম" / "Hello") has ALREADY been sent/exchanged by the Agent in the conversation log. You are strictly forbidden from generating any greeting or greeting back under any circumstances.`;
+    }
+
     // Language detection: TWO modes
     // Auto-draft (no instruction): follow customer's latest message language
     // AI Assist (instruction present): follow AGENT's instruction language (agent controls)
@@ -285,7 +297,7 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      userMessage = `The customer's latest message(s): "${latestCustomerMessageCleaned}"
+      userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).

@@ -49,6 +49,18 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     }
     
     const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
+
+    // Detect active conversation state to guide LLM attention
+    const agentMessages = parsedMessages.filter(m => m.sender === 'Agent');
+    const hasAgentGreeted = agentMessages.some(m => {
+      const text = m.content.toLowerCase();
+      return text.includes("আসসালামু") || text.includes("আসসালাম") || text.includes("ওয়ালাইকুম") || text.includes("hello") || text.includes("hi ") || text.startsWith("hi") || text.includes("greetings");
+    });
+
+    let activeStateInstruction = "";
+    if (hasAgentGreeted) {
+      activeStateInstruction = `[ACTIVE STATE]: A greeting (e.g., "আসসালামু আলাইকুম" / "ওয়ালাইকুম আসসালাম" / "Hello") has ALREADY been sent/exchanged by the Agent in the conversation log. You are strictly forbidden from generating any greeting or greeting back under any circumstances.`;
+    }
     
     // Language detection for DB logging and golden examples matching
     const detectedLanguage = detectConversationLanguage(parsedMessages);
@@ -104,7 +116,7 @@ ${JSON.stringify(knowledge)}
 
 Output ONLY the draft message. No quotes, no prefix, no labels.`;
 
-    const dynamicInstructions = `The customer's latest message is: "${latestCustomerMessageCleaned}"
+    const dynamicInstructions = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}The customer's latest message is: "${latestCustomerMessageCleaned}"
  
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).${personalizationRule}${fewShotBlock}${mistakesBlock}`;
