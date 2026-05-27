@@ -1607,6 +1607,12 @@ export default function ChatThread({
         } else {
           aiDraftLogIdRef.current = null
         }
+        const originalText = localStorage.getItem(`draft_original_${conversationId}`)
+        if (originalText) {
+          aiDraftOriginalTextRef.current = originalText
+        } else {
+          aiDraftOriginalTextRef.current = null
+        }
         aiDraftLogPromiseRef.current = null
       }, 0)
       return () => clearTimeout(timer)
@@ -1621,8 +1627,10 @@ export default function ChatThread({
       } else {
         localStorage.removeItem(`draft_${conversationId}`)
         localStorage.removeItem(`draft_log_id_${conversationId}`)
+        localStorage.removeItem(`draft_original_${conversationId}`)
         setAiDraftSources([])
         aiDraftLogIdRef.current = null
+        aiDraftOriginalTextRef.current = null
       }
     }
   }, [input, conversationId])
@@ -2738,6 +2746,7 @@ export default function ChatThread({
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
         aiDraftOriginalTextRef.current = fullText.trim();
+        localStorage.setItem(`draft_original_${conversationId}`, fullText.trim());
         aiDraftLogPromiseRef.current = logAiDraft(
           orgId, 
           conversationId, 
@@ -2748,15 +2757,16 @@ export default function ChatThread({
           usageModel, 
           usageTemp,
           matchedRuleIds
-        )
-          .then(logId => { 
+        ).then(logId => { 
+          if (logId) {
             aiDraftLogIdRef.current = logId; 
-            if (logId) {
-              localStorage.setItem(`draft_log_id_${conversationId}`, logId);
-            }
-            return logId; 
-          })
-          .catch(() => null)
+            localStorage.setItem(`draft_log_id_${conversationId}`, logId);
+          }
+          return logId; 
+        }).catch(e => {
+          console.error("AI Draft log failed", e);
+          return null;
+        });
       }
     } catch (e: any) {
       setAiDraftFailed(true)
@@ -2900,6 +2910,7 @@ export default function ChatThread({
     setStagedAttachments([])
     localStorage.removeItem(`draft_${conversationId}`)
     localStorage.removeItem(`draft_log_id_${conversationId}`)
+    localStorage.removeItem(`draft_original_${conversationId}`)
     setAiDraftSources([])
     setIsSending(true)
 
@@ -3071,7 +3082,8 @@ export default function ChatThread({
               scheduled_delay: isScheduled ? accumulatedDelay : undefined,
               chunk_delay: isScheduled ? chunkDelay : undefined,
               previous_delay: isScheduled ? previousDelay : undefined,
-              used_ai_draft: usedAiDraft ? true : undefined
+              used_ai_draft: usedAiDraft ? true : undefined,
+              ai_draft_original: (usedAiDraft && aiDraftOriginalTextRef.current) ? aiDraftOriginalTextRef.current : undefined
             } as any,
             is_internal: isInternal,
             status: 'sending',
