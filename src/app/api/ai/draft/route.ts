@@ -9,17 +9,13 @@ import { banglaStyleContent } from "@/data/bangla-style";
 // LANGUAGE & INTENT CONSTANTS
 // ============================================================
 
-const BENGALI_REGEX = /[\u0980-\u09FF]/;
+const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // Dynamic script check on recent context (last 3 messages).
-  // If the agent recently replied in Bengali (e.g. reacting to Banglish), the conversation context becomes Bengali.
-  // If no Bengali script is in the recent context, it defaults to English. No regex word lists needed.
-  if (messages.length === 0) return 'English';
-  
-  const recentContent = messages.slice(-3).map(m => m.content).join(' ');
-  return BENGALI_REGEX.test(recentContent) ? 'Bengali' : 'English';
+  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
+  // Otherwise default to English. No hardcoded lists are used.
+  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
 }
 
 // ============================================================
@@ -43,11 +39,9 @@ Then output a blank line, then start your actual draft response.
 
 ## LANGUAGE MATCHING
 Match the customer's language:
-- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English.
-${detectedLanguage === 'Bengali' 
-  ? `- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
-- BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`
-  : `- BANGLISH CATCHER: If the customer suddenly writes in Banglish (Bengali words in Latin letters like "ami kinbo"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script.`}
+- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English. Translate any Bengali knowledge to English. Zero Bengali script.
+- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
+- BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
 
 ## REPLY STYLE
 1. CONCISE: Under 2-3 short sentences (< 40 words), single paragraph. No bullet lists, no bold (**). Go straight to the point with zero filler.
@@ -71,7 +65,7 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string, language: 'Bengali' | 'English'): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
   let learnedRulesBlock = "";
   try {
     const { data: dbRules } = await supabaseAdmin
@@ -105,9 +99,7 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
   
-  const fewShotBlock = language === 'Bengali'
-    ? `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}${learnedRulesBlock}`
-    : `\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
+  const fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
   return { fewShotBlock };
 }
 
@@ -312,7 +304,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId, detectedLanguage)
+      ? getLearningData(orgId)
       : Promise.resolve({ fewShotBlock: '' });
 
     const [imageBlock, , { fewShotBlock }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise]);
