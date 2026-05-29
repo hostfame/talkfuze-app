@@ -964,8 +964,10 @@ export default function InboxPage() {
         <ErrorBoundary 
           componentName="ChatThread"
           onReset={() => {
-             // Recover from bad state by forcing a sync
-             syncDatabaseState();
+             // Recover from bad state by forcing a full reload
+             if (typeof window !== 'undefined') {
+               window.location.reload();
+             }
           }}
         >
           <ChatThread 
