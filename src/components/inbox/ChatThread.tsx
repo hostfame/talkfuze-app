@@ -835,6 +835,8 @@ const playStopBeep = () => {
   }
 };
 
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
+
 export default function ChatThread({ 
   conversationId, 
   messages, 
@@ -2274,8 +2276,8 @@ export default function ChatThread({
     if (!isBulkLoad && !isNewOptMsg && !isNewConv) {
       const container = scrollContainerRef.current
       if (container) {
-        // 150px threshold for being "at the bottom" (enough to cover the typing bubble or a small message)
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150
+        // 800px threshold for being "at the bottom" (accounts for tall new messages like AI summaries)
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 800
         if (!isNearBottom) {
           shouldScroll = false
         }
@@ -2683,6 +2685,7 @@ export default function ChatThread({
           id: s.id,
           domain: s.domain,
           product: s.product || s.translated_name,
+          servername: s.servername || "",
           status: s.status,
           amount: s.amount,
           billingcycle: s.billingcycle,
@@ -2786,7 +2789,8 @@ export default function ChatThread({
           usageTokens, 
           usageModel, 
           usageTemp,
-          matchedRuleIds
+          matchedRuleIds,
+          instruction
         ).then(logId => { 
           if (logId) {
             aiDraftLogIdRef.current = logId; 
@@ -4134,8 +4138,9 @@ export default function ChatThread({
         )}
 
         {allMessages.map((msg, idx) => {
-          const prevMsg = idx > 0 ? allMessages[idx - 1] : null;
-          const nextMsg = idx < allMessages.length - 1 ? allMessages[idx + 1] : null;
+          const renderMessage = () => {
+            const prevMsg = idx > 0 ? allMessages[idx - 1] : null;
+            const nextMsg = idx < allMessages.length - 1 ? allMessages[idx + 1] : null;
 
           const canGroup = (m1: any, m2: any) => {
             if (!m1 || !m2) return false;
@@ -4750,7 +4755,7 @@ export default function ChatThread({
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 shrink-0 mb-1 border border-slate-200 dark:border-slate-700/50 shadow-sm">
                     <Brain size={16} className="text-slate-600 dark:text-slate-400" />
                   </div>
-                  <div className="group relative rounded-2xl px-4 py-3.5 min-w-[280px] max-w-full bg-white dark:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-all duration-300 rounded-br-none hover:shadow-md">
+                  <div className="group relative rounded-2xl px-4 py-3.5 w-[500px] max-w-full bg-white dark:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/60 shadow-sm transition-all duration-300 rounded-br-none hover:shadow-md">
                     <div className="absolute -top-2.5 left-4 text-[9.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-white dark:bg-slate-800 px-1.5 rounded-sm">
                       AI Draft Comparison
                     </div>
@@ -4768,11 +4773,13 @@ export default function ChatThread({
                               value={aiSampleText}
                               onChange={(e) => setAiSampleText(e.target.value)}
                               disabled={aiSampleSaving}
-                              className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 outline-none resize-y min-h-[120px] text-[13.5px] text-slate-700 dark:text-slate-200 leading-relaxed focus:ring-1 focus:ring-blue-500/50 transition-all"
+                              autoFocus
+                              className="w-full h-full min-h-[150px] bg-transparent border-0 ring-0 focus:ring-0 p-0 m-0 outline-none resize-y text-[13.5px] text-slate-700 dark:text-slate-200 leading-relaxed"
+                              style={{ boxShadow: 'none' }}
                               placeholder="Edit AI response..."
                             />
                           ) : (
-                            <div className="whitespace-pre-wrap min-w-[200px]">
+                            <div className="whitespace-pre-wrap">
                               {aiSampleText}
                               {aiSampleLoading && <span className="ml-1 inline-block w-1.5 h-3.5 bg-slate-400 animate-pulse align-middle"></span>}
                             </div>
@@ -4875,10 +4882,21 @@ export default function ChatThread({
           )
         }
 
-        return messageNode;
+        return (
+          <ErrorBoundary 
+            key={msg.id || `msg-${idx}`} 
+            fallback={
+              <div className="flex justify-center my-2">
+                <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                  This message could not be displayed
+                </div>
+              </div>
+            }
+          >
+            {messageNode}
+          </ErrorBoundary>
+        );
         })}
-        
-
 
         {(isCustomerTyping || customerTypingText) && (
           <div className="flex flex-col mb-4 animate-in fade-in slide-in-from-bottom-2">
