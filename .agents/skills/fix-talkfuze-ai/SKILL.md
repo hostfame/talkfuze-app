@@ -53,7 +53,23 @@ The TalkFuze AI draft system has these layers:
 
 ---
 
-## 2. THE FIX WORKFLOW (How to Fix Bad Drafts)
+## 2. THE TOP 10 EVALUATION FRAMEWORK (For Logic & Feature Updates)
+
+When Imran asks to fix a logical flaw, add a new feature (e.g., Nameserver extraction), or change the AI's core behavior, **you MUST follow this framework before writing any code**:
+
+1. **Do not immediately implement the first thought or the easiest fix.**
+2. **Brainstorm the Top 10 (or top 5-20) approaches** to solve the problem.
+3. **Evaluate each approach** against these enterprise-grade criteria:
+   - **Latency:** Does it slow down the chat? (0ms added is the goal).
+   - **Accuracy/Consistency:** Does it solve the issue 100% of the time, or does it leave edge cases?
+   - **Prompt Bloat:** Does it add unnecessary tokens to the system prompt?
+   - **Scalability:** Can other team members understand and manage it?
+4. **Present the Analysis:** Write a clean, structured artifact detailing the approaches, highlighting the pros and cons of each.
+5. **Select the Best:** Explicitly recommend the most effective, enterprise-grade approach with the most pros and fewest cons, even if it takes more engineering effort. Wait for Imran's approval before executing.
+
+---
+
+## 3. THE FIX WORKFLOW (How to Fix Bad Drafts)
 
 When Imran reports a bad AI draft, follow this decision tree:
 

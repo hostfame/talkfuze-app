@@ -24,11 +24,10 @@ if (!openaiApiKey) {
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
 async function run() {
-  console.log("Fetching canned_replies where semantic_question is null...");
+  console.log("Fetching all canned_replies to update with variations...");
   const { data: replies, error } = await supabase
     .from('canned_replies')
-    .select('id, shortcut, content')
-    .is('semantic_question', null);
+    .select('id, shortcut, content, category');
 
   if (error) {
     console.error("Error fetching canned_replies:", error);
@@ -50,15 +49,21 @@ async function run() {
         messages: [
           {
             role: 'system',
-            content: 'You are an AI assistant helping to categorize support team canned replies. Given the canned reply text, your job is to write a single, natural customer question or problem statement that this reply is designed to answer. Be concise and write it from the customer\'s perspective (e.g., "How do I manage my DNS using Cloudflare?"). Do not include quotes or extra text.'
+            content: `You are an AI assistant helping to categorize support team canned replies for vector search. 
+Given the canned reply text, your job is to write 2 to 3 natural customer questions or problem statements that this reply answers, separated by the '|' character. 
+CRITICAL RULES:
+1. Provide variations (e.g., one formal, one casual, one problem-focused).
+2. REDUCE CONFUSION WITH EXPLICIT BOUNDARIES: If the reply is clearly for a specific platform (e.g., cPanel, WordPress, VPS, Cloudflare, bkash), you MUST explicitly state that restriction in the questions. Example: "How to install SSL? (ONLY for cPanel, do NOT use for CyberPanel) | My cPanel SSL failed".
+3. Write from the customer's perspective.
+4. Do not include quotes or extra text. Output ONLY the variations separated by '|'.`
           },
           {
             role: 'user',
-            content: `Shortcut: ${reply.shortcut}\nReply Content: ${reply.content}`
+            content: `Category: ${reply.category}\nShortcut: ${reply.shortcut}\nReply Content: ${reply.content}`
           }
         ],
         temperature: 0.3,
-        max_tokens: 100,
+        max_tokens: 150,
       });
 
       let question = response.choices[0].message.content.trim();

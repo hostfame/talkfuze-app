@@ -25,7 +25,8 @@ export async function logAiDraft(
   tokensUsed?: number,
   modelUsed?: string,
   temperature?: number,
-  matchedRuleIds?: string[]
+  matchedRuleIds?: string[],
+  agentInstruction?: string
 ): Promise<string | null> {
   try {
     const supabase = await createClient();
@@ -41,6 +42,7 @@ export async function logAiDraft(
         model_used: modelUsed,
         temperature,
         matched_rules: matchedRuleIds,
+        agent_instruction: agentInstruction,
       })
       .select("id")
       .single();
@@ -177,10 +179,10 @@ export async function completeAiDraftLog(
   try {
     // Use supabaseAdmin to bypass RLS limits in background Server Actions
     
-    // First get the original draft to compare
+    // First get the original draft and instruction to compare
     const { data: log } = await supabaseAdmin
       .from("ai_draft_logs")
-      .select("ai_draft, org_id")
+      .select("ai_draft, org_id, agent_instruction")
       .eq("id", logId)
       .single();
 
@@ -224,7 +226,12 @@ export async function completeAiDraftLog(
           console.log(`Agent sent a placeholder or extremely short non-Bengali message ("${sent}"). Skipping learning extraction.`);
         } else {
           // Significant rewrite, extract learning via Sonnet
-          const learningData = await extractLearningData(context, log.ai_draft, agentSent);
+          // If the AI was given a specific instruction, include it in the context so the learning pipeline understands why the AI drafted it that way
+          const contextForLearning = log.agent_instruction 
+            ? `${context}\n\n[Agent Instruction Given to AI]: "${log.agent_instruction}"` 
+            : context;
+            
+          const learningData = await extractLearningData(contextForLearning, log.ai_draft, agentSent);
       
         if (learningData) {
           // Combine factual rule + style corrections into a single rich feedback

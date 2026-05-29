@@ -3,6 +3,7 @@
 import ConversationList from "@/components/inbox/ConversationList"
 import ChatThread from "@/components/inbox/ChatThread"
 import ContactSidebar from "@/components/inbox/ContactSidebar"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore, useMessageStore, recentEdits } from "@/lib/store"
 import { Bell } from "lucide-react"
@@ -12,6 +13,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
 import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash, playUnassignedRingLoop, stopUnassignedRingLoop, playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
+import { normalizeMessage, normalizeConversation } from "@/lib/sanitizers"
 
 export default function InboxPage() {
   const currentUser = useAuth()
@@ -218,7 +220,9 @@ export default function InboxPage() {
           }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-          const newMsg = payload.new as any;
+          const rawMsg = payload.new as any;
+          const newMsg = normalizeMessage(rawMsg);
+          if (!newMsg) return;
           
           // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
           if (newMsg && newMsg.conversation_id) {
@@ -363,7 +367,9 @@ export default function InboxPage() {
           }
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
-          const newMsg = payload.new as any;
+          const rawMsg = payload.new as any;
+          const newMsg = normalizeMessage(rawMsg);
+          if (!newMsg) return;
           if (newMsg && newMsg.conversation_id) {
             const currentMsgs = useInboxStore.getState().messagesMap[newMsg.conversation_id] || [];
             if (currentMsgs.length > 0) {
@@ -489,7 +495,21 @@ export default function InboxPage() {
       })
       .subscribe()
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Realtime] Tab became visible. Triggering sync to catch missed messages...');
+        syncDatabaseState();
+      }
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
     return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (activeChannel) {
         try {
@@ -928,40 +948,50 @@ export default function InboxPage() {
         </div>
       )}
       <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[360px] shrink-0`}>
-        <ConversationList 
-          conversations={conversations} 
-          selectedId={selectedId} 
-          onSelect={handleSelectConversation}
-          typingState={typingState}
-          onlineUsers={onlineUsers}
-          orgId={ORG_ID}
-        />
+        <ErrorBoundary componentName="ConversationList">
+          <ConversationList 
+            conversations={conversations} 
+            selectedId={selectedId} 
+            onSelect={handleSelectConversation}
+            typingState={typingState}
+            onlineUsers={onlineUsers}
+            orgId={ORG_ID}
+          />
+        </ErrorBoundary>
       </div>
       {/* ChatThread + ContactSidebar: visible on desktop always, on mobile only when mobileView is 'chat' */}
       <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 min-w-0`}>
-        <ChatThread 
-          key={selectedId}
-          conversationId={selectedId} 
-          messages={messages} 
-          orgId={ORG_ID}
-          teamMembers={teamMembers}
-          isCustomerTyping={selectedId ? typingState[selectedId] : false}
-          customerTypingText={selectedId ? typingTextState[selectedId] : ""}
-          isCustomerRecording={selectedId ? recordingState[selectedId] : false}
-          activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
-          isCustomerOnline={(() => {
-            if (!activeConversation) return false;
-            // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object
-            const contact = Array.isArray(activeConversation.contact) ? activeConversation.contact[0] : activeConversation.contact;
-            return contact ? onlineUsers.has(contact.id) : false;
-          })()}
-          conversation={activeConversation}
-          currentUser={currentUser as UserProfile}
-          isFetching={selectedId ? isFetchingMessages[selectedId] : false}
-          onBackToList={handleBackToList}
-          isRightSidebarOpen={isRightSidebarOpen}
-          onToggleRightSidebar={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-        />
+        <ErrorBoundary 
+          componentName="ChatThread"
+          onReset={() => {
+             // Recover from bad state by forcing a sync
+             syncDatabaseState();
+          }}
+        >
+          <ChatThread 
+            key={selectedId}
+            conversationId={selectedId} 
+            messages={messages} 
+            orgId={ORG_ID}
+            teamMembers={teamMembers}
+            isCustomerTyping={selectedId ? typingState[selectedId] : false}
+            customerTypingText={selectedId ? typingTextState[selectedId] : ""}
+            isCustomerRecording={selectedId ? recordingState[selectedId] : false}
+            activeAgents={selectedId ? Object.values(agentActivity[selectedId] || {}) : []}
+            isCustomerOnline={(() => {
+              if (!activeConversation) return false;
+              // In Inbox page we don't have firstRelation imported, let's just check if it's an array or object
+              const contact = Array.isArray(activeConversation.contact) ? activeConversation.contact[0] : activeConversation.contact;
+              return contact ? onlineUsers.has(contact.id) : false;
+            })()}
+            conversation={activeConversation}
+            currentUser={currentUser as UserProfile}
+            isFetching={selectedId ? isFetchingMessages[selectedId] : false}
+            onBackToList={handleBackToList}
+            isRightSidebarOpen={isRightSidebarOpen}
+            onToggleRightSidebar={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+          />
+        </ErrorBoundary>
         <ContactSidebar 
           conversation={activeConversation}
           orgId={ORG_ID}
