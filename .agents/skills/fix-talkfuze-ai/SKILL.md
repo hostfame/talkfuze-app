@@ -3,8 +3,8 @@ name: fix-talkfuze-ai
 description: "Use when fixing, debugging, or improving TalkFuze AI draft quality. Triggers: AI draft issues, bad AI replies, AI tone problems, AI language mismatch, learning pipeline, knowledge base rules, prompt engineering, AI system improvements, vector search tuning, golden examples, rule extraction."
 metadata:
   author: imran
-  version: "1.0.0"
-  last_updated: "2026-05-27"
+  version: "2.0.0"
+  last_updated: "2026-05-29"
 ---
 
 # Fix TalkFuze AI - Master Reference
@@ -48,7 +48,7 @@ The TalkFuze AI draft system has these layers:
 | `src/actions/ai.ts` | Server-action draft generation (validation). | RARE - keep aligned with route.ts |
 | `src/actions/knowledge-engine.ts` | Static knowledge builder (pricing, policies). | WHEN pricing/policies change |
 | `src/data/sales-funnel.ts` | Sales diagnostic flow (4-step funnel). | WHEN funnel logic changes |
-| `src/data/bangla-style.ts` | Bengali vocabulary and style rules. | WHEN new vocab standards needed |
+| `src/data/bangla-style.ts` | Bengali voice/tone style guide. Pattern-based, not word lists. | WHEN tone direction changes |
 | `ai_knowledge_base` (Supabase) | Learned rules + verified replies. | FREQUENTLY - this is where fixes go |
 
 ---
@@ -155,6 +155,51 @@ Bad draft reported
 7. **NEVER make two changes simultaneously.**
    If you change the prompt AND the retrieval logic, and output gets worse, you cannot tell which caused it. One change at a time. Test. Then next change.
 
+8. **NEVER build word-by-word rejection or replacement lists.**
+   Bengali has hundreds of thousands of words. Blocking "দর্শক" means the AI uses "পরিদর্শক". Block that, it uses "প্রেক্ষক". This is infinite whack-a-mole.
+   Use: Style-by-example. Show 5 golden examples of the correct tone. The LLM generalizes the PATTERN from examples far better than it follows a ban list.
+   The only acceptable approach: describe the voice/tone ("modern startup Bengali"), give 3-5 representative examples, and let the LLM generalize.
+
+9. **NEVER solve style problems with pre-AI methods.**
+   Reject lists, regex replacements, word filters, and dictionary lookups are 2010-era solutions.
+   In 2026, the correct approach is: few-shot examples, tone descriptions, and style-by-pattern.
+   If you find yourself building a list of "banned words" or "word X -> word Y" mappings, STOP. You are solving the problem wrong.
+
+---
+
+## 3.5. LANGUAGE ISOLATION ARCHITECTURE (How Language Consistency Works)
+
+The AI serves both Bengali and English customers. Language bleeding (Bengali text in English conversations or vice versa) is prevented by a 3-layer architecture:
+
+### Layer 1: Language Detection
+`detectConversationLanguage()` in `route.ts` determines the conversation language:
+- Bengali script detected → Bengali
+- Banglish words detected → Bengali  
+- Ambiguous short message → check last 3 customer messages for Bengali
+- Everything else → English
+
+### Layer 2: Conditional Prompt Assembly
+Every section of the prompt is language-gated:
+- `buildSystemPrompt(language)` → language-specific examples, escalation, rules
+- `getGlobalBrain(language)` → Bengali tone rules only for Bengali
+- `getSalesFunnelContent(language)` → language-appropriate funnel examples
+- `getLearningData(orgId, language)` → only same-language golden examples and rules
+- `banglaStyleContent` → injected ONLY for Bengali conversations
+
+### Layer 3: Nuclear Sanitization
+A final defensive layer `stripBengaliLines()` removes any line containing Bengali Unicode from ALL dynamic content (knowledge context, semantic rules, few-shot blocks) when the detected language is English. This catches any Bengali that leaks through from:
+- Vector DB results (golden examples, knowledge docs)
+- Canned responses
+- Learned rules from ai_knowledge_base
+
+### Layer 4: Hard Language Override
+For English conversations, a `CRITICAL LANGUAGE OVERRIDE` instruction is appended to the user message. This prevents the LLM from inferring Bengali based on contextual cues (e.g., customer says "BD" meaning Bangladesh, LLM interprets this as a Bengali language request).
+
+**When to modify language isolation:**
+- New dynamic content sources added → ensure they pass through `stripBengaliLines` for English
+- New prompt sections added → ensure they use the language parameter from `detectedLanguage`
+- NEVER add Bengali examples to language-neutral sections of the prompt
+
 ---
 
 ## 4. ARCHITECTURE DECISIONS (Why We Built It This Way)
@@ -193,6 +238,19 @@ Bad draft reported
 - Removed JSON.stringify(knowledge) from ai.ts
 - Knowledge is now served by knowledge-engine.ts (intent-based, ~2KB per request vs 470KB)
 - Rule: NEVER inject the full knowledge JSON again. If a knowledge gap is found, add it to knowledge-engine.ts sections.
+
+**2026-05-29: Language Isolation Architecture**
+- Problem: Bengali text leaked into English conversations from 8+ sources (static prompt sections, vector DB golden examples, learned rules, canned responses, hardcoded examples, and LLM contextual inference)
+- Root cause: DeepSeek model inferred Bengali from "BD" (Bangladesh) context even with a clean English prompt
+- Solution: 4-layer defense: conditional prompt assembly, language-aware DB queries, nuclear Bengali strip for English, and hard language override instruction
+- Key insight: Removing Bengali from the prompt was necessary but insufficient. The model needs EXPLICIT language enforcement instructions at the end of the user message.
+- Rule: Any new dynamic content source MUST pass through `stripBengaliLines()` for English conversations. Any new prompt section MUST use `detectedLanguage` for conditional assembly.
+
+**2026-05-29: Bengali Style - Pattern Over Rejection**
+- Rewrote `bangla-style.ts` from mixed approach (some examples + some word bans) to pure pattern-based style guide
+- Principle: Describe the VOICE ("modern Bangladeshi tech startup"), give EXAMPLES of correct tone, let the LLM generalize
+- Anti-pattern identified: Word-by-word rejection lists ("use X not Y") are infinite whack-a-mole. Bengali has 100K+ words. The LLM finds synonyms the ban list never covers.
+- Rule: Style fixes go through golden examples and tone descriptions, NEVER through word ban lists.
 
 ---
 
