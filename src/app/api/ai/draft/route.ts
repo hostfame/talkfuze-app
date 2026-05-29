@@ -50,6 +50,12 @@ function detectConversationLanguage(messages: { sender: string; content: string 
   return 'English';
 }
 
+// Nuclear defensive layer: strip any line containing Bengali script from dynamic content
+// Used for English conversations to guarantee zero Bengali contamination from any source
+function stripBengaliLines(text: string): string {
+  if (!text) return text;
+  return text.split('\n').filter(line => !BENGALI_REGEX.test(line)).join('\n');
+}
 // ============================================================
 // SYSTEM PROMPT BUILDER
 // Personality + Dynamic situational context modules
@@ -411,8 +417,16 @@ export async function POST(req: Request) {
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
 
-    const [imageBlock, vectorSearchRes, { fewShotBlock }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
+    const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
+
+    // NUCLEAR SANITIZATION: For English conversations, strip ALL Bengali from every dynamic source
+    // This is the final defensive layer that catches anything we missed
+    if (detectedLanguage === 'English') {
+      knowledgeContext = stripBengaliLines(knowledgeContext);
+      highPrioritySemanticRules = stripBengaliLines(highPrioritySemanticRules);
+    }
+    const fewShotBlock = detectedLanguage === 'English' ? stripBengaliLines(rawFewShotBlock) : rawFewShotBlock;
 
     const holidaySettings = orgData?.settings || {};
     const isHolidayMode = !!holidaySettings.holiday_mode_enabled;
