@@ -7,11 +7,23 @@ import { salesFunnelContent } from "@/data/sales-funnel";
 import { banglaStyleContent } from "@/data/bangla-style";
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
+const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
-  // Otherwise default to English. No hardcoded lists are used.
-  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
+  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System' && m.sender !== 'System Auto-Reply');
+  if (customerMessages.length === 0) return 'English';
+
+  const latestMsg = customerMessages[customerMessages.length - 1].content.trim();
+
+  if (BENGALI_REGEX.test(latestMsg) || BANGLISH_REGEX.test(latestMsg)) return 'Bengali';
+
+  if (AMBIGUOUS_MSG.test(latestMsg)) {
+    const lastThree = customerMessages.slice(-3);
+    if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) return 'Bengali';
+  }
+
+  return 'English';
 }
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
@@ -108,7 +120,7 @@ Then output a blank line, then start your actual draft response.
 
 ## LANGUAGE MATCHING
 Match the customer's language:
-- PURE ENGLISH: If customer writes in English, output '[Language: English]' and reply in English. Translate any Bengali knowledge to English. Zero Bengali script.
+- PURE ENGLISH: If customer writes in English, output '[Language: English]' and reply in English. Translate any Bengali knowledge to English. Zero Bengali script. Any examples labeled 'Bengali:' in these instructions are style references only — adapt their intent and structure to English, never copy their language.
 - BENGALI SCRIPT: If customer writes in Bengali script, output '[Language: Bengali]' and reply in pure Bengali script.
 - BANGLISH: If customer writes in Banglish (Bengali words in Latin letters), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish—never mechanical.
 
