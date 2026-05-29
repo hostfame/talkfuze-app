@@ -877,7 +877,7 @@ ${instruction
                       if (tagMatch) {
                         const matchedTag = tagMatch[1].toLowerCase();
                         finalDetectedLang = (matchedTag === 'bengali' || matchedTag === 'bn') ? 'bn' : 'en';
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources, v: 7 })}\n\n`));
                         languageSent = true;
                         
                         const tagIndex = responseBuffer.indexOf(tagMatch[0]);
@@ -889,7 +889,7 @@ ${instruction
                         }
                       } else if (responseBuffer.length > 80) {
                         finalDetectedLang = BENGALI_REGEX.test(responseBuffer) ? 'bn' : 'en';
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources, v: 7 })}\n\n`));
                         languageSent = true;
                         const cleanText = responseBuffer.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
