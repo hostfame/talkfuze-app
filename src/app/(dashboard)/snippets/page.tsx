@@ -31,6 +31,7 @@ export default function SnippetsPage() {
   
   // Form states
   const [shortcut, setShortcut] = useState("")
+  const [content, setContent] = useState("")
   const [category, setCategory] = useState("general")
   const [semanticQuestion, setSemanticQuestion] = useState("")
   const [formError, setFormError] = useState("")

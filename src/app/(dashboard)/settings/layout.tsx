@@ -51,7 +51,6 @@ export default async function SettingsLayout({ children }: { children: React.Rea
               <NavLink href="/settings/brand" icon={<Paintbrush size={18} />} label="Brand" />
               <NavLink href="/settings/channels" icon={<Globe size={18} />} label="Integrations" />
               <NavLink href="/settings/ai" icon={<Sparkles size={18} />} label="AI providers" />
-              <NavLink href="/settings/quick-replies" icon={<Zap size={18} />} label="Live chat quick replies" />
               <NavLink href="/settings/webhooks" icon={<Webhook size={18} />} label="CRM Webhooks" />
               <NavLink href="/settings/whatsapp-transactions" icon={<MessageCircle size={18} />} label="WhatsApp Transactions" />
               <NavLink href="/settings/automation" icon={<Zap size={18} />} label="Automation & Triggers" />
