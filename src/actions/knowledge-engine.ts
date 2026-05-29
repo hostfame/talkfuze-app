@@ -283,14 +283,21 @@ export function buildKnowledgeContext(contextMessages: string): { context: strin
   const sections: string[] = [];
   const sources: string[] = [];
 
+  let hasPricing = false;
+
   // Inject only relevant pricing sections based on detected intent
   for (const intent of intents) {
     const pricingKey = INTENT_TO_PRICING[intent];
     if (pricingKey && PRICING[pricingKey]) {
       sections.push(PRICING[pricingKey]);
       sources.push(`${pricingKey} Pricing`);
+      hasPricing = true;
     }
-    if (intent === 'domain') { sections.push(buildDomainContext(contextMessages)); sources.push('Domain Pricing'); }
+    if (intent === 'domain') { 
+      sections.push(buildDomainContext(contextMessages)); 
+      sources.push('Domain Pricing'); 
+      hasPricing = true; 
+    }
     if (intent === 'comparison') { sections.push(COMPARISONS); sources.push('Hosting Comparisons'); }
     if (intent === 'pricing_objection') {
       // Force-inject the /expensive canned response as THE reference reply
@@ -300,6 +307,10 @@ export function buildKnowledgeContext(contextMessages: string): { context: strin
         sources.push('Canned Response: expensive');
       }
     }
+  }
+
+  if (hasPricing) {
+    sections.unshift(`## Strict Pricing Rules (ANTI-HALLUCINATION)\n- FOUNDATIONAL RULE: You must NEVER invent, guess, or mathematically calculate prices.\n- Look at the provided data table. If the EXACT price for the requested plan, billing term, or domain extension is NOT explicitly written, you MUST NOT provide a number.\n- FALLBACK PROTOCOL: If you cannot find the exact price, do NOT apologize. Instead, handle it smartly by providing the relevant link (e.g., https://hostnin.com or https://hostnin.com/domain) and politely saying: "Please check the detailed pricing and availability here."`);
   }
 
   // Match top 3 canned responses by keyword overlap
