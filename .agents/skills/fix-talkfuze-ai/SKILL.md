@@ -126,44 +126,65 @@ Bad draft reported
 
 ## 3. ANTI-PATTERNS (What NOT to Do)
 
-### Never Do These:
+### The Core Principle: AI-Native Solutions Only
+
+Before implementing ANY fix, ask: **"Would OpenAI, Anthropic, or DeepMind solve this with a word list, a regex, or a dictionary?"** If the answer is no, neither should we.
+
+Modern LLMs learn from **patterns, examples, and context** - not from ban lists and word filters. The correct approach is always:
+1. **Describe the desired voice/tone** (pattern-level guidance)
+2. **Show 3-5 golden examples** of correct output (few-shot learning)
+3. **Let the LLM generalize** from examples to all cases
+
+This is how fine-tuning, RLHF, and system prompting work at scale. A ban list is the opposite - it's a brittle, finite, pre-AI approach that fails the moment the model finds a synonym.
+
+### Pre-AI Methods (NEVER Use These)
+
+| Problem | Wrong Approach (Pre-AI) | Right Approach (AI-Native) |
+|---------|------------------------|---------------------------|
+| Wrong Bengali word choice | Ban list: "Never use দর্শক, use ভিজিটর" | Style description: "Write like a modern tech startup" + 5 examples of correct tone |
+| Robotic phrasing | Regex post-processing to swap words | Golden examples showing natural phrasing |
+| Wrong plan recommendation | System prompt rule: "Never recommend X for Y" | Vector-matched rule in ai_knowledge_base |
+| Tone too formal | Dictionary mapping: formal → casual | Voice description in bangla-style.ts: "25-year-old Dhaka tech pro on WhatsApp" |
+| Language bleeding | Word-level filtering per language | Structural isolation: conditional prompt assembly + sanitization layers |
+| Repeated questions | State machine tracking asked questions | Conversation history context + "NEVER repeat" instruction |
+
+### Specific Anti-Patterns:
 
 1. **NEVER add situational rules to the system prompt.**
-   Bad: Adding "Never recommend Turbo for showcase sites" to route.ts
-   Good: Insert it as a rule in ai_knowledge_base with proper embedding
+   System prompt is for personality, format, and universal behavior.
+   Situational rules (plan recommendations, product edge cases) go in `ai_knowledge_base` with vector embeddings.
 
-2. **NEVER use regex for tone, style, or semantic checks.**
-   Regex catches exact words only. The AI will use synonyms. Whack-a-mole forever.
-   Use: Golden examples (show correct behavior) or database rules (vector-matched)
+2. **NEVER use regex, word filters, or dictionary lookups for style/tone.**
+   Regex is for structural tasks only: language script detection (Unicode ranges), tag parsing, plan name extraction.
+   Regex is NEVER for: tone, style, word choice, formality level. The LLM uses synonyms that bypass any filter.
 
-3. **NEVER build post-processing to auto-replace words.**
-   Bengali grammar is positional. Regex replacement breaks sentence structure.
-   Use: Vocabulary list in bangla-style.ts (show correct words TO USE, not what to ban)
-
-4. **NEVER dump large static data into the prompt.**
+3. **NEVER dump large static data into the prompt.**
    The 470KB JSON knowledge dump was removed for a reason. ~117K tokens wasted.
-   Use: knowledge-engine.ts for dynamic, intent-based knowledge injection
+   Use: knowledge-engine.ts for dynamic, intent-based knowledge injection.
 
-5. **NEVER create banned word lists.**
-   You block "সম্পূর্ণভাবে", AI uses "সম্পূর্ণরূপে". You block that, AI uses "সামগ্রিকভাবে".
-   Use: Approved vocabulary in bangla-style.ts. Tell AI what TO use, not what NOT to use.
+4. **NEVER build post-processing to auto-replace words.**
+   Bengali grammar is positional. Regex replacement breaks sentence structure.
+   The LLM understands context - guide it with examples, not find-and-replace.
+
+5. **NEVER build growing ban/rejection lists.**
+   Bengali has 100K+ words. You ban "দর্শক", AI uses "পরিদর্শক". Ban that, AI uses "প্রেক্ষক". This is infinite whack-a-mole and creates prompt bloat, inconsistency, and maintenance burden.
+   Instead: Describe the VOICE ("modern startup Bengali"), show 5 golden examples, let the LLM generalize the pattern to ALL words - including words you never thought to ban.
 
 6. **NEVER build a funnel state machine with regex.**
-   Regex is dumber than the LLM at understanding ambiguous customer answers.
-   The sales funnel prompt (restructured into clean steps) handles this. 88.6% accuracy is sufficient.
+   The LLM is better at understanding ambiguous customer answers than any regex.
 
 7. **NEVER make two changes simultaneously.**
-   If you change the prompt AND the retrieval logic, and output gets worse, you cannot tell which caused it. One change at a time. Test. Then next change.
+   If you change the prompt AND the retrieval logic and output gets worse, you can't tell which caused it. One change, test, then next.
 
-8. **NEVER build word-by-word rejection or replacement lists.**
-   Bengali has hundreds of thousands of words. Blocking "দর্শক" means the AI uses "পরিদর্শক". Block that, it uses "প্রেক্ষক". This is infinite whack-a-mole.
-   Use: Style-by-example. Show 5 golden examples of the correct tone. The LLM generalizes the PATTERN from examples far better than it follows a ban list.
-   The only acceptable approach: describe the voice/tone ("modern startup Bengali"), give 3-5 representative examples, and let the LLM generalize.
+### The Litmus Test
 
-9. **NEVER solve style problems with pre-AI methods.**
-   Reject lists, regex replacements, word filters, and dictionary lookups are 2010-era solutions.
-   In 2026, the correct approach is: few-shot examples, tone descriptions, and style-by-pattern.
-   If you find yourself building a list of "banned words" or "word X -> word Y" mappings, STOP. You are solving the problem wrong.
+If you're about to:
+- Add a new word to a "banned" or "rejected" list → **STOP**. Add a golden example instead.
+- Write a regex to detect a style problem → **STOP**. Write a tone description instead.
+- Build a mapping of "word X → word Y" → **STOP**. The LLM will bypass it with synonyms.
+- Create a post-processing filter → **STOP**. Fix the prompt that generates bad output upstream.
+
+The only exception: `stripBengaliLines()` for language isolation. This is structural (Unicode range check), not semantic. It gates an entire language, not individual words.
 
 ---
 
