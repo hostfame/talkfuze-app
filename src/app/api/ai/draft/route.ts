@@ -307,7 +307,13 @@ export async function POST(req: Request) {
       ? getLearningData(orgId)
       : Promise.resolve({ fewShotBlock: '' });
 
-    const [imageBlock, , { fewShotBlock }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise]);
+    const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
+
+    const [imageBlock, , { fewShotBlock }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
+
+    const holidaySettings = orgData?.settings || {};
+    const isHolidayMode = !!holidaySettings.holiday_mode_enabled;
+    const holidayMessage = holidaySettings.holiday_mode_message || "Support is currently limited due to holiday. Expect delayed responses.";
 
     // Build user message
     let userMessage = '';
@@ -319,7 +325,7 @@ Instruction: ${instruction}
 
 Output ONLY the translation in raw plain text.`;
     } else {
-      userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
+      userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}${isHolidayMode ? `[HOLIDAY/VACATION MODE ACTIVE]: ${holidayMessage}\nIMPORTANT: Keep this constraint in mind. If the customer asks for immediate remote support (like AnyDesk) or complains about delays, politely mention this limitation in your response.\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).

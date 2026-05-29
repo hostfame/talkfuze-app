@@ -42,6 +42,12 @@ export default function AIProvidersSettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Holiday Mode State
+  const [holidayModeEnabled, setHolidayModeEnabled] = useState(false)
+  const [holidayModeMessage, setHolidayModeMessage] = useState("Support is currently limited due to holiday/Eid. Expect delayed responses. We cannot offer immediate remote support right now.")
+  const [isSavingHoliday, setIsSavingHoliday] = useState(false)
+  const [orgSettings, setOrgSettings] = useState<any>({})
+
   const fetchProviders = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true)
     const { data } = await supabase
@@ -57,6 +63,21 @@ export default function AIProvidersSettingsPage() {
       })
       setProviders(pMap)
     }
+
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('settings')
+      .eq('id', ORG_ID)
+      .single()
+
+    if (orgData?.settings) {
+      setOrgSettings(orgData.settings)
+      setHolidayModeEnabled(!!(orgData.settings as any).holiday_mode_enabled)
+      if ((orgData.settings as any).holiday_mode_message) {
+        setHolidayModeMessage((orgData.settings as any).holiday_mode_message)
+      }
+    }
+
     setIsLoading(false)
   }, [ORG_ID])
 
@@ -99,6 +120,23 @@ export default function AIProvidersSettingsPage() {
     setActiveModal(null)
   }
 
+  const handleSaveHolidayMode = async () => {
+    setIsSavingHoliday(true)
+    const updatedSettings = {
+      ...orgSettings,
+      holiday_mode_enabled: holidayModeEnabled,
+      holiday_mode_message: holidayModeMessage
+    }
+
+    await supabase
+      .from('organizations')
+      .update({ settings: updatedSettings })
+      .eq('id', ORG_ID)
+
+    setOrgSettings(updatedSettings)
+    setIsSavingHoliday(false)
+  }
+
   const activeProviderMeta = PROVIDERS_META.find(p => p.type === activeModal)
 
   return (
@@ -115,7 +153,56 @@ export default function AIProvidersSettingsPage() {
           <Loader2 className="animate-spin text-slate-400" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <>
+          {/* Holiday Mode Section */}
+          <div className="bg-white dark:bg-slate-950 border border-amber-200 dark:border-amber-900/30 rounded-xl shadow-sm overflow-hidden mb-6">
+            <div className="p-5 border-b border-amber-100 dark:border-amber-900/20 bg-amber-50/50 dark:bg-amber-900/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-500">Holiday & Vacation Mode</h3>
+                <p className="text-sm text-amber-700/70 dark:text-amber-400/70 mt-1">
+                  When enabled, the AI will automatically mention this context (e.g. limited support during Eid) when users ask for immediate or remote help.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={holidayModeEnabled}
+                  onChange={(e) => setHolidayModeEnabled(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+            
+            {holidayModeEnabled && (
+              <div className="p-5 space-y-4 bg-white dark:bg-slate-950">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Holiday Context / Limitation Message
+                  </label>
+                  <textarea 
+                    value={holidayModeMessage}
+                    onChange={(e) => setHolidayModeMessage(e.target.value)}
+                    rows={3}
+                    placeholder="e.g. Due to Eid holidays, our support team is limited. We cannot provide live remote support until..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all resize-none"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button 
+                    onClick={handleSaveHolidayMode}
+                    disabled={isSavingHoliday}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    {isSavingHoliday ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    Save Settings
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {PROVIDERS_META.map((meta) => {
             const isConnected = !!providers[meta.type]?.config?.api_key
             
@@ -159,6 +246,7 @@ export default function AIProvidersSettingsPage() {
             )
           })}
         </div>
+        </>
       )}
 
       {/* API Key Modal */}
