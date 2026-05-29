@@ -13,7 +13,7 @@ export default async function UnpaidCallsPage() {
   ])
 
   return (
-    <div className="flex flex-col w-full h-full bg-white dark:bg-[#0b141a]">
+    <div className="flex flex-col w-full h-full bg-white dark:bg-[#0b141a] pb-16 md:pb-0">
       <div className="flex items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight">Daily Unpaid Calls</h1>
       </div>

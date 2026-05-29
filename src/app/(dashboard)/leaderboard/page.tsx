@@ -85,7 +85,7 @@ export default function LeaderboardPage() {
   const targets = getPeriodTargets(period)
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b141a]">
+    <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b141a] pb-16 md:pb-0">
       {/* Header - Trophy removed as requested */}
       <div className="flex items-center justify-between p-6 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222e35]">
         <div className="flex items-center gap-6">

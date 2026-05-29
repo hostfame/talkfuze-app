@@ -44,6 +44,19 @@ export default function SipDialer() {
     unpaid?: number;
   } | null>(null)
   const [activeCallSession, setActiveCallSession] = useState<{ number: string; direction: 'inbound' | 'outbound' } | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        setIsMobile(window.innerWidth < 768)
+      }
+      handleResize()
+      window.addEventListener('resize', handleResize)
+      return () => window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
   const activeCallSessionRef = useRef<any>(null)
   const currentUserRef = useRef<any>(null)
   const voiceCallChannelRef = useRef<any>(null)
@@ -1151,6 +1164,8 @@ export default function SipDialer() {
     }
   }, [pendingDialNumber, isRegistered, sessionState, status])
 
+  if (isMobile) return null
+
   return (
     <>
       {/* Hidden audio element for WebRTC media stream */}
@@ -1533,7 +1548,7 @@ export default function SipDialer() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-slate-700/80 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 z-50 cursor-pointer"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-slate-700/80 rounded-full shadow-lg hidden md:flex items-center justify-center transition-all hover:scale-105 z-50 cursor-pointer"
         >
           <Phone strokeWidth={2.5} size={22} />
           {isRegistered && <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full" />}
@@ -1542,7 +1557,7 @@ export default function SipDialer() {
 
       {/* Dialer Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[250px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col pb-4">
+        <div className="fixed bottom-6 right-6 w-[250px] bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden hidden md:flex flex-col pb-4">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-transparent">
             <div className="flex items-center gap-2">

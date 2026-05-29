@@ -947,7 +947,7 @@ export default function InboxPage() {
           </div>
         </div>
       )}
-      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[360px] shrink-0`}>
+      <div className={`${mobileView === 'chat' ? 'hidden' : 'flex'} md:flex w-full md:w-[280px] xl:w-[360px] shrink-0 pb-16 md:pb-0`}>
         <ErrorBoundary componentName="ConversationList">
           <ConversationList 
             conversations={conversations} 
@@ -960,7 +960,7 @@ export default function InboxPage() {
         </ErrorBoundary>
       </div>
       {/* ChatThread + ContactSidebar: visible on desktop always, on mobile only when mobileView is 'chat' */}
-      <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 min-w-0`}>
+      <div className={`${mobileView === 'list' ? 'hidden' : 'flex'} md:flex flex-1 min-w-0 h-full max-h-full overflow-hidden`}>
         <ErrorBoundary 
           componentName="ChatThread"
           onReset={() => {

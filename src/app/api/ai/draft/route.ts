@@ -102,7 +102,7 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string, language: 'Bengali' | 'English'): Promise<{ fewShotBlock: string }> {
   let learnedRulesBlock = "";
   try {
     const { data: dbRules } = await supabaseAdmin
@@ -113,8 +113,15 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
       .limit(5);
 
     if (dbRules && dbRules.length > 0) {
-      learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments):\n` +
-        dbRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
+      // Filter out Bengali rules from English prompts
+      const filteredRules = language === 'English'
+        ? dbRules.filter(r => !BENGALI_REGEX.test(r.answer))
+        : dbRules;
+      
+      if (filteredRules.length > 0) {
+        learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments):\n` +
+          filteredRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
+      }
     }
   } catch (err: any) {
     console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
@@ -136,7 +143,13 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }>
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
   
-  const fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity if replying in Bengali):\n${goldenBengali.join('\n---\n')}\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity if replying in English):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
+  // Only inject golden examples for the detected language
+  let fewShotBlock = '';
+  if (language === 'Bengali') {
+    fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity):\n${goldenBengali.join('\n---\n')}${learnedRulesBlock}`;
+  } else {
+    fewShotBlock = `\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
+  }
   return { fewShotBlock };
 }
 
@@ -353,11 +366,19 @@ export async function POST(req: Request) {
                 }
 
                 // Collect verified agent replies as golden examples (max 2)
+                // Skip Bengali examples for English conversations to prevent language contamination
                 if (verifiedReply && verifiedReply.length > 15 && goldenExamples.length < 2) {
-                  goldenExamples.push({ question: d.question, reply: verifiedReply });
+                  const isBengaliReply = BENGALI_REGEX.test(verifiedReply);
+                  if (!(detectedLanguage === 'English' && isBengaliReply)) {
+                    goldenExamples.push({ question: d.question, reply: verifiedReply });
+                  }
                 }
               } else {
-                cleanVectorDocs.push(d);
+                // Skip Bengali knowledge docs for English conversations
+                const isBengaliAnswer = BENGALI_REGEX.test(d.answer);
+                if (!(detectedLanguage === 'English' && isBengaliAnswer)) {
+                  cleanVectorDocs.push(d);
+                }
               }
             }
 
@@ -385,7 +406,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId)
+      ? getLearningData(orgId, detectedLanguage)
       : Promise.resolve({ fewShotBlock: '' });
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
