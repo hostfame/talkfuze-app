@@ -3,6 +3,8 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import WebSocket from 'ws';
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve('.env.local') });
 
 globalThis.WebSocket = WebSocket;
 
@@ -104,7 +106,7 @@ async function run() {
   } else {
     for (const reply of cannedReplies) {
       await insertKnowledge(
-        `Saved reply for ${reply.shortcut} - ${reply.shortcut.replace('/', '')}`,
+        reply.semantic_question || `Saved reply for ${reply.shortcut}`,
         `Shortcut: ${reply.shortcut}\nMessage: ${reply.content}`
       );
     }

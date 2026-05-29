@@ -311,6 +311,7 @@ export interface Database {
           shortcut: string
           title: string
           content: string
+          semantic_question: string | null
           created_by: string | null
           created_at: string
         }
@@ -320,6 +321,7 @@ export interface Database {
           shortcut: string
           title: string
           content: string
+          semantic_question?: string | null
           created_by?: string | null
           created_at?: string
         }
@@ -329,6 +331,7 @@ export interface Database {
           shortcut?: string
           title?: string
           content?: string
+          semantic_question?: string | null
           created_by?: string | null
           created_at?: string
         }

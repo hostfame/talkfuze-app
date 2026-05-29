@@ -19,6 +19,7 @@ export default function QuickRepliesSettingsPage() {
   const [shortcutInput, setShortcutInput] = useState("")
   const [titleInput, setTitleInput] = useState("")
   const [messageInput, setMessageInput] = useState("")
+  const [semanticQuestionInput, setSemanticQuestionInput] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
   const fetchReplies = useCallback(async (showLoading = true) => {
@@ -47,11 +48,13 @@ export default function QuickRepliesSettingsPage() {
       setShortcutInput(reply.shortcut)
       setTitleInput(reply.title || "")
       setMessageInput(reply.content || "")
+      setSemanticQuestionInput(reply.semantic_question || "")
     } else {
       setEditingId(null)
       setShortcutInput("")
       setTitleInput("")
       setMessageInput("")
+      setSemanticQuestionInput("")
     }
     setIsModalOpen(true)
   }
@@ -62,11 +65,11 @@ export default function QuickRepliesSettingsPage() {
 
     try {
       if (editingId) {
-        const updated = await updateCannedReply(editingId, shortcutInput, messageInput, titleInput || "general")
+        const updated = await updateCannedReply(editingId, shortcutInput, messageInput, titleInput || "general", semanticQuestionInput)
         const mapped = { ...updated, title: updated.category }
         setReplies(prev => prev.map(r => r.id === editingId ? mapped as QuickReplyItem : r))
       } else {
-        const created = await createCannedReply(ORG_ID, shortcutInput, messageInput, titleInput || "general")
+        const created = await createCannedReply(ORG_ID, shortcutInput, messageInput, titleInput || "general", semanticQuestionInput)
         const mapped = { ...created, title: created.category }
         setReplies(prev => [...prev, mapped as QuickReplyItem].sort((a, b) => a.shortcut.localeCompare(b.shortcut)))
       }
@@ -169,6 +172,11 @@ export default function QuickRepliesSettingsPage() {
                     <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
                       {reply.content}
                     </p>
+                    {reply.semantic_question && (
+                      <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-1 mt-1.5 flex items-center gap-1.5">
+                         <Search size={12} className="text-[#0070f3]/70" /> {reply.semantic_question}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <button 
@@ -243,6 +251,22 @@ export default function QuickRepliesSettingsPage() {
                   placeholder="e.g., Welcome Greeting"
                   className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3] transition-all"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                  Semantic Question <span className="text-slate-400 font-normal">(AI Vector Search)</span>
+                </label>
+                <input 
+                  type="text" 
+                  value={semanticQuestionInput}
+                  onChange={(e) => setSemanticQuestionInput(e.target.value)}
+                  placeholder="e.g., How do I reset my password?"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3] transition-all"
+                />
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Used by AI to understand exactly what customer problem this reply solves.
+                </p>
               </div>
 
               <div>

@@ -19,7 +19,7 @@ export async function getCannedReplies(orgId: string) {
   return data || []
 }
 
-export async function createCannedReply(orgId: string, shortcut: string, content: string, category: string = "general") {
+export async function createCannedReply(orgId: string, shortcut: string, content: string, category: string = "general", semantic_question: string = "") {
   if (!orgId || !shortcut || !content) throw new Error("Missing required fields")
   
   // Format shortcut to start with slash /
@@ -31,7 +31,8 @@ export async function createCannedReply(orgId: string, shortcut: string, content
       org_id: orgId,
       shortcut: formattedShortcut,
       content,
-      category: category.toLowerCase()
+      category: category.toLowerCase(),
+      semantic_question: semantic_question || null
     }])
     .select()
 
@@ -42,7 +43,7 @@ export async function createCannedReply(orgId: string, shortcut: string, content
   return data[0]
 }
 
-export async function updateCannedReply(id: string, shortcut: string, content: string, category: string = "general") {
+export async function updateCannedReply(id: string, shortcut: string, content: string, category: string = "general", semantic_question: string = "") {
   if (!id || !shortcut || !content) throw new Error("Missing required fields")
   
   const formattedShortcut = shortcut.startsWith("/") ? shortcut.toLowerCase() : `/${shortcut.toLowerCase()}`
@@ -52,7 +53,8 @@ export async function updateCannedReply(id: string, shortcut: string, content: s
     .update({
       shortcut: formattedShortcut,
       content,
-      category: category.toLowerCase()
+      category: category.toLowerCase(),
+      semantic_question: semantic_question || null
     })
     .eq("id", id)
     .select()
