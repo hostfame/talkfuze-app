@@ -701,16 +701,22 @@ ${instruction
                 stream_options: {
                   include_usage: true
                 },
-                messages: [
-                  {
-                    role: "system",
-                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain)
-                  },
-                  {
-                    role: "user",
-                    content: userMessage
-                  }
-                ]
+                messages: (() => {
+                    const sysPrompt = buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain);
+                    const bengaliInSystem = BENGALI_REGEX.test(sysPrompt);
+                    const bengaliInUser = BENGALI_REGEX.test(userMessage);
+                    console.log(`[AI Draft DEBUG] Language: ${detectedLanguage}, Bengali in system: ${bengaliInSystem}, Bengali in user: ${bengaliInUser}, System length: ${sysPrompt.length}, User length: ${userMessage.length}`);
+                    if (detectedLanguage === 'English' && (bengaliInSystem || bengaliInUser)) {
+                      // Find the offending lines
+                      const allLines = (sysPrompt + '\n' + userMessage).split('\n');
+                      const bengaliLines = allLines.filter(l => BENGALI_REGEX.test(l)).slice(0, 5);
+                      console.log(`[AI Draft DEBUG] Bengali lines found:`, bengaliLines);
+                    }
+                    return [
+                      { role: "system", content: sysPrompt },
+                      { role: "user", content: userMessage }
+                    ];
+                  })()
               })
             });
 
