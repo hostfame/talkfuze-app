@@ -742,8 +742,52 @@ ${instruction
       useClaudeBackup = true;
     }
 
+    let firstDeepSeekChunk: any = null;
+    let deepSeekReader: any = null;
+
+    if (!useClaudeBackup && deepseekResponse && deepseekResponse.body) {
+      console.log('[AI Draft] DeepSeek connected. Waiting for first token (5s timeout)...');
+      deepSeekReader = deepseekResponse.body.getReader();
+      
+      try {
+        const peekPromise = deepSeekReader.read();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("DeepSeek first chunk timeout")), 5000));
+        
+        firstDeepSeekChunk = await Promise.race([peekPromise, timeoutPromise]);
+        console.log('[AI Draft] DeepSeek first token received. Proceeding with stream.');
+      } catch (e: any) {
+        console.warn('[AI Draft] DeepSeek first token timeout or read error:', e.message);
+        deepSeekReader.cancel();
+        useClaudeBackup = true;
+      }
+    }
+
     if (!useClaudeBackup && deepseekResponse) {
-      activeResponse = deepseekResponse;
+      // Re-create the stream to include the peeked first chunk
+      const newStream = new ReadableStream({
+        start(controller) {
+          if (firstDeepSeekChunk && firstDeepSeekChunk.value) {
+            controller.enqueue(firstDeepSeekChunk.value);
+          }
+        },
+        async pull(controller) {
+          if (!deepSeekReader) return controller.close();
+          const { done, value } = await deepSeekReader.read();
+          if (done) {
+            controller.close();
+          } else {
+            controller.enqueue(value);
+          }
+        },
+        cancel() {
+          if (deepSeekReader) deepSeekReader.cancel();
+        }
+      });
+      
+      activeResponse = new Response(newStream, {
+        headers: deepseekResponse.headers,
+        status: deepseekResponse.status
+      });
       isDeepseek = true;
       console.log('[AI Draft] Streaming from DeepSeek-V3...');
     } else {
@@ -757,7 +801,7 @@ ${instruction
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-3-5-haiku-20241022",
           max_tokens: 600,
           temperature: 0.1,
           stream: true,
