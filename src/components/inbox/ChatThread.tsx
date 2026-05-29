@@ -4138,9 +4138,8 @@ export default function ChatThread({
         )}
 
         {allMessages.map((msg, idx) => {
-          const renderMessage = () => {
-            const prevMsg = idx > 0 ? allMessages[idx - 1] : null;
-            const nextMsg = idx < allMessages.length - 1 ? allMessages[idx + 1] : null;
+          const prevMsg = idx > 0 ? allMessages[idx - 1] : null;
+          const nextMsg = idx < allMessages.length - 1 ? allMessages[idx + 1] : null;
 
           const canGroup = (m1: any, m2: any) => {
             if (!m1 || !m2) return false;
