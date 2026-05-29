@@ -865,6 +865,7 @@ ${instruction
         let responseBuffer = '';
         let languageSent = false;
         let finalDetectedLang = 'en';
+        let hasStartedEmittingText = false;
 
         try {
           let firstChunk = true;
@@ -924,6 +925,7 @@ ${instruction
                         let remainingText = responseBuffer.substring(tagIndex + tagMatch[0].length);
                         remainingText = remainingText.replace(/^\s+/, '');
                         if (remainingText) {
+                          hasStartedEmittingText = true;
                           const cleanText = remainingText.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
                           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
                         }
@@ -931,12 +933,27 @@ ${instruction
                         finalDetectedLang = BENGALI_REGEX.test(responseBuffer) ? 'bn' : 'en';
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ language: finalDetectedLang, sources: knowledgeSources })}\n\n`));
                         languageSent = true;
-                        const cleanText = responseBuffer.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                        
+                        let cleanText = responseBuffer.replace(/^\s+/, '');
+                        if (cleanText) {
+                          hasStartedEmittingText = true;
+                          cleanText = cleanText.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                        }
                       }
                     } else {
-                      const cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
-                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                      let cleanText = text.replace(/—/g, ", ").replace(/--/g, ", ").replace(/\*\*/g, "*");
+                      
+                      if (!hasStartedEmittingText) {
+                        cleanText = cleanText.replace(/^\s+/, '');
+                        if (cleanText) {
+                          hasStartedEmittingText = true;
+                        }
+                      }
+
+                      if (cleanText || hasStartedEmittingText) {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanText })}\n\n`));
+                      }
                     }
                   }
                 } catch {
