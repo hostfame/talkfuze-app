@@ -31,8 +31,8 @@ export default function SnippetsPage() {
   
   // Form states
   const [shortcut, setShortcut] = useState("")
-  const [content, setContent] = useState("")
   const [category, setCategory] = useState("general")
+  const [semanticQuestion, setSemanticQuestion] = useState("")
   const [formError, setFormError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -103,10 +103,10 @@ export default function SnippetsPage() {
     setIsSubmitting(true)
     try {
       if (editingSnippet) {
-        const updated = await updateCannedReply(editingSnippet.id, shortcut, content, category)
+        const updated = await updateCannedReply(editingSnippet.id, shortcut, content, category, semanticQuestion)
         setSnippets(prev => prev.map(s => s.id === editingSnippet.id ? updated : s))
       } else {
-        const created = await createCannedReply(user.org_id, shortcut, content, category)
+        const created = await createCannedReply(user.org_id, shortcut, content, category, semanticQuestion)
         setSnippets(prev => [created, ...prev])
       }
       closeModal()
@@ -131,6 +131,7 @@ export default function SnippetsPage() {
     setShortcut("")
     setContent("")
     setCategory("general")
+    setSemanticQuestion("")
     setEditingSnippet(null)
     setFormError("")
     setShowAddModal(true)
@@ -140,6 +141,7 @@ export default function SnippetsPage() {
     setShortcut(snippet.shortcut)
     setContent(snippet.content)
     setCategory(snippet.category || "general")
+    setSemanticQuestion(snippet.semantic_question || "")
     setEditingSnippet(snippet)
     setFormError("")
     setShowAddModal(true)
@@ -151,6 +153,7 @@ export default function SnippetsPage() {
     setShortcut("")
     setContent("")
     setCategory("general")
+    setSemanticQuestion("")
     setFormError("")
   }
 
@@ -286,6 +289,14 @@ export default function SnippetsPage() {
                         <p className="text-[13px] text-slate-600 dark:text-[#d1d7db] leading-relaxed line-clamp-5 whitespace-pre-wrap">
                           {snippet.content}
                         </p>
+                        {snippet.semantic_question && (
+                          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-[#2a3942] flex items-start gap-1.5">
+                             <Search size={12} className="text-[#0070f3]/70 mt-0.5 shrink-0" />
+                             <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2">
+                               {snippet.semantic_question}
+                             </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions Row */}
@@ -371,6 +382,20 @@ export default function SnippetsPage() {
                   <option value="tech">Technical Support</option>
                   <option value="abuse">Abuse & Terms</option>
                 </select>
+              </div>
+
+              {/* Semantic Question Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-[#8696a0] uppercase flex items-center gap-1.5">
+                  Semantic Question <span className="text-[10px] bg-[#0070f3]/10 text-[#0070f3] px-1.5 py-0.5 rounded">AI Vector Search</span>
+                </label>
+                <input
+                  type="text"
+                  className="block w-full px-3.5 py-2 border border-slate-200 dark:border-[#2a3942] rounded-xl text-[13px] text-slate-900 dark:text-[#d1d7db] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50 dark:bg-[#202c33]"
+                  placeholder="e.g., How do I manage DNS?"
+                  value={semanticQuestion}
+                  onChange={(e) => setSemanticQuestion(e.target.value)}
+                />
               </div>
 
               {/* Content Input */}
