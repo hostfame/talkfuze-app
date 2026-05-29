@@ -187,8 +187,11 @@ export async function POST(req: Request) {
     // Detect active conversation state to guide LLM attention
     let activeStateInstruction = "";
     const lastMsg = parsedMessages[parsedMessages.length - 1];
-    if (lastMsg && (lastMsg.sender === 'Agent' || lastMsg.sender === 'System')) {
-      activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by the Agent. The last message in the thread is an Agent message. Do NOT repeat or duplicate greetings, acknowledgments, links, or diagnostic answers that the Agent has already sent. Focus strictly on generating a continuation or follow-up that builds upon the Agent's latest message.`;
+    
+    if (lastMsg && lastMsg.sender === 'Agent') {
+      activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by a human Agent. The last message in the thread is an Agent message. Do NOT repeat greetings or answers the Agent has already sent. Focus strictly on generating a continuation.`;
+    } else {
+      activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System] messages in the history are just automated bot auto-replies; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
     // Language detection: TWO modes
@@ -326,6 +329,11 @@ Instruction: ${instruction}
 Output ONLY the translation in raw plain text.`;
     } else {
       userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}${isHolidayMode ? `[HOLIDAY/VACATION MODE ACTIVE]: ${holidayMessage}\nIMPORTANT: Keep this constraint in mind. If the customer asks for immediate remote support (like AnyDesk) or complains about delays, politely mention this limitation in your response.\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
+
+## MESSAGE IDENTITIES (CRITICAL):
+- [Customer Name/Visitor]: The human customer asking for help.
+- [Agent]: A human support staff. 
+- [System]: An automated auto-reply bot. Ignore system messages when deciding if the customer has been answered.
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).
