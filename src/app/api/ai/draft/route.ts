@@ -159,19 +159,20 @@ export async function POST(req: Request) {
       const match = trimmed.match(/^\[([^\]]+)\]:\s*(.*)$/);
       if (match) {
         currentSender = match[1];
+        if (currentSender === 'System') currentSender = 'System Auto-Reply';
         parsedMessages.push({ sender: currentSender, content: match[2] });
       } else if (parsedMessages.length > 0) {
         parsedMessages[parsedMessages.length - 1].content += '\n' + trimmed;
       }
     }
     
-    const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System');
+    const customerMessages = parsedMessages.filter(m => m.sender !== 'Agent' && m.sender !== 'System Auto-Reply');
     
     // Extract all consecutive customer messages at the end
     const latestCustomerMessages: string[] = [];
     for (let i = parsedMessages.length - 1; i >= 0; i--) {
       const m = parsedMessages[i];
-      if (m.sender === 'Agent' || m.sender === 'System') break;
+      if (m.sender === 'Agent' || m.sender === 'System Auto-Reply') break;
       latestCustomerMessages.unshift(m.content);
     }
     if (latestCustomerMessages.length === 0 && customerMessages.length > 0) {
@@ -191,7 +192,7 @@ export async function POST(req: Request) {
     if (lastMsg && lastMsg.sender === 'Agent') {
       activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by a human Agent. The last message in the thread is an Agent message. Do NOT repeat greetings or answers the Agent has already sent. Focus strictly on generating a continuation.`;
     } else {
-      activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System] messages in the history are just automated bot auto-replies; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
+      activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
     // Language detection: TWO modes
@@ -234,7 +235,7 @@ export async function POST(req: Request) {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const lines = cappedContextMessages.split('\n')
           .map((line: string) => line.trim())
-          .filter((line: string) => line && !line.startsWith('[Agent]') && !line.startsWith('[System]'));
+          .filter((line: string) => line && !line.startsWith('[Agent]') && !line.startsWith('[System'));
         const lastQuery = lines.slice(-3).join(' ');
         
         const cleanLatest = latestCustomerMessageCleaned.toLowerCase();
@@ -329,11 +330,6 @@ Instruction: ${instruction}
 Output ONLY the translation in raw plain text.`;
     } else {
       userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}${isHolidayMode ? `[HOLIDAY/VACATION MODE ACTIVE]: ${holidayMessage}\nIMPORTANT: Keep this constraint in mind. If the customer asks for immediate remote support (like AnyDesk) or complains about delays, politely mention this limitation in your response.\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
-
-## MESSAGE IDENTITIES (CRITICAL):
-- [Customer Name/Visitor]: The human customer asking for help.
-- [Agent]: A human support staff. 
-- [System]: An automated auto-reply bot. Ignore system messages when deciding if the customer has been answered.
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).
