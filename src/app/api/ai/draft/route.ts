@@ -493,6 +493,12 @@ ${cappedContextMessages}
 - Never mention Shopify.
 - If the customer's intent and scale are clear, recommend confidently. If not, ask ONE smart question.
 - Always end with a clear next step the customer can act on.
+${detectedLanguage === 'English' ? `
+## CRITICAL LANGUAGE OVERRIDE:
+This conversation is in ENGLISH. You MUST reply in English ONLY.
+Output '[Language: English]' and write your entire reply in English.
+Do NOT use Bengali script. Do NOT switch languages. The customer said 'BD' referring to Bangladesh as a geographic location, NOT requesting Bengali language.
+ZERO Bengali characters allowed in your output.` : ''}
 
 ${imageBlock ? `\nIMAGE ATTACHED: The customer sent an image ${imageDistance ?? 0} messages ago.
 ${(imageDistance !== null && imageDistance >= 2) ? 'This is a HISTORICAL image. Only reference if current discussion relates to it.' : 'This is a RECENT image. Analyze and address it.'}
