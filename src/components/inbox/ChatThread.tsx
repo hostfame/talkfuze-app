@@ -1880,6 +1880,36 @@ export default function ChatThread({
     }, 100);
   }
 
+  const teachBetterVersion = async (msg: AppMessage) => {
+    setComparingMsgId(null);
+    setAiSampleTargetId(msg.id);
+    setAiSampleEditing(true);
+    setAiSampleLoading(true);
+    
+    try {
+      const msgIndex = allMessages.findIndex(m => m.id === msg.id);
+      let contextMessages = "";
+      if (msgIndex !== -1) {
+        const contextArr = allMessages.slice(Math.max(0, msgIndex - 10), msgIndex);
+        contextMessages = contextArr.map(m => `${m.sender_type === 'agent' ? 'Agent' : 'Customer'}: ${m.content}`).join("\n");
+      }
+      setAiSampleContextStr(contextMessages);
+
+      const safeMeta = typeof msg.metadata === 'string' ? JSON.parse(msg.metadata) : msg.metadata;
+      const originalDraft = safeMeta.ai_draft_original || "Unknown original draft";
+      
+      const logId = await logAiDraft(orgId, msg.conversation_id || "", currentUser?.id || '', originalDraft, 'bn');
+      if (logId) setAiSampleLogId(logId);
+      
+      setAiSampleText(msg.content);
+    } catch (e) {
+      console.error(e);
+      setAiSampleText("Error: " + (e as Error).message);
+    } finally {
+      setAiSampleLoading(false);
+    }
+  }
+
   const generateAiSample = async (targetMessage: AppMessage) => {
     if (!conversationId) return
     setAiSampleTargetId(targetMessage.id)
@@ -4113,7 +4143,7 @@ export default function ChatThread({
             if (m1.content_type === 'system' || m2.content_type === 'system') return false;
             if (m1.content === 'Visitor continued conversation on WhatsApp' || m2.content === 'Visitor continued conversation on WhatsApp') return false;
             if (m1.content === 'Started a voice call' || m2.content === 'Started a voice call') return false;
-            if (m1.content?.toLowerCase().includes("voice call") || m2.content?.toLowerCase().includes("voice call")) return false;
+            if (m1.content?.toLowerCase()?.includes("voice call") || m2.content?.toLowerCase()?.includes("voice call")) return false;
             if (m1.sender_type !== m2.sender_type) return false;
             if (m1.sender_type === 'agent' && m1.sender_id !== m2.sender_id) return false;
             
@@ -4258,7 +4288,7 @@ export default function ChatThread({
 
             const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
             
-            if (agent && msg.content.includes('joined')) {
+            if (agent && msg.content?.includes('joined')) {
               return (
                 <div key={safeMeta?.temp_id || msg.id || idx} className="flex justify-center my-5">
                   <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 px-3 py-1.5 rounded-full shadow-sm">
@@ -4270,7 +4300,7 @@ export default function ChatThread({
                       )}
                     </div>
                     <span className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
-                      {msg.content.replace('the conversation', 'the chat')}
+                      {msg.content?.replace('the conversation', 'the chat')}
                     </span>
                     <span className="text-[10.5px] text-slate-400 ml-1">{msgTime}</span>
                   </div>
@@ -4278,8 +4308,8 @@ export default function ChatThread({
               )
             }
 
-            if (msg.content === "Your ticket is created" || msg.content.includes("ticket is created")) {
-              const tidMatch = msg.content.match(/#([A-Za-z0-9-]+)/)
+            if (msg.content === "Your ticket is created" || msg.content?.includes("ticket is created")) {
+              const tidMatch = msg.content?.match(/#([A-Za-z0-9-]+)/)
               const tid = safeMeta?.ticket_tid || (tidMatch ? tidMatch[1] : null)
               const ticketId = safeMeta?.ticket_id
               
@@ -4307,7 +4337,7 @@ export default function ChatThread({
               )
             }
 
-            if (agent && msg.content.includes('left')) {
+            if (agent && msg.content?.includes('left')) {
               return (
                 <div key={safeMeta?.temp_id || msg.id || idx} className="flex justify-center my-5">
                   <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm">
@@ -4319,7 +4349,7 @@ export default function ChatThread({
                       )}
                     </div>
                     <span className="text-[12px] text-slate-500 dark:text-slate-400 font-medium">
-                      {msg.content.replace('the conversation', 'the chat')}
+                      {msg.content?.replace('the conversation', 'the chat')}
                     </span>
                     <span className="text-[10.5px] text-slate-400 dark:text-slate-500/70 ml-1">{msgTime}</span>
                   </div>
@@ -4327,14 +4357,14 @@ export default function ChatThread({
               )
             }
 
-            if (safeMeta?.event === 'page_view' || msg.content.startsWith('Viewed:')) return null;
+            if (safeMeta?.event === 'page_view' || msg.content?.startsWith('Viewed:')) return null;
 
             if (msg.content === 'Started a voice call') return null;
 
-            if (msg.content.toLowerCase().includes("voice call")) {
+            if (msg.content?.toLowerCase()?.includes("voice call")) {
               if (msg.content === 'Voice call ended' && !safeMeta.duration) return null;
               
-              const isMissed = msg.content.includes("Missed");
+              const isMissed = msg.content?.includes("Missed");
               const agent = msg.sender_id ? teamMembers.find(t => t.id === msg.sender_id) : null;
               return (
                 <VoiceCallWidget
@@ -4488,7 +4518,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
                               <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type={msg.is_internal ? 'internal' : 'agent'} messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
-                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>}
+                              {msg.content !== '[Audio Voice Message]' && !msg.content?.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content || '', true, teamMembers, safeMeta?.mentions, msg.is_internal)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
                             <div className="mb-2">
@@ -4675,7 +4705,7 @@ export default function ChatThread({
                           ) : msg.content_type === 'audio' && (mediaUrl) ? (
                             <div className="flex flex-col gap-1">
                               <CustomAudioPlayer url={(mediaUrl || mediaUrl) as string} type="customer" messageId={msg.id} transcript={(msg.metadata as any)?.transcript} />
-                              {msg.content !== '[Audio Voice Message]' && !msg.content.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content, false, teamMembers, safeMeta?.mentions)}</div>}
+                              {msg.content !== '[Audio Voice Message]' && !msg.content?.startsWith('[Audio]') && <div className="mt-1">{renderTextWithLinks(msg.content || '', false, teamMembers, safeMeta?.mentions)}</div>}
                             </div>
                           ) : msg.content_type === 'video' && (mediaUrl) ? (
                             <div className="mb-2">
@@ -4820,6 +4850,15 @@ export default function ChatThread({
                         <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1.5 uppercase">Agent Sent:</div>
                         <div className="text-[12.5px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                       </div>
+                    </div>
+
+                    <div className="flex justify-end mt-3 border-t border-slate-100 dark:border-slate-700/50 pt-2.5">
+                      <button
+                        onClick={() => teachBetterVersion(msg)}
+                        className="text-[11px] px-3 py-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/30 transition-all font-medium flex items-center gap-1.5"
+                      >
+                        <Brain size={12} /> Teach Better Version
+                      </button>
                     </div>
 
                     <button 

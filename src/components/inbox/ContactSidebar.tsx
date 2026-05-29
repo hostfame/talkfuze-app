@@ -173,14 +173,14 @@ export default function ContactSidebar({
   // - Messenger: show "Messenger" (PSID is not meaningful)
   // - LID: show internal ID
   const displayId = metadataPhone 
-    ? (metadataPhone.startsWith('+') ? metadataPhone : `+${metadataPhone}`)
+    ? (String(metadataPhone).startsWith('+') ? String(metadataPhone) : `+${metadataPhone}`)
     : isLid
     ? `ID: ${displayPlatformId}`
     : isInstagram
     ? 'Instagram DM'
     : isMessenger
     ? 'Messenger'
-    : (displayPlatformId.startsWith('+') ? displayPlatformId : `+${displayPlatformId}`)
+    : (String(displayPlatformId).startsWith('+') ? String(displayPlatformId) : `+${displayPlatformId}`)
 
   const isRawWidgetId = (val: string | null | undefined) => {
     if (!val) return true;
@@ -196,7 +196,7 @@ export default function ContactSidebar({
   const effectivePhoneId = contactPhone || displayPlatformId
   const effectiveSearchQuery = contactEmail || contactPhone || displayPlatformId
   const isEmail = effectiveSearchQuery && typeof effectiveSearchQuery === 'string' && effectiveSearchQuery.includes('@') && !effectiveSearchQuery.endsWith('@lid')
-  const cleanPhone = effectiveSearchQuery ? (isEmail ? effectiveSearchQuery : (effectiveSearchQuery.startsWith('+') ? effectiveSearchQuery : `+${effectiveSearchQuery}`)) : ""
+  const cleanPhone = effectiveSearchQuery ? (isEmail ? effectiveSearchQuery : (String(effectiveSearchQuery).startsWith('+') ? String(effectiveSearchQuery) : `+${effectiveSearchQuery}`)) : ""
   const displayValue = contactEmail || (!isRawWidgetId(contactPhone) ? contactPhone : "");
 
   const isPhone = (text: string) => {

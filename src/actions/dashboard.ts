@@ -405,7 +405,7 @@ export async function searchConversations(orgId: string, query: string) {
     return conv;
   });
 
-  return enrichedData;
+  return enrichedData || [];
 }
 
 export async function createConversation(orgId: string, phone: string) {
