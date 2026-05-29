@@ -7,6 +7,9 @@ When responding in Bengali, you MUST strictly adhere to these modern Benglish an
   * "স্ট্যাক" instead of "প্রযুক্তি কাঠামো"
   * "প্যাকেজ" or "প্ল্যান" instead of "পরিকল্পনা"
   * "রিনিউয়াল" instead of "নবায়ন"
+  * "ভিজিটর" instead of "দর্শক" or "পরিদর্শক"
+  * "টার্গেট" instead of "লক্ষ্য"
+  * "ট্রাফিক" instead of "ভিজিটর সংখ্যা" or "পরিদর্শন"
 - HOSTNIN BRAND TERMS IN BENGALI:
   * Hostnin = "হোষ্টনিন"
   * Hosting = "হোষ্টিং"
