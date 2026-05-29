@@ -791,58 +791,53 @@ ${instruction
       isDeepseek = true;
       console.log('[AI Draft] Streaming from DeepSeek-V3...');
     } else {
-      console.log('[AI Draft] Streaming from Claude backup...');
-      const backupResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      console.log('[AI Draft] Streaming from OpenAI backup...');
+      const openAiKey = process.env.OPENAI_API_KEY;
+      const backupResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-beta": "prompt-caching-2024-07-31",
-          "content-type": "application/json",
+          "Authorization": `Bearer ${openAiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-3-5-haiku-20241022",
+          model: "gpt-4o-mini",
           max_tokens: 600,
-          temperature: 0.1,
+          temperature: 0.2,
           stream: true,
-          system: [
-            {
-              type: "text",
-              text: buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain),
-              cache_control: { type: "ephemeral" }
-            }
-          ],
+          stream_options: { include_usage: true },
           messages: [
+            {
+              role: "system",
+              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain)
+            },
             {
               role: "user",
               content: imageBlock 
                 ? [
                     {
-                      type: "image",
-                      source: {
-                        type: "base64",
-                        media_type: imageBlock.mediaType,
-                        data: imageBlock.base64Data
-                      }
-                    },
-                    {
                       type: "text",
                       text: userMessage
+                    },
+                    {
+                      type: "image_url",
+                      image_url: {
+                        url: `data:${imageBlock.mediaType};base64,${imageBlock.base64Data}`
+                      }
                     }
                   ]
                 : userMessage
-            },
-          ],
-        }),
+            }
+          ]
+        })
       });
 
       if (!backupResponse.ok) {
         const errorText = await backupResponse.text();
-        console.error('[AI Draft Backup] Claude backup failed:', backupResponse.status, errorText);
+        console.error('[AI Draft Backup] OpenAI backup failed:', backupResponse.status, errorText);
         const encoder = new TextEncoder();
         const errorStream = new ReadableStream({
           start(controller) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `AI Draft failed: Both DeepSeek and Claude returned errors.` })}\n\n`));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `AI Draft failed: Both primary and backup AI returned errors.` })}\n\n`));
             controller.close();
           }
         });
@@ -852,6 +847,7 @@ ${instruction
       }
 
       activeResponse = backupResponse;
+      isDeepseek = true; // Use DeepSeek parser since OpenAI SSE format is identical
     }
 
     // Pipe the active SSE stream directly to client
