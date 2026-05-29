@@ -3,7 +3,7 @@
 import { getApprovedExamples } from './ai-learning';
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-import { salesFunnelContent } from "@/data/sales-funnel";
+import { getSalesFunnelContent } from "@/data/sales-funnel";
 import { banglaStyleContent } from "@/data/bangla-style";
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
@@ -105,7 +105,7 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
     const salesKeywords = /price|cost|buy|order|plan|package|hosting|domain|payment|renew|taka|bdt|charge|discount|coupon|offer|টাকা|দাম|প্যাকেজ|হোস্টিং|কিনি|কিনতে|সার্ভার|রিনিউ/i;
     const hasSalesIntent = salesKeywords.test(latestCustomerMessageCleaned) || 
                           parsedMessages.some(m => salesKeywords.test(m.content));
-    const salesContent = hasSalesIntent ? salesFunnelContent : "";
+    const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
 
 
 

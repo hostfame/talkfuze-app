@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { buildKnowledgeContext, GLOBAL_BRAIN, SUB_BRAINS } from "@/actions/knowledge-engine";
+import { buildKnowledgeContext, getGlobalBrain, SUB_BRAINS, getSubBrain } from "@/actions/knowledge-engine";
 import OpenAI from "openai";
-import { salesFunnelContent } from "@/data/sales-funnel";
+import { getSalesFunnelContent } from "@/data/sales-funnel";
 import { banglaStyleContent } from "@/data/bangla-style";
 import intentVectors from "@/actions/intent-vectors.json";
 
@@ -57,7 +57,8 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 
 function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, activeSubBrain: string): string {
   const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
-  const salesContent = hasSalesIntent ? salesFunnelContent : "";
+  const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
+  const globalBrain = getGlobalBrain(detectedLanguage);
 
   return `## IDENTITY
 You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
@@ -90,7 +91,7 @@ English: "I can convert this to a support ticket so our team can investigate in 
 ${salesContent ? `\n\n${salesContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
-${GLOBAL_BRAIN}
+${globalBrain}
 
 ${activeSubBrain ? `\n\n${activeSubBrain}` : ""}
 
@@ -319,7 +320,7 @@ export async function POST(req: Request) {
             const score = cosineSimilarity(query_embedding, vector as number[]);
             if (score > bestScore && score >= 0.25) {
               bestScore = score;
-              activeSubBrain = (SUB_BRAINS as any)[intentMap[intent]] || "";
+              activeSubBrain = getSubBrain(intentMap[intent], detectedLanguage);
             }
           }
           

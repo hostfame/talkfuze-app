@@ -17,17 +17,14 @@ import knowledge from "@/actions/hostnin-knowledge.json";
 // Built once at module init from JSON source of truth
 // ============================================================
 
-export const GLOBAL_BRAIN = `<critical_instruction>
-1. Analyze the customer's message to detect if they are speaking English, Bengali, or Banglish (Bengali written in English letters).
-2. If the language is Bengali or Banglish, you MUST exclusively follow the <bengali_rules> and completely ignore the <english_rules>.
-3. If the language is English, you MUST exclusively follow the <english_rules> and completely ignore the <bengali_rules>.
-</critical_instruction>
-
-<english_rules>
+export function getGlobalBrain(language: 'Bengali' | 'English'): string {
+  if (language === 'English') {
+    return `<rules>
 - Confidence Thresholding (STRICT): This rule applies to EVERYTHING (Domains, Hosting, Nameservers, IPs, Transaction IDs). If a customer provides ANY data that is not explicitly in your knowledge base, DO NOT confidently say "This is not ours", "This is invalid", or guess the status. Instead, you MUST ask EXACTLY: "Could you please provide your registered email or domain name so I can check your account and verify this?"
-</english_rules>
+</rules>`;
+  }
 
-<bengali_rules>
+  return `<rules>
 - Confidence Thresholding (STRICT): This rule applies to EVERYTHING (Domains, Hosting, Nameservers, IPs, Transaction IDs). If a customer provides ANY data that is not explicitly in your knowledge base, DO NOT confidently say "This is not ours", "This is invalid", or guess the status. Instead, you MUST ask EXACTLY: "অনুগ্রহপুর্বক আপনার ডোমেইন লিংকটি দিন যাতে আমি চেক করতে পারি।"
 - Bengali Tone & Phrasing (CRITICAL): Never use classic, traditional, or wordy Bengali phrases like "দিয়ে দিতে পারবো", "করতে পারবো", or "চেক করে দিচ্ছি". Always use modern, concise Hostnin phrasing. Study these exact examples of our style:
   1) "অনুগ্রহপুর্বক আপনার ডোমেইন লিংকটি দিন যাতে আমি চেক করতে পারি।"
@@ -35,7 +32,11 @@ export const GLOBAL_BRAIN = `<critical_instruction>
   3) "আমি কি আর কোন তথ্য দিয়ে সহযোগিতা করতে পারি?"
   4) "জ্বী বলুন, আপনাকে কিভাবে সহযোগিতা করতে পারি?"
   5) "ধন্যবাদ, আমি বিষয়টি চেক করছি এবং খুব দ্রুতই এই ব্যাপারে আপডেট পাবেন। সময় দিয়ে সহযোগিতার জন্য আন্তরিকভাবে ধন্যবাদ।"
-</bengali_rules>`;
+</rules>`;
+}
+
+// Keep backward-compat static export for any other consumers
+export const GLOBAL_BRAIN = getGlobalBrain('Bengali');
 
 export const SUB_BRAINS = {
   sales: `## Sales & Pricing Policies
@@ -62,6 +63,16 @@ export const SUB_BRAINS = {
 - Free .com/.net/.org domain with yearly hosting plans (Starter and above).
 - Domain transfer needs EPP/Auth code, must be 60+ days old, not expired.`
 };;
+
+export function getSubBrain(key: string, language: 'Bengali' | 'English'): string {
+  const brain = (SUB_BRAINS as any)[key] || '';
+  if (!brain) return '';
+  // For English conversations, strip the Bengali nameserver phrase from tech brain
+  if (language === 'English' && key === 'tech') {
+    return brain.replace(/\n\s*\* Bengali:.*$/m, '');
+  }
+  return brain;
+}
 
 // Build pricing sections from JSON data with full specs per plan
 function buildPricingMD(type: string): string {
