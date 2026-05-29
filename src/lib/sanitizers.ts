@@ -1,4 +1,4 @@
-import { AppMessage } from '@/lib/store';
+import type { AppMessage } from '@/lib/types';
 
 /**
  * Enterprise-grade data layer sanitizer for incoming real-time Messages.

@@ -236,7 +236,7 @@ export default function InboxPage() {
                } catch (e) {}
              }
              if (safeMeta && safeMeta.temp_id) {
-               useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, safeMeta.temp_id);
+               useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, String(safeMeta.temp_id));
              }
           }
 

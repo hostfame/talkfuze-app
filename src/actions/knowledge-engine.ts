@@ -50,7 +50,10 @@ export const SUB_BRAINS = {
 - VPS: Self-managed by default, full root access. Locations: Bangladesh (BDIX), Singapore, Germany, Finland, USA.
 - Dedicated Servers: Full dedicated hardware, most have setup fees (except Value AMD = Free Setup).
 - MySQL/Database: External MySQL connections are NOT allowed on standard Web/Cloud Hosting or BDIX VPS for security reasons. We DO allow external MySQL connections on Node.js Hosting.
-- Nameservers: If a customer asks for their nameservers, you MUST exclusively check their 'Customer CRM Profile' (Active Services) in this prompt. Do NOT guess from RAG context, as RAG contains other customers' data. If they have 0 hostings (or no profile), ALWAYS use this EXACT phrase to ask for their domain: "অনুগ্রহপুর্বক আপনার ডোমেইন লিংকটি দিন যাতে আমি চেক করতে পারি।" Do NOT write anything else. If they have exactly 1 active hosting, provide its 'nameservers' directly. If they have multiple hostings, list the products and ask which domain they need the nameservers for. Generic rule: All our web hosting nameservers end in \`balancedserver.com\` (e.g., nova.balancedserver.com). If they provide a nameserver ending in \`balancedserver.com\` or \`stackdns.com\`, confirm it IS ours.`,
+- Nameservers: If a customer asks for their nameservers, you MUST exclusively check their 'Customer CRM Profile' (Active Services) in this prompt. Do NOT guess from RAG context, as RAG contains other customers' data. If they have 0 hostings (or no profile), ALWAYS use this EXACT phrase to ask for their domain:
+  * English: "Could you please provide your domain link so I can check?"
+  * Bengali: "অনুগ্রহপুর্বক আপনার ডোমেইন লিংকটি দিন যাতে আমি চেক করতে পারি।"
+  Do NOT write anything else. If they have exactly 1 active hosting, provide its 'nameservers' directly. If they have multiple hostings, list the products and ask which domain they need the nameservers for. Generic rule: All our web hosting nameservers end in \`balancedserver.com\` (e.g., nova.balancedserver.com). If they provide a nameserver ending in \`balancedserver.com\` or \`stackdns.com\`, confirm it IS ours.`,
   
   billing: `## Billing & Account Policies
 - 30-day money-back for hosting. Refund to original method ONLY if Hostnin's fault. Otherwise = Account Credit.

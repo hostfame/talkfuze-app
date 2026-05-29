@@ -27,12 +27,27 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  // Purely dynamic script check: if any message contains Bengali script, return Bengali.
-  // Otherwise default to English. No hardcoded lists are used.
-  return messages.some(m => BENGALI_REGEX.test(m.content)) ? 'Bengali' : 'English';
+  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System Auto-Reply');
+  if (customerMessages.length === 0) return 'English';
+
+  const latestCustomerMsg = customerMessages[customerMessages.length - 1].content.trim();
+  
+  if (BENGALI_REGEX.test(latestCustomerMsg) || BANGLISH_REGEX.test(latestCustomerMsg)) {
+    return 'Bengali';
+  }
+  
+  if (AMBIGUOUS_MSG.test(latestCustomerMsg)) {
+    const lastThree = customerMessages.slice(-3);
+    if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) {
+      return 'Bengali';
+    }
+  }
+
+  return 'English';
 }
 
 // ============================================================
