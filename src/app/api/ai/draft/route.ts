@@ -37,15 +37,22 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 
   const latestCustomerMsg = customerMessages[customerMessages.length - 1].content.trim();
   
+  // 1. Direct match on the latest message
   if (BENGALI_REGEX.test(latestCustomerMsg) || BANGLISH_REGEX.test(latestCustomerMsg)) {
     return 'Bengali';
   }
   
-  if (AMBIGUOUS_MSG.test(latestCustomerMsg)) {
-    const lastThree = customerMessages.slice(-3);
-    if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) {
-      return 'Bengali';
-    }
+  // 2. Is it definitively an English sentence? (Longer than 20 chars and no Bengali/Banglish)
+  // If yes, they probably switched to English.
+  if (latestCustomerMsg.length > 20 && /^[a-zA-Z0-9\s.,!?'-]+$/.test(latestCustomerMsg)) {
+    return 'English';
+  }
+
+  // 3. Otherwise (it's a short message, punctuation, or ambiguous term like "bandwidth?"), 
+  // we look at the last 3 customer messages to maintain the context language.
+  const lastThree = customerMessages.slice(-3);
+  if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) {
+    return 'Bengali';
   }
 
   return 'English';
@@ -245,8 +252,10 @@ export async function POST(req: Request) {
     }
 
     // Fetch and encode image if present - wrapped in a Promise to run in PARALLEL
+    // OPTIMIZATION: If the agent provided an instruction (Copilot Assisted), they have already seen the image. 
+    // We skip image processing to save latency and allow the ultra-fast DeepSeek text model to handle it.
     const imagePromise = (async () => {
-      if (!imageUrl || isTranslation) return null;
+      if (!imageUrl || isTranslation || instruction) return null;
       try {
         const imgRes = await fetch(imageUrl);
         if (imgRes.ok) {
@@ -322,8 +331,14 @@ export async function POST(req: Request) {
     let activeStateInstruction = "";
     const lastMsg = parsedMessages[parsedMessages.length - 1];
     
-    if (lastMsg && lastMsg.sender === 'Agent') {
+    const hasAgentRepliedBefore = parsedMessages.some(m => m.sender === 'Agent');
+    
+    if (instruction) {
+      activeStateInstruction = `[ACTIVE STATE]: The agent has provided a direct instruction for the reply. Do NOT add any conversational fluff, greetings (like As-salamu alaykum/Hello), or filler words. Output exactly what the agent instructed, expanded professionally.`;
+    } else if (lastMsg && lastMsg.sender === 'Agent') {
       activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by a human Agent. The last message in the thread is an Agent message. Do NOT repeat greetings or answers the Agent has already sent. Focus strictly on generating a continuation.`;
+    } else if (hasAgentRepliedBefore) {
+      activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply in an ONGOING conversation. Do NOT use introductory greetings (like Hello or As-salamu alaykum) because the conversation is already in progress. Just answer the query directly.`;
     } else {
       activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
