@@ -1615,6 +1615,14 @@ export default function ChatThread({
         } else {
           aiDraftOriginalTextRef.current = null
         }
+        
+        const sessionText = localStorage.getItem(`draft_session_${conversationId}`)
+        if (sessionText) {
+          aiDraftSessionIdRef.current = sessionText
+        } else {
+          aiDraftSessionIdRef.current = null
+        }
+        
         aiDraftLogPromiseRef.current = null
       }, 0)
       return () => clearTimeout(timer)
@@ -1628,11 +1636,15 @@ export default function ChatThread({
         localStorage.setItem(`draft_${conversationId}`, input)
       } else {
         localStorage.removeItem(`draft_${conversationId}`)
-        localStorage.removeItem(`draft_log_id_${conversationId}`)
-        localStorage.removeItem(`draft_original_${conversationId}`)
-        setAiDraftSources([])
-        aiDraftLogIdRef.current = null
-        aiDraftOriginalTextRef.current = null
+        if (!draftLogTimerRef.current) {
+          localStorage.removeItem(`draft_log_id_${conversationId}`)
+          localStorage.removeItem(`draft_original_${conversationId}`)
+          localStorage.removeItem(`draft_session_${conversationId}`)
+          setAiDraftSources([])
+          aiDraftLogIdRef.current = null
+          aiDraftOriginalTextRef.current = null
+          aiDraftSessionIdRef.current = null
+        }
       }
     }
   }, [input, conversationId])
@@ -1739,6 +1751,7 @@ export default function ChatThread({
   const aiDraftOriginalTextRef = useRef<string | null>(null)
   const autoDraftTriggeredIdsRef = useRef<Set<string>>(new Set())
   const aiDraftLogPromiseRef = useRef<Promise<string | null> | null>(null)
+  const aiDraftSessionIdRef = useRef<string | null>(null)
   const draftLogTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pendingDraftTextsRef = useRef<string[]>([])
   const pendingDraftLogIdRef = useRef<string | null>(null)
@@ -2812,7 +2825,9 @@ export default function ChatThread({
       // Log the AI draft for learning - store promise to handle fast sends
       if (orgId && conversationId && currentUser) {
         aiDraftOriginalTextRef.current = fullText.trim();
+        aiDraftSessionIdRef.current = crypto.randomUUID();
         localStorage.setItem(`draft_original_${conversationId}`, fullText.trim());
+        localStorage.setItem(`draft_session_${conversationId}`, aiDraftSessionIdRef.current);
         aiDraftLogPromiseRef.current = logAiDraft(
           orgId, 
           conversationId, 
@@ -3150,6 +3165,7 @@ export default function ChatThread({
               chunk_delay: isScheduled ? chunkDelay : undefined,
               previous_delay: isScheduled ? previousDelay : undefined,
               used_ai_draft: usedAiDraft ? true : undefined,
+              ai_draft_session: usedAiDraft ? aiDraftSessionIdRef.current : undefined,
               ai_draft_original: (usedAiDraft && aiDraftOriginalTextRef.current) ? aiDraftOriginalTextRef.current : undefined
             } as any,
             is_internal: isInternal,
@@ -3170,6 +3186,9 @@ export default function ChatThread({
             metaPayload.used_ai_draft = true;
             if (aiDraftOriginalTextRef.current) {
               metaPayload.ai_draft_original = aiDraftOriginalTextRef.current;
+            }
+            if (aiDraftSessionIdRef.current) {
+              metaPayload.ai_draft_session = aiDraftSessionIdRef.current;
             }
           }
 
@@ -4946,14 +4965,51 @@ export default function ChatThread({
                     <div className="flex gap-4 mt-2">
                       <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
                         <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1.5 uppercase">AI Suggested:</div>
-                        <div className="text-[12.5px] text-slate-500 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">{safeMeta.ai_draft_original || <span className="italic text-slate-400">Original draft not saved for this message.</span>}</div>
+                        <div className="text-[12.5px] text-slate-500 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
+                          {(() => {
+                            if (safeMeta.used_ai_draft) {
+                              const relatedChunks = allMessages.filter(m => {
+                                const mMeta = typeof m.metadata === 'string' ? (() => { try { return JSON.parse(m.metadata) } catch(e) { return {} } })() : (m.metadata || {});
+                                if (!mMeta.used_ai_draft) return false;
+                                if (mMeta.ai_draft_session && safeMeta.ai_draft_session) return mMeta.ai_draft_session === safeMeta.ai_draft_session;
+                                if (mMeta.ai_draft_original && safeMeta.ai_draft_original) return mMeta.ai_draft_original === safeMeta.ai_draft_original;
+                                const t1 = new Date(m.created_at || new Date()).getTime();
+                                const t2 = new Date(msg.created_at || new Date()).getTime();
+                                return Math.abs(t1 - t2) < 60 * 1000;
+                              });
+                              const originalDraft = relatedChunks.find(m => {
+                                const mMeta = typeof m.metadata === 'string' ? (() => { try { return JSON.parse(m.metadata) } catch(e) { return {} } })() : (m.metadata || {});
+                                return !!mMeta.ai_draft_original;
+                              })?.metadata;
+                              const actualOriginal = typeof originalDraft === 'string' 
+                                ? (() => { try { return JSON.parse(originalDraft).ai_draft_original } catch(e) { return null } })() 
+                                : (originalDraft?.ai_draft_original);
+                              return actualOriginal || <span className="italic text-slate-400">Original draft not saved for this message.</span>;
+                            }
+                            return null;
+                          })()}
+                        </div>
                       </div>
                       <div className="flex-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/30">
                         <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1.5 uppercase">Agent Sent:</div>
                         <div className="text-[12.5px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                           {(() => {
                             if (safeMeta.used_ai_draft) {
-                              const relatedChunks = allMessages.filter(m => m.metadata?.used_ai_draft === safeMeta.used_ai_draft);
+                              const relatedChunks = allMessages.filter(m => {
+                                const mMeta = typeof m.metadata === 'string' ? (() => { try { return JSON.parse(m.metadata) } catch(e) { return {} } })() : (m.metadata || {});
+                                if (!mMeta.used_ai_draft) return false;
+                                if (mMeta.ai_draft_session && safeMeta.ai_draft_session) {
+                                  return mMeta.ai_draft_session === safeMeta.ai_draft_session;
+                                }
+                                
+                                if (mMeta.ai_draft_original && safeMeta.ai_draft_original) {
+                                  return mMeta.ai_draft_original === safeMeta.ai_draft_original;
+                                }
+                                
+                                const t1 = new Date(m.created_at || new Date()).getTime();
+                                const t2 = new Date(msg.created_at || new Date()).getTime();
+                                return Math.abs(t1 - t2) < 60 * 1000;
+                              });
                               if (relatedChunks.length > 0) {
                                 return relatedChunks.map(m => m.content).join('\n\n');
                               }
