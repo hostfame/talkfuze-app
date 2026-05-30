@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { MessageSquare, X, Send, User, ChevronLeft, Loader2 } from 'lucide-react'
 import { useTeamChatStore, TeamChat, TeamMessage } from '@/lib/team-chat-store'
 import { useInboxStore } from '@/lib/store'
+import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchTeamChats, fetchTeamMessages, sendTeamMessage, getOrCreateDirectChat } from '@/actions/team-chat'
 
@@ -45,7 +46,9 @@ export default function TeamChatDock() {
     unreadCounts, incrementUnreadCount, setUnreadCount
   } = useTeamChatStore()
   
-  const { currentUser, teamMembers } = useInboxStore()
+  const authUser = useAuth()
+  const { teamMembers } = useInboxStore()
+  const currentUser = authUser || useInboxStore.getState().currentUser
   const [isLoading, setIsLoading] = useState(false)
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
