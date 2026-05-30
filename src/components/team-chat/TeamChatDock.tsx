@@ -1,14 +1,15 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from 'react'
-import { MessageSquare, X, Send, User, ChevronLeft, Loader2, Users } from 'lucide-react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { MessageSquare, X, Send, ChevronLeft, Loader2, Users } from 'lucide-react'
 import { useTeamChatStore, TeamChat, TeamMessage } from '@/lib/team-chat-store'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
-import { fetchTeamChats, fetchTeamMessages, sendTeamMessage, getOrCreateDirectChat } from '@/actions/team-chat'
+import { fetchTeamChats, fetchTeamMessages, getOrCreateDirectChat } from '@/actions/team-chat'
 import { cn } from '@/lib/utils'
 
+// ------- Audio -------
 const playCutePing = () => {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
@@ -16,27 +17,22 @@ const playCutePing = () => {
     const ctx = new AudioCtx()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    
     osc.type = 'sine'
-    // A cute double-ping sound
-    osc.frequency.setValueAtTime(880, ctx.currentTime) // A5
-    osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1) // E6
-    
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1)
     gain.gain.setValueAtTime(0, ctx.currentTime)
     gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.05)
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2)
-    
     osc.connect(gain)
     gain.connect(ctx.destination)
-    
     osc.start()
     osc.stop(ctx.currentTime + 0.2)
-    
-    setTimeout(() => {
-      if (ctx.state !== 'closed') ctx.close().catch(() => {})
-    }, 300)
+    setTimeout(() => { if (ctx.state !== 'closed') ctx.close().catch(() => {}) }, 300)
   } catch(e) {}
 }
+
+// ------- Broadcast channel name (shared across all team chat users) -------
+const BROADCAST_CHANNEL = 'team_chat_broadcast'
 
 export default function TeamChatDock() {
   const { 
@@ -57,42 +53,42 @@ export default function TeamChatDock() {
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Refs to avoid re-subscribing realtime on every state change
+  // Stable refs to avoid re-subscribing channels on every state change
   const isOpenRef = useRef(isOpen)
   const activeChatIdRef = useRef(activeChatId)
   const chatIdsRef = useRef<string[]>([])
+  const broadcastChannelRef = useRef<any>(null)
   isOpenRef.current = isOpen
   activeChatIdRef.current = activeChatId
   chatIdsRef.current = chats.map(c => c.id)
 
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0)
 
-  // Fetch initial chats
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 30)
+  }, [])
+
+  // ------- 1. Fetch initial chats -------
   useEffect(() => {
     if (currentUser?.org_id) {
       fetchTeamChats(currentUser.org_id).then(fetchedChats => {
-        // Map chats to include other member details
         const enrichedChats = fetchedChats.map((c: any) => {
           let otherName = 'Unknown'
-          let otherAvatar = undefined
+          let otherAvatar: string | null = null
           if (c.type === 'direct') {
             const otherUserId = c.team_chat_members?.find((m: any) => m.user_id !== currentUser.id)?.user_id
             if (otherUserId) {
               const tm = teamMembers.find(t => t.id === otherUserId)
               if (tm) {
                 otherName = tm.name
-                otherAvatar = tm.avatar_url
+                otherAvatar = tm.avatar_url || null
               }
             }
           }
           return {
-            id: c.id,
-            org_id: c.org_id,
-            type: c.type,
-            name: c.name,
+            id: c.id, org_id: c.org_id, type: c.type, name: c.name,
             members: c.team_chat_members,
-            other_member_name: otherName,
-            other_member_avatar: otherAvatar
+            other_member_name: otherName, other_member_avatar: otherAvatar
           } as TeamChat
         })
         setChats(enrichedChats)
@@ -100,67 +96,48 @@ export default function TeamChatDock() {
     }
   }, [currentUser?.org_id, teamMembers, setChats])
 
-  // Realtime subscription for team messages & presence
-  // IMPORTANT: Only depend on currentUser.id - use refs for everything else
-  // to prevent constant channel reconnections that cause message delays
+  // ------- 2. Broadcast Channel + Presence (subscribe ONCE) -------
   useEffect(() => {
     if (!currentUser?.id || !currentUser?.org_id) return
 
-    // Message Channel - listen to ALL team_messages, filter client-side
-    const messageChannel = supabase
-      .channel('team_messages_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'team_messages'
-        },
-        (payload) => {
-          const newMsg = payload.new as TeamMessage
-          
-          // Client-side filter: only process messages for our chats
-          if (!chatIdsRef.current.includes(newMsg.chat_id)) return
-          
-          if (newMsg.sender_id !== currentUser.id) {
-            playCutePing()
-            if (!isOpenRef.current || activeChatIdRef.current !== newMsg.chat_id) {
-              incrementUnreadCount(newMsg.chat_id)
-            }
-            // Auto expand when a new message arrives
-            if (!isOpenRef.current) {
-              setIsOpen(true)
-            }
-          }
-          
-          const sender = teamMembers.find(t => t.id === newMsg.sender_id)
-          const enrichedMsg = {
-            ...newMsg,
-            sender_name: sender?.name || 'Agent',
-            sender_avatar: sender?.avatar_url || null
-          }
-          
-          addMessage(newMsg.chat_id, enrichedMsg)
-          
-          if (activeChatIdRef.current === newMsg.chat_id) {
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-            }, 50)
-          }
-        }
-      )
-      .subscribe()
+    // BROADCAST CHANNEL: instant message delivery via WebSocket
+    const channel = supabase.channel(BROADCAST_CHANNEL)
+    broadcastChannelRef.current = channel
 
-    // Presence Channel
+    channel.on('broadcast', { event: 'new_message' }, (payload: any) => {
+      const msg = payload.payload as TeamMessage
+      
+      // Skip our own messages (we already have them via optimistic UI)
+      if (msg.sender_id === currentUser.id) return
+      
+      // Only process messages for chats we're part of
+      if (!chatIdsRef.current.includes(msg.chat_id)) return
+
+      playCutePing()
+      
+      if (!isOpenRef.current || activeChatIdRef.current !== msg.chat_id) {
+        incrementUnreadCount(msg.chat_id)
+      }
+      if (!isOpenRef.current) {
+        setIsOpen(true)
+      }
+
+      addMessage(msg.chat_id, msg)
+      
+      if (activeChatIdRef.current === msg.chat_id) {
+        scrollToBottom()
+      }
+    })
+
+    channel.subscribe()
+
+    // PRESENCE CHANNEL: online status
     const presenceChannel = supabase.channel('team_chat_presence', {
       config: { presence: { key: currentUser.id } }
     })
-
     presenceChannel.on('presence', { event: 'sync' }, () => {
-      const state = presenceChannel.presenceState()
-      setOnlineUsers(state)
+      setOnlineUsers(presenceChannel.presenceState())
     })
-
     presenceChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await presenceChannel.track({ online_at: new Date().toISOString() })
@@ -168,38 +145,35 @@ export default function TeamChatDock() {
     })
 
     return () => {
-      supabase.removeChannel(messageChannel)
+      supabase.removeChannel(channel)
       supabase.removeChannel(presenceChannel)
+      broadcastChannelRef.current = null
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, currentUser?.org_id])
 
-  // Fetch messages when a chat is opened
+  // ------- 3. Fetch messages when chat opened -------
   useEffect(() => {
-    let isMounted = true
+    let alive = true
     if (activeChatId && !messages[activeChatId]) {
       setIsLoading(true)
-      fetchTeamMessages(activeChatId).then(msgs => {
-        if (!isMounted) return
-        setMessages(activeChatId, msgs)
-        setUnreadCount(activeChatId, 0)
-        setIsLoading(false)
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-        }, 100)
-      }).catch(err => {
-        console.error("Failed to fetch messages:", err)
-        if (isMounted) setIsLoading(false)
-      })
+      fetchTeamMessages(activeChatId)
+        .then(msgs => {
+          if (!alive) return
+          setMessages(activeChatId, msgs)
+          setUnreadCount(activeChatId, 0)
+          setIsLoading(false)
+          scrollToBottom()
+        })
+        .catch(() => { if (alive) setIsLoading(false) })
     } else if (activeChatId) {
       setUnreadCount(activeChatId, 0)
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
+      scrollToBottom()
     }
-    return () => { isMounted = false }
-  }, [activeChatId, messages, setMessages, setUnreadCount])
+    return () => { alive = false }
+  }, [activeChatId, messages, setMessages, setUnreadCount, scrollToBottom])
 
+  // ------- 4. SEND: Optimistic + Broadcast + Direct DB Insert -------
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!msgInput.trim() || !activeChatId || sending) return
@@ -207,35 +181,54 @@ export default function TeamChatDock() {
     const text = msgInput.trim()
     setMsgInput('')
     setSending(true)
-    
-    // OPTIMISTIC UI: Show the message instantly before server confirms
-    const optimisticMsg: TeamMessage = {
-      id: `optimistic-${Date.now()}`,
+
+    const sender = teamMembers.find(t => t.id === currentUser?.id)
+    const now = new Date().toISOString()
+    const optimisticId = `optimistic-${Date.now()}`
+
+    const msgPayload: TeamMessage = {
+      id: optimisticId,
       chat_id: activeChatId,
       sender_id: currentUser?.id || '',
       content: text,
-      created_at: new Date().toISOString(),
-      sender_name: currentUser?.name || 'You',
-      sender_avatar: currentUser?.avatar_url || null
+      created_at: now,
+      sender_name: sender?.name || currentUser?.name || 'You',
+      sender_avatar: sender?.avatar_url || null
     }
-    addMessage(activeChatId, optimisticMsg)
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 30)
-    
-    try {
-      await sendTeamMessage(activeChatId, text)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setSending(false)
+
+    // STEP 1: Show in OUR UI instantly (0ms)
+    addMessage(activeChatId, msgPayload)
+    scrollToBottom()
+
+    // STEP 2: Broadcast to OTHER clients via WebSocket (~20ms)
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'new_message',
+        payload: msgPayload
+      })
     }
+
+    // STEP 3: Persist to DB directly from client (background, no await blocking UI)
+    supabase
+      .from('team_messages')
+      .insert({
+        chat_id: activeChatId,
+        sender_id: currentUser?.id,
+        content: text
+      })
+      .then(({ error }) => {
+        if (error) console.error('Failed to persist message:', error)
+      })
+
+    setSending(false)
   }
 
+  // ------- 5. Start Direct Chat -------
   const startDirectChat = async (otherUserId: string) => {
     setErrorMsg(null)
     
-    // Check locally first for instant load!
+    // Check local cache first (instant)
     const existingChat = chats.find(c => c.type === 'direct' && c.members?.some(m => m.user_id === otherUserId))
     if (existingChat) {
       setActiveChatId(existingChat.id)
@@ -250,36 +243,25 @@ export default function TeamChatDock() {
     }
     try {
       const response = await getOrCreateDirectChat(currentUser.org_id, otherUserId)
-      
       if (response.error) {
         setErrorMsg(response.error)
         setIsLoading(false)
         return
       }
-
       const chatId = response.data!
-      
       if (!chats.find(c => c.id === chatId)) {
         const fetchedChats = await fetchTeamChats(currentUser.org_id)
         const enrichedChats = fetchedChats.map((c: any) => {
           let otherName = 'Unknown'
-          let otherAvatar = null
+          let otherAvatar: string | null = null
           if (c.type === 'direct') {
             const ouId = c.team_chat_members?.find((m: any) => m.user_id !== currentUser.id)?.user_id
             if (ouId) {
               const tm = teamMembers.find(t => t.id === ouId)
-              if (tm) {
-                otherName = tm.name
-                otherAvatar = tm.avatar_url || null
-              }
+              if (tm) { otherName = tm.name; otherAvatar = tm.avatar_url || null }
             }
           }
-          return {
-            ...c,
-            other_member_name: otherName,
-            other_member_avatar: otherAvatar,
-            members: c.team_chat_members
-          }
+          return { ...c, other_member_name: otherName, other_member_avatar: otherAvatar, members: c.team_chat_members }
         })
         setChats(enrichedChats)
       }
@@ -292,9 +274,10 @@ export default function TeamChatDock() {
     }
   }
 
+  // ------- RENDER -------
   return (
     <>
-      {/* Floating Button (Closed State) - Right Edge Tab */}
+      {/* Floating Button - Right Edge Tab */}
       <div 
         className={cn(
           "fixed right-0 top-[40%] -translate-y-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
@@ -314,7 +297,7 @@ export default function TeamChatDock() {
         </button>
       </div>
 
-      {/* Floating Chat Window (Open State) */}
+      {/* Floating Chat Window */}
       <div 
         className={cn(
           "fixed right-4 top-[40%] w-[240px] bg-white/95 backdrop-blur-2xl dark:bg-[#111b21]/95 rounded-2xl shadow-[0_12px_48px_rgba(0,0,0,0.15)] border border-slate-200/80 dark:border-slate-800/80 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] origin-right",
@@ -326,10 +309,7 @@ export default function TeamChatDock() {
           <div className="flex items-center gap-2">
             {activeChatId && (
               <button 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setActiveChatId(null)
-                }}
+                onClick={(e) => { e.stopPropagation(); setActiveChatId(null) }}
                 className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -339,33 +319,28 @@ export default function TeamChatDock() {
               {activeChatId ? (chats.find(c => c.id === activeChatId)?.type === 'direct' ? chats.find(c => c.id === activeChatId)?.other_member_name : 'Group Chat') : 'Team Chat'}
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsOpen(false)
-              }}
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setIsOpen(false) }}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Content Area */}
+        {/* Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {errorMsg && (
-            <div className="absolute top-11 left-0 right-0 bg-red-100 text-red-600 text-[10px] p-2 text-center z-10 font-mono">
+            <div className="bg-red-100 text-red-600 text-[10px] p-2 text-center font-mono shrink-0">
               Error: {errorMsg}
             </div>
           )}
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full">
               <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-              <span className="text-xs text-slate-500 mt-2">Connecting...</span>
+              <span className="text-xs text-slate-500 mt-2">Loading...</span>
             </div>
           ) : !activeChatId ? (
-            // Chat List View
+            /* ---- Chat List ---- */
             <div className="flex-1 overflow-y-auto p-1 space-y-0.5">
               {teamMembers.filter(t => t.id !== currentUser?.id && t.sip_extension).map(member => {
                 const existingChat = chats.find(c => c.type === 'direct' && c.members?.some(m => m.user_id === member.id))
@@ -383,7 +358,7 @@ export default function TeamChatDock() {
                         {member.avatar_url ? (
                           <img src={member.avatar_url} className="w-full h-full rounded-full object-cover" />
                         ) : (
-                          <div className="w-full h-full rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-xs">
+                          <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
                             {member.name.charAt(0)}
                           </div>
                         )}
@@ -391,10 +366,10 @@ export default function TeamChatDock() {
                           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{member.name}</p>
+                      <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{member.name}</p>
                     </div>
                     {unread > 0 && (
-                      <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white">
+                      <div className="w-4 h-4 shrink-0 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white">
                         {unread}
                       </div>
                     )}
@@ -403,9 +378,9 @@ export default function TeamChatDock() {
               })}
             </div>
           ) : (
-            // Message View
+            /* ---- Message View ---- */
             <div className="flex flex-col h-full bg-slate-50/30 dark:bg-black/10">
-              <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {messages[activeChatId]?.map(msg => {
                   const isMe = msg.sender_id === currentUser?.id
                   return (
@@ -413,7 +388,7 @@ export default function TeamChatDock() {
                       {!isMe && <span className="text-[9px] text-slate-400 mb-1 ml-1">{msg.sender_name}</span>}
                       <div className={`max-w-[85%] rounded-[18px] px-3.5 py-2 text-[13px] shadow-sm leading-relaxed ${
                         isMe 
-                          ? 'bg-blue-600 text-white rounded-br-sm bg-gradient-to-br from-blue-500 to-blue-600' 
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-sm' 
                           : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
                       }`}>
                         {msg.content}
@@ -424,7 +399,7 @@ export default function TeamChatDock() {
                 <div ref={messagesEndRef} className="h-1" />
               </div>
               
-              {/* Input Area */}
+              {/* Input */}
               <div className="p-2.5 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 shrink-0">
                 <form onSubmit={handleSendMessage} className="flex gap-2 items-center relative">
                   <input
@@ -432,7 +407,7 @@ export default function TeamChatDock() {
                     value={msgInput}
                     onChange={e => setMsgInput(e.target.value)}
                     placeholder="Message..."
-                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full pl-4 pr-10 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all shadow-inner"
+                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full pl-4 pr-10 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
                     disabled={sending}
                   />
                   <button
