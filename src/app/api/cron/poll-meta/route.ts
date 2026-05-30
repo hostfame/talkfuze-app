@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { processIdleConversationsForLearning } from '@/actions/ai-learning';
 
 // Cron secret to prevent unauthorized access
 const CRON_SECRET = process.env.CRON_SECRET || '';
@@ -72,11 +73,45 @@ export async function GET(request: Request) {
       }
     }
 
+    // ====================================
+    // AI LEARNING CYCLE (runs every 30 min)
+    // Piggybacks on poll-meta since it already bypasses Vercel deployment protection
+    // ====================================
+    const currentMinute = new Date().getMinutes();
+    let aiLearningResults: { autoResolved?: number; learned?: number } = {};
+    
+    if (currentMinute % 30 < 1) {
+      try {
+        // Step 1: Auto-resolve conversations idle for 30+ minutes
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+        const { data: idleConvs, error: resolveErr } = await supabaseAdmin
+          .from('conversations')
+          .update({ status: 'resolved' })
+          .eq('status', 'open')
+          .lt('last_message_at', thirtyMinAgo)
+          .select('id');
+        
+        if (!resolveErr) {
+          aiLearningResults.autoResolved = idleConvs?.length || 0;
+          if (aiLearningResults.autoResolved > 0) {
+            console.log(`[AutoResolve] Resolved ${aiLearningResults.autoResolved} idle conversations`);
+          }
+        }
+
+        // Step 2: Learn from conversations idle for 1+ hour
+        const learnResult = await processIdleConversationsForLearning();
+        aiLearningResults.learned = learnResult.processed;
+      } catch (aiErr) {
+        console.error('[AI Learning Cycle] Error:', aiErr);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       polled_at: new Date().toISOString(),
       new_messages: results.messenger + results.instagram,
-      ...results
+      ...results,
+      ...(aiLearningResults.autoResolved !== undefined ? { ai_learning: aiLearningResults } : {})
     });
   } catch (error) {
     console.error('[Poll Meta] Fatal error:', error);
