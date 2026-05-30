@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { processIdleConversationsForLearning } from "@/actions/ai-learning";
 
-// Cron secret to prevent unauthorized access
-const CRON_SECRET = process.env.CRON_SECRET || '';
-
 /**
  * Conversation Lifecycle Cron Endpoint
  * Runs every 30 minutes. Two jobs:
@@ -15,14 +12,25 @@ const CRON_SECRET = process.env.CRON_SECRET || '';
  * GET /api/ai/learn-conversations
  */
 export async function GET(request: Request) {
-  // Verify cron secret (Vercel cron sends Authorization: Bearer <CRON_SECRET>)
+  // Auth: accept Vercel cron header, CRON_SECRET bearer, or query param
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    // Also allow query param for manual testing
-    const { searchParams } = new URL(request.url);
-    if (searchParams.get('secret') !== CRON_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { searchParams } = new URL(request.url);
+  
+  // Vercel Pro cron sends this header automatically
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  
+  if (!isVercelCron) {
+    // Not from Vercel cron - check manual auth
+    if (cronSecret) {
+      // CRON_SECRET is set - require it
+      const hasValidBearer = authHeader === `Bearer ${cronSecret}`;
+      const hasValidParam = searchParams.get('secret') === cronSecret;
+      if (!hasValidBearer && !hasValidParam) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
+    // If cronSecret is empty/undefined, allow unauthenticated access (dev mode)
   }
 
   const results: { autoResolved: number; learned: number; errors: number } = {
