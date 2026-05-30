@@ -6,7 +6,7 @@ import { useTeamChatStore, TeamChat, TeamMessage } from '@/lib/team-chat-store'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
-import { fetchTeamChats, fetchTeamMessages, getOrCreateDirectChat } from '@/actions/team-chat'
+import { fetchTeamChats, fetchTeamMessages, sendTeamMessage, getOrCreateDirectChat } from '@/actions/team-chat'
 import { cn } from '@/lib/utils'
 
 // ------- Audio -------
@@ -246,17 +246,10 @@ export default function TeamChatDock() {
       })
     }
 
-    // STEP 3: Persist to DB directly from client (background, no await blocking UI)
-    supabase
-      .from('team_messages')
-      .insert({
-        chat_id: activeChatId,
-        sender_id: currentUser?.id,
-        content: text
-      })
-      .then(({ error }) => {
-        if (error) console.error('Failed to persist message:', error)
-      })
+    // STEP 3: Persist via server action (fire-and-forget, uses admin to bypass RLS)
+    sendTeamMessage(activeChatId, text).catch(err => {
+      console.error('Failed to persist message:', err)
+    })
 
     setSending(false)
   }
