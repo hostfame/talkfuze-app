@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildKnowledgeContext, getGlobalBrain, SUB_BRAINS, getSubBrain } from "@/actions/knowledge-engine";
 import OpenAI from "openai";
 import { getSalesFunnelContent } from "@/data/sales-funnel";
+import { getSupportTriageContent } from "@/data/support-triage";
 import { banglaStyleContent } from "@/data/bangla-style";
 import intentVectors from "@/actions/intent-vectors.json";
 
@@ -61,9 +62,12 @@ function stripBengaliLines(text: string): string {
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, activeSubBrain: string): string {
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string): string {
   const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
   const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
+  // Support triage is injected when support intent is detected AND sales intent is NOT
+  // This prevents both workflows from competing in the same prompt
+  const supportTriageContent = (!hasSalesIntent && hasSupportIntent) ? getSupportTriageContent(detectedLanguage) : "";
   const globalBrain = getGlobalBrain(detectedLanguage);
 
   // Language-specific examples in the system prompt
@@ -117,6 +121,7 @@ ${zeroFiller}
 ${escalationSection}
 
 ${salesContent ? `\n\n${salesContent}` : ""}
+${supportTriageContent ? `\n\n${supportTriageContent}` : ""}
 ${currentBanglaStyle ? `\n\n${currentBanglaStyle}` : ""}
 
 ${globalBrain}
@@ -154,7 +159,8 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
   } catch (err: any) {
     console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
   }
-  
+
+  // Static fallback examples (used when no approved drafts available)
   const goldenBengali = [
     "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
     "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
@@ -170,14 +176,33 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     "Where is your target audience or visitors located? Are you targeting Bangladesh only, or is it global?",
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
-  
-  // Only inject golden examples for the detected language
-  let fewShotBlock = '';
-  if (language === 'Bengali') {
-    fewShotBlock = `\n\nGOLDEN BENGALI REPLY EXAMPLES (Mimic this tone and brevity):\n${goldenBengali.join('\n---\n')}${learnedRulesBlock}`;
-  } else {
-    fewShotBlock = `\n\nGOLDEN ENGLISH REPLY EXAMPLES (Mimic this tone and brevity):\n${goldenEnglish.join('\n---\n')}${learnedRulesBlock}`;
+
+  // Try to get dynamic approved examples (real drafts agents approved without editing)
+  let dynamicExamples: string[] = [];
+  try {
+    const { getApprovedExamples } = await import("@/actions/ai-learning");
+    const approved = await getApprovedExamples(orgId);
+    dynamicExamples = language === 'Bengali' ? approved.bengali : approved.english;
+  } catch (e) {
+    // Silently fall back to static examples
   }
+
+  // Use dynamic examples if we have enough, otherwise blend with static
+  const staticExamples = language === 'Bengali' ? goldenBengali : goldenEnglish;
+  let examples: string[];
+  if (dynamicExamples.length >= 3) {
+    // Enough dynamic examples - use them (more representative of current tone)
+    examples = dynamicExamples;
+  } else {
+    // Blend: dynamic first, then fill with static
+    examples = [...dynamicExamples, ...staticExamples.slice(0, 5 - dynamicExamples.length)];
+  }
+
+  const exampleLabel = dynamicExamples.length >= 3 
+    ? 'RECENT APPROVED REPLIES (Our agents approved these AI drafts without editing - match this tone)' 
+    : `GOLDEN ${language === 'Bengali' ? 'BENGALI' : 'ENGLISH'} REPLY EXAMPLES (Mimic this tone and brevity)`;
+  
+  const fewShotBlock = `\n\n${exampleLabel}:\n${examples.join('\n---\n')}${learnedRulesBlock}`;
   return { fewShotBlock };
 }
 
@@ -288,6 +313,11 @@ export async function POST(req: Request) {
     const hasSalesIntent = salesKeywords.test(latestCustomerMessageCleaned) || 
                           parsedMessages.some(m => salesKeywords.test(m.content));
 
+    // Detect support/technical intent - triggers support triage workflow
+    const supportKeywords = /error|down|slow|not working|problem|issue|broken|fix|help|ssl|dns|nameserver|cpanel|email|wordpress|wp|backup|migrate|transfer|login|password|reset|ticket|check|দেখেন|সমস্যা|কাজ করছে না|ডাউন|স্লো|এরর|লগইন|পাসওয়ার্ড|চেক|নেমসার্ভার|ইমেইল|সিপ্যানেল|ব্যাকআপ|মাইগ্রেশন/i;
+    const hasSupportIntent = supportKeywords.test(latestCustomerMessageCleaned) ||
+                            parsedMessages.slice(-5).some(m => supportKeywords.test(m.content));
+
     // Detect active conversation state to guide LLM attention
     let activeStateInstruction = "";
     const lastMsg = parsedMessages[parsedMessages.length - 1];
@@ -336,14 +366,21 @@ export async function POST(req: Request) {
       try {
         if (!process.env.OPENAI_API_KEY) return;
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const lines = cappedContextMessages.split('\n')
-          .map((line: string) => line.trim())
-          .filter((line: string) => line && !line.startsWith('[Agent]') && !line.startsWith('[System'));
-        const lastQuery = lines.slice(-3).join(' ');
-        
         const cleanLatest = latestCustomerMessageCleaned.toLowerCase();
         const hasDiagnosticOrSalesIntent = /error|down|ssl|dns|ip|fail|not working|price|cost|buy|order|how|what|where|why|plan|package|hosting|domain/i.test(cleanLatest);
-        if (cleanLatest.length < 25 && !hasDiagnosticOrSalesIntent) return;
+        const isUrl = /(https?:\/\/[^\s]+)|([a-z0-9-]+\.[a-z]{2,})/i.test(cleanLatest);
+        if (cleanLatest.length < 20 && !hasDiagnosticOrSalesIntent && !isUrl) return;
+
+        // Formulate search intent: Use the latest customer message.
+        // If it's very short (e.g., "ok", "yes", or just a link), include the preceding Agent message for context.
+        let searchIntent = latestCustomerMessageCleaned;
+        if (searchIntent.length < 35) {
+          const agentMessages = parsedMessages.filter(m => m.sender === 'Agent');
+          if (agentMessages.length > 0) {
+            searchIntent = `Agent: ${agentMessages[agentMessages.length - 1].content}\nCustomer: ${searchIntent}`;
+          }
+        }
+        const lastQuery = searchIntent;
 
         if (lastQuery.length > 10) {
           const embeddingRes = await openai.embeddings.create({
@@ -467,7 +504,7 @@ Output ONLY the translation in raw plain text.`;
       userMessage = `${activeStateInstruction ? `${activeStateInstruction}\n\n` : ''}${isHolidayMode ? `[HOLIDAY/VACATION MODE ACTIVE]: ${holidayMessage}\nIMPORTANT: Keep this constraint in mind. If the customer asks for immediate remote support (like AnyDesk) or complains about delays, politely mention this limitation in your response.\n\n` : ''}The customer's latest message(s): "${latestCustomerMessageCleaned}"
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
-If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).
+If the customer's latest message is short or vague ("send", "share", "details", or just a link), synthesize intent from the preceding Agent message. Carry over context variables, BUT NEVER simply repeat the Agent's previous question. Acknowledge the new information and move the conversation forward.
 
 ${fewShotBlock}
 ${highPrioritySemanticRules ? `\nSITUATIONAL RULES MATCHED:\n${highPrioritySemanticRules}\n` : ''}
@@ -710,7 +747,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain)
+                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain)
                   },
                   {
                     role: "user",
@@ -808,7 +845,7 @@ ${instruction
           messages: [
             {
               role: "system",
-              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, activeSubBrain)
+              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain)
             },
             {
               role: "user",

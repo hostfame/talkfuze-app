@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { ChannelConfig, MessageMetadata, Relation } from "@/lib/types"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { fetchWhmcsClient } from "@/actions/whmcs"
-import { processInternalAiFeedback } from "@/actions/ai-learning"
+import { processInternalAiFeedback, learnFromResolvedConversation } from "@/actions/ai-learning"
 import { unstable_noStore as noStore } from 'next/cache'
 
 type ConversationChannelRelation = Relation<{
@@ -659,6 +659,14 @@ export async function toggleConversationFlag(conversationId: string, flag: 'is_p
     .eq('id', conversationId)
 
   if (error) throw new Error(error.message)
+
+  // Layer 3: Learn when conversation is archived (also means done)
+  if (flag === 'is_archived' && value === true) {
+    learnFromResolvedConversation(conversationId).catch(e =>
+      console.error('[ConversationLearning] Archive trigger failed:', e)
+    );
+  }
+
   return { success: true }
 }
 
@@ -681,6 +689,14 @@ export async function updateConversationStatus(conversationId: string, status: '
     .eq('id', conversationId)
 
   if (error) throw new Error(error.message)
+
+  // Layer 3: Learn from completed conversations
+  if (status === 'resolved' || status === 'closed') {
+    learnFromResolvedConversation(conversationId).catch(e =>
+      console.error('[ConversationLearning] Status change trigger failed:', e)
+    );
+  }
+
   return { success: true }
 }
 

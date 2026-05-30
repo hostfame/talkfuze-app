@@ -470,3 +470,238 @@ Output valid JSON strictly containing:
     console.error("processInternalAiFeedback error:", e);
   }
 }
+
+/**
+ * LAYER 3: Conversation Completion Learning
+ * 
+ * Analyzes a completed conversation to extract workflow patterns.
+ * Unlike edit-based learning (Layer 2) which captures single-turn corrections,
+ * this captures HOW the agent navigated the full conversation:
+ * - What was the issue?
+ * - What info did the agent collect?
+ * - How was it resolved?
+ * - What was the best agent reply?
+ * 
+ * Triggered when a conversation has been idle for 1+ hour.
+ */
+export async function learnFromResolvedConversation(conversationId: string): Promise<void> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey || !openaiKey) return;
+
+    // Deduplication: check if already analyzed and mark immediately to prevent race conditions
+    const { data: conv } = await supabaseAdmin
+      .from('conversations')
+      .select('tags')
+      .eq('id', conversationId)
+      .single();
+    
+    if (!conv) return;
+    const existingTags = conv.tags || [];
+    if (existingTags.includes('ai_learned')) return; // Already processed
+
+    // Mark as analyzed immediately (before Sonnet call) to prevent double-processing
+    await supabaseAdmin
+      .from('conversations')
+      .update({ tags: [...existingTags, 'ai_learned'] })
+      .eq('id', conversationId);
+
+    // Fetch all messages from the conversation
+    const { data: messages, error: msgError } = await supabaseAdmin
+      .from("messages")
+      .select("content, sender_type, content_type, is_internal, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(50);
+
+    if (msgError || !messages || messages.length < 3) return;
+
+    // Filter out internal notes and non-text messages for analysis
+    const relevantMessages = messages.filter(
+      m => !m.is_internal && m.content && (m.content_type === 'text' || m.content_type === 'system')
+    );
+    if (relevantMessages.length < 3) return;
+
+    // Skip if mostly system messages (auto-replies, joins, etc.)
+    const humanMessages = relevantMessages.filter(m => m.sender_type === 'contact' || m.sender_type === 'agent');
+    if (humanMessages.length < 2) return;
+
+    // Build conversation transcript
+    const transcript = relevantMessages.map(m => {
+      const role = m.sender_type === 'contact' ? 'Customer' 
+        : m.sender_type === 'agent' ? 'Agent' 
+        : 'System';
+      return `[${role}]: ${m.content}`;
+    }).join('\n');
+
+    // Send to Sonnet for analysis
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 500,
+        system: `You are analyzing a completed customer support conversation for a Bangladeshi hosting company (Hostnin). Extract the resolution pattern so the AI can learn how to handle similar conversations in the future.
+
+Output valid JSON with these keys:
+- issue_type: one of "website_down", "slow_site", "nameserver", "domain_transfer", "domain_replace", "ssl", "email", "wordpress", "cpanel_access", "billing", "renewal", "sales_inquiry", "greeting_only", "other"
+- issue_summary: 1-sentence summary of the customer's problem (in English)
+- info_collected: array of strings listing what info the agent gathered (e.g., ["domain: example.com", "issue: SSL not showing"])
+- resolution: one of "ticket_created", "resolved_in_chat", "info_provided", "sale_completed", "no_resolution", "greeting_only"
+- agent_workflow: 1-sentence summary of the agent's steps (in English). Example: "Greeted, asked for domain, confirmed SSL issue, created ticket"
+- key_reply: The single most useful agent reply from this conversation (verbatim, in original language)
+- quality_score: 1-5 rating of how well the agent handled this. 5=perfect, 1=poor/wrong info
+
+You MUST return ONLY the raw JSON string. No markdown.`,
+        messages: [
+          {
+            role: "user",
+            content: `Analyze this completed conversation:\n\n${transcript}\n\nOutput strictly as JSON.`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      console.error("[ConversationLearning] Sonnet analysis failed:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    const textContent = data.content?.[0]?.text || "";
+    const cleanJson = textContent.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(cleanJson);
+
+    // Quality gates
+    if (!result.issue_type || !result.issue_summary || !result.agent_workflow) return;
+    if (result.quality_score && result.quality_score < 3) {
+      console.log(`[ConversationLearning] Skipping low-quality conversation (score: ${result.quality_score})`);
+      return;
+    }
+    if (result.issue_type === 'greeting_only' || result.resolution === 'greeting_only') return;
+
+    // Build the knowledge entry
+    const question = `Support: ${result.issue_summary}`;
+    const infoList = (result.info_collected || []).join(', ');
+    const answer = `[RESOLUTION PATTERN]: ${result.agent_workflow}\n[INFO COLLECTED]: ${infoList}\n[RESOLUTION]: ${result.resolution}\n[KEY REPLY]: ${result.key_reply || 'N/A'}`;
+    const ruleShort = result.agent_workflow;
+    const verifiedReply = result.key_reply || null;
+
+    // Generate embedding
+    const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'text-embedding-3-small', input: question })
+    });
+    const embData = await embeddingRes.json();
+    const newEmbedding = embData.data?.[0]?.embedding;
+
+    if (!newEmbedding) return;
+
+    // Deduplication: check for similar existing patterns (0.88 threshold)
+    const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
+      query_embedding: newEmbedding,
+      match_threshold: 0.88,
+      match_count: 1
+    });
+
+    if (similarEntries && similarEntries.length > 0) {
+      // Similar pattern exists - only update if this is a high-quality pattern
+      const existingAnswer = similarEntries[0].answer || '';
+      const existingIsPattern = existingAnswer.includes('[RESOLUTION PATTERN]');
+      
+      if (!existingIsPattern || (result.quality_score && result.quality_score >= 4)) {
+        await supabaseAdmin
+          .from('ai_knowledge_base')
+          .update({
+            answer,
+            embedding: newEmbedding,
+            rule_short: ruleShort,
+            verified_reply_text: verifiedReply
+          })
+          .eq('id', similarEntries[0].id);
+        console.log(`[ConversationLearning] Updated existing pattern for: ${result.issue_type}`);
+      }
+    } else {
+      // New pattern - insert
+      await supabaseAdmin.from('ai_knowledge_base').insert({
+        question,
+        answer,
+        embedding: newEmbedding,
+        rule_short: ruleShort,
+        verified_reply_text: verifiedReply
+      });
+      console.log(`[ConversationLearning] New resolution pattern: ${result.issue_type} - ${result.issue_summary}`);
+    }
+  } catch (e) {
+    console.error("[ConversationLearning] Error:", e);
+  }
+}
+
+/**
+ * Batch process idle conversations for learning.
+ * Finds conversations idle for 1+ hour with 3+ messages that haven't been analyzed yet.
+ * Called via API route (can be triggered by cron or manually).
+ */
+export async function processIdleConversationsForLearning(): Promise<{ processed: number; errors: number }> {
+  let processed = 0;
+  let errors = 0;
+
+  try {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    // Find conversations that:
+    // 1. Have last_message_at older than 1 hour
+    // 2. Have not been analyzed yet (no 'ai_learned' tag)
+    const { data: conversations, error } = await supabaseAdmin
+      .from('conversations')
+      .select('id, tags')
+      .lt('last_message_at', oneHourAgo)
+      .not('tags', 'cs', '{"ai_learned"}')
+      .in('status', ['open', 'resolved', 'closed'])
+      .order('last_message_at', { ascending: false })
+      .limit(20); // Process max 20 per batch to control costs
+
+    if (error || !conversations) return { processed: 0, errors: 0 };
+
+    for (const conv of conversations) {
+      try {
+        // Check message count before processing
+        const { count } = await supabaseAdmin
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .eq('is_internal', false);
+
+        if (count && count >= 3) {
+          // learnFromResolvedConversation handles tagging internally
+          await learnFromResolvedConversation(conv.id);
+          processed++;
+        } else {
+          // Mark conversations with < 3 messages as analyzed to prevent re-checking
+          const existingTags = conv.tags || [];
+          if (!existingTags.includes('ai_learned')) {
+            await supabaseAdmin
+              .from('conversations')
+              .update({ tags: [...existingTags, 'ai_learned'] })
+              .eq('id', conv.id);
+          }
+        }
+
+      } catch (e) {
+        console.error(`[ConversationLearning] Error processing ${conv.id}:`, e);
+        errors++;
+      }
+    }
+  } catch (e) {
+    console.error("[ConversationLearning] Batch processing error:", e);
+  }
+
+  console.log(`[ConversationLearning] Batch complete: ${processed} processed, ${errors} errors`);
+  return { processed, errors };
+}
