@@ -2068,11 +2068,44 @@ export default function ChatThread({
       )
       .subscribe()
 
+    // Listen for instant broadcast signals from the server action.
+    // These arrive in < 100ms, bypassing the 1-3s postgres_changes replication lag.
+    const broadcastJoinChannel = supabase
+      .channel(`typing:${orgId}`)
+      .on('broadcast', { event: 'conversationJoined' }, (payload) => {
+        if (!active) return
+        const { conversation_id, user_id, user_name } = payload.payload || {}
+        if (conversation_id !== conversationId) return
+
+        // If it's the current user joining, mark optimistic state
+        if (user_id === currentUser?.id) {
+          setHasJoinedOptimistically(true)
+        }
+
+        // Optimistically add the participant if not already present
+        setParticipants(prev => {
+          if (prev.some(p => p.user_id === user_id)) return prev
+          return [
+            ...prev,
+            { user_id, user: { id: user_id, name: user_name || 'Agent' } } as unknown as ConversationParticipant
+          ]
+        })
+      })
+      .on('broadcast', { event: 'conversationLeft' }, (payload) => {
+        if (!active) return
+        const { conversation_id, user_id } = payload.payload || {}
+        if (conversation_id !== conversationId) return
+
+        setParticipants(prev => prev.filter(p => p.user_id !== user_id))
+      })
+      .subscribe()
+
     return () => {
       active = false
       supabase.removeChannel(channel)
+      supabase.removeChannel(broadcastJoinChannel)
     }
-  }, [conversationId])
+  }, [conversationId, orgId, currentUser?.id])
 
   // Refetch participants when a system join/leave message is received in real-time
   useEffect(() => {
@@ -4448,6 +4481,32 @@ export default function ChatThread({
                     <CornerUpLeft size={15} strokeWidth={2.5} />
                   </button>
 
+                  {/* AI / Manual Indicator (Left of bubble) */}
+                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && (
+                    <div 
+                      className={`shrink-0 mb-1.5 flex items-center justify-center ${safeMeta.used_ai_draft ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        if (safeMeta.used_ai_draft) {
+                          const newId = msg.id === comparingMsgId ? null : msg.id;
+                          setComparingMsgId(newId);
+                          if (newId) {
+                            setTimeout(() => {
+                              const el = document.getElementById(`compare-${newId}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }, 100);
+                          }
+                        }
+                      }}
+                      title={safeMeta.used_ai_draft ? "AI Draft Used - Click to Compare" : "Manual Reply (No AI)"}
+                    >
+                      {safeMeta.used_ai_draft ? (
+                        <Brain size={13} className={`transition-all ${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-300 dark:text-slate-600 opacity-40 hover:opacity-100 hover:text-blue-500'}`} />
+                      ) : (
+                        <Edit2 size={11} className="text-slate-200 dark:text-slate-700 opacity-30 hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  )}
+
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       style={{
@@ -4555,31 +4614,6 @@ export default function ChatThread({
                 
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
                 <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
-                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && !safeMeta.used_ai_draft && (
-                    <span title="Manual Reply (No AI)" className="flex items-center">
-                      <Edit2 size={9} className="text-slate-300 dark:text-slate-700 mr-0.5 opacity-50 hover:opacity-100 transition-opacity" />
-                    </span>
-                  )}
-                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && safeMeta.used_ai_draft && (
-                    <span 
-                      title="AI Draft Used - Click to Compare" 
-                      className="flex items-center cursor-pointer"
-                      onClick={() => {
-                        const newId = msg.id === comparingMsgId ? null : msg.id;
-                        setComparingMsgId(newId);
-                        if (newId) {
-                          setTimeout(() => {
-                            const el = document.getElementById(`compare-${newId}`);
-                            if (el) {
-                              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }
-                          }, 100);
-                        }
-                      }}
-                    >
-                      <Brain size={10} className={`mr-0.5 transition-opacity ${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-300 dark:text-slate-700 opacity-60 hover:opacity-100'}`} />
-                    </span>
-                  )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
