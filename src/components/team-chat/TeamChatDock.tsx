@@ -214,52 +214,49 @@ export default function TeamChatDock() {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button (when closed) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-[5.5rem] w-14 h-14 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-500 hover:text-blue-500 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-slate-700/80 rounded-full shadow-lg hidden md:flex items-center justify-center transition-all hover:scale-105 z-40 cursor-pointer"
+          className="fixed bottom-6 right-[5.5rem] w-12 h-12 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-600 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-blue-400 dark:hover:bg-slate-700/80 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] hidden md:flex items-center justify-center transition-all hover:-translate-y-0.5 z-40 cursor-pointer"
         >
-          <MessageSquare strokeWidth={2.5} size={22} />
+          <MessageSquare strokeWidth={2.5} size={20} />
           {totalUnread > 0 && (
-            <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
               {totalUnread > 9 ? '9+' : totalUnread}
             </span>
           )}
         </button>
       )}
 
-      {/* Dock Panel */}
+      {/* Dock Panel (Ultra Minimal Facebook Style) */}
       {isOpen && (
-        <div className="fixed bottom-6 right-[5.5rem] w-[320px] h-[450px] max-h-[80vh] bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden hidden md:flex flex-col">
+        <div className="fixed bottom-0 right-24 w-[280px] h-[400px] max-h-[70vh] bg-white dark:bg-[#111b21] rounded-t-xl shadow-[0_0_24px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800/60 border-b-0 z-50 flex flex-col overflow-hidden hidden md:flex">
           
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-blue-600 text-white shadow-sm shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 bg-white dark:bg-[#202c33] border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
             <div className="flex items-center gap-2">
-              {activeChatId ? (
-                <button onClick={() => setActiveChatId(null)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
-                  <ChevronLeft size={18} />
+              {activeChatId && (
+                <button onClick={() => setActiveChatId(null)} className="p-1 -ml-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+                  <ChevronLeft size={16} />
                 </button>
-              ) : (
-                <MessageSquare size={18} />
               )}
-              <span className="font-semibold text-sm">
+              <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">
                 {activeChatId ? (
                   chats.find(c => c.id === activeChatId)?.type === 'direct' ? chats.find(c => c.id === activeChatId)?.other_member_name : 'Group Chat'
                 ) : 'Team Chat'}
               </span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
-              <X size={18} />
+            <button onClick={() => setIsOpen(false)} className="p-1 -mr-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors cursor-pointer">
+              <X size={16} />
             </button>
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0b141a]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
             {!activeChatId ? (
               // Chat List View
-              <div className="p-2 space-y-1">
-                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Agents Online</div>
+              <div className="p-1 space-y-0.5">
                 {teamMembers.filter(t => t.id !== currentUser?.id && t.sip_extension).map(member => {
                   const existingChat = chats.find(c => c.type === 'direct' && c.members?.some(m => m.user_id === member.id))
                   const unread = existingChat ? (unreadCounts[existingChat.id] || 0) : 0
@@ -268,25 +265,23 @@ export default function TeamChatDock() {
                     <button
                       key={member.id}
                       onClick={() => startDirectChat(member.id)}
-                      className="w-full flex items-center justify-between p-3 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+                      className="w-full flex items-center justify-between px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors text-left group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-10 h-10 shrink-0">
+                      <div className="flex items-center gap-2.5">
+                        <div className="relative w-8 h-8 shrink-0">
                           {member.avatar_url ? (
                             <img src={member.avatar_url} className="w-full h-full rounded-full object-cover" />
                           ) : (
-                            <div className="w-full h-full rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-sm">
+                            <div className="w-full h-full rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center font-bold text-xs">
                               {member.name.charAt(0)}
                             </div>
                           )}
-                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{member.name}</p>
-                        </div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{member.name}</p>
                       </div>
                       {unread > 0 && (
-                        <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                        <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white">
                           {unread}
                         </div>
                       )}
@@ -296,19 +291,19 @@ export default function TeamChatDock() {
               </div>
             ) : (
               // Message View
-              <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex flex-col h-full bg-slate-50/50 dark:bg-[#0b141a]">
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
                     </div>
                   ) : (
                     messages[activeChatId]?.map(msg => {
                       const isMe = msg.sender_id === currentUser?.id
                       return (
                         <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                          {!isMe && <span className="text-[10px] text-slate-400 mb-1 ml-1">{msg.sender_name}</span>}
-                          <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                          {!isMe && <span className="text-[9px] text-slate-400 mb-0.5 ml-1">{msg.sender_name}</span>}
+                          <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-[13px] shadow-sm ${
                             isMe 
                               ? 'bg-blue-600 text-white rounded-br-sm' 
                               : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-bl-sm'
@@ -323,22 +318,22 @@ export default function TeamChatDock() {
                 </div>
                 
                 {/* Input Area */}
-                <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
-                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                <div className="p-2 bg-white dark:bg-[#111b21] border-t border-slate-100 dark:border-slate-800 shrink-0">
+                  <form onSubmit={handleSendMessage} className="flex gap-1.5 items-center">
                     <input
                       type="text"
                       value={msgInput}
                       onChange={e => setMsgInput(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 bg-slate-50 dark:bg-[#111b21] border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500 dark:text-white"
+                      placeholder="Aa"
+                      className="flex-1 bg-slate-100 dark:bg-slate-800/50 rounded-full px-3 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white transition-shadow"
                       disabled={sending}
                     />
                     <button
                       type="submit"
                       disabled={!msgInput.trim() || sending}
-                      className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white flex items-center justify-center shrink-0 transition-colors"
+                      className="w-7 h-7 rounded-full text-blue-600 dark:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                     >
-                      {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="ml-0.5" />}
+                      {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} className="ml-0.5" />}
                     </button>
                   </form>
                 </div>

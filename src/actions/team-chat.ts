@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function fetchTeamChats(orgId: string) {
   const supabase = await createClient()
@@ -127,7 +128,7 @@ export async function getOrCreateDirectChat(orgId: string, otherUserId: string) 
   }
 
   // Create new direct chat
-  const { data: newChat, error: createError } = await supabase
+  const { data: newChat, error: createError } = await supabaseAdmin
     .from('team_chats')
     .insert({
       org_id: orgId,
@@ -136,15 +137,23 @@ export async function getOrCreateDirectChat(orgId: string, otherUserId: string) 
     .select()
     .single()
 
-  if (createError) throw createError
+  if (createError) {
+    console.error("Failed to create team_chats:", createError)
+    throw createError
+  }
 
   // Add members
-  await supabase
+  const { error: membersError } = await supabaseAdmin
     .from('team_chat_members')
     .insert([
       { chat_id: newChat.id, user_id: user.id },
       { chat_id: newChat.id, user_id: otherUserId }
     ])
+
+  if (membersError) {
+    console.error("Failed to add members:", membersError)
+    throw membersError
+  }
 
   return newChat.id
 }
