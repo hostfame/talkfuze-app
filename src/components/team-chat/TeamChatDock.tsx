@@ -254,59 +254,70 @@ export default function TeamChatDock() {
 
   return (
     <>
-      {/* Expanding Dock Panel (Ultra Minimal Facebook Style) */}
+      {/* Floating Button (Closed State) */}
       <div 
         className={cn(
-          "fixed bottom-0 right-24 w-[280px] bg-white dark:bg-[#111b21] rounded-t-xl shadow-[0_0_24px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800/60 border-b-0 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-in-out origin-bottom",
-          isOpen ? "h-[400px] max-h-[70vh]" : "h-11 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#152028]"
+          "fixed right-[5.5rem] bottom-6 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+          isOpen ? "opacity-0 pointer-events-none scale-50" : "opacity-100 scale-100"
         )}
-        onClick={() => {
-          if (!isOpen) setIsOpen(true)
-        }}
+      >
+        <button
+          onClick={() => setIsOpen(true)}
+          className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-300 transition-transform hover:-translate-y-0.5 cursor-pointer"
+        >
+          <MessageSquare strokeWidth={2.5} size={20} />
+          {totalUnread > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
+              {totalUnread > 9 ? '9+' : totalUnread}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Floating Chat Window (Open State) */}
+      <div 
+        className={cn(
+          "fixed right-6 bottom-20 w-[300px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-bottom-right",
+          isOpen ? "h-[450px] max-h-[70vh] opacity-100 scale-100 translate-y-0" : "h-[400px] opacity-0 scale-95 translate-y-8 pointer-events-none"
+        )}
       >
         {/* Header */}
-        <div className="h-11 shrink-0 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between px-3 bg-white dark:bg-[#111b21]">
+        <div className="h-12 shrink-0 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between px-3 bg-white dark:bg-[#111b21]">
           <div className="flex items-center gap-2">
-            {activeChatId && isOpen ? (
+            {activeChatId ? (
               <button 
                 onClick={(e) => {
                   e.stopPropagation()
                   setActiveChatId(null)
                 }}
-                className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
             ) : (
-              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <div className="w-7 h-7 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 rounded-full">
+                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
             )}
-            <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate max-w-[160px]">
-              {activeChatId && isOpen ? (chats.find(c => c.id === activeChatId)?.type === 'direct' ? chats.find(c => c.id === activeChatId)?.other_member_name : 'Group Chat') : 'Team Chat'}
+            <span className="font-semibold text-[13px] text-slate-800 dark:text-slate-200 truncate max-w-[160px]">
+              {activeChatId ? (chats.find(c => c.id === activeChatId)?.type === 'direct' ? chats.find(c => c.id === activeChatId)?.other_member_name : 'Group Chat') : 'Team Chat'}
             </span>
-            {totalUnread > 0 && !isOpen && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 h-4 flex items-center justify-center rounded-full ml-1">
-                {totalUnread > 9 ? '9+' : totalUnread}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1">
             <button 
               onClick={(e) => {
                 e.stopPropagation()
-                setIsOpen(isOpen ? false : true)
+                setIsOpen(false)
               }}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
             >
-              <X className={cn("w-4 h-4 transition-transform duration-300", isOpen ? "rotate-0" : "rotate-45")} />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Content Area - Fade in when open */}
-        <div className={cn(
-          "flex-1 flex flex-col overflow-hidden transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}>
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           {errorMsg && (
             <div className="absolute top-11 left-0 right-0 bg-red-100 text-red-600 text-[10px] p-2 text-center z-10 font-mono">
               Error: {errorMsg}
