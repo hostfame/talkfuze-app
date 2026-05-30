@@ -100,26 +100,30 @@ export default function TeamChatDock() {
   useEffect(() => {
     if (!currentUser?.id || !currentUser?.org_id) return
 
-    // BROADCAST CHANNEL: instant message delivery via WebSocket
-    const channel = supabase.channel(BROADCAST_CHANNEL)
-    broadcastChannelRef.current = channel
-
-    channel.on('broadcast', { event: 'new_message' }, (payload: any) => {
-      const msg = payload.payload as TeamMessage
-      
-      // Skip our own messages (we already have them via optimistic UI)
+    // Shared handler for incoming messages (used by both broadcast and postgres_changes)
+    const handleIncomingMessage = (msg: TeamMessage, source: string) => {
+      // Skip our own messages (already shown via optimistic UI)
       if (msg.sender_id === currentUser.id) return
       
       // Only process messages for chats we're part of
       if (!chatIdsRef.current.includes(msg.chat_id)) return
 
-      playCutePing()
-      
-      if (!isOpenRef.current || activeChatIdRef.current !== msg.chat_id) {
-        incrementUnreadCount(msg.chat_id)
-      }
-      if (!isOpenRef.current) {
-        setIsOpen(true)
+      // The store's addMessage has smart content+sender dedup,
+      // so if broadcast AND postgres_changes both deliver, only one copy shows
+      const alreadyHave = useTeamChatStore.getState().messages[msg.chat_id]?.some(
+        m => m.content === msg.content 
+          && m.sender_id === msg.sender_id 
+          && Math.abs(new Date(m.created_at).getTime() - new Date(msg.created_at).getTime()) < 10000
+      )
+
+      if (!alreadyHave) {
+        playCutePing()
+        if (!isOpenRef.current || activeChatIdRef.current !== msg.chat_id) {
+          incrementUnreadCount(msg.chat_id)
+        }
+        if (!isOpenRef.current) {
+          setIsOpen(true)
+        }
       }
 
       addMessage(msg.chat_id, msg)
@@ -127,9 +131,41 @@ export default function TeamChatDock() {
       if (activeChatIdRef.current === msg.chat_id) {
         scrollToBottom()
       }
+    }
+
+    // LAYER 1: BROADCAST - instant delivery via WebSocket (~20ms)
+    const channel = supabase.channel(BROADCAST_CHANNEL)
+    broadcastChannelRef.current = channel
+
+    channel.on('broadcast', { event: 'new_message' }, (payload: any) => {
+      handleIncomingMessage(payload.payload as TeamMessage, 'broadcast')
     })
 
     channel.subscribe()
+
+    // LAYER 2: POSTGRES_CHANGES - reliable backup (~200-500ms)
+    // Catches messages that broadcast missed (network hiccup, tab inactive, etc.)
+    const dbChannel = supabase
+      .channel('team_messages_db_backup')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'team_messages' },
+        (payload) => {
+          const raw = payload.new as any
+          const sender = teamMembers.find(t => t.id === raw.sender_id)
+          const msg: TeamMessage = {
+            id: raw.id,
+            chat_id: raw.chat_id,
+            sender_id: raw.sender_id,
+            content: raw.content,
+            created_at: raw.created_at,
+            sender_name: sender?.name || 'Agent',
+            sender_avatar: sender?.avatar_url || null
+          }
+          handleIncomingMessage(msg, 'postgres_changes')
+        }
+      )
+      .subscribe()
 
     // PRESENCE CHANNEL: online status
     const presenceChannel = supabase.channel('team_chat_presence', {
@@ -146,6 +182,7 @@ export default function TeamChatDock() {
 
     return () => {
       supabase.removeChannel(channel)
+      supabase.removeChannel(dbChannel)
       supabase.removeChannel(presenceChannel)
       broadcastChannelRef.current = null
     }

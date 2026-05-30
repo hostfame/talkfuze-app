@@ -45,18 +45,25 @@ export const useTeamChatStore = create<TeamChatState>((set) => ({
   messages: {},
   addMessage: (chatId, message) => set((state) => {
     const existing = state.messages[chatId] || [];
-    // Exact ID match = skip duplicate
+    // 1. Exact ID match = skip
     if (existing.some(m => m.id === message.id)) return state;
-    // If real message arrives and an optimistic version exists, replace it
-    if (!message.id.startsWith('optimistic-')) {
-      const optimisticIdx = existing.findIndex(
-        m => m.id.startsWith('optimistic-') && m.content === message.content && m.sender_id === message.sender_id
-      );
-      if (optimisticIdx !== -1) {
+    // 2. Content+sender dedup within 10s window (catches broadcast vs postgres_changes duplicates)
+    const msgTime = new Date(message.created_at).getTime();
+    const contentDupe = existing.find(
+      m => m.content === message.content 
+        && m.sender_id === message.sender_id 
+        && Math.abs(new Date(m.created_at).getTime() - msgTime) < 10000
+    );
+    if (contentDupe) {
+      // If existing is optimistic and new is real, upgrade it
+      if (contentDupe.id.startsWith('optimistic-') && !message.id.startsWith('optimistic-')) {
+        const idx = existing.indexOf(contentDupe);
         const updated = [...existing];
-        updated[optimisticIdx] = message;
+        updated[idx] = message;
         return { messages: { ...state.messages, [chatId]: updated } };
       }
+      // Otherwise it's a true duplicate, skip
+      return state;
     }
     return {
       messages: { ...state.messages, [chatId]: [...existing, message] }
