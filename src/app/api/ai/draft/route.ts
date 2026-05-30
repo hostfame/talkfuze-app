@@ -28,7 +28,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar|koren|kortesi|bolen|bhalo|hoba|hoiche|hoyeni|dekhen|dekhchi|dekhsi|bolchi)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -356,23 +356,33 @@ export async function POST(req: Request) {
 
     // Language detection: TWO modes
     // Auto-draft (no instruction): follow customer's latest message language
-    // AI Assist (instruction present): follow AGENT's instruction language (agent controls)
+    // AI Assist (instruction present): follow instruction language (rescue system)
     let detectedLanguage: 'Bengali' | 'English';
     
     if (instruction && instruction.replace(/^\/\/\s*/, '').trim().length > 0) {
       const cleanInstruction = instruction.replace(/^\/\/\s*/, '').trim();
-      // Check if instruction has Bengali script → Bengali
-      if (BENGALI_REGEX.test(cleanInstruction)) {
+      const lowerInst = cleanInstruction.toLowerCase();
+      
+      // 1. Explicit overrides
+      if (lowerInst.startsWith('en ') || lowerInst.startsWith('english ')) {
+        detectedLanguage = 'English';
+      } else if (lowerInst.startsWith('bn ') || lowerInst.startsWith('bengali ')) {
         detectedLanguage = 'Bengali';
-      } else if (AMBIGUOUS_MSG.test(cleanInstruction) || cleanInstruction.length < 15) {
-        // Short/ambiguous instruction ("done", "ok", "send ticket") → follow conversation
+      } else if (BENGALI_REGEX.test(cleanInstruction)) {
+        // 2. Bengali script instruction -> Bengali
+        detectedLanguage = 'Bengali';
+      } else if (BANGLISH_REGEX.test(cleanInstruction)) {
+        // 3. Banglish word matched in instruction -> Bengali
+        detectedLanguage = 'Bengali';
+      } else if (AMBIGUOUS_MSG.test(cleanInstruction) || cleanInstruction.length < 5) {
+        // 4. Short / Ambiguous instruction -> Fallback to conversation language
         detectedLanguage = detectConversationLanguage(parsedMessages);
       } else {
-        // Long English instruction (15+ chars) → agent wants English
+        // 5. English instruction -> English
         detectedLanguage = 'English';
       }
     } else {
-      // Auto-draft: follow customer's latest message
+      // Auto-draft mode: follow conversation history
       detectedLanguage = detectConversationLanguage(parsedMessages);
     }
 
@@ -535,8 +545,12 @@ If the customer's latest message is short or vague ("send", "share", "details", 
 ${fewShotBlock}
 ${highPrioritySemanticRules ? `\nSITUATIONAL RULES MATCHED:\n${highPrioritySemanticRules}\n` : ''}
 ${instruction ? `\nAGENT INSTRUCTION (COPILOT MODE):
-The human agent whispered: >>> "${instruction}" <<<
-Expand and polish this into a professional reply. STRICTLY obey the instruction's boundaries. Do NOT add facts, reasons, or diagnoses from the CRM or Knowledge Base that the agent did not explicitly ask you to include. If the instruction contains a question (e.g., "do you want to know why?"), leave it as a question—DO NOT answer it yourself using CRM data. Do NOT copy verbatim. Match the conversation's language.` : ''}
+The human agent has provided a shorthand directive: >>> "${instruction}" <<<
+Your goal is to expand this shorthand into a complete, polite, and professional reply.
+- OBEY the agent's core intent (e.g., if they write "paid", draft a reply confirming the payment).
+- USE CONTEXT: Look at the customer's CRM profile (WHMCS data) and conversation history to enrich the reply with specific details (e.g., invoice numbers, amounts, dates, or plan names) that are relevant to the directive.
+- DO NOT COPY verbatim. Polish it into natural language.
+- Match the conversation's language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant)
 ${knowledgeContext}
@@ -545,7 +559,7 @@ ${crmContext ? `## Customer CRM Profile (WHMCS Data)
 - Active Services: ${crmContext.services?.length ? JSON.stringify(crmContext.services) : 'None found'}
 - Invoices: ${crmContext.invoices?.length ? JSON.stringify(crmContext.invoices) : 'None found'}
 
-${instruction ? 'NOTE: You have an AGENT INSTRUCTION. Do NOT reveal information from this CRM profile (e.g., why an account is suspended) unless the agent explicitly told you to.' : 'If customer has unpaid invoices and is NOT reporting an emergency, politely mention it at the end.'}` : ''}
+${instruction ? 'NOTE: Use this CRM profile to find facts (invoices, services, status) that support the Agent\'s shorthand instruction.' : 'If customer has unpaid invoices and is NOT reporting an emergency, politely mention it at the end.'}` : ''}
 
 Customer Name: ${contactName}
 
