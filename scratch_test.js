@@ -1,55 +1,34 @@
-const OpenAI = require('openai');
-
-const apiKey = process.env.ANTHROPIC_API_KEY; // wait, using fetch
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function run() {
-  const userMessage = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.
+  const orgId = "ec2f8436-05dc-4621-8a7f-57202f865b8e";
+  const user1 = "28caf0b5-57fd-47c9-8d9c-ed1166171bee";
+  const user2 = "d5b082b5-18c4-4507-a814-edd74eb38ad7";
 
-The customer's latest message(s): "https://growspace.agency/"
+  console.log("Checking existing...");
+  const { data: existingChats, error: err1 } = await supabase
+    .from('team_chat_members')
+    .select('chat_id')
+    .eq('user_id', user1);
+  console.log("Existing for user1:", existingChats, err1);
 
-## CONVERSATIONAL CONTINUITY (MANDATORY):
-If the customer's latest message is short or vague ("send", "share", "details"), synthesize intent from the preceding Agent message. Carry over context variables (budget, locations, domains).
+  console.log("Creating new...");
+  const { data: newChat, error: err2 } = await supabase
+    .from('team_chats')
+    .insert({ org_id: orgId, type: 'direct' })
+    .select()
+    .single();
+  console.log("New chat:", newChat, err2);
 
-Conversation:
-[Customer]: can you call via whatsapp please.. there is an network issue in home
-[Agent]: I can't make WhatsApp calls, but I can assist you here. Regarding the domain issue, it seems "happystore.shop" could not be registered. Would you like to proceed with a different domain or discuss your current plan further?
-[Customer]: https://growspace.agency/
-
-## FINAL CHECK:
-- Never mention Shopify.
-- If the customer's intent and scale are clear, recommend confidently. If not, ask ONE smart question.
-- Always end with a clear next step the customer can act on.
-
-Draft a smart, helpful reply as the support agent.`;
-
-  const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 600,
-      system: `## IDENTITY
-You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
-
-## OUTPUT FORMAT (MANDATORY)
-You MUST begin your response with exactly one classification tag on the very first line:
-'[Language: English]' if replying in English.
-Then output a blank line, then start your actual draft response.
-
-## REPLY STYLE
-1. CONCISE: Under 2-3 short sentences (< 40 words), single paragraph. No bullet lists, no bold (**). Go straight to the point with zero filler.
-2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward.`,
-      messages: [
-        { role: "user", content: userMessage },
-      ],
-    }),
-  });
-  
-  const data = await anthropicResponse.json();
-  console.log(data);
+  if (newChat) {
+    const { error: err3 } = await supabase
+      .from('team_chat_members')
+      .insert([
+        { chat_id: newChat.id, user_id: user1 },
+        { chat_id: newChat.id, user_id: user2 }
+      ]);
+    console.log("Members insert error:", err3);
+  }
 }
 run();

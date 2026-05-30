@@ -52,6 +52,8 @@ export default function TeamChatDock() {
   const [isLoading, setIsLoading] = useState(false)
   const [msgInput, setMsgInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0)
@@ -89,13 +91,14 @@ export default function TeamChatDock() {
     }
   }, [currentUser?.org_id, teamMembers, setChats])
 
-  // Realtime subscription for team messages
+  // Realtime subscription for team messages & presence
   useEffect(() => {
-    if (!currentUser?.org_id || chats.length === 0) return
+    if (!currentUser?.id || !currentUser?.org_id) return
 
     const chatIds = chats.map(c => c.id)
     
-    const channel = supabase
+    // Message Channel
+    const messageChannel = supabase
       .channel('team_messages_realtime')
       .on(
         'postgres_changes',
@@ -103,22 +106,18 @@ export default function TeamChatDock() {
           event: 'INSERT',
           schema: 'public',
           table: 'team_messages',
-          filter: `chat_id=in.(${chatIds.join(',')})`
+          filter: chatIds.length > 0 ? `chat_id=in.(${chatIds.join(',')})` : undefined
         },
         async (payload) => {
           const newMsg = payload.new as TeamMessage
           
-          // Don't ping if we sent it
           if (newMsg.sender_id !== currentUser.id) {
             playCutePing()
-            
-            // If we are not actively looking at this chat, increment unread
             if (!isOpen || activeChatId !== newMsg.chat_id) {
               incrementUnreadCount(newMsg.chat_id)
             }
           }
           
-          // Get sender details
           const sender = teamMembers.find(t => t.id === newMsg.sender_id)
           const enrichedMsg = {
             ...newMsg,
@@ -128,7 +127,6 @@ export default function TeamChatDock() {
           
           addMessage(newMsg.chat_id, enrichedMsg)
           
-          // Auto scroll if looking at it
           if (activeChatId === newMsg.chat_id) {
             setTimeout(() => {
               messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -138,10 +136,27 @@ export default function TeamChatDock() {
       )
       .subscribe()
 
+    // Presence Channel
+    const presenceChannel = supabase.channel('team_chat_presence', {
+      config: { presence: { key: currentUser.id } }
+    })
+
+    presenceChannel.on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState()
+      setOnlineUsers(state)
+    })
+
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({ online_at: new Date().toISOString() })
+      }
+    })
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(messageChannel)
+      supabase.removeChannel(presenceChannel)
     }
-  }, [chats, currentUser?.id, isOpen, activeChatId, addMessage, incrementUnreadCount, teamMembers])
+  }, [chats, currentUser?.id, currentUser?.org_id, isOpen, activeChatId, addMessage, incrementUnreadCount, teamMembers])
 
   // Fetch messages when a chat is opened
   useEffect(() => {
@@ -181,10 +196,14 @@ export default function TeamChatDock() {
   }
 
   const startDirectChat = async (otherUserId: string) => {
-    if (!currentUser?.org_id) return
+    setErrorMsg(null)
+    if (!currentUser?.org_id) {
+      setErrorMsg("Missing user org_id")
+      return
+    }
     try {
       const chatId = await getOrCreateDirectChat(currentUser.org_id, otherUserId)
-      // If it's a new chat, we need to refresh the chats list
+      
       if (!chats.find(c => c.id === chatId)) {
         const fetchedChats = await fetchTeamChats(currentUser.org_id)
         const enrichedChats = fetchedChats.map((c: any) => {
@@ -210,8 +229,9 @@ export default function TeamChatDock() {
         setChats(enrichedChats)
       }
       setActiveChatId(chatId)
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
+      setErrorMsg(err?.message || "Action failed")
     }
   }
 
@@ -256,13 +276,19 @@ export default function TeamChatDock() {
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21]">
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#111b21] relative">
+            {errorMsg && (
+              <div className="absolute top-0 left-0 right-0 bg-red-100 text-red-600 text-[10px] p-2 text-center z-10 font-mono">
+                Error: {errorMsg}
+              </div>
+            )}
             {!activeChatId ? (
               // Chat List View
               <div className="p-1 space-y-0.5">
                 {teamMembers.filter(t => t.id !== currentUser?.id && t.sip_extension).map(member => {
                   const existingChat = chats.find(c => c.type === 'direct' && c.members?.some(m => m.user_id === member.id))
                   const unread = existingChat ? (unreadCounts[existingChat.id] || 0) : 0
+                  const isOnline = !!onlineUsers[member.id]
                   
                   return (
                     <button
@@ -279,7 +305,9 @@ export default function TeamChatDock() {
                               {member.name.charAt(0)}
                             </div>
                           )}
-                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                          {isOnline && (
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                          )}
                         </div>
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{member.name}</p>
                       </div>
