@@ -5501,7 +5501,6 @@ export default function ChatThread({
                 <div 
                   ref={overlayRef}
                   className={`absolute inset-0 p-4 text-[14px] font-normal leading-relaxed whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none z-[1] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] text-left ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
-                  style={{ height: textareaRef.current ? `${textareaRef.current.offsetHeight}px` : 'auto' }}
                 >
                   {input ? (
                     formatComposerMarkdown(input)
