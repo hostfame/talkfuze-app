@@ -37,23 +37,34 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 
   const latestCustomerMsg = customerMessages[customerMessages.length - 1].content.trim();
   
-  // 1. Direct match on the latest message
-  if (BENGALI_REGEX.test(latestCustomerMsg) || BANGLISH_REGEX.test(latestCustomerMsg)) {
-    return 'Bengali';
-  }
+  // Layer 1: Bengali script in latest message (deterministic, 100% confidence)
+  if (BENGALI_REGEX.test(latestCustomerMsg)) return 'Bengali';
   
-  // 2. Is it definitively an English sentence? (Longer than 20 chars and no Bengali/Banglish)
-  // If yes, they probably switched to English.
+  // Layer 2: Banglish word match on latest message
+  if (BANGLISH_REGEX.test(latestCustomerMsg)) return 'Bengali';
+  
+  // Layer 3: Agent ground truth - if our agents replied in Bengali, the conversation IS Bengali.
+  // This is the strongest contextual signal and prevents cascading language drift.
+  // A human agent's language choice is gold standard - no algorithm should override it.
+  const agentMessages = messages.filter(m => m.sender === 'Agent');
+  const recentAgentMsgs = agentMessages.slice(-5);
+  const agentUsedBengali = recentAgentMsgs.some(m => BENGALI_REGEX.test(m.content));
+  
+  // Long ASCII message: only treat as English switch if agents were NOT using Bengali.
+  // If agents were replying in Bengali, this is likely Banglish, not a language switch.
   if (latestCustomerMsg.length > 20 && /^[a-zA-Z0-9\s.,!?'-]+$/.test(latestCustomerMsg)) {
-    return 'English';
+    if (!agentUsedBengali) return 'English';
+    // Agent was replying in Bengali - fall through to history check
   }
 
-  // 3. Otherwise (it's a short message, punctuation, or ambiguous term like "bandwidth?"), 
-  // we look at the last 3 customer messages to maintain the context language.
+  // Layer 4: Customer history (last 3 messages)
   const lastThree = customerMessages.slice(-3);
   if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) {
     return 'Bengali';
   }
+  
+  // Layer 5: Agent history fallback - if agents used Bengali, maintain it
+  if (agentUsedBengali) return 'Bengali';
 
   return 'English';
 }

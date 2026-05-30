@@ -16,12 +16,25 @@ function detectConversationLanguage(messages: { sender: string; content: string 
 
   const latestMsg = customerMessages[customerMessages.length - 1].content.trim();
 
-  if (BENGALI_REGEX.test(latestMsg) || BANGLISH_REGEX.test(latestMsg)) return 'Bengali';
+  // Layer 1: Bengali script (deterministic)
+  if (BENGALI_REGEX.test(latestMsg)) return 'Bengali';
+  
+  // Layer 2: Banglish word match
+  if (BANGLISH_REGEX.test(latestMsg)) return 'Bengali';
 
+  // Layer 3: Agent ground truth - if agents replied in Bengali, conversation IS Bengali
+  const agentMessages = messages.filter(m => m.sender === 'Agent');
+  const recentAgentMsgs = agentMessages.slice(-5);
+  const agentUsedBengali = recentAgentMsgs.some(m => BENGALI_REGEX.test(m.content));
+
+  // Short/ambiguous message: check history
   if (AMBIGUOUS_MSG.test(latestMsg)) {
     const lastThree = customerMessages.slice(-3);
     if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) return 'Bengali';
   }
+
+  // Agent history fallback
+  if (agentUsedBengali) return 'Bengali';
 
   return 'English';
 }
