@@ -10,6 +10,7 @@ import LogoutButton from "@/components/auth/LogoutButton"
 import SidebarNavigation from "@/components/ui/SidebarNavigation"
 import ActiveTimeTracker from "@/components/auth/ActiveTimeTracker"
 import MobileBottomNavigation from "@/components/ui/MobileBottomNavigation"
+import TeamChatDock from "@/components/team-chat/TeamChatDock"
 
 export const maxDuration = 120; // 2 minutes for slow WHMCS operations like IP unblocking
 
@@ -75,6 +76,9 @@ export default async function DashboardLayout({
         
         {/* WebRTC PBX Dialer */}
         <SipDialer />
+        
+        {/* Internal Team Chat */}
+        <TeamChatDock />
         
         {/* Mobile Navigation Bar */}
         <MobileBottomNavigation />

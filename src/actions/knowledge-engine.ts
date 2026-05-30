@@ -42,8 +42,7 @@ export const SUB_BRAINS = {
   sales: `## Sales & Pricing Policies
 - Pricing Confusion (e.g., 549tk plan): If a user asks for a "549tk plan" or sees "(Eqv. ৳399/mo)", this refers to the discounted monthly breakdown of the 3-Year plan. This is NOT a monthly billing plan. Always check the '1-Month Billing' column for actual monthly prices.
 - If customer asks for a domain extension not in our list, say: "Check availability and price at https://hostnin.com/domain"
-- Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.
-- Order any plan at: https://hostnin.com or https://my.hostnin.com`,
+- Affiliate: 10% lifetime commission on all referrals. Min withdrawal 5000 BDT.`,
   
   tech: `## Technical & Infrastructure Policies
 - 99.9% Uptime Guarantee on all hosting plans.
@@ -347,7 +346,8 @@ export function buildKnowledgeContext(contextMessages: string): { context: strin
 - FOUNDATIONAL RULE: You must NEVER invent, guess, or mathematically calculate prices.
 - Look at the provided data table. If the EXACT price for the requested plan, billing term, or domain extension is NOT explicitly written, you MUST NOT provide a number.
 - FALLBACK PROTOCOL: If you cannot find the exact price, do NOT apologize. Provide the relevant link from the reference list below and politely say: "Please check the detailed pricing and availability here."
-[Fallback Links]: Web: https://hostnin.com/hosting/web-hosting | Cloud: https://hostnin.com/hosting/cloud-hosting | WordPress: https://hostnin.com/hosting/wordpress-hosting | Reseller: https://hostnin.com/hosting/reseller-hosting | BDIX: https://hostnin.com/hosting/bdix-hosting | Turbo: https://hostnin.com/hosting/turbo-hosting | NodeJS: https://hostnin.com/hosting/nodejs-hosting | WooCommerce: https://hostnin.com/hosting/woocommerce-hosting | VPS: https://hostnin.com/hosting/vps-hosting | Dedicated: https://hostnin.com/hosting/dedicated-server | Domain: https://hostnin.com/domain | Email: https://hostnin.com/solutions/email | Backup: https://hostnin.com/solutions/backup | Security/Malware: https://hostnin.com/solutions/security | SiteBuilder: https://hostnin.com/solutions/site-builder | SSL: https://hostnin.com/solutions/ssl | Monitoring: https://hostnin.com/solutions/monitoring | General/Compare: https://hostnin.com/pricing`);
+- ORDERING & DETAILS: When a customer wants to order a plan or see plan details, ALWAYS use the specific link from the list below. NEVER use the generic homepage link.
+[Product Links]: Web: https://hostnin.com/hosting/web-hosting | Cloud: https://hostnin.com/hosting/cloud-hosting | WordPress: https://hostnin.com/hosting/wordpress-hosting | Reseller: https://hostnin.com/hosting/reseller-hosting | BDIX: https://hostnin.com/hosting/bdix-hosting | Turbo: https://hostnin.com/hosting/turbo-hosting | NodeJS: https://hostnin.com/hosting/nodejs-hosting | WooCommerce: https://hostnin.com/hosting/woocommerce-hosting | VPS: https://hostnin.com/hosting/vps-hosting | Dedicated: https://hostnin.com/hosting/dedicated-server | Domain: https://hostnin.com/domain | Email: https://hostnin.com/solutions/email | Backup: https://hostnin.com/solutions/backup | Security/Malware: https://hostnin.com/solutions/security | SiteBuilder: https://hostnin.com/solutions/site-builder | SSL: https://hostnin.com/solutions/ssl | Monitoring: https://hostnin.com/solutions/monitoring | General/Compare: https://hostnin.com/pricing`);
   }
 
   // Match top 3 canned responses by keyword overlap

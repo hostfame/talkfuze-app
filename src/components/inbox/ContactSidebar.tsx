@@ -683,6 +683,7 @@ export default function ContactSidebar({
         if (active) setParticipants(data)
       })
 
+      // postgres_changes: fallback for eventual consistency
       const channel = supabase
         .channel(`participants_sidebar:${conversationId}`)
         .on(
@@ -701,9 +702,31 @@ export default function ContactSidebar({
         )
         .subscribe()
 
+      // Broadcast fast-path: < 100ms update when any agent joins/leaves
+      const broadcastChannel = supabase
+        .channel(`typing:${orgId}`)
+        .on('broadcast', { event: 'conversationJoined' }, (payload) => {
+          if (!active) return
+          const { conversation_id, user_id, user_name } = payload.payload || {}
+          if (conversation_id !== conversationId) return
+          setParticipants(prev => {
+            if (prev.some((p: any) => p.user_id === user_id)) return prev
+            // Add an optimistic entry - will be replaced on next postgres_changes refetch
+            return [...prev, { user_id, user: { id: user_id, name: user_name || 'Agent' } }]
+          })
+        })
+        .on('broadcast', { event: 'conversationLeft' }, (payload) => {
+          if (!active) return
+          const { conversation_id, user_id } = payload.payload || {}
+          if (conversation_id !== conversationId) return
+          setParticipants(prev => prev.filter((p: any) => p.user_id !== user_id))
+        })
+        .subscribe()
+
       return () => {
         active = false
         supabase.removeChannel(channel)
+        supabase.removeChannel(broadcastChannel)
       }
     } else {
       setParticipants([])
@@ -711,7 +734,8 @@ export default function ContactSidebar({
         active = false
       }
     }
-  }, [conversation?.id])
+  }, [conversation?.id, orgId])
+
 
   const [showAllServices, setShowAllServices] = useState(false)
   const [showAllTickets, setShowAllTickets] = useState(false)

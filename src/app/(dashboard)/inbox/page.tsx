@@ -642,6 +642,34 @@ export default function InboxPage() {
           });
         }
       })
+      .on('broadcast', { event: 'conversationJoined' }, (payload) => {
+        // Instantly mark conversation as picked up in the store so the ring stops immediately
+        const { conversation_id, user_id } = payload.payload || {};
+        if (!conversation_id || !user_id) return;
+        const store = useInboxStore.getState();
+        const conv = store.conversations.find(c => c.id === conversation_id);
+        if (conv) {
+          const currentParticipants = Array.isArray(conv.participants) ? conv.participants : [];
+          const alreadyIn = currentParticipants.some((p: any) => p.user_id === user_id || p.id === user_id);
+          if (!alreadyIn) {
+            store.updateConversation(conversation_id, {
+              participants: [...currentParticipants, { id: user_id } as any]
+            });
+          }
+        }
+      })
+      .on('broadcast', { event: 'conversationLeft' }, (payload) => {
+        const { conversation_id, user_id } = payload.payload || {};
+        if (!conversation_id || !user_id) return;
+        const store = useInboxStore.getState();
+        const conv = store.conversations.find(c => c.id === conversation_id);
+        if (conv) {
+          const currentParticipants = Array.isArray(conv.participants) ? conv.participants : [];
+          store.updateConversation(conversation_id, {
+            participants: currentParticipants.filter((p: any) => p.user_id !== user_id && p.id !== user_id)
+          });
+        }
+      })
       .subscribe();
       
     const presenceChannel = supabase.channel(`presence:${ORG_ID}`)

@@ -561,6 +561,40 @@ export async function joinConversation(conversationId: string, createdAt?: strin
 
     // Insert system message
     await supabaseAdmin.from('messages').insert(insertData)
+
+    // Broadcast instant join signal - bypasses postgres_changes replication lag (1-3s)
+    // Must subscribe before sending - server-side Realtime requirement
+    try {
+      const broadcastChannel = supabaseAdmin.channel(`typing:${profile.org_id}`)
+      await new Promise<void>((resolve) => {
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'conversationJoined',
+              payload: {
+                conversation_id: conversationId,
+                user_id: profile.id,
+                user_name: profile.name,
+              },
+            }).then(() => {
+              supabaseAdmin.removeChannel(broadcastChannel)
+              resolve()
+            }).catch(() => {
+              supabaseAdmin.removeChannel(broadcastChannel)
+              resolve()
+            })
+          }
+        })
+        // Safety timeout - don't block the response more than 2s
+        setTimeout(() => {
+          supabaseAdmin.removeChannel(broadcastChannel)
+          resolve()
+        }, 2000)
+      })
+    } catch (_broadcastErr) {
+      // Non-fatal - postgres_changes is the fallback
+    }
   }
 
   return getParticipants(conversationId)
@@ -595,6 +629,37 @@ export async function leaveConversation(conversationId: string) {
     is_internal: false,
     status: 'delivered',
   })
+
+  // Broadcast instant leave signal so other agents update immediately
+  try {
+    const broadcastChannel = supabaseAdmin.channel(`typing:${profile.org_id}`)
+    await new Promise<void>((resolve) => {
+      broadcastChannel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcastChannel.send({
+            type: 'broadcast',
+            event: 'conversationLeft',
+            payload: {
+              conversation_id: conversationId,
+              user_id: profile.id,
+            },
+          }).then(() => {
+            supabaseAdmin.removeChannel(broadcastChannel)
+            resolve()
+          }).catch(() => {
+            supabaseAdmin.removeChannel(broadcastChannel)
+            resolve()
+          })
+        }
+      })
+      setTimeout(() => {
+        supabaseAdmin.removeChannel(broadcastChannel)
+        resolve()
+      }, 2000)
+    })
+  } catch (_broadcastErr) {
+    // Non-fatal
+  }
 
   return getParticipants(conversationId)
 }

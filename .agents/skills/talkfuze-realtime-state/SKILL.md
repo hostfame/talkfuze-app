@@ -26,3 +26,8 @@ TalkFuze uses an optimistic UI model for extreme speed. When a user or agent sen
 ## 4. LocalStorage as Fallback
 - For transient states that must survive page reloads (e.g., active AI draft text before it is sent), use `localStorage` alongside component state. 
 - Always clean up `localStorage` keys immediately after the action completes (e.g., after the message is sent).
+
+## 5. Supabase RPC & Realtime Performance
+- **Event Storms:** Realtime listeners (e.g., `postgres_changes` on `conversations` or `messages`) can fire hundreds of times a minute. Code inside these listeners MUST be extremely fast. Do not run heavy RPCs or refetch the entire DB unnecessarily on every broadcast.
+- **RPC Slowness Bug:** Never use `auth.uid()` inside an `INNER JOIN` in a Supabase RPC. The PostgreSQL query planner treats it as volatile and may execute a full table scan or nested loop, turning a 1ms query into a 1000ms query.
+- **The Fix:** For `SECURITY DEFINER` functions, write them in `plpgsql`, fetch the user's `org_id` ONCE at the start using `SELECT org_id INTO v_org_id FROM users WHERE id = auth.uid() LIMIT 1;`, and then use `v_org_id` in the main query.

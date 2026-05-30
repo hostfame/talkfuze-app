@@ -24,3 +24,12 @@ metadata:
 - **Payload Nuances:** Meta webhooks are nested. Always check for `entry[0].changes[0].value.messages[0]` before assuming a message exists.
 - **Stateless Verification:** The worker must always respond with `HTTP 200 OK` to Meta immediately to prevent Meta from retrying and causing duplicate messages in our database. Processing should happen asynchronously.
 - **Error Handling:** If the worker crashes, PM2 will restart it. However, unhandled promise rejections during DB inserts must be caught and logged so we do not lose inbound customer messages.
+
+## 4. Race Conditions (Database Inserts)
+- **High-Volume Concurrency:** When a new customer sends multiple messages in the same millisecond, both payloads may simultaneously check if the contact exists, find nothing, and attempt to `insert()`. 
+- **The Bug:** The second `insert()` will fail due to a unique constraint violation (`platform_id`). If you use `.select('id').single()`, it returns `{ data: null, error }`, which crashes the worker if you blindly access `.id`.
+- **The Fix:** ALWAYS handle `insert()` errors or null returns when creating contacts/conversations/channels. Use `.maybeSingle()` instead of `.single()`, catch the error, and re-query the database to fetch the ID that the competing thread just inserted.
+
+## 5. Webhook Payload Safety
+- **Defensive Parsing:** Evolution API and Meta webhooks frequently omit fields or change schemas (e.g., missing `timestamp` on calls, or arrays instead of objects). 
+- **The Fix:** Never blindly parse timestamps or IDs. Always use fallbacks: `const ts = payload.timestamp ? Number(payload.timestamp) : (Date.now() / 1000);`. Failure to do this causes `Invalid time value` errors which crash async workers silently.

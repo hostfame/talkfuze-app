@@ -3,6 +3,12 @@
 import { getClientByPhone, getClientsProducts, getClientsDomains, getTickets, getClientDetailsByEmailFast, getInvoices, getClientDetails, getClientDashboardData, getClientDashboardDataByPhoneOrEmail } from "@/lib/whmcs"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 
+const normalizeArray = (val: any) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return [val];
+};
+
 export async function fetchWhmcsClient(phoneOrEmail: string) {
   try {
     const cleanSearch = phoneOrEmail.trim()
@@ -93,8 +99,8 @@ export async function fetchWhmcsServices(clientId: number) {
     const domainsRes = await getClientsDomains(clientId, 0, 100)
     
     return {
-      products: productsRes.products || [],
-      domains: domainsRes.domains || []
+      products: normalizeArray(productsRes.products),
+      domains: normalizeArray(domainsRes.domains)
     }
   } catch (error) {
     console.error("Failed to fetch WHMCS services:", error)
@@ -105,7 +111,7 @@ export async function fetchWhmcsServices(clientId: number) {
 export async function fetchWhmcsTickets(clientId: number) {
   try {
     const ticketsRes = await getTickets(clientId, 0, 50) // fetch more to allow expanding
-    return ticketsRes.tickets || []
+    return normalizeArray(ticketsRes.tickets)
   } catch (error) {
     console.error("Failed to fetch WHMCS tickets:", error)
     return []
@@ -127,7 +133,7 @@ export async function createWhmcsTicket(clientId: number, deptId: number, subjec
 export async function fetchWhmcsUnpaidInvoices(clientId: number) {
   try {
     const invoicesRes = await getInvoices(clientId, 0, 100, 'Unpaid')
-    return invoicesRes.invoices || []
+    return normalizeArray(invoicesRes.invoices)
   } catch (error) {
     console.error("Failed to fetch WHMCS unpaid invoices:", error)
     return []
@@ -542,7 +548,7 @@ export async function fetchAllWhmcsUnpaidInvoices() {
     // We rely on the newly added custom action GetUnpaidInvoicesWithClients in the bridge
     // If it's not deployed yet, this will fail until the new bridge is live.
     const result = await whmcsRequest<any>('GetUnpaidInvoicesWithClients', {})
-    return result?.invoices || []
+    return normalizeArray(result?.invoices)
   } catch (error) {
     console.error("Failed to fetch all WHMCS unpaid invoices:", error)
     return []
