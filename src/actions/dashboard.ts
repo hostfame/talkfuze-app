@@ -81,7 +81,8 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     .eq("org_id", orgId)
     .order("created_at", { foreignTable: "messages", ascending: false })
     .limit(10, { foreignTable: "messages" })
-    .order("last_message_at", { ascending: false });
+    .order("last_message_at", { ascending: false })
+    .limit(100);
 
   if (filter === 'archived') {
     query = query.eq("is_archived", true);
@@ -106,6 +107,30 @@ export async function getConversations(orgId: string, filter: 'all' | 'unassigne
     return []
   }
   return data
+}
+
+export async function getConversationById(conversationId: string) {
+  noStore();
+  const { data, error } = await supabaseAdmin
+    .from("conversations")
+    .select(`
+      *,
+      contact:contacts(*),
+      assignee:users!assigned_to(*),
+      channels(type),
+      participants:conversation_participants(id),
+      messages(id, content, sender_type, content_type, created_at, status, platform_message_id, is_internal, metadata)
+    `)
+    .eq("id", conversationId)
+    .order("created_at", { foreignTable: "messages", ascending: false })
+    .limit(10, { foreignTable: "messages" })
+    .single();
+
+  if (error) {
+    console.error("Error fetching single conversation:", error)
+    return null;
+  }
+  return data;
 }
 
 export async function assignConversation(orgId: string, conversationId: string, agentId: string | null) {

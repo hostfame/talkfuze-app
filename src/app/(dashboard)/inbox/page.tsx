@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useEffect, useState, useRef } from "react"
 import { useInboxStore, useMessageStore, recentEdits } from "@/lib/store"
 import { Bell } from "lucide-react"
-import { getConversations, getMessages } from "@/actions/dashboard"
+import { getConversations, getMessages, getConversationById } from "@/actions/dashboard"
 import { getTeammates } from "@/actions/team"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/auth-context"
@@ -197,26 +197,30 @@ export default function InboxPage() {
 
     let activeChannel: any = null;
     let hasConnectedOnce = false;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
 
     const subscribeToChannel = () => {
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-
       const ch = supabase
         .channel('inbox:conversations:list')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, () => {
-          const currentFilter = useInboxStore.getState().activeFilter as any
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, (payload) => {
+          const updatedConv = payload.new as any;
+          const store = useInboxStore.getState();
           
-          // Always refresh the main 'all' list to keep badge counts accurate
-          getConversations(ORG_ID, 'all', currentUser?.id).then(data => {
-            setConversations((data || []) as ConversationWithDetails[])
-          })
+          // STRICT OBJECT SPREADING: Safely merge conversation without destroying nested relations
+          const prev = store.conversations;
+          const next = [...(prev || [])];
+          const convIndex = next.findIndex(c => c.id === updatedConv.id);
           
-          // If we are currently viewing an archived state, also refresh that specific store
-          if (currentFilter === 'archived' || currentFilter === 'ticketed') {
-            getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => {
-              useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[])
-            })
+          if (convIndex !== -1) {
+            next[convIndex] = { ...next[convIndex], ...updatedConv };
+            store.setConversations(next as ConversationWithDetails[]);
+          }
+          
+          const archPrev = store.archivedConversations || [];
+          const archNext = [...archPrev];
+          const archIndex = archNext.findIndex(c => c.id === updatedConv.id);
+          if (archIndex !== -1) {
+            archNext[archIndex] = { ...archNext[archIndex], ...updatedConv };
+            store.setArchivedConversations(archNext as ConversationWithDetails[]);
           }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
@@ -224,16 +228,13 @@ export default function InboxPage() {
           const newMsg = normalizeMessage(rawMsg);
           if (!newMsg) return;
           
-          // Global message insertion: ensures we never miss a message even if the local conversation channel is reconnecting
+          // Global message insertion: ensures we never miss a message
           if (newMsg && newMsg.conversation_id) {
              useInboxStore.getState().addMessage(newMsg.conversation_id, newMsg as AppMessage);
              
-             // Extract temp_id to clean up optimistic messages instantly and avoid race conditions/flickering
              let safeMeta = newMsg.metadata;
              if (typeof safeMeta === 'string') {
-               try {
-                 safeMeta = JSON.parse(safeMeta);
-               } catch (e) {}
+               try { safeMeta = JSON.parse(safeMeta); } catch (e) {}
              }
              if (safeMeta && safeMeta.temp_id) {
                useMessageStore.getState().removeOptimisticMessage(newMsg.conversation_id, String(safeMeta.temp_id));
@@ -243,13 +244,12 @@ export default function InboxPage() {
           // Update conversation list locally instead of re-fetching everything
           if (newMsg && newMsg.conversation_id) {
              let safeMeta = newMsg.metadata;
-             try {
-               if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
-             } catch (e) {}
+             try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
              const isPageView = safeMeta?.event === 'page_view' || newMsg.content?.startsWith('Viewed:');
 
-             const prev = useInboxStore.getState().conversations;
-             const archPrev = useInboxStore.getState().archivedConversations || [];
+             const store = useInboxStore.getState();
+             const prev = store.conversations;
+             const archPrev = store.archivedConversations || [];
              const next = [...(prev || [])];
              
              const convIndex = next.findIndex(c => c.id === newMsg.conversation_id);
@@ -292,30 +292,25 @@ export default function InboxPage() {
                   next.splice(convIndex, 1);
                   
                   if (isMessenger) {
-                    // If it's messenger, it should be removed from active and let backend refresh the archived list
-                    getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
+                    getConversations(ORG_ID, 'archived', currentUser?.id).then(data => store.setArchivedConversations((data || []) as ConversationWithDetails[]));
                   } else {
                     next.unshift(conv);
                   }
                 }
                 
-                setConversations(next);
+                store.setConversations(next);
              } else if (!isPageView) {
-                // It's a brand new conversation, or an archived one being replied to
-                if (isMessenger) {
-                  // Just refresh archived quietly
-                  getConversations(ORG_ID, 'archived', currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
-                } else {
-                  getConversations(ORG_ID, 'all', currentUser?.id).then(data => setConversations((data || []) as ConversationWithDetails[]));
-                  const currentFilter = useInboxStore.getState().activeFilter as any;
-                  if (currentFilter === 'archived' || currentFilter === 'ticketed') {
-                    getConversations(ORG_ID, currentFilter, currentUser?.id).then(data => useInboxStore.getState().setArchivedConversations((data || []) as ConversationWithDetails[]));
-                  }
-                }
+                // FAILSAFE: It's an old conversation not in the local 100 limit. Fetch it and unshift.
+                getConversationById(newMsg.conversation_id).then(conv => {
+                   if (conv) {
+                     next.unshift(conv as ConversationWithDetails);
+                     store.setConversations(next);
+                   }
+                });
              }
           }
           
-          // Find conv again for notification checks
+          // Sound and Notification logic
           let isMessengerForNotif = false;
           const c1 = conversations.find(c => c.id === newMsg?.conversation_id);
           const c2 = useInboxStore.getState().archivedConversations?.find(c => c.id === newMsg?.conversation_id);
@@ -326,17 +321,13 @@ export default function InboxPage() {
             if (channelData?.type === 'messenger') isMessengerForNotif = true;
           }
 
-          // Play sound if the message is from a contact (and NOT messenger)
           if (newMsg && newMsg.sender_type === 'contact' && !isMessengerForNotif) {
              playUISound('receive')
-             // Desktop notification
              const contact = targetConv?.contact;
              const convName = (Array.isArray(contact) ? contact[0]?.name : contact?.name) || 'Customer';
              sendDesktopNotification(`New message from ${convName}`, newMsg.content_type === 'text' ? newMsg.content : 'Sent an attachment');
-             // Tab badge - count unread conversations
              const unreadCount = conversations.filter(c => c.is_unread).length + 1;
              updateTabBadge(unreadCount);
-             // Immediately clear typing state to prevent UI flicker
              setTypingState(prev => ({ ...prev, [newMsg.conversation_id]: false }));
              setTypingTextState(prev => ({ ...prev, [newMsg.conversation_id]: "" }));
              if (typingTimeoutRefs.current[newMsg.conversation_id]) {
@@ -344,7 +335,6 @@ export default function InboxPage() {
              }
           }
 
-          // Check for Mentions in internal whispers
           const currentStoreState = useInboxStore.getState();
           const activeUser = currentStoreState.currentUser;
           
@@ -435,24 +425,13 @@ export default function InboxPage() {
           console.log(`[Inbox Realtime] channel status: ${status}`, err || '');
           if (status === 'SUBSCRIBED') {
             if (hasConnectedOnce) {
-              console.log('[Inbox Realtime] Channel reconnected. Syncing missed state...');
+              console.log('[Inbox Realtime] Channel reconnected natively. Syncing missed state...');
               syncDatabaseState();
             } else {
               hasConnectedOnce = true;
             }
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.error(`[Inbox Realtime] Connection issue detected (${status}). Resubscribing in 5s...`);
-            if (reconnectTimeout) clearTimeout(reconnectTimeout);
-            reconnectTimeout = setTimeout(() => {
-              console.log('[Inbox Realtime] Executing clean resubscription...');
-              if (activeChannel) {
-                try {
-                  supabase.removeChannel(activeChannel);
-                } catch (e) {}
-              }
-              activeChannel = subscribeToChannel();
-            }, 5000);
           }
+          // Do not manually tear down channel on CHANNEL_ERROR/TIMED_OUT, let Supabase handle reconnects
         });
 
       return ch;
@@ -510,7 +489,6 @@ export default function InboxPage() {
       if (typeof window !== 'undefined') {
         window.removeEventListener('visibilitychange', handleVisibilityChange);
       }
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (activeChannel) {
         try {
           supabase.removeChannel(activeChannel);

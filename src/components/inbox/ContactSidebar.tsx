@@ -1523,6 +1523,8 @@ export default function ContactSidebar({
                 {participants.length > 0 ? (
                   participants.map((p, idx) => {
                     const isOnline = p.user_id && onlineUsers.has(p.user_id);
+                    const userObj = Array.isArray(p.user) ? p.user[0] : p.user;
+                    
                     return (
                       <div 
                         key={idx} 
@@ -1530,10 +1532,10 @@ export default function ContactSidebar({
                       >
                         <div className="relative shrink-0">
                           <div className="w-7 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[10px] font-bold overflow-hidden shadow-xs">
-                            {p.user?.avatar_url ? (
-                              <img src={p.user.avatar_url} alt="" className="w-full h-full object-cover" />
+                            {userObj?.avatar_url ? (
+                              <img src={userObj.avatar_url} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              p.user?.name?.charAt(0).toUpperCase() || 'A'
+                              userObj?.name?.charAt(0).toUpperCase() || 'A'
                             )}
                           </div>
                           {isOnline && (
@@ -1542,10 +1544,10 @@ export default function ContactSidebar({
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-[12.5px] font-medium text-slate-850 dark:text-[#d1d7db] truncate">
-                            {p.user?.name || 'Agent'}
+                            {userObj?.name || 'Agent'}
                           </span>
                           <span className="text-[9.5px] text-slate-400 dark:text-[#8696a0] font-mono capitalize">
-                            {p.user?.role || 'agent'}
+                            {userObj?.role || 'agent'}
                           </span>
                         </div>
                       </div>

@@ -299,6 +299,7 @@ try {
         'GetClientDashboardDataByPhoneOrEmail', // Custom endpoint for instant 1-trip fetching
         'GetUnpaidInvoicesWithClients', // Custom endpoint to fetch unpaid invoices with phonenumbers
         'GetDailyRevenue', // Custom endpoint to fetch 30-day revenue
+        'GetAbandonedCartsForCall', // Custom endpoint to fetch abandoned carts for outbound robocalls
     ];
 
     if (!in_array($action, $allowedActions) && $action !== 'CheckAffiliatePromoOwner' && $action !== 'DomainRelayUpdateNS' && $action !== 'UnblockIP') {
@@ -823,6 +824,54 @@ try {
         }
         exit;
     }
+
+    // ============================================
+    // CUSTOM ACTION: GetAbandonedCartsForCall
+    // ============================================
+    if ($action === 'GetAbandonedCartsForCall') {
+        $whmcsPath = __DIR__;
+        if (file_exists($whmcsPath . '/init.php')) {
+            require_once $whmcsPath . '/init.php';
+        }
+
+        try {
+            // Fetch abandoned carts that are still unpaid and in abandoned or reminded status
+            $carts = \WHMCS\Database\Capsule::table('mod_cart_recovery as cr')
+                ->join('tblinvoices as i', 'cr.invoice_id', '=', 'i.id')
+                ->join('tblclients as c', 'cr.client_id', '=', 'c.id')
+                ->where('i.status', 'Unpaid')
+                ->whereIn('cr.status', ['abandoned', 'reminded'])
+                ->select([
+                    'cr.id',
+                    'cr.order_id',
+                    'cr.invoice_id',
+                    'cr.client_id',
+                    'cr.email',
+                    'cr.cart_total',
+                    'cr.currency_code',
+                    'cr.payment_method',
+                    'cr.status',
+                    'cr.created_at',
+                    'c.phonenumber as client_phone',
+                    'c.firstname',
+                    'c.lastname',
+                    'c.companyname'
+                ])
+                ->orderBy('cr.id', 'DESC')
+                ->get();
+
+            echo json_encode([
+                'result' => 'success',
+                'carts' => $carts
+            ]);
+        } catch (Exception $e) {
+            bridgeLog('GetAbandonedCartsForCall ERROR: ' . $e->getMessage());
+            http_response_code(500);
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch abandoned carts']));
+        }
+        exit;
+    }
+
 
     // ============================================
     // CUSTOM ACTION: GetDailyRevenue

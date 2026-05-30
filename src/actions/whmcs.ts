@@ -555,6 +555,17 @@ export async function fetchAllWhmcsUnpaidInvoices() {
   }
 }
 
+export async function fetchWhmcsAbandonedCarts() {
+  try {
+    const { whmcsRequest } = await import('@/lib/whmcs')
+    const result = await whmcsRequest<any>('GetAbandonedCartsForCall', {})
+    return normalizeArray(result?.carts)
+  } catch (error) {
+    console.error("Failed to fetch WHMCS abandoned carts:", error)
+    return []
+  }
+}
+
 export async function fetchClientNameservers(phoneOrEmail: string) {
   try {
     const { getClientDashboardDataByPhoneOrEmail } = await import('@/lib/whmcs')

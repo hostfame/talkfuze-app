@@ -39,15 +39,18 @@ function isValidIP(ip) {
 async function unblockOnServer(server, ip) {
   const sshOpts = `-o StrictHostKeyChecking=no -o ConnectTimeout=5 -o BatchMode=yes -p ${server.port}`;
   
-  // Build the remote command: try CSF, CPGuard, and Fail2Ban
+  // Build the remote command: try CSF, CPGuard, cPHulk, and Fail2Ban
   // Each command is independent - if one tool doesn't exist, it won't error
   // Append '; true' to force exit 0 (CSF returns non-zero when IP wasn't blocked)
   const remoteCmd = [
     `csf -dr ${ip} 2>/dev/null || true`,
     `csf -tr ${ip} 2>/dev/null || true`,
+    `csf -ta ${ip} 86400 "TalkFuze temp allow" 2>/dev/null || true`,
     `cpgcli ip --deny --remove ${ip} 2>/dev/null || true`,
     `cpgcli ip --temp-allow --remove ${ip} 2>/dev/null || true`,
     `cpgcli ip --allow ${ip} --reason 'TalkFuze unblock' 2>/dev/null || true`,
+    `/usr/local/cpanel/scripts/hulk-unban-ip ${ip} 2>/dev/null || true`,
+    `whmapi1 flush_cphulk_login_history_for_ips ip='${ip}' 2>/dev/null || true`,
     `fail2ban-client unban ${ip} 2>/dev/null || true`,
     `echo DONE`,
   ].join('; ');

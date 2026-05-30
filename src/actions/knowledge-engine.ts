@@ -20,7 +20,7 @@ import knowledge from "@/actions/hostnin-knowledge.json";
 export function getGlobalBrain(language: 'Bengali' | 'English'): string {
   if (language === 'English') {
     return `<rules>
-- Confidence Thresholding (STRICT): This rule applies to EVERYTHING (Domains, Hosting, Nameservers, IPs, Transaction IDs). If a customer provides ANY data that is not explicitly in your knowledge base, DO NOT confidently say "This is not ours", "This is invalid", or guess the status. Instead, you MUST ask EXACTLY: "Could you please provide your registered email or domain name so I can check your account and verify this?"
+- Confidence Thresholding (STRICT): This rule applies to EVERYTHING (Domains, Hosting, Nameservers, IPs, Transaction IDs). If a customer provides ANY data that is not explicitly in your knowledge base, DO NOT confidently say "This is not ours", "This is invalid", or guess the status. Instead, you MUST ask EXACTLY: "Could you please provide your domain name so I can check your account and verify this?"
 </rules>`;
   }
 
@@ -31,7 +31,7 @@ export function getGlobalBrain(language: 'Bengali' | 'English'): string {
   2) "আমরা ডোমেইন হোস্টিং ইন্ডাস্ট্রিতে ৫ বছরের বেশি সময় ধরে বিশ্বস্ততার সাথে সার্ভিস দিয়ে আসছি। গুগলে আমাদের নাম লিখে সার্চ করলে অসংখ্য পজিটিভ রিভিউ পেয়ে যাবেন, যা প্রমাণ করে আমাদের সেবা কতটা জনপ্রিয়।"
   3) "আমি কি আর কোন তথ্য দিয়ে সহযোগিতা করতে পারি?"
   4) "জ্বী বলুন, আপনাকে কিভাবে সহযোগিতা করতে পারি?"
-  5) "ধন্যবাদ, আমি বিষয়টি চেক করছি এবং খুব দ্রুতই এই ব্যাপারে আপডেট পাবেন। সময় দিয়ে সহযোগিতার জন্য আন্তরিকভাবে ধন্যবাদ।"
+  5) "ধন্যবাদ, আমি বিষয়টি চেক করছি এবং খুব দ্রুতই এই ব্যাপারে আপডেট পাবেন। সময় দিয়ে সহযোগিতার জন্য আন্তরিকভাবে ধন্যবাদ।"
 </rules>`;
 }
 
@@ -345,9 +345,10 @@ export function buildKnowledgeContext(contextMessages: string): { context: strin
     sections.unshift(`## Strict Pricing Rules (ANTI-HALLUCINATION)
 - FOUNDATIONAL RULE: You must NEVER invent, guess, or mathematically calculate prices.
 - Look at the provided data table. If the EXACT price for the requested plan, billing term, or domain extension is NOT explicitly written, you MUST NOT provide a number.
+- SPECIFICITY RULE: If a customer asks for generic pricing without specifying a specific plan, you MUST NOT provide "starting at" prices or summarize the table. Just provide the link and ask what specific plan they need.
 - FALLBACK PROTOCOL: If you cannot find the exact price, do NOT apologize. Provide the relevant link from the reference list below and politely say: "Please check the detailed pricing and availability here."
 - ORDERING & DETAILS: When a customer wants to order a plan or see plan details, ALWAYS use the specific link from the list below. NEVER use the generic homepage link.
-[Product Links]: Web: https://hostnin.com/hosting/web-hosting | Cloud: https://hostnin.com/hosting/cloud-hosting | WordPress: https://hostnin.com/hosting/wordpress-hosting | Reseller: https://hostnin.com/hosting/reseller-hosting | BDIX: https://hostnin.com/hosting/bdix-hosting | Turbo: https://hostnin.com/hosting/turbo-hosting | NodeJS: https://hostnin.com/hosting/nodejs-hosting | WooCommerce: https://hostnin.com/hosting/woocommerce-hosting | VPS: https://hostnin.com/hosting/vps-hosting | Dedicated: https://hostnin.com/hosting/dedicated-server | Domain: https://hostnin.com/domain | Email: https://hostnin.com/solutions/email | Backup: https://hostnin.com/solutions/backup | Security/Malware: https://hostnin.com/solutions/security | SiteBuilder: https://hostnin.com/solutions/site-builder | SSL: https://hostnin.com/solutions/ssl | Monitoring: https://hostnin.com/solutions/monitoring | General/Compare: https://hostnin.com/pricing`);
+[Product Links]: Web: https://hostnin.com/hosting/web-hosting | Cloud: https://hostnin.com/hosting/cloud-hosting | WordPress: https://hostnin.com/hosting/wordpress-hosting | Reseller: https://hostnin.com/hosting/reseller-hosting | BDIX: https://hostnin.com/hosting/bdix-hosting | Turbo: https://hostnin.com/hosting/turbo-hosting | NodeJS: https://hostnin.com/hosting/nodejs-hosting | N8n: https://hostnin.com/n8n | WooCommerce: https://hostnin.com/hosting/woocommerce-hosting | VPS: https://hostnin.com/hosting/vps-hosting | Dedicated: https://hostnin.com/hosting/dedicated-server | Domain: https://hostnin.com/domain | Email: https://hostnin.com/solutions/email | Backup: https://hostnin.com/solutions/backup | Security/Malware: https://hostnin.com/solutions/security | SiteBuilder: https://hostnin.com/solutions/site-builder | SSL: https://hostnin.com/solutions/ssl | Monitoring: https://hostnin.com/solutions/monitoring | General/Compare: https://hostnin.com/pricing`);
   }
 
   // Match top 3 canned responses by keyword overlap

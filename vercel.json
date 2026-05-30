@@ -10,6 +10,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/hot-calls-autodialer",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/ai/learn-conversations",
       "schedule": "*/30 * * * *"
     }

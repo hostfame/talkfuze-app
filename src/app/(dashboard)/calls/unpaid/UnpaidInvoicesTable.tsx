@@ -158,6 +158,9 @@ export function UnpaidInvoicesTable({ invoices, callRecords }: Props) {
     if (status === 'Answered') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
     if (status === 'Not Answered') return 'bg-amber-50 text-amber-700 border-amber-200'
     if (status === 'Unreachable') return 'bg-rose-50 text-rose-700 border-rose-200'
+    if (status === 'Dialing') return 'bg-blue-50 text-blue-700 border-blue-200'
+    if (status === 'Scheduled') return 'bg-purple-50 text-purple-700 border-purple-200'
+    if (status === 'Paid') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
     return 'bg-white text-slate-500 border-slate-200'
   }
 
@@ -600,10 +603,12 @@ function CustomStatusDropdown({ value, onChange }: { value: string | null, onCha
     if (status === 'Not Answered') return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
     if (status === 'Unreachable') return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
     if (status === 'Dialing') return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
+    if (status === 'Scheduled') return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20'
+    if (status === 'Paid') return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
     return 'bg-white text-slate-500 border-slate-200 dark:bg-[#111b21] dark:border-slate-700 dark:text-slate-200'
   }
 
-  const options = ['Answered', 'Not Answered', 'Unreachable', 'Dialing', 'Clear Status']
+  const options = ['Answered', 'Not Answered', 'Unreachable', 'Dialing', 'Scheduled', 'Paid', 'Clear Status']
 
   return (
     <div className="relative w-full max-w-[140px]" ref={ref}>
