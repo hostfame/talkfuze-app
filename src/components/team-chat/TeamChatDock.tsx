@@ -254,20 +254,20 @@ export default function TeamChatDock() {
 
   return (
     <>
-      {/* Floating Button (Closed State) - Extremely Minimal */}
+      {/* Floating Button (Closed State) - Right Edge Tab */}
       <div 
         className={cn(
-          "fixed right-5 bottom-24 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
-          isOpen ? "opacity-0 pointer-events-none scale-50" : "opacity-100 scale-100"
+          "fixed right-0 top-[40%] -translate-y-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+          isOpen ? "opacity-0 pointer-events-none translate-x-8" : "opacity-100 translate-x-0"
         )}
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="w-10 h-10 bg-white dark:bg-[#111b21] rounded-full shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-400 transition-transform hover:-translate-y-0.5 cursor-pointer"
+          className="w-8 h-14 bg-white dark:bg-[#111b21] rounded-l-xl shadow-[-4px_0_12px_rgba(0,0,0,0.1)] border border-r-0 border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-400 cursor-pointer"
         >
-          <MessageSquare strokeWidth={2.5} size={18} />
+          <Users strokeWidth={2.5} size={16} />
           {totalUnread > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
+            <span className="absolute -top-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
               {totalUnread > 9 ? '9+' : totalUnread}
             </span>
           )}
@@ -277,8 +277,8 @@ export default function TeamChatDock() {
       {/* Floating Chat Window (Open State) */}
       <div 
         className={cn(
-          "fixed right-5 bottom-24 w-[280px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-bottom-right",
-          isOpen ? "h-[450px] max-h-[70vh] opacity-100 scale-100 translate-y-0" : "h-[400px] opacity-0 scale-95 translate-y-8 pointer-events-none"
+          "fixed right-4 top-[40%] w-[280px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-right",
+          isOpen ? "h-[450px] max-h-[80vh] opacity-100 scale-100 -translate-y-1/2" : "h-[400px] opacity-0 scale-95 -translate-y-1/2 translate-x-8 pointer-events-none"
         )}
       >
         {/* Header */}
