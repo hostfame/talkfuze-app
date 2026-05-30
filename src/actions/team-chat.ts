@@ -5,9 +5,20 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function fetchTeamChats(orgId: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  // FAST FETCH: avoid RLS loops by using admin after verifying context
+  const { data: memberships } = await supabaseAdmin
+    .from('team_chat_members')
+    .select('chat_id')
+    .eq('user_id', user.id)
+
+  if (!memberships || memberships.length === 0) return []
   
-  // Get chats user is part of
-  const { data: chats, error } = await supabase
+  const chatIds = memberships.map(m => m.chat_id)
+
+  const { data: chats, error } = await supabaseAdmin
     .from('team_chats')
     .select(`
       id,
@@ -16,6 +27,7 @@ export async function fetchTeamChats(orgId: string) {
       name,
       team_chat_members(user_id, last_read_at)
     `)
+    .in('id', chatIds)
     .eq('org_id', orgId)
     .order('updated_at', { ascending: false })
 
@@ -29,8 +41,21 @@ export async function fetchTeamChats(orgId: string) {
 
 export async function fetchTeamMessages(chatId: string) {
   const supabase = await createClient()
-  
-  const { data: messages, error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  // Verify membership fast
+  const { data: membership } = await supabaseAdmin
+    .from('team_chat_members')
+    .select('chat_id')
+    .eq('chat_id', chatId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership) return []
+
+  // Fast fetch
+  const { data: messages, error } = await supabaseAdmin
     .from('team_messages')
     .select(`
       id,
@@ -62,11 +87,20 @@ export async function fetchTeamMessages(chatId: string) {
 
 export async function sendTeamMessage(chatId: string, content: string) {
   const supabase = await createClient()
-  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
-  const { data, error } = await supabase
+  // Verify membership fast
+  const { data: membership } = await supabaseAdmin
+    .from('team_chat_members')
+    .select('chat_id')
+    .eq('chat_id', chatId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership) throw new Error("Not a member of this chat")
+
+  const { data, error } = await supabaseAdmin
     .from('team_messages')
     .insert({
       chat_id: chatId,
@@ -82,7 +116,7 @@ export async function sendTeamMessage(chatId: string, content: string) {
   }
 
   // Update chat updated_at
-  await supabase
+  await supabaseAdmin
     .from('team_chats')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', chatId)
@@ -96,8 +130,8 @@ export async function getOrCreateDirectChat(orgId: string, otherUserId: string) 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: "Not authenticated" }
 
-    // Check if direct chat already exists between these two users
-    const { data: existingChats, error: fetchError } = await supabase
+    // Check if direct chat already exists between these two users (fast via admin)
+    const { data: existingChats, error: fetchError } = await supabaseAdmin
       .from('team_chat_members')
       .select('chat_id')
       .eq('user_id', user.id)
@@ -106,7 +140,7 @@ export async function getOrCreateDirectChat(orgId: string, otherUserId: string) 
 
     if (existingChats && existingChats.length > 0) {
       const chatIds = existingChats.map(c => c.chat_id)
-      const { data: otherMemberChats, error: fetchError2 } = await supabase
+      const { data: otherMemberChats, error: fetchError2 } = await supabaseAdmin
         .from('team_chat_members')
         .select('chat_id')
         .in('chat_id', chatIds)
@@ -116,7 +150,7 @@ export async function getOrCreateDirectChat(orgId: string, otherUserId: string) 
 
       if (otherMemberChats && otherMemberChats.length > 0) {
         // Find one that is of type 'direct'
-        const { data: directChat, error: typeError } = await supabase
+        const { data: directChat, error: typeError } = await supabaseAdmin
           .from('team_chats')
           .select('id')
           .in('id', otherMemberChats.map(c => c.chat_id))
