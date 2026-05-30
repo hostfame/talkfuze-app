@@ -7,7 +7,7 @@ export interface TeamMessage {
   content: string;
   created_at: string;
   sender_name?: string;
-  sender_avatar?: string;
+  sender_avatar?: string | null;
 }
 
 export interface TeamChat {
@@ -45,7 +45,19 @@ export const useTeamChatStore = create<TeamChatState>((set) => ({
   messages: {},
   addMessage: (chatId, message) => set((state) => {
     const existing = state.messages[chatId] || [];
+    // Exact ID match = skip duplicate
     if (existing.some(m => m.id === message.id)) return state;
+    // If real message arrives and an optimistic version exists, replace it
+    if (!message.id.startsWith('optimistic-')) {
+      const optimisticIdx = existing.findIndex(
+        m => m.id.startsWith('optimistic-') && m.content === message.content && m.sender_id === message.sender_id
+      );
+      if (optimisticIdx !== -1) {
+        const updated = [...existing];
+        updated[optimisticIdx] = message;
+        return { messages: { ...state.messages, [chatId]: updated } };
+      }
+    }
     return {
       messages: { ...state.messages, [chatId]: [...existing, message] }
     };

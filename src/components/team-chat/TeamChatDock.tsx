@@ -57,6 +57,14 @@ export default function TeamChatDock() {
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Refs to avoid re-subscribing realtime on every state change
+  const isOpenRef = useRef(isOpen)
+  const activeChatIdRef = useRef(activeChatId)
+  const chatIdsRef = useRef<string[]>([])
+  isOpenRef.current = isOpen
+  activeChatIdRef.current = activeChatId
+  chatIdsRef.current = chats.map(c => c.id)
+
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0)
 
   // Fetch initial chats
@@ -93,12 +101,12 @@ export default function TeamChatDock() {
   }, [currentUser?.org_id, teamMembers, setChats])
 
   // Realtime subscription for team messages & presence
+  // IMPORTANT: Only depend on currentUser.id - use refs for everything else
+  // to prevent constant channel reconnections that cause message delays
   useEffect(() => {
     if (!currentUser?.id || !currentUser?.org_id) return
 
-    const chatIds = chats.map(c => c.id)
-    
-    // Message Channel
+    // Message Channel - listen to ALL team_messages, filter client-side
     const messageChannel = supabase
       .channel('team_messages_realtime')
       .on(
@@ -106,19 +114,21 @@ export default function TeamChatDock() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'team_messages',
-          filter: chatIds.length > 0 ? `chat_id=in.(${chatIds.join(',')})` : undefined
+          table: 'team_messages'
         },
-        async (payload) => {
+        (payload) => {
           const newMsg = payload.new as TeamMessage
+          
+          // Client-side filter: only process messages for our chats
+          if (!chatIdsRef.current.includes(newMsg.chat_id)) return
           
           if (newMsg.sender_id !== currentUser.id) {
             playCutePing()
-            if (!isOpen || activeChatId !== newMsg.chat_id) {
+            if (!isOpenRef.current || activeChatIdRef.current !== newMsg.chat_id) {
               incrementUnreadCount(newMsg.chat_id)
             }
             // Auto expand when a new message arrives
-            if (!isOpen) {
+            if (!isOpenRef.current) {
               setIsOpen(true)
             }
           }
@@ -127,15 +137,15 @@ export default function TeamChatDock() {
           const enrichedMsg = {
             ...newMsg,
             sender_name: sender?.name || 'Agent',
-            sender_avatar: sender?.avatar_url || undefined
+            sender_avatar: sender?.avatar_url || null
           }
           
           addMessage(newMsg.chat_id, enrichedMsg)
           
-          if (activeChatId === newMsg.chat_id) {
+          if (activeChatIdRef.current === newMsg.chat_id) {
             setTimeout(() => {
               messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-            }, 100)
+            }, 50)
           }
         }
       )
@@ -161,7 +171,8 @@ export default function TeamChatDock() {
       supabase.removeChannel(messageChannel)
       supabase.removeChannel(presenceChannel)
     }
-  }, [chats, currentUser?.id, currentUser?.org_id, isOpen, activeChatId, addMessage, incrementUnreadCount, teamMembers])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, currentUser?.org_id])
 
   // Fetch messages when a chat is opened
   useEffect(() => {
@@ -196,6 +207,21 @@ export default function TeamChatDock() {
     const text = msgInput.trim()
     setMsgInput('')
     setSending(true)
+    
+    // OPTIMISTIC UI: Show the message instantly before server confirms
+    const optimisticMsg: TeamMessage = {
+      id: `optimistic-${Date.now()}`,
+      chat_id: activeChatId,
+      sender_id: currentUser?.id || '',
+      content: text,
+      created_at: new Date().toISOString(),
+      sender_name: currentUser?.name || 'You',
+      sender_avatar: currentUser?.avatar_url || null
+    }
+    addMessage(activeChatId, optimisticMsg)
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 30)
     
     try {
       await sendTeamMessage(activeChatId, text)
