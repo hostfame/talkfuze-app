@@ -131,6 +131,60 @@
             opacity: 1;
             transform: rotate(0deg) scale(1);
         }
+
+        #tf-nudge {
+            position: absolute;
+            right: 100%;
+            bottom: 10px;
+            margin-right: 15px;
+            background: white;
+            color: #1e293b;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border-bottom-right-radius: 4px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: max-content;
+            max-width: 250px;
+            pointer-events: auto;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none;
+            border: 1px solid #f1f5f9;
+        }
+
+        #tf-nudge.tf-nudge-show {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        #tf-nudge-close {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+
+        #tf-nudge-close:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
             
         @media (max-width: 480px) {
             #tf-widget-container.tf-mobile-open {
@@ -183,6 +237,9 @@
                 url: window.location.href 
             }, '*');
         }
+        if (typeof checkAndTriggerNudge === 'function') {
+            checkAndTriggerNudge();
+        }
     }
 
     iframe.onload = () => {
@@ -232,18 +289,103 @@
     container.appendChild(launcher);
     document.body.appendChild(container);
 
-    let isOpen = sessionStorage.getItem('tf_widget_open') === 'true';
+    // ==========================================
+    // Nudge Logic (Lurker Catcher)
+    // ==========================================
+    const nudge = document.createElement('div');
+    nudge.id = 'tf-nudge';
+    
+    const nudgeText = document.createElement('span');
+    nudgeText.id = 'tf-nudge-text';
+    
+    const nudgeClose = document.createElement('div');
+    nudgeClose.id = 'tf-nudge-close';
+    nudgeClose.innerHTML = '✕';
+    
+    nudge.appendChild(nudgeText);
+    nudge.appendChild(nudgeClose);
+    launcher.appendChild(nudge);
 
-    // Setup audio
+    const NUDGE_CONFIG = {
+        rules: [
+            { pathMatch: '/vps', message: 'Need help picking the right VPS plan? 👋' },
+            { pathMatch: '/shared-hosting', message: 'Looking for web hosting? We can help you choose! 🚀' },
+            { pathMatch: '/cart', message: 'Having trouble completing your order? 💳' },
+            { pathMatch: 'cart.php', message: 'Having trouble completing your order? 💳' }
+        ],
+        delayMs: 45000 // 45 seconds
+    };
+    let nudgeTimer = null;
+
+    let isOpen = sessionStorage.getItem('tf_widget_open') === 'true';
     const swooshAudio = new Audio(baseUrl + '/swoosh.mp3');
     const popAudio = new Audio(baseUrl + '/pop.mp3');
     let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
+
+    // Nudge actions
+    nudge.addEventListener('click', (e) => {
+        if (e.target === nudgeClose) return;
+        if (!isOpen) toggleWidget(true);
+        hideNudge(true);
+    });
+    
+    nudgeClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideNudge(true); // dismiss for session
+    });
+
+    function showNudge(message) {
+        nudgeText.innerText = message;
+        nudge.style.display = 'block';
+        // delay to allow display block to apply
+        setTimeout(() => {
+            nudge.classList.add('tf-nudge-show');
+            if (!isSoundMuted) popAudio.play().catch(e => console.log('Audio play blocked:', e));
+        }, 50);
+    }
+
+    function hideNudge(dismissSession = false) {
+        if (dismissSession) {
+            sessionStorage.setItem('tf_nudge_dismissed', 'true');
+        }
+        nudge.classList.remove('tf-nudge-show');
+        setTimeout(() => {
+            nudge.style.display = 'none';
+        }, 400); 
+    }
+
+    function checkAndTriggerNudge() {
+        if (nudgeTimer) clearTimeout(nudgeTimer);
+        
+        // Skip if widget is open or user dismissed it
+        if (isOpen || sessionStorage.getItem('tf_nudge_dismissed')) return;
+
+        const currentUrl = window.location.href.toLowerCase();
+        let matchedMessage = null;
+
+        for (const rule of NUDGE_CONFIG.rules) {
+            if (currentUrl.includes(rule.pathMatch)) {
+                matchedMessage = rule.message;
+                break;
+            }
+        }
+
+        if (matchedMessage) {
+            nudgeTimer = setTimeout(() => {
+                if (!isOpen && !sessionStorage.getItem('tf_nudge_dismissed')) {
+                    showNudge(matchedMessage);
+                }
+            }, NUDGE_CONFIG.delayMs);
+        }
+    }
 
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
         sessionStorage.setItem('tf_widget_open', isOpen);
         
         if (isOpen) {
+            hideNudge(false);
+            if (nudgeTimer) clearTimeout(nudgeTimer);
             launcher.classList.add('tf-open');
             iframeContainer.classList.add('tf-open');
             
