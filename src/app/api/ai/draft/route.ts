@@ -28,7 +28,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar|koren|kortesi|bolen|bhalo|hoba|hoiche|hoyeni|dekhen|dekhchi|dekhsi|bolchi)\b/i;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
@@ -80,8 +80,8 @@ function stripBengaliLines(text: string): string {
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string): string {
-  const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
+function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string, alwaysIncludeBanglaStyle = false): string {
+  const currentBanglaStyle = (detectedLanguage === "Bengali" || alwaysIncludeBanglaStyle) ? banglaStyleContent : "";
   const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
   // Support triage is injected when support intent is detected AND sales intent is NOT
   // This prevents both workflows from competing in the same prompt
@@ -516,12 +516,13 @@ export async function POST(req: Request) {
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
 
     // NUCLEAR SANITIZATION: For English conversations, strip ALL Bengali from every dynamic source
-    // This is the final defensive layer that catches anything we missed
-    if (detectedLanguage === 'English') {
+    // This is the final defensive layer that catches anything we missed.
+    // Bypass if instruction (Copilot) is present, since the final output language will be decided by the LLM.
+    if (detectedLanguage === 'English' && !instruction) {
       knowledgeContext = stripBengaliLines(knowledgeContext);
       highPrioritySemanticRules = stripBengaliLines(highPrioritySemanticRules);
     }
-    const fewShotBlock = detectedLanguage === 'English' ? stripBengaliLines(rawFewShotBlock) : rawFewShotBlock;
+    const fewShotBlock = (detectedLanguage === 'English' && !instruction) ? stripBengaliLines(rawFewShotBlock) : rawFewShotBlock;
 
     const holidaySettings = orgData?.settings || {};
     const isHolidayMode = !!holidaySettings.holiday_mode_enabled;
@@ -546,11 +547,19 @@ ${fewShotBlock}
 ${highPrioritySemanticRules ? `\nSITUATIONAL RULES MATCHED:\n${highPrioritySemanticRules}\n` : ''}
 ${instruction ? `\nAGENT INSTRUCTION (COPILOT MODE):
 The human agent has provided a shorthand directive: >>> "${instruction}" <<<
-Your goal is to expand this shorthand into a complete, polite, and professional reply.
-- OBEY the agent's core intent (e.g., if they write "paid", draft a reply confirming the payment).
+
+## DIRECTIVE LANGUAGE ROUTING (CRITICAL):
+Assess the language of this Agent Instruction:
+1. If the instruction is written in English (e.g., "tell them we are checking", "explain cPanel limit"), draft the response in ENGLISH.
+2. If the instruction is written in Bengali script or Banglish (Bengali words in Latin letters, e.g., "bhalo kore check koro" or "wait korte bolo" or "dukhito wait koren"), draft the response in BENGALI SCRIPT.
+3. If the instruction is a short ambiguous command (e.g., "ok", "done", "yes"), draft the response in the conversation's active language: [Active Language: ${detectedLanguage}].
+
+You MUST output the corresponding tag ('[Language: Bengali]' or '[Language: English]') on the very first line of your response.
+
+Your goal is to expand the directive into a complete, polite, and professional reply.
+- OBEY the agent's core intent.
 - USE CONTEXT: Look at the customer's CRM profile (WHMCS data) and conversation history to enrich the reply with specific details (e.g., invoice numbers, amounts, dates, or plan names) that are relevant to the directive.
-- DO NOT COPY verbatim. Polish it into natural language.
-- Match the conversation's language.` : ''}
+- DO NOT COPY verbatim. Polish it into natural language.` : ''}
 
 ## Hostnin Knowledge (use ONLY if relevant)
 ${knowledgeContext}
@@ -787,7 +796,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain)
+                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain, !!instruction)
                   },
                   {
                     role: "user",
@@ -885,7 +894,7 @@ ${instruction
           messages: [
             {
               role: "system",
-              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain)
+              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain, !!instruction)
             },
             {
               role: "user",
