@@ -254,20 +254,20 @@ export default function TeamChatDock() {
 
   return (
     <>
-      {/* Floating Button (Closed State) */}
+      {/* Floating Button (Closed State) - Extremely Minimal */}
       <div 
         className={cn(
-          "fixed right-[5.5rem] bottom-6 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+          "fixed right-5 bottom-24 z-50 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
           isOpen ? "opacity-0 pointer-events-none scale-50" : "opacity-100 scale-100"
         )}
       >
         <button
           onClick={() => setIsOpen(true)}
-          className="w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-300 transition-transform hover:-translate-y-0.5 cursor-pointer"
+          className="w-10 h-10 bg-white dark:bg-[#111b21] rounded-full shadow-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-400 transition-transform hover:-translate-y-0.5 cursor-pointer"
         >
-          <MessageSquare strokeWidth={2.5} size={20} />
+          <MessageSquare strokeWidth={2.5} size={18} />
           {totalUnread > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
+            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-[0_0_0_2px_#fff] dark:shadow-[0_0_0_2px_#0b141a]">
               {totalUnread > 9 ? '9+' : totalUnread}
             </span>
           )}
@@ -277,7 +277,7 @@ export default function TeamChatDock() {
       {/* Floating Chat Window (Open State) */}
       <div 
         className={cn(
-          "fixed right-6 bottom-20 w-[300px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-bottom-right",
+          "fixed right-5 bottom-24 w-[280px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-bottom-right",
           isOpen ? "h-[450px] max-h-[70vh] opacity-100 scale-100 translate-y-0" : "h-[400px] opacity-0 scale-95 translate-y-8 pointer-events-none"
         )}
       >
