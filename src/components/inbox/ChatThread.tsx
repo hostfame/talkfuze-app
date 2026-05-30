@@ -4221,6 +4221,7 @@ export default function ChatThread({
             
             if (meta1.participant_name !== meta2.participant_name) return false;
             if (!!m1.is_internal !== !!m2.is_internal) return false;
+            if (meta1.used_ai_draft !== meta2.used_ai_draft) return false;
             
             const t1 = new Date(m1.created_at || new Date()).getTime();
             const t2 = new Date(m2.created_at || new Date()).getTime();
@@ -4537,37 +4538,6 @@ export default function ChatThread({
                     <CornerUpLeft size={15} strokeWidth={2.5} />
                   </button>
 
-                  {/* AI Draft Comparison Minimal Brain Icon */}
-                  {isLastChunkOfDraft && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newId = msg.id === comparingMsgId ? null : msg.id;
-                        setComparingMsgId(newId);
-                        if (newId) {
-                          setTimeout(() => {
-                            const el = document.getElementById(`compare-${newId}`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                          }, 100);
-                        }
-                      }}
-                      className="opacity-40 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 shrink-0 mb-1"
-                      title="AI Draft Used - Click to Compare"
-                    >
-                      <Brain size={13} className={msg.id === comparingMsgId ? 'opacity-100' : ''} strokeWidth={2} />
-                    </button>
-                  )}
-
-                  {/* Manual Message Pencil Icon */}
-                  {isLastChunkOfManual && (
-                    <div 
-                      className="opacity-20 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full text-slate-400 shrink-0 mb-1 cursor-default"
-                      title="Manual Reply (No AI)"
-                    >
-                      <Edit2 size={11} strokeWidth={2} />
-                    </div>
-                  )}
-
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       style={{
@@ -4675,6 +4645,37 @@ export default function ChatThread({
                 
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
                 <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
+                  {/* AI Draft Comparison Minimal Brain Icon */}
+                  {safeMeta?.used_ai_draft && !msg.is_internal && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newId = msg.id === comparingMsgId ? null : msg.id;
+                        setComparingMsgId(newId);
+                        if (newId) {
+                          setTimeout(() => {
+                            const el = document.getElementById(`compare-${newId}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                          }, 100);
+                        }
+                      }}
+                      className="flex items-center justify-center p-0.5 cursor-pointer opacity-60 hover:opacity-100 transition-colors mr-0.5"
+                      title="AI Draft Used - Click to Compare"
+                    >
+                      <Brain size={11} className={msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-400 hover:text-blue-500'} />
+                    </button>
+                  )}
+                  
+                  {/* Manual Message Pencil Icon */}
+                  {!safeMeta?.used_ai_draft && !msg.is_internal && msg.sender_type === 'agent' && (
+                    <div 
+                      className="flex items-center justify-center p-0.5 opacity-30 transition-opacity mr-0.5 cursor-default"
+                      title="Manual Reply (No AI)"
+                    >
+                      <Edit2 size={10} className="text-slate-400" />
+                    </div>
+                  )}
+
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
