@@ -451,7 +451,7 @@
         }
 
         if (event.data && event.data.type === 'TALKFUZE_OPEN_CALL') {
-            const callUrl = `${baseUrl}/widget/${orgId}?standalone_call=true&convId=${event.data.convId}`;
+            const callUrl = `${baseUrl}/widget/${orgId}?standalone_call=true&convId=${event.data.convId}&deviceId=${event.data.deviceId}`;
             // Open as a gorgeous center-screen calling popup window
             const width = 380;
             const height = 550;

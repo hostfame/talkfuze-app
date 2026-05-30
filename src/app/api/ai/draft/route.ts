@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { buildKnowledgeContext, getGlobalBrain, SUB_BRAINS, getSubBrain } from "@/actions/knowledge-engine";
@@ -773,9 +774,9 @@ ${instruction
           console.log('[AI Draft] Image block present, bypassing DeepSeek and using Claude Haiku directly.');
           useClaudeBackup = true;
         } else {
-          console.log('[AI Draft] Attempting DeepSeek-V4-Pro as primary with 1.5s timeout...');
+          console.log('[AI Draft] Attempting DeepSeek-V4-Pro as primary with 800ms timeout...');
           const abortController = new AbortController();
-          const timeoutId = setTimeout(() => abortController.abort(), 1500);
+          const timeoutId = setTimeout(() => abortController.abort(), 800);
 
           try {
             deepseekResponse = await fetch("https://api.deepseek.com/chat/completions", {

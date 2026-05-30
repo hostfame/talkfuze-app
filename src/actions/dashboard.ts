@@ -343,6 +343,142 @@ export async function replyToConversation(
   return true
 }
 
+export async function dispatchMessageWebhooks(messageId: string) {
+  const { data: message, error: msgError } = await supabaseAdmin
+    .from("messages")
+    .select(`
+      *,
+      conversation:conversations(
+        id, contact_id, 
+        contact:contacts(id, platform_id, email, phone), 
+        channel:channels(type, config)
+      )
+    `)
+    .eq("id", messageId)
+    .single();
+
+  if (msgError || !message) {
+    console.error("dispatchMessageWebhooks failed to fetch message:", msgError);
+    return false;
+  }
+
+  const conv = message.conversation;
+  const metadata = typeof message.metadata === 'string' ? JSON.parse(message.metadata) : message.metadata;
+  
+  // Update conversation last_message_at
+  await supabaseAdmin
+    .from("conversations")
+    .update({ last_message_at: new Date().toISOString() })
+    .eq("id", conv.id);
+
+  const channelData = firstRelation(conv.channel as ConversationChannelRelation);
+  const channelType = channelData?.type;
+  const channelConfig = channelData?.config;
+  const contactData = firstRelation(conv.contact as ConversationContactRelation);
+  const recipientId = contactData?.platform_id;
+
+  // Background routing
+  (async () => {
+    try {
+      // Auto-bind WHMCS if it's WhatsApp and contact has no email linked yet
+      if (channelType === 'whatsapp' && contactData?.id && !contactData?.email && recipientId) {
+        const rawNum = recipientId.includes('@') ? recipientId.split('@')[0] : recipientId;
+        const cleanNum = rawNum.replace(/\D/g, '');
+        if (cleanNum.length >= 8) {
+          try {
+            const whmcsClient = (await fetchWhmcsClient(cleanNum)) as any;
+            if (whmcsClient && whmcsClient.email) {
+              await supabaseAdmin.from('contacts').update({ email: whmcsClient.email }).eq('id', contactData.id);
+              if (!contactData.phone && whmcsClient.phonenumber && !whmcsClient.phonenumber.includes('@')) {
+                let cleanPhoneNum = whmcsClient.phonenumber.replace(/\D/g, '');
+                if (cleanPhoneNum.length === 10 && cleanPhoneNum.startsWith('1')) {
+                  cleanPhoneNum = '880' + cleanPhoneNum;
+                } else if (cleanPhoneNum.length === 11 && cleanPhoneNum.startsWith('01')) {
+                  cleanPhoneNum = '88' + cleanPhoneNum;
+                }
+                if (cleanPhoneNum.length >= 9) {
+                  await supabaseAdmin.from('contacts').update({ phone: cleanPhoneNum }).eq('id', contactData.id);
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Auto-binding in dispatchMessageWebhooks failed:", e);
+          }
+        }
+      }
+
+      // Do not send to external platforms if it's an internal note
+      if (message.is_internal) {
+        processInternalAiFeedback(conv.id, message.content);
+        return;
+      }
+
+      if (channelType === 'messenger' || channelType === 'instagram') {
+        const pageAccessToken = channelConfig?.access_token;
+        if (!pageAccessToken) {
+          console.warn("No access_token found in channel config. Message saved in DB but not sent to Meta.");
+          return;
+        }
+
+        try {
+          const endpoint = `https://graph.facebook.com/v20.0/me/messages?access_token=${pageAccessToken}`;
+
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipient: { id: recipientId },
+              message: { text: message.content },
+              messaging_type: "RESPONSE"
+            })
+          });
+
+          const responseData = await response.json();
+          if (!response.ok) {
+            console.error("Meta API Error:", responseData);
+            await supabaseAdmin
+              .from("messages")
+              .update({
+                status: "failed",
+                metadata: {
+                  ...metadata,
+                  delivery_error: responseData?.error?.message || "Meta API send failed",
+                  delivery_failed_at: new Date().toISOString()
+                }
+              })
+              .eq("id", message.id);
+          } else if (responseData?.message_id) {
+            await supabaseAdmin
+              .from("messages")
+              .update({
+                platform_message_id: responseData.message_id,
+                status: "delivered"
+              })
+              .eq("id", message.id);
+          }
+        } catch (e) {
+          console.error("Failed to send Meta reply:", e);
+          await supabaseAdmin
+            .from("messages")
+            .update({
+              status: "failed",
+              metadata: {
+                ...metadata,
+                delivery_error: e instanceof Error ? e.message : "Meta send failed",
+                delivery_failed_at: new Date().toISOString()
+              }
+            })
+            .eq("id", message.id);
+        }
+      }
+    } catch (bgErr) {
+      console.error("Background routing execution failed:", bgErr);
+    }
+  })();
+
+  return true;
+}
+
 export async function searchConversations(orgId: string, query: string) {
   noStore();
   if (!query) return [];

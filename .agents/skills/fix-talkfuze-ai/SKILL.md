@@ -118,6 +118,7 @@ Bad draft reported
 │
 └── Step 4: VERIFY the fix
     - Check the rule was inserted: SELECT * FROM ai_knowledge_base WHERE created_at > now() - interval '1 hour';
+    - Check with 10 different shots from 10 different angles or perspectives so we can validate the fix with 100% confirmation. You must test the AI draft logic thoroughly before confirming.
     - Test retrieval: generate embedding for a test query and run match_knowledge
     - Do NOT deploy prompt changes without build verification
 ```

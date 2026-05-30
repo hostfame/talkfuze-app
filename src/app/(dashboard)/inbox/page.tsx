@@ -300,13 +300,27 @@ export default function InboxPage() {
                 
                 store.setConversations(next);
              } else if (!isPageView) {
-                // FAILSAFE: It's an old conversation not in the local 100 limit. Fetch it and unshift.
-                getConversationById(newMsg.conversation_id).then(conv => {
-                   if (conv) {
-                     next.unshift(conv as ConversationWithDetails);
-                     store.setConversations(next);
-                   }
-                });
+                // FAILSAFE: It's an old conversation not in the local 100 limit. Fetch it and unshift via direct client to avoid Server Action cold starts.
+                supabase
+                  .from("conversations")
+                  .select(`
+                    *,
+                    contact:contacts(*),
+                    assignee:users!assigned_to(*),
+                    channels(type),
+                    participants:conversation_participants(id),
+                    messages(id, content, sender_type, content_type, created_at, status, platform_message_id, is_internal, metadata)
+                  `)
+                  .eq("id", newMsg.conversation_id)
+                  .order("created_at", { foreignTable: "messages", ascending: false })
+                  .limit(10, { foreignTable: "messages" })
+                  .single()
+                  .then(({ data: conv }) => {
+                     if (conv) {
+                       next.unshift(conv as ConversationWithDetails);
+                       store.setConversations(next);
+                     }
+                  });
              }
           }
           

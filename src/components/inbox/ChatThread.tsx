@@ -4,7 +4,7 @@ import { Clock, Zap, Check, CheckCheck, MessageSquare, Lock, Paperclip, Loader2,
 import { useState, useRef, useEffect, Fragment } from "react"
 import { createPeerConnection, VOICE_CONSTRAINTS, createRemoteAudioElement, destroyRemoteAudioElement, requestWakeLock, releaseWakeLock, unlockAudioContext, bindRemoteAudioStream } from "@/lib/webrtc"
 import { createPortal } from "react-dom"
-import { getMessages, replyToConversation, joinConversation, getParticipants, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage } from "@/actions/dashboard"
+import { getMessages, replyToConversation, joinConversation, getParticipants, toggleConversationFlag, updateConversationStatus, leaveConversation, deleteConversation, uploadAgentMedia, editMessage, recallMessage, dispatchMessageWebhooks } from "@/actions/dashboard"
 import { createCannedReply, getCannedReplies } from "@/actions/snippets"
 import { logBrowserCall } from "@/actions/calls"
 import { markMessagesAsRead } from "@/actions/chat"
@@ -3126,7 +3126,7 @@ export default function ChatThread({
                 chunkDelay = 7000; // 3 or 4 lines = 7s
               } else {
                 chunkDelay = 10000; // 5+ lines = 10s
-              }
+              } 
             }
             previousDelay = accumulatedDelay;
             accumulatedDelay += chunkDelay;
@@ -3173,20 +3173,37 @@ export default function ChatThread({
             }
           }
 
-          const sendTimer = setTimeout(() => {
-            replyToConversation(orgId, conversationId, chunk, isInternal, 'text', metaPayload, optimisticCreatedAt)
-              .then(() => {
-                markConfirmed(conversationId, tempId);
-                setLocallyDeliveredIds(prev => {
-                  const next = new Set(prev);
-                  next.add(tempId);
-                  return next;
-                });
-              })
-              .catch((e: unknown) => {
-                console.error(e);
-                markFailed(conversationId, tempId);
+          const sendTimer = setTimeout(async () => {
+            // Client-First DB Insert for extreme speed!
+            try {
+              const { data: insertedMessage, error } = await supabase.from('messages').insert({
+                org_id: orgId,
+                conversation_id: conversationId,
+                sender_type: 'agent',
+                sender_id: currentUser?.id,
+                content: chunk,
+                content_type: 'text',
+                metadata: metaPayload,
+                is_internal: isInternal,
+                status: isInternal ? 'delivered' : (isScheduled ? 'sending' : 'sent'),
+                created_at: optimisticCreatedAt
+              }).select('id').single();
+
+              if (error) throw error;
+              
+              markConfirmed(conversationId, tempId);
+              setLocallyDeliveredIds(prev => {
+                const next = new Set(prev);
+                next.add(tempId);
+                return next;
               });
+
+              // Offload heavy webhook routing to background server action
+              dispatchMessageWebhooks(insertedMessage.id);
+            } catch (e: unknown) {
+              console.error(e);
+              markFailed(conversationId, tempId);
+            }
           }, accumulatedDelay);
           activeTimersRef.current.push(sendTimer);
         }
@@ -3260,14 +3277,29 @@ export default function ChatThread({
             else if (meta.type.startsWith('audio/')) contentType = 'audio'
             else if (meta.type.startsWith('video/')) contentType = 'video'
             
-            await replyToConversation(orgId, conversationId, optimisticContent, isInternal, contentType, {
-              media_url: meta.url,
-              mimetype: meta.type,
-              filename: meta.name,
-              ...(replyMeta ? { reply_to: replyMeta } : {}),
-              temp_id: tempId
-            }, optimisticCreatedAt)
+            const { data: insertedMessage, error } = await supabase.from('messages').insert({
+              org_id: orgId,
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_id: currentUser?.id,
+              content: optimisticContent,
+              content_type: contentType,
+              metadata: {
+                media_url: meta.url,
+                mimetype: meta.type,
+                filename: meta.name,
+                ...(replyMeta ? { reply_to: replyMeta } : {}),
+                temp_id: tempId
+              },
+              is_internal: isInternal,
+              status: isInternal ? 'delivered' : 'sent',
+              created_at: optimisticCreatedAt
+            }).select('id').single();
+
+            if (error) throw error;
+            
             markConfirmed(conversationId, tempId)
+            dispatchMessageWebhooks(insertedMessage.id);
           } catch (error) {
             console.error(error)
             markFailed(conversationId, tempId)

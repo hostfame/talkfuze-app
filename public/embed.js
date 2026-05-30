@@ -203,7 +203,7 @@
       window.open(baseUrl + '/widget/' + orgId, '_blank');
     }
     if (event.data.type === 'TALKFUZE_OPEN_CALL') {
-      const callUrl = baseUrl + '/widget/' + orgId + '?standalone_call=true&convId=' + event.data.convId;
+      const callUrl = baseUrl + '/widget/' + orgId + '?standalone_call=true&convId=' + event.data.convId + '&deviceId=' + event.data.deviceId;
       const width = 380;
       const height = 550;
       const left = (window.screen.width / 2) - (width / 2);

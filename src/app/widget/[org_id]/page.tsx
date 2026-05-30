@@ -22,6 +22,13 @@ type WidgetMessage = AppMessage & {
 function getStoredDeviceId() {
   if (typeof window === 'undefined') return ""
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramDeviceId = urlParams.get('deviceId');
+  if (paramDeviceId) {
+    localStorage.setItem("talkfuze_device_id", paramDeviceId)
+    return paramDeviceId;
+  }
+
   let deviceId = localStorage.getItem("talkfuze_device_id")
   if (!deviceId) {
     deviceId = crypto.randomUUID()
@@ -729,7 +736,7 @@ export default function WidgetPage() {
         if (isIframe) {
           // Instantly pop open the secure first-party standalone call popup
           try {
-            window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId }, '*');
+            window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId, deviceId }, '*');
             return;
           } catch (postErr) {
             console.error("Failed to post open call message to parent window:", postErr);
@@ -826,7 +833,7 @@ export default function WidgetPage() {
       unlockAudioContext();
       // Delegate to parent SDK to open standalone first-party secure call popup
       try {
-        window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId: targetConvId }, '*');
+        window.parent.postMessage({ type: 'TALKFUZE_OPEN_CALL', convId: targetConvId, deviceId }, '*');
         return;
       } catch (postErr) {
         console.error("Failed to post open call message, falling back:", postErr);
