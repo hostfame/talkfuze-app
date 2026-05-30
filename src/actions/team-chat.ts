@@ -63,7 +63,7 @@ export async function fetchTeamMessages(chatId: string) {
       sender_id,
       content,
       created_at,
-      users!team_messages_sender_id_fkey(name, avatar_url)
+      users (name, avatar_url)
     `)
     .eq('chat_id', chatId)
     .order('created_at', { ascending: true })

@@ -197,8 +197,10 @@ export default function TeamChatDock() {
 
   const startDirectChat = async (otherUserId: string) => {
     setErrorMsg(null)
+    setIsLoading(true)
     if (!currentUser?.org_id) {
       setErrorMsg("Missing user org_id")
+      setIsLoading(false)
       return
     }
     try {
@@ -206,6 +208,7 @@ export default function TeamChatDock() {
       
       if (response.error) {
         setErrorMsg(response.error)
+        setIsLoading(false)
         return
       }
 
@@ -239,6 +242,8 @@ export default function TeamChatDock() {
     } catch (err: any) {
       console.error(err)
       setErrorMsg(err?.message || "Action failed")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -289,7 +294,12 @@ export default function TeamChatDock() {
                 Error: {errorMsg}
               </div>
             )}
-            {!activeChatId ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                <span className="text-xs text-slate-500 mt-2">Connecting...</span>
+              </div>
+            ) : !activeChatId ? (
               // Chat List View
               <div className="p-1 space-y-0.5">
                 {teamMembers.filter(t => t.id !== currentUser?.id && t.sip_extension).map(member => {
