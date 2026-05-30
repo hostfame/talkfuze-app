@@ -208,6 +208,14 @@ export default function TeamChatDock() {
 
   const startDirectChat = async (otherUserId: string) => {
     setErrorMsg(null)
+    
+    // Check locally first for instant load!
+    const existingChat = chats.find(c => c.type === 'direct' && c.members?.some(m => m.user_id === otherUserId))
+    if (existingChat) {
+      setActiveChatId(existingChat.id)
+      return
+    }
+
     setIsLoading(true)
     if (!currentUser?.org_id) {
       setErrorMsg("Missing user org_id")
@@ -290,7 +298,7 @@ export default function TeamChatDock() {
         {/* Header */}
         <div className="h-12 shrink-0 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between px-3 bg-white/50 dark:bg-black/20">
           <div className="flex items-center gap-2">
-            {activeChatId ? (
+            {activeChatId && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation()
@@ -300,10 +308,6 @@ export default function TeamChatDock() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-            ) : (
-              <div className="w-7 h-7 flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 rounded-full">
-                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
             )}
             <span className="font-semibold text-[13px] text-slate-800 dark:text-slate-200 truncate max-w-[160px]">
               {activeChatId ? (chats.find(c => c.id === activeChatId)?.type === 'direct' ? chats.find(c => c.id === activeChatId)?.other_member_name : 'Group Chat') : 'Team Chat'}

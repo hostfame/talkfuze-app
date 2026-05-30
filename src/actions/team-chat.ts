@@ -5,7 +5,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function fetchTeamChats(orgId: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
 
   // FAST FETCH: avoid RLS loops by using admin after verifying context
@@ -41,7 +42,8 @@ export async function fetchTeamChats(orgId: string) {
 
 export async function fetchTeamMessages(chatId: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) return []
 
   // Verify membership fast
@@ -87,7 +89,8 @@ export async function fetchTeamMessages(chatId: string) {
 
 export async function sendTeamMessage(chatId: string, content: string) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) throw new Error("Not authenticated")
 
   // Verify membership fast
@@ -127,7 +130,8 @@ export async function sendTeamMessage(chatId: string, content: string) {
 export async function getOrCreateDirectChat(orgId: string, otherUserId: string) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
     if (!user) return { error: "Not authenticated" }
 
     // Check if direct chat already exists between these two users (fast via admin)
