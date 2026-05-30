@@ -4513,32 +4513,6 @@ export default function ChatThread({
                     <CornerUpLeft size={15} strokeWidth={2.5} />
                   </button>
 
-                  {/* AI / Manual Indicator (Left of bubble) */}
-                  {msg.sender_type === 'agent' && !msg.is_internal && msg.content_type === 'text' && (
-                    <div 
-                      className={`shrink-0 mb-1.5 flex items-center justify-center ${safeMeta.used_ai_draft ? 'cursor-pointer' : ''}`}
-                      onClick={() => {
-                        if (safeMeta.used_ai_draft) {
-                          const newId = msg.id === comparingMsgId ? null : msg.id;
-                          setComparingMsgId(newId);
-                          if (newId) {
-                            setTimeout(() => {
-                              const el = document.getElementById(`compare-${newId}`);
-                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }, 100);
-                          }
-                        }
-                      }}
-                      title={safeMeta.used_ai_draft ? "AI Draft Used - Click to Compare" : "Manual Reply (No AI)"}
-                    >
-                      {safeMeta.used_ai_draft ? (
-                        <Brain size={13} className={`transition-all ${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-300 dark:text-slate-600 opacity-40 hover:opacity-100 hover:text-blue-500'}`} />
-                      ) : (
-                        <Edit2 size={11} className="text-slate-200 dark:text-slate-700 opacity-30 hover:opacity-100 transition-opacity" />
-                      )}
-                    </div>
-                  )}
-
                     <div 
                       onContextMenu={(e) => handleContextMenu(e, msg)}
                       style={{
@@ -4646,6 +4620,25 @@ export default function ChatThread({
                 
                 {/* Time and Status (OUTSIDE the bubble and avatar stack) */}
                 <div className={`flex justify-end items-center gap-1 mt-1 mr-9 ${isGroupedWithNext ? 'opacity-0 h-0 overflow-hidden' : ''}`}>
+                  {safeMeta?.used_ai_draft && !msg.is_internal && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newId = msg.id === comparingMsgId ? null : msg.id;
+                        setComparingMsgId(newId);
+                        if (newId) {
+                          setTimeout(() => {
+                            const el = document.getElementById(`compare-${newId}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                          }, 100);
+                        }
+                      }}
+                      className="flex items-center justify-center p-0.5 mr-1 cursor-pointer transition-colors opacity-60 hover:opacity-100"
+                      title="AI Draft Used - Click to Compare"
+                    >
+                      <Brain size={11} className={`${msg.id === comparingMsgId ? 'text-blue-500 opacity-100' : 'text-slate-400 hover:text-blue-500'}`} />
+                    </button>
+                  )}
                   <span className="text-[11px] text-slate-400">{msgTime}</span>
                   {!msg.is_internal && (
                     <>
@@ -4920,7 +4913,17 @@ export default function ChatThread({
                       </div>
                       <div className="flex-1 bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/30">
                         <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1.5 uppercase">Agent Sent:</div>
-                        <div className="text-[12.5px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                        <div className="text-[12.5px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                          {(() => {
+                            if (safeMeta.used_ai_draft) {
+                              const relatedChunks = allMessages.filter(m => m.metadata?.used_ai_draft === safeMeta.used_ai_draft);
+                              if (relatedChunks.length > 0) {
+                                return relatedChunks.map(m => m.content).join('\n\n');
+                              }
+                            }
+                            return msg.content;
+                          })()}
+                        </div>
                       </div>
                     </div>
 
