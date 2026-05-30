@@ -80,8 +80,8 @@ export async function fetchTeamMessages(chatId: string) {
     sender_id: m.sender_id,
     content: m.content,
     created_at: m.created_at,
-    sender_name: m.users?.name,
-    sender_avatar: m.users?.avatar_url
+    sender_name: m.users?.name || null,
+    sender_avatar: m.users?.avatar_url || null
   }))
 }
 

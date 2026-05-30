@@ -165,22 +165,28 @@ export default function TeamChatDock() {
 
   // Fetch messages when a chat is opened
   useEffect(() => {
+    let isMounted = true
     if (activeChatId && !messages[activeChatId]) {
       setIsLoading(true)
       fetchTeamMessages(activeChatId).then(msgs => {
+        if (!isMounted) return
         setMessages(activeChatId, msgs)
         setUnreadCount(activeChatId, 0)
         setIsLoading(false)
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
         }, 100)
+      }).catch(err => {
+        console.error("Failed to fetch messages:", err)
+        if (isMounted) setIsLoading(false)
       })
     } else if (activeChatId) {
       setUnreadCount(activeChatId, 0)
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     }
+    return () => { isMounted = false }
   }, [activeChatId, messages, setMessages, setUnreadCount])
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -223,14 +229,14 @@ export default function TeamChatDock() {
         const fetchedChats = await fetchTeamChats(currentUser.org_id)
         const enrichedChats = fetchedChats.map((c: any) => {
           let otherName = 'Unknown'
-          let otherAvatar = undefined
+          let otherAvatar = null
           if (c.type === 'direct') {
             const ouId = c.team_chat_members?.find((m: any) => m.user_id !== currentUser.id)?.user_id
             if (ouId) {
               const tm = teamMembers.find(t => t.id === ouId)
               if (tm) {
                 otherName = tm.name
-                otherAvatar = tm.avatar_url
+                otherAvatar = tm.avatar_url || null
               }
             }
           }
@@ -277,12 +283,12 @@ export default function TeamChatDock() {
       {/* Floating Chat Window (Open State) */}
       <div 
         className={cn(
-          "fixed right-4 top-[40%] w-[280px] bg-white dark:bg-[#111b21] rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] border border-slate-200 dark:border-slate-800/60 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] origin-right",
+          "fixed right-4 top-[40%] w-[240px] bg-white/95 backdrop-blur-2xl dark:bg-[#111b21]/95 rounded-2xl shadow-[0_12px_48px_rgba(0,0,0,0.15)] border border-slate-200/80 dark:border-slate-800/80 z-50 flex flex-col overflow-hidden hidden md:flex transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] origin-right",
           isOpen ? "h-[450px] max-h-[80vh] opacity-100 scale-100 -translate-y-1/2" : "h-[400px] opacity-0 scale-95 -translate-y-1/2 translate-x-8 pointer-events-none"
         )}
       >
         {/* Header */}
-        <div className="h-12 shrink-0 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between px-3 bg-white dark:bg-[#111b21]">
+        <div className="h-12 shrink-0 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between px-3 bg-white/50 dark:bg-black/20">
           <div className="flex items-center gap-2">
             {activeChatId ? (
               <button 
@@ -368,43 +374,43 @@ export default function TeamChatDock() {
             </div>
           ) : (
             // Message View
-            <div className="flex flex-col h-full bg-slate-50/50 dark:bg-[#0b141a]">
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            <div className="flex flex-col h-full bg-slate-50/30 dark:bg-black/10">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3.5">
                 {messages[activeChatId]?.map(msg => {
                   const isMe = msg.sender_id === currentUser?.id
                   return (
                     <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <span className="text-[9px] text-slate-400 mb-0.5 ml-1">{msg.sender_name}</span>}
-                      <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-[13px] shadow-sm ${
+                      {!isMe && <span className="text-[9px] text-slate-400 mb-1 ml-1">{msg.sender_name}</span>}
+                      <div className={`max-w-[85%] rounded-[18px] px-3.5 py-2 text-[13px] shadow-sm leading-relaxed ${
                         isMe 
-                          ? 'bg-blue-600 text-white rounded-br-sm' 
-                          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-bl-sm'
+                          ? 'bg-blue-600 text-white rounded-br-sm bg-gradient-to-br from-blue-500 to-blue-600' 
+                          : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
                       }`}>
                         {msg.content}
                       </div>
                     </div>
                   )
                 })}
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} className="h-1" />
               </div>
               
               {/* Input Area */}
-              <div className="p-2 bg-white dark:bg-[#111b21] border-t border-slate-100 dark:border-slate-800 shrink-0">
-                <form onSubmit={handleSendMessage} className="flex gap-1.5 items-center">
+              <div className="p-2.5 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 shrink-0">
+                <form onSubmit={handleSendMessage} className="flex gap-2 items-center relative">
                   <input
                     type="text"
                     value={msgInput}
                     onChange={e => setMsgInput(e.target.value)}
-                    placeholder="Aa"
-                    className="flex-1 bg-slate-100 dark:bg-slate-800/50 rounded-full px-3 py-1.5 text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white transition-shadow"
+                    placeholder="Message..."
+                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full pl-4 pr-10 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all shadow-inner"
                     disabled={sending}
                   />
                   <button
                     type="submit"
                     disabled={!msgInput.trim() || sending}
-                    className="w-7 h-7 rounded-full text-blue-600 dark:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                    className="absolute right-1 w-7 h-7 rounded-full bg-blue-600 text-white disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-sm hover:shadow"
                   >
-                    {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} className="ml-0.5" />}
+                    {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={12} className="ml-0.5" />}
                   </button>
                 </form>
               </div>
