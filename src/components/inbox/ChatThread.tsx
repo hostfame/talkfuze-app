@@ -4235,13 +4235,26 @@ export default function ChatThread({
             : (msg.metadata || {});
 
           let isLastChunkOfDraft = false;
-          if (safeMeta?.used_ai_draft && !msg.is_internal && msg.sender_type === 'agent') {
-            if (idx === allMessages.length - 1) {
-              isLastChunkOfDraft = true;
+          let isLastChunkOfManual = false;
+          
+          if (!msg.is_internal && msg.sender_type === 'agent') {
+            if (safeMeta?.used_ai_draft) {
+              if (idx === allMessages.length - 1) {
+                isLastChunkOfDraft = true;
+              } else {
+                const nextMsg = allMessages[idx + 1];
+                const nextMeta = typeof nextMsg?.metadata === 'string' ? (() => { try { return JSON.parse(nextMsg.metadata) } catch(e) { return {} } })() : (nextMsg?.metadata || {});
+                isLastChunkOfDraft = nextMeta.used_ai_draft !== safeMeta.used_ai_draft;
+              }
             } else {
-              const nextMsg = allMessages[idx + 1];
-              const nextMeta = typeof nextMsg?.metadata === 'string' ? (() => { try { return JSON.parse(nextMsg.metadata) } catch(e) { return {} } })() : (nextMsg?.metadata || {});
-              isLastChunkOfDraft = nextMeta.used_ai_draft !== safeMeta.used_ai_draft;
+              if (idx === allMessages.length - 1) {
+                isLastChunkOfManual = true;
+              } else {
+                const nextMsg = allMessages[idx + 1];
+                const nextMeta = typeof nextMsg?.metadata === 'string' ? (() => { try { return JSON.parse(nextMsg.metadata) } catch(e) { return {} } })() : (nextMsg?.metadata || {});
+                const nextIsManualAgent = !nextMeta.used_ai_draft && !nextMsg.is_internal && nextMsg.sender_type === 'agent';
+                isLastChunkOfManual = !nextIsManualAgent || !isGroupedWithNext;
+              }
             }
           }
 
@@ -4538,11 +4551,21 @@ export default function ChatThread({
                           }, 100);
                         }
                       }}
-                      className="opacity-0 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-400 hover:text-blue-500 shrink-0 mb-1"
+                      className="opacity-40 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-500 shrink-0 mb-1"
                       title="AI Draft Used - Click to Compare"
                     >
-                      <Brain size={15} className={msg.id === comparingMsgId ? 'text-blue-500' : ''} strokeWidth={2.5} />
+                      <Brain size={13} className={msg.id === comparingMsgId ? 'opacity-100' : ''} strokeWidth={2} />
                     </button>
+                  )}
+
+                  {/* Manual Message Pencil Icon */}
+                  {isLastChunkOfManual && (
+                    <div 
+                      className="opacity-20 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-full text-slate-400 shrink-0 mb-1 cursor-default"
+                      title="Manual Reply (No AI)"
+                    >
+                      <Edit2 size={11} strokeWidth={2} />
+                    </div>
                   )}
 
                     <div 
