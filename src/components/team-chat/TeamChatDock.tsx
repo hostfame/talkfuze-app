@@ -202,7 +202,14 @@ export default function TeamChatDock() {
       return
     }
     try {
-      const chatId = await getOrCreateDirectChat(currentUser.org_id, otherUserId)
+      const response = await getOrCreateDirectChat(currentUser.org_id, otherUserId)
+      
+      if (response.error) {
+        setErrorMsg(response.error)
+        return
+      }
+
+      const chatId = response.data!
       
       if (!chats.find(c => c.id === chatId)) {
         const fetchedChats = await fetchTeamChats(currentUser.org_id)

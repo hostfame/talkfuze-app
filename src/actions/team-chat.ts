@@ -91,69 +91,73 @@ export async function sendTeamMessage(chatId: string, content: string) {
 }
 
 export async function getOrCreateDirectChat(orgId: string, otherUserId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Not authenticated")
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: "Not authenticated" }
 
-  // Check if direct chat already exists between these two users
-  // This requires a slightly complex query, easier to do via RPC, but let's try raw query
-  const { data: existingChats, error: fetchError } = await supabase
-    .from('team_chat_members')
-    .select('chat_id')
-    .eq('user_id', user.id)
-
-  if (fetchError) throw fetchError
-
-  if (existingChats && existingChats.length > 0) {
-    const chatIds = existingChats.map(c => c.chat_id)
-    const { data: otherMemberChats, error: fetchError2 } = await supabase
+    // Check if direct chat already exists between these two users
+    const { data: existingChats, error: fetchError } = await supabase
       .from('team_chat_members')
       .select('chat_id')
-      .in('chat_id', chatIds)
-      .eq('user_id', otherUserId)
-      
-    if (fetchError2) throw fetchError2
+      .eq('user_id', user.id)
 
-    if (otherMemberChats && otherMemberChats.length > 0) {
-      // Find one that is of type 'direct'
-      const { data: directChat, error: typeError } = await supabase
-        .from('team_chats')
-        .select('id')
-        .in('id', otherMemberChats.map(c => c.chat_id))
-        .eq('type', 'direct')
-        .maybeSingle()
+    if (fetchError) return { error: "Fetch existing chats failed: " + fetchError.message }
 
-      if (directChat) return directChat.id
+    if (existingChats && existingChats.length > 0) {
+      const chatIds = existingChats.map(c => c.chat_id)
+      const { data: otherMemberChats, error: fetchError2 } = await supabase
+        .from('team_chat_members')
+        .select('chat_id')
+        .in('chat_id', chatIds)
+        .eq('user_id', otherUserId)
+        
+      if (fetchError2) return { error: "Fetch other member chats failed: " + fetchError2.message }
+
+      if (otherMemberChats && otherMemberChats.length > 0) {
+        // Find one that is of type 'direct'
+        const { data: directChat, error: typeError } = await supabase
+          .from('team_chats')
+          .select('id')
+          .in('id', otherMemberChats.map(c => c.chat_id))
+          .eq('type', 'direct')
+          .maybeSingle()
+
+        if (directChat) return { data: directChat.id }
+      }
     }
+
+    // Create new direct chat
+    const { data: newChat, error: createError } = await supabaseAdmin
+      .from('team_chats')
+      .insert({
+        org_id: orgId,
+        type: 'direct'
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      console.error("Failed to create team_chats:", createError)
+      return { error: "Create chat failed: " + createError.message }
+    }
+
+    // Add members
+    const { error: membersError } = await supabaseAdmin
+      .from('team_chat_members')
+      .insert([
+        { chat_id: newChat.id, user_id: user.id },
+        { chat_id: newChat.id, user_id: otherUserId }
+      ])
+
+    if (membersError) {
+      console.error("Failed to add members:", membersError)
+      return { error: "Add members failed: " + membersError.message }
+    }
+
+    return { data: newChat.id }
+  } catch (err: any) {
+    console.error("getOrCreateDirectChat catch block:", err)
+    return { error: "Unexpected server error: " + err.message }
   }
-
-  // Create new direct chat
-  const { data: newChat, error: createError } = await supabaseAdmin
-    .from('team_chats')
-    .insert({
-      org_id: orgId,
-      type: 'direct'
-    })
-    .select()
-    .single()
-
-  if (createError) {
-    console.error("Failed to create team_chats:", createError)
-    throw createError
-  }
-
-  // Add members
-  const { error: membersError } = await supabaseAdmin
-    .from('team_chat_members')
-    .insert([
-      { chat_id: newChat.id, user_id: user.id },
-      { chat_id: newChat.id, user_id: otherUserId }
-    ])
-
-  if (membersError) {
-    console.error("Failed to add members:", membersError)
-    throw membersError
-  }
-
-  return newChat.id
 }
