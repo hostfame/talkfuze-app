@@ -97,7 +97,7 @@ export async function POST(request: Request) {
             // For Instagram, the pageId is the Instagram Business Account ID, which might not match the stored Facebook page_id
             const { data: channels, error: chFetchErr } = await supabaseAdmin
               .from("channels")
-              .select("id, org_id, config, type")
+              .select("id, org_id, config, type, is_active")
               .in("type", ["messenger", "instagram"]);
 
             if (chFetchErr) throw chFetchErr;
@@ -117,6 +117,13 @@ export async function POST(request: Request) {
               console.warn(`${channelType} webhook received event for unconnected page/account ${pageId}`);
               continue;
             }
+
+            // Skip processing if the channel is disabled (paused by admin)
+            if (!channel.is_active) {
+              console.log(`${channelType} channel ${channel.id} is paused - skipping message processing for page ${pageId}`);
+              continue;
+            }
+
             const orgId = channel.org_id;
 
             // 2. Get or Create Contact based on Facebook/Instagram Sender ID
