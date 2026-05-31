@@ -1926,20 +1926,9 @@ export default function WidgetPage() {
               if (newMsg.conversation_id !== activeConversationIdRef.current) return;
               
               if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
-                let existingAgent = null;
-                setMessages(prev => {
-                  const prevMsgWithAgent = prev.find(m => m.sender_id === newMsg.sender_id && m.agent);
-                  if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
-                  return prev;
-                });
-
-                if (existingAgent) {
-                  newMsg.agent = existingAgent;
-                } else {
-                  const agentData = await getAgentProfile(newMsg.sender_id);
-                  if (agentData) {
-                    newMsg.agent = agentData;
-                  }
+                const agentData = await getAgentProfile(newMsg.sender_id);
+                if (agentData) {
+                  newMsg.agent = agentData;
                 }
               }
 
@@ -1992,22 +1981,11 @@ export default function WidgetPage() {
           const updatedMsg = payload.new as any;
           if (updatedMsg && updatedMsg.conversation_id === activeConversationIdRef.current && !updatedMsg.is_internal) {
             
-            // Re-fetch agent details if needed (usually already there for updates, but safe to check)
+            // Re-fetch agent details if needed
             if (updatedMsg.sender_type === 'agent' || updatedMsg.sender_type === 'system') {
-              let existingAgent = null;
-              setMessages(prev => {
-                const prevMsgWithAgent = prev.find(m => m.sender_id === updatedMsg.sender_id && m.agent);
-                if (prevMsgWithAgent) existingAgent = prevMsgWithAgent.agent;
-                return prev;
-              });
-
-              if (existingAgent) {
-                updatedMsg.agent = existingAgent;
-              } else {
-                const agentData = await getAgentProfile(updatedMsg.sender_id);
-                if (agentData) {
-                  updatedMsg.agent = agentData;
-                }
+              const agentData = await getAgentProfile(updatedMsg.sender_id);
+              if (agentData) {
+                updatedMsg.agent = agentData;
               }
             }
 
@@ -2015,7 +1993,12 @@ export default function WidgetPage() {
               const index = prev.findIndex(m => m.id === updatedMsg.id);
               if (index !== -1) {
                 const next = [...prev];
-                next[index] = updatedMsg as WidgetMessage;
+                // Preserve agent data from existing message if not in the update
+                const existingMsg = next[index];
+                if (!updatedMsg.agent && existingMsg.agent) {
+                  updatedMsg.agent = existingMsg.agent;
+                }
+                next[index] = { ...existingMsg, ...updatedMsg } as WidgetMessage;
                 return next;
               }
               return prev;
@@ -3678,11 +3661,26 @@ export default function WidgetPage() {
                 const isAgent = msg.sender_type === 'agent';
                 const isAiOrAgent = isAgent || msg.sender_type === 'ai';
                 
+                // Show agent name on the FIRST message of each consecutive agent group
+                let showName = false;
                 let showAvatar = true;
                 if (isAiOrAgent) {
+                  const currentAgentId = msg.agent?.name || msg.sender_id || 'default';
+                  
+                  // Show name if previous message is NOT from the same agent
+                  const prevMsg = arr[idx - 1];
+                  if (!prevMsg || prevMsg.sender_type === 'contact' || prevMsg.sender_type === 'system') {
+                    showName = true;
+                  } else if (prevMsg.sender_type === 'agent' || prevMsg.sender_type === 'ai') {
+                    const prevAgentId = prevMsg.agent?.name || prevMsg.sender_id || 'default';
+                    if (prevAgentId !== currentAgentId) {
+                      showName = true;
+                    }
+                  }
+                  
+                  // Show avatar on the LAST message of each consecutive agent group
                   const nextMsg = arr[idx + 1];
                   if (nextMsg && (nextMsg.sender_type === 'agent' || nextMsg.sender_type === 'ai')) {
-                    const currentAgentId = msg.agent?.name || msg.sender_id || 'default';
                     const nextAgentId = nextMsg.agent?.name || nextMsg.sender_id || 'default';
                     if (currentAgentId === nextAgentId) {
                       showAvatar = false;
@@ -3773,7 +3771,10 @@ export default function WidgetPage() {
                 }
 
                 return isAiOrAgent ? (
-                  <div key={msg.id} className="flex flex-col gap-0.5 items-start mb-[1px] mt-[2px]">
+                  <div key={msg.id} className={`flex flex-col items-start ${showName ? 'mt-3' : 'mt-[1px]'} mb-[1px]`}>
+                    {showName && (
+                      <span className="text-[12px] font-semibold text-slate-600 ml-[32px] mb-1 tracking-tight">{msg.agent?.name || 'Support Team'}</span>
+                    )}
                     <div className="flex gap-2 items-end">
                       {showAvatar ? (
                         msg.agent?.avatar_url ? (
@@ -3797,9 +3798,6 @@ export default function WidgetPage() {
                         )}
                       </div>
                     </div>
-                    {idx === messages.length - 1 && (
-                      <span className="text-[11px] text-slate-400 ml-[32px]">{msg.agent?.name || 'Sajjad from Support Team'} • Just now</span>
-                    )}
                   </div>
                 ) : (() => {
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
