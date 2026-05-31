@@ -22,11 +22,28 @@ type WidgetMessage = AppMessage & {
 const safeParseDate = (dateStr: any): number => {
   if (!dateStr) return 0;
   if (dateStr instanceof Date) return dateStr.getTime();
+  if (typeof dateStr === 'number') return dateStr;
   
   if (typeof dateStr === 'string') {
-    let normalized = dateStr.trim().replace(' ', 'T');
-    // Truncate microsecond fractional seconds (e.g. .159998 -> .159) for Safari compatibility
-    normalized = normalized.replace(/\.(\d{3})\d+/, '.$1');
+    let s = dateStr.trim().replace(' ', 'T');
+    const tzMatch = s.match(/(Z|[+-]\d{2}(?::?\d{2})?)$/);
+    let mainPart = s;
+    let tzPart = "";
+    if (tzMatch) {
+      tzPart = tzMatch[1];
+      mainPart = s.substring(0, s.length - tzPart.length);
+    }
+    const dotIndex = mainPart.indexOf('.');
+    if (dotIndex !== -1) {
+      const base = mainPart.substring(0, dotIndex);
+      let ms = mainPart.substring(dotIndex + 1);
+      ms = (ms + "000").substring(0, 3);
+      mainPart = base + "." + ms;
+    }
+    if (tzPart && (tzPart.startsWith('+') || tzPart.startsWith('-')) && tzPart.length === 3) {
+      tzPart = tzPart + ":00";
+    }
+    const normalized = mainPart + tzPart;
     const time = new Date(normalized).getTime();
     if (!isNaN(time)) return time;
   }
@@ -1727,6 +1744,21 @@ export default function WidgetPage() {
     const timer = setTimeout(async () => {
       setIsAutoTyping(false); // Stop typing right before sending
       if (!org_id || !deviceId) return;
+
+      // Double check database state to prevent race conditions with agent replies
+      try {
+        if (activeConversationId && activeConversationId !== 'new') {
+          const latestMsgs = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now());
+          const hasAgentRepliedDB = latestMsgs?.some(m => m.sender_type === 'agent');
+          if (hasAgentRepliedDB) {
+            console.log("[Auto-reply abort] Agent already replied according to database.");
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check latest messages before auto-reply:", e);
+      }
+
       const isBengali = messages.some(m => m.sender_type === 'contact' && /[\u0980-\u09FF]/.test(m.content || ''));
       const waNumber = settings?.whatsapp_number || '+8801325875955';
       
@@ -3558,7 +3590,7 @@ export default function WidgetPage() {
                 if (isHandoff) {
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                   return (
-                    <div key={idx} className="flex justify-center my-1.5 select-none">
+                    <div key={msg.id} className="flex justify-center my-1.5 select-none">
                       <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 px-3 py-1 rounded-full text-slate-500 dark:text-slate-400 shadow-sm">
                         <svg className="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
@@ -3602,7 +3634,7 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' joined')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={idx} className="flex justify-center my-0.5 select-none">
+                      <div key={msg.id} className="flex justify-center my-0.5 select-none">
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
                           <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
                             {avatarUrl ? (
@@ -3627,7 +3659,7 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' left')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={idx} className="flex justify-center my-0.5 select-none opacity-80">
+                      <div key={msg.id} className="flex justify-center my-0.5 select-none opacity-80">
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
                           <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center opacity-80">
                             {avatarUrl ? (
@@ -3660,7 +3692,7 @@ export default function WidgetPage() {
                   }
 
                   return (
-                    <div key={idx} className="flex items-center gap-3 my-1 px-2 select-none">
+                    <div key={msg.id} className="flex items-center gap-3 my-1 px-2 select-none">
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0 tracking-tight">
                         {displayContent}
@@ -3671,7 +3703,7 @@ export default function WidgetPage() {
                 }
 
                 return isAiOrAgent ? (
-                  <div key={idx} className="flex flex-col gap-0.5 items-start mb-[1px] mt-[2px]">
+                  <div key={msg.id} className="flex flex-col gap-0.5 items-start mb-[1px] mt-[2px]">
                     <div className="flex gap-2 items-end">
                       {showAvatar ? (
                         msg.agent?.avatar_url ? (
@@ -3704,7 +3736,7 @@ export default function WidgetPage() {
                   const isSending = msg.status === 'sending' || msg.status === 'uploading';
                   const isSeen = !isSending && messages.slice(idx + 1).some(m => m.sender_type === 'agent' || m.sender_type === 'ai');
                   return (
-                    <div key={idx} className="flex flex-col gap-0.5 items-end mb-[1px] mt-[2px]">
+                    <div key={msg.id} className="flex flex-col gap-0.5 items-end mb-[1px] mt-[2px]">
                       <div className={msg.content_type === 'text' ? "bg-[#64748b] rounded-[18px] rounded-br-[4px] py-2.5 px-3.5 text-[14.5px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
                         {renderMessageContent(msg, true, setLightboxImage)}
                       </div>
