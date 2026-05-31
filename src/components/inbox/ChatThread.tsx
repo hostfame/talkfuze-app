@@ -3133,9 +3133,15 @@ export default function ChatThread({
           let maxPendingDelay = 0;
           currentStoreMsgs.forEach(m => {
             const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
-            if (m.status === 'sending' && meta.scheduled_delay) {
+            // Check recently sent or sending messages to enforce sequential spacing
+            if (m.status === 'sending' || (m.status === 'sent' && m.sender_type === 'agent')) {
               const mTime = new Date(m.created_at).getTime();
-              const mSendAfter = mTime;
+              
+              // If the previous message was scheduled, its mTime is already in the future.
+              // If it was instant, its mTime is in the past. We enforce a 3s minimum spacing.
+              const enforcedSpacing = meta.chunk_delay || 3000;
+              const mSendAfter = (meta.scheduled_delay ? mTime : mTime + enforcedSpacing);
+              
               const remaining = mSendAfter - Date.now();
               if (remaining > maxPendingDelay) {
                 maxPendingDelay = remaining;

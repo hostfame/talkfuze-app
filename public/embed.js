@@ -28,7 +28,7 @@
                 break;
             }
             if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
-                orgId = scripts[i].getAttribute('data-org-id');
+                orgId = scripts[i].getAttribute('data-org-id') || orgId;
                 if (src.startsWith('http://localhost')) {
                     baseUrl = new URL(src).origin;
                 }
@@ -45,6 +45,7 @@
     const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
+    const NUDGE_HEIGHT = 54;
 
     const style = document.createElement('style');
     style.innerHTML = `
@@ -98,36 +99,37 @@
             height: ${BUTTON_SIZE}px;
             border-radius: 50%;
             background-color: #0070f3;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 112, 243, 0.45), 0 2px 6px rgba(0,0,0,0.12);
             cursor: pointer;
             pointer-events: auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
             position: relative;
+            overflow: hidden;
         }
 
         #tf-launcher:hover {
-            transform: scale(1.05);
+            transform: scale(1.06);
+            box-shadow: 0 6px 20px rgba(0, 112, 243, 0.55), 0 3px 8px rgba(0,0,0,0.15);
         }
 
         #tf-launcher:active {
-            transform: scale(0.95);
+            transform: scale(0.94);
         }
 
         .tf-icon {
             position: absolute;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             fill: white;
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
         #tf-icon-chat {
             opacity: 0;
             transform: rotate(0deg) scale(1);
-            transition: opacity 0.3s ease;
         }
 
         #tf-icon-close {
@@ -152,37 +154,36 @@
             border-radius: 50%;
             object-fit: cover;
             opacity: 0;
-            transform: scale(0.5);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.4s ease;
         }
 
         #tf-agent-avatar.tf-show {
             opacity: 1;
-            transform: scale(1);
         }
 
         .tf-badge {
             position: absolute;
-            top: -4px;
-            right: -4px;
+            top: -3px;
+            right: -3px;
             background-color: #ef4444;
             color: white;
-            font-size: 12px;
-            font-weight: bold;
-            height: 22px;
-            min-width: 22px;
-            border-radius: 11px;
+            font-size: 11px;
+            font-weight: 700;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 0 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
             opacity: 0;
             transform: scale(0.5);
             transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border: 2px solid white;
         }
 
         .tf-badge.tf-show {
@@ -190,23 +191,26 @@
             transform: scale(1);
         }
 
-        /* Floating pill input bar nudge */
+        /* =============================================
+           NUDGE PILL - Premium, aligned with bubble
+           ============================================= */
         #tf-nudge {
             position: fixed;
-            bottom: ${MARGIN}px;
-            right: ${MARGIN + BUTTON_SIZE + 12}px;
+            bottom: ${MARGIN + Math.round((BUTTON_SIZE - NUDGE_HEIGHT) / 2)}px;
+            right: ${MARGIN + BUTTON_SIZE + 10}px;
             background: #ffffff;
             border-radius: 100px;
-            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
-            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.10), 0 1px 4px rgba(15, 23, 42, 0.06);
+            border: 1.5px solid rgba(226, 232, 240, 0.9);
             display: flex;
             align-items: center;
-            width: 280px;
+            width: 288px;
+            height: ${NUDGE_HEIGHT}px;
             padding: 0;
             pointer-events: auto;
             opacity: 0;
-            transform: translateX(16px);
-            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateX(12px) scale(0.97);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             cursor: text;
             overflow: hidden;
@@ -215,7 +219,7 @@
 
         #tf-nudge.tf-nudge-show {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateX(0) scale(1);
         }
 
         #tf-nudge-input {
@@ -224,12 +228,15 @@
             outline: none;
             background: transparent;
             font-size: 14px;
+            font-weight: 400;
             color: #0f172a;
-            padding: 14px 6px 14px 20px;
+            padding: 0 10px 0 22px;
             font-family: inherit;
             cursor: text;
             min-width: 0;
+            height: 100%;
             caret-color: #0070f3;
+            letter-spacing: -0.01em;
         }
 
         #tf-nudge-input::placeholder {
@@ -238,32 +245,33 @@
         }
 
         #tf-nudge-send {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
-            background: #0f172a;
+            background: #0070f3;
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            margin: 6px 6px 6px 4px;
-            transition: background 0.2s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: 0 8px 0 6px;
+            transition: background 0.18s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0, 112, 243, 0.35);
         }
 
         #tf-nudge-send:hover {
-            background: #1e293b;
+            background: #0060df;
             transform: scale(1.08);
         }
 
         #tf-nudge-send:active {
-            transform: scale(0.93);
+            transform: scale(0.92);
         }
 
         #tf-nudge-send svg {
-            width: 15px;
-            height: 15px;
+            width: 16px;
+            height: 16px;
             fill: white;
             transform: translateX(1px);
         }
@@ -376,9 +384,72 @@
     container.appendChild(launcher);
     document.body.appendChild(container);
 
-    // ==========================================
+    // =============================================
+    // Agent Avatar Carousel (fetched from API)
+    // =============================================
+    let agentAvatars = [];
+    let avatarIndex = 0;
+    let avatarRotateTimer = null;
+    const avatarEl = document.getElementById('tf-agent-avatar');
+    const chatIconEl = document.getElementById('tf-icon-chat');
+
+    function showAvatar(url) {
+        if (!avatarEl || !url) return;
+        const img = new Image();
+        img.onload = () => {
+            avatarEl.src = url;
+            avatarEl.classList.add('tf-show');
+            if (chatIconEl) chatIconEl.style.opacity = '0';
+        };
+        img.onerror = () => {
+            // If avatar fails, show chat icon fallback
+            avatarEl.classList.remove('tf-show');
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+        };
+        img.src = url;
+    }
+
+    function rotateAvatar() {
+        if (agentAvatars.length === 0) return;
+        avatarIndex = (avatarIndex + 1) % agentAvatars.length;
+        showAvatar(agentAvatars[avatarIndex].avatar_url);
+    }
+
+    function startAvatarCarousel(agents) {
+        agentAvatars = agents;
+        if (agents.length === 0) {
+            // No avatars - show chat icon
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+            return;
+        }
+        // Show first avatar immediately
+        showAvatar(agents[0].avatar_url);
+        // Rotate every 10 seconds if multiple agents
+        if (agents.length > 1) {
+            if (avatarRotateTimer) clearInterval(avatarRotateTimer);
+            avatarRotateTimer = setInterval(rotateAvatar, 10000);
+        }
+    }
+
+    // Fetch agent avatars from API
+    fetch(`${baseUrl}/api/widget/agents?org_id=${orgId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.agents && data.agents.length > 0) {
+                startAvatarCarousel(data.agents);
+            } else {
+                // Fallback to chat icon
+                if (chatIconEl) chatIconEl.style.opacity = '1';
+            }
+        })
+        .catch(() => {
+            // Network error - show chat icon
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+        });
+
+    // =============================================
     // Nudge - Floating pill input bar (desktop only)
-    // ==========================================
+    // =============================================
     const nudge = document.createElement('div');
     nudge.id = 'tf-nudge';
     nudge.innerHTML = `
@@ -397,12 +468,16 @@
     let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
 
     function openWidgetWithMessage(text) {
+        const trimmed = (text || '').trim();
         if (!isOpen) toggleWidget(true);
         hideNudge();
-        if (text && text.trim()) {
+        if (trimmed) {
+            // Wait for widget to open + iframe to be ready, then send message
             setTimeout(() => {
-                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: text.trim() }, '*');
-            }, 380);
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: trimmed }, '*');
+                }
+            }, 500);
         }
     }
 
@@ -416,17 +491,19 @@
     // Send button click
     nudgeSend.addEventListener('click', (e) => {
         e.stopPropagation();
-        openWidgetWithMessage(nudgeInput.value);
+        const text = nudgeInput.value;
+        nudgeInput.value = '';
+        openWidgetWithMessage(text);
     });
 
     // Enter key sends
     nudgeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            openWidgetWithMessage(nudgeInput.value);
+            const text = nudgeInput.value;
+            nudgeInput.value = '';
+            openWidgetWithMessage(text);
         }
     });
-
-
 
     function showNudge() {
         if (window.innerWidth <= 768) return;
@@ -476,7 +553,7 @@
         }
     }
 
-    // Kick off nudge immediately after setup - don't rely on iframe.onload timing
+    // Kick off nudge check shortly after setup
     setTimeout(checkAndTriggerNudge, 500);
 
     function toggleWidget(playSound = true) {
@@ -571,18 +648,21 @@
             }
         }
 
+        // Override avatar from iframe if it sends one (e.g. active agent in conversation)
         if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
-            const avatarEl = document.getElementById('tf-agent-avatar');
-            const chatIconEl = document.getElementById('tf-icon-chat');
-            if (avatarEl && chatIconEl) {
-                if (event.data.avatarUrl) {
-                    avatarEl.src = event.data.avatarUrl;
-                    avatarEl.classList.add('tf-show');
-                    chatIconEl.style.opacity = '0';
-                } else {
-                    avatarEl.classList.remove('tf-show');
-                    chatIconEl.style.opacity = '1';
+            if (event.data.avatarUrl) {
+                // Stop carousel and pin to this agent's avatar
+                if (avatarRotateTimer) clearInterval(avatarRotateTimer);
+                showAvatar(event.data.avatarUrl);
+            } else if (agentAvatars.length > 0) {
+                // Resume carousel
+                showAvatar(agentAvatars[0].avatar_url);
+                if (agentAvatars.length > 1) {
+                    avatarRotateTimer = setInterval(rotateAvatar, 10000);
                 }
+            } else {
+                if (avatarEl) avatarEl.classList.remove('tf-show');
+                if (chatIconEl) chatIconEl.style.opacity = '1';
             }
         }
     });

@@ -1571,11 +1571,22 @@ export default function WidgetPage() {
           )
         }
       }
+      if (event.data?.type === 'TALKFUZE_PREFILL_MESSAGE') {
+        const text = event.data?.message?.trim();
+        if (text) {
+          setActiveTab('chat');
+          // Small delay to let the tab transition complete before sending
+          setTimeout(() => {
+            handleSend(text);
+          }, 350);
+        }
+      }
     }
     
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [activeConversationId, deviceId, org_id])
+
 
   const fetchConversations = async () => {
     if (!org_id || !deviceId) return
