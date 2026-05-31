@@ -571,7 +571,7 @@ export default function TeamChatDock() {
                             : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
                         }`}>
                           {msg.attachment_type === 'image' && msg.attachment_url && (
-                            <img src={msg.attachment_url} alt="Attachment" className="max-w-[150px] sm:max-w-[200px] rounded-lg mb-1 object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setZoomedImage(msg.attachment_url!)} />
+                            <img src={msg.attachment_url} alt="Attachment" className="max-w-[150px] sm:max-w-[200px] w-auto h-auto rounded-lg mb-1 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setZoomedImage(msg.attachment_url!)} />
                           )}
                           {msg.attachment_type === 'audio' && msg.attachment_url && (
                             <audio controls src={msg.attachment_url} className="w-[180px] h-8 mb-1 [&::-webkit-media-controls-panel]:bg-white/20 [&::-webkit-media-controls-play-button]:text-current" />
