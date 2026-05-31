@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, MoreHorizontal, X, Loader2 } from "lucide-react"
-import { getTeammates, addTeammate, updateTeammateRole } from "@/actions/team"
+import { Plus, MoreHorizontal, X, Loader2, Pencil, Image as ImageIcon } from "lucide-react"
+import { getTeammates, addTeammate, updateTeammateRole, updateTeammateDetails, uploadAdminTeammateAvatar } from "@/actions/team"
 import { createClient } from "@/lib/supabase/client"
 import type { UserProfile } from "@/lib/types"
 
@@ -19,6 +19,13 @@ export default function TeamSettingsPage() {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState("Agent")
   const [error, setError] = useState<string | null>(null)
+
+  // Edit State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editTeammateId, setEditTeammateId] = useState<string | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editAvatarUrl, setEditAvatarUrl] = useState("")
+  const [isEditing, setIsEditing] = useState(false)
 
   const fetchTeam = async () => {
     setIsLoading(true)
@@ -171,6 +178,42 @@ export default function TeamSettingsPage() {
     }
   }
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editTeammateId) return
+    setIsEditing(true)
+    setError(null)
+    
+    const result = await updateTeammateDetails(editTeammateId, { name: editName, avatar_url: editAvatarUrl })
+    
+    if (!result.success) {
+      setError(result.error || "Failed to update teammate")
+      setIsEditing(false)
+      return
+    }
+    
+    setIsEditing(false)
+    setIsEditModalOpen(false)
+    fetchTeam()
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !editTeammateId) return
+    setIsEditing(true)
+    setError(null)
+    const file = e.target.files[0]
+    const formData = new FormData()
+    formData.append("file", file)
+    
+    const res = await uploadAdminTeammateAvatar(editTeammateId, formData)
+    if (res.success && res.url) {
+      setEditAvatarUrl(res.url)
+    } else {
+      setError(res.error || "Failed to upload avatar")
+    }
+    setIsEditing(false)
+  }
+
   return (
     <div className="space-y-6 relative">
       <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-5">
@@ -257,6 +300,18 @@ export default function TeamSettingsPage() {
                         >
                           Make {member.role?.toLowerCase() === 'admin' ? 'Agent' : 'Admin'}
                         </button>
+                        <button
+                          onClick={() => {
+                            setOpenMenuId(null)
+                            setEditTeammateId(member.id)
+                            setEditName(member.name)
+                            setEditAvatarUrl(member.avatar_url || "")
+                            setIsEditModalOpen(true)
+                          }}
+                          className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2"
+                        >
+                          <Pencil size={14} /> Edit
+                        </button>
                       </div>
                     )}
                   </td>
@@ -341,6 +396,80 @@ export default function TeamSettingsPage() {
                 >
                   {isSubmitting && <Loader2 size={16} className="animate-spin" />}
                   {isSubmitting ? "Adding..." : "Add Teammate"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Teammate Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-semibold text-lg text-slate-900 dark:text-white">Edit Teammate</h3>
+              <button 
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6">
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative group">
+                    {editAvatarUrl ? (
+                      <img src={editAvatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <ImageIcon className="text-slate-400" size={24} />
+                      </div>
+                    )}
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                      <Pencil size={16} />
+                      <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={isEditing} />
+                    </label>
+                  </div>
+                  <span className="text-xs text-slate-500">Click avatar to update</span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 dark:text-white text-sm"
+                    placeholder="e.g. Asad"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isEditing}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#0070f3] hover:bg-blue-600 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isEditing && <Loader2 size={16} className="animate-spin" />}
+                  {isEditing ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

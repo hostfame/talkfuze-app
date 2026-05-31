@@ -178,3 +178,101 @@ export async function uploadAvatar(formData: FormData) {
 
   return { success: true, url: publicUrl }
 }
+
+export async function updateTeammateDetails(targetUserId: string, updates: { name?: string; avatar_url?: string }) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: currentUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("role, org_id")
+      .eq("id", user.id)
+      .single()
+
+    if (!currentUserProfile || currentUserProfile.role !== "admin") {
+      return { success: false, error: "Only admins can edit teammates" }
+    }
+
+    const { data: targetUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("org_id")
+      .eq("id", targetUserId)
+      .single()
+
+    if (!targetUserProfile || targetUserProfile.org_id !== currentUserProfile.org_id) {
+      return { success: false, error: "User not found in your organization" }
+    }
+
+    const { error: dbError } = await supabaseAdmin
+      .from("users")
+      .update(updates)
+      .eq("id", targetUserId)
+
+    if (dbError) throw new Error(dbError.message)
+
+    if (updates.name) {
+      await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        user_metadata: { name: updates.name }
+      })
+    }
+
+    return { success: true }
+  } catch (err: unknown) {
+    console.error("Error updating teammate details:", err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+export async function uploadAdminTeammateAvatar(targetUserId: string, formData: FormData) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+
+    const { data: currentUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("role, org_id")
+      .eq("id", user.id)
+      .single()
+
+    if (!currentUserProfile || currentUserProfile.role !== "admin") {
+      return { success: false, error: "Only admins can upload teammate avatars" }
+    }
+
+    const { data: targetUserProfile } = await supabaseAdmin
+      .from("users")
+      .select("org_id")
+      .eq("id", targetUserId)
+      .single()
+
+    if (!targetUserProfile || targetUserProfile.org_id !== currentUserProfile.org_id) {
+      return { success: false, error: "User not found in your organization" }
+    }
+
+    const file = formData.get('file') as File
+    if (!file) throw new Error("No file provided")
+
+    const fileExt = file.name.split('.').pop()
+    const filePath = `${targetUserId}-${Math.random()}.${fileExt}`
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('avatars')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      console.error("Upload error", uploadError)
+      return { success: false, error: uploadError.message }
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('avatars')
+      .getPublicUrl(filePath)
+
+    return { success: true, url: publicUrl }
+  } catch (err: unknown) {
+    console.error("Error uploading teammate avatar:", err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
