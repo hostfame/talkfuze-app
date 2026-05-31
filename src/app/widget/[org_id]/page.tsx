@@ -167,7 +167,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
   };
 
   // Determine styles and colors based on bubble alignment
-  let containerBg = 'bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] shadow-sm';
+  let containerBg = 'bg-[#e8eaed] shadow-sm border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] shadow-sm';
   let buttonStyle = 'bg-[#0070f3] text-white hover:bg-[#0062d2] shadow-sm';
   let timeStyle = 'text-slate-400 dark:text-slate-500';
   let activeWaveColor = '#0070f3';
@@ -176,7 +176,7 @@ const CustomAudioPlayer = ({ url, isDark }: { url: string, isDark: boolean }) =>
 
   if (isDark) {
     // Visitor message (on the right) - give it a slightly cleaner rounded border configuration
-    containerBg = 'bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] rounded-br-[4px] shadow-sm';
+    containerBg = 'bg-[#e8eaed] shadow-sm border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 rounded-[18px] rounded-br-[4px]';
   }
 
   // Wave bar heights (22 bars)
@@ -3557,7 +3557,7 @@ export default function WidgetPage() {
                 <div className="flex flex-col gap-1 items-start mb-0.5 mt-1">
                   <div className="flex gap-2 items-end">
                     <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-6 h-6 rounded-full shrink-0 object-cover bg-slate-100 border border-slate-200" alt="Sajjad from Support Team" />
-                    <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
+                    <div className="bg-[#e8eaed] shadow-sm rounded-[18px] rounded-bl-[4px] py-3 px-4 text-[15px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight">
                       Hello! How can I assist you today?
                     </div>
                   </div>
@@ -3805,7 +3805,7 @@ export default function WidgetPage() {
                       ) : (
                         <div className="w-6 h-6 shrink-0" />
                       )}
-                      <div className={msg.content_type === 'text' ? `bg-[#f3f4f6] rounded-[18px] ${showAvatar ? 'rounded-bl-[4px]' : ''} py-2.5 px-3.5 text-[14.5px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight` : "max-w-[85%]"}>
+                      <div className={msg.content_type === 'text' ? `bg-[#e8eaed] shadow-sm rounded-[18px] ${showAvatar ? 'rounded-bl-[4px]' : ''} py-3 px-4 text-[14.5px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight` : "max-w-[85%]"}>
                         {renderMessageContent(msg, false, handleImageZoom)}
                         {msg.metadata?.auto_reply && (
                           <button
@@ -3909,7 +3909,7 @@ export default function WidgetPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 tracking-tight">Team Hostnin</span>
                     </div>
-                    <div className="bg-[#f3f4f6] dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 p-3.5 rounded-[18px] rounded-tl-[4px] shadow-sm flex flex-col gap-3">
+                    <div className="bg-[#e8eaed] shadow-sm border border-slate-200/40 dark:border-slate-700/50 text-slate-800 dark:text-slate-100 p-3.5 rounded-[18px] rounded-tl-[4px] flex flex-col gap-3">
                       <span className="text-[14px] leading-snug">
                         Add your phone number to get a faster response and ensure we can connect with you if this chat disconnects.
                       </span>
@@ -3950,7 +3950,7 @@ export default function WidgetPage() {
               )}
 
               <div className="hidden" id="tf-old-typing-indicator">
-                 <div className="bg-[#f3f4f6] rounded-[18px] rounded-bl-[4px] py-4 px-4 text-[15px] text-slate-800 flex items-center gap-1">
+                 <div className="bg-[#e8eaed] shadow-sm rounded-[18px] rounded-bl-[4px] py-4 px-4 text-[15px] text-slate-800 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
