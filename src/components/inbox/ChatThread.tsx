@@ -12,6 +12,7 @@ import { updateContactName, updateContactEmail, updateContactPhone } from "@/act
 import { convertChatToTicket, fetchWhmcsClient, fetchWhmcsClientByDomain, fetchClientNameservers } from "@/actions/whmcs"
 import { supabase } from "@/lib/supabase"
 import { getErrorMessage } from "@/lib/utils"
+import { formatMessageLinks } from "@/lib/format-utils"
 import { useMessageStore, useInboxStore, useGlobalAudioStore, recentEdits } from "@/lib/store"
 import type { AppMessage, ConversationParticipant, ConversationWithDetails, QuickReplyItem, Relation, UserProfile } from "@/lib/types"
 // removed generateAiDraft import
@@ -2820,6 +2821,10 @@ export default function ChatThread({
         }
       }
 
+      // Apply global link formatting once the AI stream has completed
+      fullText = formatMessageLinks(fullText)
+      setInput(prefix + fullText + suffix)
+
       setIsAiStreaming(false)
 
       // Log the AI draft for learning - store promise to handle fast sends
@@ -2912,6 +2917,10 @@ export default function ChatThread({
     if ((!input.trim() && !overrideText && stagedAttachments.length === 0) || !conversationId) return
 
     let msgText = (overrideText ? overrideText : input).trim()
+    
+    // Apply link formatting globally for any outgoing message
+    msgText = formatMessageLinks(msgText);
+    
     // Convert standard Markdown bold **text** to WhatsApp native bold *text*
     if (!isInternal) {
       msgText = msgText.replace(/\*\*(.*?)\*\*/g, '*$1*');
