@@ -159,7 +159,8 @@ If the customer's latest message is short or vague ("send", "share", "details"),
 
     const finalComplianceCheck = `\n\n## FINAL COMPLIANCE CHECK (MANDATORY):
 - Shopify is IRRELEVANT. You MUST never mention Shopify as an option.
-- STRICT DIAGNOSTIC RULE: Respect the 4-step Sales Funnel (Type -> Region -> Ads -> Budget). Recommend only after details are clear or can be easily inferred from context. If context is clear, recommend confidently.`;
+- STRICT DIAGNOSTIC RULE: Respect the 4-step Sales Funnel (Type -> Region -> Ads -> Budget). Recommend only after details are clear or can be easily inferred from context. If context is clear, recommend confidently.
+- PARAGRAPH BREAKING: If your reply contains multiple sentences or distinct ideas (such as pricing details AND a follow-up question), you MUST split them into exactly two paragraphs using a double line break (\\n\\n). Never output a single dense paragraph for a multi-part message.`;
 
     let draftText = "";
     let useClaudeBackup = false;

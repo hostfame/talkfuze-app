@@ -23,19 +23,22 @@ const safeParseDate = (dateStr: any): number => {
   if (!dateStr) return 0;
   if (dateStr instanceof Date) return dateStr.getTime();
   
-  // Convert standard DB space format to T format for cross-browser Safari/iOS support
-  const normalized = typeof dateStr === 'string' 
-    ? dateStr.trim().replace(' ', 'T') 
-    : dateStr;
-    
-  const time = new Date(normalized).getTime();
-  return isNaN(time) ? new Date(dateStr).getTime() || 0 : time;
+  if (typeof dateStr === 'string') {
+    let normalized = dateStr.trim().replace(' ', 'T');
+    // Truncate microsecond fractional seconds (e.g. .159998 -> .159) for Safari compatibility
+    normalized = normalized.replace(/\.(\d{3})\d+/, '.$1');
+    const time = new Date(normalized).getTime();
+    if (!isNaN(time)) return time;
+  }
+  
+  const fallbackTime = new Date(dateStr).getTime();
+  return isNaN(fallbackTime) ? 0 : fallbackTime;
 };
 
 const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
   const timeA = safeParseDate(a.created_at);
   const timeB = safeParseDate(b.created_at);
-  if (timeA !== timeB) {
+  if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
     return timeA - timeB;
   }
   const getRank = (senderType: string) => {
@@ -3720,16 +3723,15 @@ export default function WidgetPage() {
               
               {/* Connecting Indicator */}
               {showConnecting && (
-              <div className="flex items-start gap-1.5 animate-in fade-in duration-300 mb-3" id="tf-connecting-indicator">
-                 <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src="/team/4.avif" className="w-full h-full object-cover" alt="Support Team" />
-                 </div>
-                 <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1.5 min-h-[36px]">
-                    <span className="font-semibold text-slate-400 text-[12px] tracking-tight">Connecting to agent</span>
+              <div className="flex justify-center my-2 select-none animate-in fade-in duration-300" id="tf-connecting-indicator">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-3 py-1.5 rounded-full shadow-sm">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold tracking-tight">Connecting to agent</span>
+                  <div className="flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
-                 </div>
+                  </div>
+                </div>
               </div>
               )}
               

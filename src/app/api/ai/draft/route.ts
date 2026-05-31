@@ -580,6 +580,7 @@ ${cappedContextMessages}
 - Never mention Shopify.
 - If the customer's intent and scale are clear, recommend confidently. If not, ask ONE smart question.
 - Always end with a clear next step the customer can act on.
+- PARAGRAPH BREAKING: If your reply contains multiple sentences or distinct ideas (such as pricing details AND a follow-up question), you MUST split them into exactly two paragraphs using a double line break (\n\n). Never output a single dense paragraph for a multi-part message.
 ${detectedLanguage === 'English' ? `
 ## CRITICAL LANGUAGE OVERRIDE:
 This conversation is in ENGLISH. You MUST reply in English ONLY.
