@@ -131,7 +131,7 @@ Then output a blank line, then start your actual draft response.
 ${langMatchingSection}
 
 ## REPLY STYLE
-1. CONCISE: Under 2-3 short sentences (< 40 words), single paragraph. No bullet lists, no bold (**). Go straight to the point with zero filler.
+1. CONCISE & STRUCTURED: Keep responses under 2-3 sentences (< 45 words). If the response contains distinct parts (e.g., pricing/details followed by a question), split them with a blank line into 2 brief paragraphs. Keep simple one-sentence replies on a single line (no blank line). Never use bullet lists or bold (**). Go straight to the point with zero filler.
 ${stateAwareness}
 3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//"), expand and polish it. Match the conversation's language.
 ${zeroFiller}
@@ -179,11 +179,10 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
   }
 
-  // Static fallback examples (used when no approved drafts available)
   const goldenBengali = [
     "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
     "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
-    "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
+    "জি, আমাদের এডভান্সড হোস্টিং প্যাকেজের মূল্য ৫৪৯ টাকা/মাস।\n\nপ্যাকেজটি সিলেক্ট করতে কি আমি আপনাকে সাহায্য করতে পারি?",
     "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
     "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
   ];
@@ -191,7 +190,7 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
   const goldenEnglish = [
     "I am looking into this details for you. Please give me a moment.",
     "Our technical team will investigate and follow up with you via email shortly.",
-    "What kind of website are you building? Please share your platform or project details so I can recommend the best plan for you.",
+    "Yes, our Advanced hosting plan is ৳549/month.\n\nWould you like me to help you choose a package?",
     "Where is your target audience or visitors located? Are you targeting Bangladesh only, or is it global?",
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
