@@ -15,8 +15,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/pop.mp3',
-        headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
+        source: '/embed.js',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+        ],
       },
       {
         source: '/swoosh.mp3',

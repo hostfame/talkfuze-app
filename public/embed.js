@@ -1,339 +1,579 @@
-/**
- * TalkFuze Embed Script
- * Injects a floating chat bubble and an iframe pointing to the TalkFuze Next.js app.
- */
 (function() {
-  if (window.TalkFuzeInitialized) return;
-  window.TalkFuzeInitialized = true;
+    // Prevent multiple injections
+    if (window.TalkFuzeWidgetInitialized) return;
+    window.TalkFuzeWidgetInitialized = true;
 
-  var scriptTag = document.currentScript || document.querySelector('script[src*="embed.js"]');
-  var orgId = (scriptTag ? scriptTag.getAttribute('data-org-id') : null) || 'ec2f8436-05dc-4621-8a7f-57202f865b8e';
-  var baseUrl = scriptTag ? new URL(scriptTag.src).origin : 'https://talkfuze-app.vercel.app';
+    // Find the script tag to extract parameters
+    const scripts = document.getElementsByTagName('script');
+    let currentScript = null;
+    let orgId = null;
+    let baseUrl = 'https://app.talkfuze.com';
 
-  if (!orgId) {
-    console.error('TalkFuze: Missing data-org-id attribute on the script tag.');
-    return;
-  }
-
-  // Create Container
-  var container = document.createElement('div');
-  container.id = 'talkfuze-container';
-  container.style.cssText = '\
-    position: fixed;\
-    bottom: 20px;\
-    right: 20px;\
-    z-index: 2147483647;\
-    display: flex;\
-    flex-direction: column;\
-    align-items: flex-end;\
-    pointer-events: none;\
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;\
-  ';
-
-  // Create Iframe (Hidden initially - use visibility:hidden to prevent touch interception)
-  var iframe = document.createElement('iframe');
-  iframe.src = baseUrl + '/widget/' + orgId;
-  iframe.allow = 'autoplay; microphone; camera; display-capture';
-  iframe.style.cssText = '\
-    width: 380px;\
-    height: 600px;\
-    max-height: calc(100vh - 100px);\
-    border: none;\
-    border-radius: 16px;\
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);\
-    background: transparent;\
-    transition: opacity 0.3s ease, transform 0.3s ease;\
-    opacity: 0;\
-    transform: translateY(20px) scale(0.95);\
-    pointer-events: none;\
-    visibility: hidden;\
-    margin-bottom: 20px;\
-    display: block;\
-  ';
-
-  // Responsive for mobile
-  var style = document.createElement('style');
-  style.innerHTML = '\
-    @media (max-width: 480px) {\
-      #talkfuze-container.tf-mobile-open {\
-        bottom: 0px !important;\
-        right: 0px !important;\
-        left: 0px !important;\
-        top: 0px !important;\
-        width: 100% !important;\
-        height: 100% !important;\
-      }\
-      #talkfuze-container.tf-mobile-open iframe {\
-        width: 100% !important;\
-        height: 100% !important;\
-        max-width: 100% !important;\
-        max-height: 100% !important;\
-        border-radius: 0px !important;\
-        margin-bottom: 0px !important;\
-        box-shadow: none !important;\
-      }\
-      #talkfuze-container.tf-mobile-open div {\
-        display: none !important;\
-      }\
-    }\
-  ';
-  document.head.appendChild(style);
-
-  // Create Launcher Button
-  var button = document.createElement('div');
-  button.style.cssText = '\
-    width: 60px;\
-    height: 60px;\
-    background: white;\
-    border-radius: 50%;\
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);\
-    cursor: pointer;\
-    display: flex;\
-    align-items: center;\
-    justify-content: center;\
-    transition: transform 0.2s ease, background 0.2s ease;\
-    position: relative;\
-    border: 2px solid white;\
-    pointer-events: auto;\
-  ';
-
-  var agentImages = [
-    baseUrl + '/team/1.avif',
-    baseUrl + '/team/2.avif',
-    baseUrl + '/team/3.avif',
-    baseUrl + '/team/4.avif',
-    baseUrl + '/team/5.avif',
-    baseUrl + '/team/6.avif'
-  ];
-  var currentImageIndex = 0;
-
-  function renderAvatar() {
-    return '\
-      <div style="position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;">\
-        <img id="talkfuze-agent-avatar" src="' + agentImages[currentImageIndex] + '" style="width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease;" />\
-      </div>\
-      <div style="position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 11px; font-weight: bold; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">1</div>\
-    ';
-  }
-
-  // Close Icon SVG
-  var closeIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-
-  button.innerHTML = renderAvatar();
-
-  // Rotate images every 8 seconds
-  setInterval(function() {
-    if (isOpen) return;
-    currentImageIndex = (currentImageIndex + 1) % agentImages.length;
-    var imgEl = document.getElementById('talkfuze-agent-avatar');
-    if (imgEl) {
-      imgEl.style.opacity = '0';
-      setTimeout(function() {
-        imgEl.src = agentImages[currentImageIndex];
-        imgEl.style.opacity = '1';
-      }, 300);
+    for (let i = 0; i < scripts.length; i++) {
+        const src = scripts[i].src;
+        if (src && src.includes('talkfuze-widget.js')) {
+            currentScript = scripts[i];
+            orgId = currentScript.getAttribute('data-org-id');
+            if (src.startsWith('http://localhost')) {
+                const url = new URL(src);
+                baseUrl = url.origin;
+            }
+            break;
+        }
     }
-  }, 8000);
 
-  // Toggle Logic
-  var isOpen = false;
-
-  function openWidget() {
-    if (isOpen) return;
-    isOpen = true;
-    iframe.style.visibility = 'visible';
-    iframe.style.opacity = '1';
-    iframe.style.transform = 'translateY(0) scale(1)';
-    iframe.style.pointerEvents = 'all';
-    
-    if (window.innerWidth <= 480) {
-      document.body.style.overflow = 'hidden';
-      container.style.pointerEvents = 'auto';
-      container.classList.add('tf-mobile-open');
+    if (!orgId) {
+        console.error('TalkFuze Widget: Missing data-org-id attribute on the script tag.');
+        return;
     }
-    
-    button.style.background = 'white';
-    button.style.border = '2px solid #e2e8f0';
-    button.innerHTML = closeIcon;
-    button.style.transform = 'scale(0.9)';
-    setTimeout(function() { button.style.transform = 'scale(1)'; }, 150);
-    
-    try { iframe.contentWindow.postMessage({ type: 'TALKFUZE_WIDGET_OPENED' }, '*'); } catch(e) {}
-  }
 
-  function closeWidget() {
-    if (!isOpen) return;
-    isOpen = false;
-    iframe.style.opacity = '0';
-    iframe.style.transform = 'translateY(20px) scale(0.95)';
-    iframe.style.pointerEvents = 'none';
-    // Hide completely after animation to prevent touch interception on mobile
-    setTimeout(function() {
-      if (!isOpen) iframe.style.visibility = 'hidden';
-    }, 300);
-    
-    if (window.innerWidth <= 480) {
-      document.body.style.overflow = '';
-      container.style.pointerEvents = 'none';
-      container.classList.remove('tf-mobile-open');
+    const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
+    const BUTTON_SIZE = 60;
+    const MARGIN = 20;
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #tf-widget-container {
+            position: fixed;
+            bottom: ${MARGIN}px;
+            right: ${MARGIN}px;
+            z-index: 2147483647;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        #tf-iframe-container {
+            width: 400px;
+            height: 700px;
+            max-height: calc(100vh - ${MARGIN * 2 + BUTTON_SIZE + 20}px);
+            max-width: calc(100vw - ${MARGIN * 2}px);
+            background: transparent;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.08);
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            transform-origin: bottom right;
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #tf-iframe-container.tf-open {
+            display: block;
+        }
+
+        #tf-iframe-container.tf-animate-in {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        #tf-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+
+        #tf-launcher {
+            width: ${BUTTON_SIZE}px;
+            height: ${BUTTON_SIZE}px;
+            border-radius: 50%;
+            background-color: #0070f3;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+            position: relative;
+        }
+
+        #tf-launcher:hover {
+            transform: scale(1.05);
+        }
+
+        #tf-launcher:active {
+            transform: scale(0.95);
+        }
+
+        .tf-icon {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            fill: white;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #tf-icon-chat {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+
+        #tf-icon-close {
+            opacity: 0;
+            transform: rotate(-90deg) scale(0.5);
+        }
+
+        .tf-open #tf-icon-chat {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.5);
+        }
+
+        .tf-open #tf-icon-close {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+
+        #tf-agent-avatar {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #tf-agent-avatar.tf-show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .tf-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background-color: #ef4444;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .tf-badge.tf-show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Floating pill input bar nudge */
+        #tf-nudge {
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
+            right: ${MARGIN}px;
+            background: #ffffff;
+            border-radius: 100px;
+            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            display: flex;
+            align-items: center;
+            width: 280px;
+            padding: 0;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            cursor: text;
+            overflow: hidden;
+            z-index: 2147483646;
+        }
+
+        #tf-nudge.tf-nudge-show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #tf-nudge-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: #0f172a;
+            padding: 14px 6px 14px 20px;
+            font-family: inherit;
+            cursor: text;
+            min-width: 0;
+            caret-color: #0070f3;
+        }
+
+        #tf-nudge-input::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        #tf-nudge-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #0f172a;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin: 6px 6px 6px 4px;
+            transition: background 0.2s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #tf-nudge-send:hover {
+            background: #1e293b;
+            transform: scale(1.08);
+        }
+
+        #tf-nudge-send:active {
+            transform: scale(0.93);
+        }
+
+        #tf-nudge-send svg {
+            width: 15px;
+            height: 15px;
+            fill: white;
+            transform: translateX(1px);
+        }
+
+        @media (max-width: 768px) {
+            #tf-nudge {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #tf-widget-container.tf-mobile-open {
+                bottom: 0px !important;
+                right: 0px !important;
+                left: 0px !important;
+                top: 0px !important;
+                width: 100% !important;
+                height: 100% !important;
+                align-items: stretch !important;
+            }
+
+            #tf-widget-container.tf-mobile-open #tf-iframe-container {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: 100% !important;
+                max-height: 100% !important;
+                border-radius: 0px !important;
+                margin-bottom: 0px !important;
+                box-shadow: none !important;
+                transform-origin: center center !important;
+            }
+
+            #tf-widget-container.tf-mobile-open #tf-launcher {
+                display: none !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Create container
+    const container = document.createElement('div');
+    container.id = 'tf-widget-container';
+
+    // Create iframe container
+    const iframeContainer = document.createElement('div');
+    iframeContainer.id = 'tf-iframe-container';
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'tf-iframe';
+    iframe.src = WIDGET_URL;
+    iframe.allow = 'autoplay; microphone; camera; display-capture';
+
+    // Pageview tracking
+    function sendPageView() {
+        if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'TALKFUZE_PAGE_VIEW',
+                title: document.title,
+                url: window.location.href
+            }, '*');
+        }
+        checkAndTriggerNudge();
     }
-    
-    button.style.background = 'white';
-    button.style.border = '2px solid white';
-    button.innerHTML = renderAvatar();
-    button.style.transform = 'scale(0.9)';
-    setTimeout(function() { button.style.transform = 'scale(1)'; }, 150);
-  }
 
-  button.addEventListener('click', function() {
-    if (isOpen) { closeWidget(); } else { openWidget(); }
-  });
+    iframe.onload = () => {
+        sendPageView();
+    };
 
-  // Listen for messages from the widget iframe
-  window.addEventListener('message', function(event) {
-    if (!event.data || !event.data.type) return;
-    if (event.data.type === 'TALKFUZE_CLOSE') {
-      closeWidget();
+    // SPA Navigation Tracking
+    const originalPushState = history.pushState;
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
+        setTimeout(sendPageView, 100);
+    };
+
+    const originalReplaceState = history.replaceState;
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
+        setTimeout(sendPageView, 100);
+    };
+
+    window.addEventListener('popstate', () => {
+        setTimeout(sendPageView, 100);
+    });
+
+    iframeContainer.appendChild(iframe);
+
+    // Create launcher button
+    const launcher = document.createElement('div');
+    launcher.id = 'tf-launcher';
+
+    const chatIcon = `
+        <svg id="tf-icon-chat" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z" fill="currentColor"/>
+        </svg>
+    `;
+
+    const closeIcon = `
+        <svg id="tf-icon-close" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+        </svg>
+    `;
+
+    const agentAvatar = `<img id="tf-agent-avatar" src="" alt="Agent" />`;
+    const badge = `<div id="tf-badge" class="tf-badge"></div>`;
+
+    launcher.innerHTML = agentAvatar + chatIcon + closeIcon + badge;
+
+    container.appendChild(iframeContainer);
+    container.appendChild(launcher);
+    document.body.appendChild(container);
+
+    // ==========================================
+    // Nudge - Floating pill input bar (desktop only)
+    // ==========================================
+    const nudge = document.createElement('div');
+    nudge.id = 'tf-nudge';
+    nudge.innerHTML = `
+        <input id="tf-nudge-input" type="text" placeholder="Write a message..." autocomplete="off" />
+        <button id="tf-nudge-send" aria-label="Send">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    `;
+    document.body.appendChild(nudge);
+
+    const nudgeInput = nudge.querySelector('#tf-nudge-input');
+    const nudgeSend = nudge.querySelector('#tf-nudge-send');
+
+    let isOpen = sessionStorage.getItem('tf_widget_open') === 'true';
+    const swooshAudio = new Audio(baseUrl + '/swoosh.mp3');
+    let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
+
+    function openWidgetWithMessage(text) {
+        if (!isOpen) toggleWidget(true);
+        hideNudge();
+        if (text && text.trim()) {
+            setTimeout(() => {
+                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: text.trim() }, '*');
+            }, 380);
+        }
     }
-    if (event.data.type === 'TALKFUZE_OPEN') {
-      openWidget();
+
+    // Clicking anywhere on pill focuses the input
+    nudge.addEventListener('click', (e) => {
+        if (e.target !== nudgeSend && !nudgeSend.contains(e.target)) {
+            nudgeInput.focus();
+        }
+    });
+
+    // Send button click
+    nudgeSend.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openWidgetWithMessage(nudgeInput.value);
+    });
+
+    // Enter key sends
+    nudgeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            openWidgetWithMessage(nudgeInput.value);
+        }
+    });
+
+    // Typing opens the widget
+    nudgeInput.addEventListener('input', () => {
+        if (nudgeInput.value.length === 1 && !isOpen) {
+            openWidgetWithMessage('');
+        }
+    });
+
+    function showNudge() {
+        if (window.innerWidth <= 768) return;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                nudge.classList.add('tf-nudge-show');
+            });
+        });
     }
-    if (event.data.type === 'TALKFUZE_EXPAND') {
-      // Open widget in a new tab for full-screen experience
-      window.open(baseUrl + '/widget/' + orgId, '_blank');
+
+    function hideNudge() {
+        nudge.classList.remove('tf-nudge-show');
     }
-    if (event.data.type === 'TALKFUZE_OPEN_CALL') {
-      const callUrl = baseUrl + '/widget/' + orgId + '?standalone_call=true&convId=' + event.data.convId + '&deviceId=' + event.data.deviceId;
-      const width = 380;
-      const height = 550;
-      const left = (window.screen.width / 2) - (width / 2);
-      const top = (window.screen.height / 2) - (height / 2);
-      window.open(callUrl, 'TalkFuzeSecureCall', 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',status=no,menubar=no,toolbar=no,location=no,resizable=no');
+
+    let nudgeFired = false;
+    let nudgeTimer = null;
+    let scrollListener = null;
+
+    function checkAndTriggerNudge() {
+        if (nudgeTimer) clearTimeout(nudgeTimer);
+
+        // Desktop only
+        if (window.innerWidth <= 768) return;
+
+        // Skip if already fired or widget is open
+        if (nudgeFired || isOpen) return;
+
+        const fireNudge = () => {
+            if (nudgeFired || isOpen) return;
+            nudgeFired = true;
+            showNudge();
+            if (scrollListener) window.removeEventListener('scroll', scrollListener);
+        };
+
+        // After 8 seconds on page
+        nudgeTimer = setTimeout(fireNudge, 8000);
+
+        // Or after 300px scroll - whichever first
+        if (!scrollListener) {
+            scrollListener = () => {
+                if (window.scrollY > 300) {
+                    clearTimeout(nudgeTimer);
+                    fireNudge();
+                }
+            };
+            window.addEventListener('scroll', scrollListener, { passive: true });
+        }
     }
-    if (event.data.type === 'TALKFUZE_ZOOM_IMAGE') {
-      var imgOverlay = document.createElement('div');
-      imgOverlay.style.cssText = '\
-        position: fixed;\
-        top: 0;\
-        left: 0;\
-        width: 100vw;\
-        height: 100vh;\
-        background: rgba(15, 23, 42, 0.9);\
-        z-index: 2147483647;\
-        display: flex;\
-        align-items: center;\
-        justify-content: center;\
-        backdrop-filter: blur(8px);\
-        -webkit-backdrop-filter: blur(8px);\
-        cursor: zoom-out;\
-        opacity: 0;\
-        transition: opacity 0.3s ease;\
-      ';
-      
-      var img = document.createElement('img');
-      img.src = event.data.src;
-      img.style.cssText = '\
-        max-width: 90%;\
-        max-height: 90%;\
-        object-fit: contain;\
-        border-radius: 12px;\
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);\
-        transform: scale(0.95);\
-        transition: transform 0.3s ease;\
-      ';
 
-      var closeBtn = document.createElement('div');
-      closeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-      closeBtn.style.cssText = '\
-        position: absolute;\
-        top: 20px;\
-        right: 20px;\
-        width: 48px;\
-        height: 48px;\
-        background: rgba(255,255,255,0.1);\
-        border-radius: 50%;\
-        display: flex;\
-        align-items: center;\
-        justify-content: center;\
-        cursor: pointer;\
-        transition: background 0.2s;\
-      ';
-      closeBtn.onmouseover = function() { closeBtn.style.background = 'rgba(255,255,255,0.2)'; };
-      closeBtn.onmouseout = function() { closeBtn.style.background = 'rgba(255,255,255,0.1)'; };
+    // Kick off nudge immediately after setup - don't rely on iframe.onload timing
+    setTimeout(checkAndTriggerNudge, 500);
 
-      imgOverlay.appendChild(img);
-      imgOverlay.appendChild(closeBtn);
-      document.body.appendChild(imgOverlay);
+    function toggleWidget(playSound = true) {
+        isOpen = !isOpen;
+        sessionStorage.setItem('tf_widget_open', isOpen);
 
-      requestAnimationFrame(function() {
-        imgOverlay.style.opacity = '1';
-        img.style.transform = 'scale(1)';
-      });
+        if (isOpen) {
+            hideNudge();
+            if (nudgeTimer) clearTimeout(nudgeTimer);
+            launcher.classList.add('tf-open');
+            iframeContainer.classList.add('tf-open');
 
-      imgOverlay.addEventListener('click', function() {
-        imgOverlay.style.opacity = '0';
-        img.style.transform = 'scale(0.95)';
-        setTimeout(function() {
-          if (imgOverlay.parentNode) {
-            imgOverlay.parentNode.removeChild(imgOverlay);
-          }
-        }, 300);
-      });
+            if (window.innerWidth <= 480) {
+                document.body.style.overflow = 'hidden';
+                container.classList.add('tf-mobile-open');
+            }
+
+            if (playSound && !isSoundMuted) swooshAudio.play().catch(() => {});
+            setTimeout(() => {
+                iframeContainer.classList.add('tf-animate-in');
+            }, 10);
+
+            iframe.contentWindow.postMessage({ type: 'TALKFUZE_OPENED' }, '*');
+
+            const badgeEl = document.getElementById('tf-badge');
+            if (badgeEl) badgeEl.classList.remove('tf-show');
+        } else {
+            launcher.classList.remove('tf-open');
+            iframeContainer.classList.remove('tf-animate-in');
+
+            if (window.innerWidth <= 480) {
+                document.body.style.overflow = '';
+                container.classList.remove('tf-mobile-open');
+            }
+
+            if (playSound && !isSoundMuted) swooshAudio.play().catch(() => {});
+            setTimeout(() => {
+                iframeContainer.classList.remove('tf-open');
+            }, 300);
+
+            iframe.contentWindow.postMessage({ type: 'TALKFUZE_CLOSED' }, '*');
+        }
     }
-  });
 
-  // Assemble
-  container.appendChild(iframe);
-  container.appendChild(button);
-  document.body.appendChild(container);
+    // Initialize state on load
+    if (isOpen) {
+        isOpen = false;
+        toggleWidget(false);
+    }
 
-  // --- User Journey Tracking ---
-  var sendPageView = function() {
-    try {
-      iframe.contentWindow.postMessage({
-        type: 'TALKFUZE_PAGE_VIEW',
-        url: window.location.href,
-        title: document.title,
-        referrer: document.referrer,
-        userAgent: navigator.userAgent
-      }, '*');
-    } catch(e) {}
-  };
+    launcher.addEventListener('click', toggleWidget);
 
-  iframe.addEventListener('load', sendPageView);
+    // Listen for messages from iframe
+    window.addEventListener('message', (event) => {
+        if (event.source !== iframe.contentWindow) return;
 
-  var _pushState = history.pushState;
-  history.pushState = function() {
-    _pushState.apply(history, arguments);
-    sendPageView();
-  };
-  
-  var _replaceState = history.replaceState;
-  history.replaceState = function() {
-    _replaceState.apply(history, arguments);
-    sendPageView();
-  };
-  
-  window.addEventListener('popstate', sendPageView);
-  // ------------------------------
+        if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
+            if (isOpen) toggleWidget();
+        }
 
-  // Expose API to host window
-  window.TalkFuze = {
-    setContext: function(contextData) {
-      var sendContext = function() {
-        try {
-          iframe.contentWindow.postMessage({
-            type: 'TALKFUZE_CONTEXT',
-            payload: contextData
-          }, '*');
-        } catch(e) {}
-      };
-      sendContext();
-      iframe.addEventListener('load', sendContext);
-    },
-    open: function() { openWidget(); },
-    close: function() { closeWidget(); }
-  };
+        if (event.data && event.data.type === 'TALKFUZE_OPEN') {
+            if (!isOpen) toggleWidget();
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_SET_COLOR') {
+            launcher.style.backgroundColor = event.data.color;
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_MUTE_TOGGLE') {
+            isSoundMuted = event.data.muted;
+            localStorage.setItem('tf_widget_muted', isSoundMuted);
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_OPEN_CALL') {
+            const callUrl = `${baseUrl}/widget/${orgId}?standalone_call=true&convId=${event.data.convId}&deviceId=${event.data.deviceId}`;
+            const width = 380;
+            const height = 550;
+            const left = (window.screen.width / 2) - (width / 2);
+            const top = (window.screen.height / 2) - (height / 2);
+            window.open(callUrl, 'TalkFuzeSecureCall', `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no,resizable=no`);
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_UNREAD_COUNT') {
+            const badgeEl = document.getElementById('tf-badge');
+            if (badgeEl) {
+                if (event.data.count > 0) {
+                    badgeEl.innerText = event.data.count > 9 ? '9+' : event.data.count;
+                    badgeEl.classList.add('tf-show');
+                } else {
+                    badgeEl.classList.remove('tf-show');
+                }
+            }
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
+            const avatarEl = document.getElementById('tf-agent-avatar');
+            const chatIconEl = document.getElementById('tf-icon-chat');
+            if (avatarEl && chatIconEl) {
+                if (event.data.avatarUrl) {
+                    avatarEl.src = event.data.avatarUrl;
+                    avatarEl.classList.add('tf-show');
+                    chatIconEl.style.opacity = '0';
+                } else {
+                    avatarEl.classList.remove('tf-show');
+                    chatIconEl.style.opacity = '1';
+                }
+            }
+        }
+    });
 
 })();
-
