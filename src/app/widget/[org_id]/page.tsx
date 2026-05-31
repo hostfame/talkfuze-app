@@ -19,9 +19,22 @@ type WidgetMessage = AppMessage & {
   } | null;
 }
 
+const safeParseDate = (dateStr: any): number => {
+  if (!dateStr) return 0;
+  if (dateStr instanceof Date) return dateStr.getTime();
+  
+  // Convert standard DB space format to T format for cross-browser Safari/iOS support
+  const normalized = typeof dateStr === 'string' 
+    ? dateStr.trim().replace(' ', 'T') 
+    : dateStr;
+    
+  const time = new Date(normalized).getTime();
+  return isNaN(time) ? new Date(dateStr).getTime() || 0 : time;
+};
+
 const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
-  const timeA = new Date(a.created_at).getTime();
-  const timeB = new Date(b.created_at).getTime();
+  const timeA = safeParseDate(a.created_at);
+  const timeB = safeParseDate(b.created_at);
   if (timeA !== timeB) {
     return timeA - timeB;
   }
@@ -1572,7 +1585,7 @@ export default function WidgetPage() {
           let safeMeta = m.metadata as any;
           try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch(e) {}
           if (safeMeta?.chunk_delay && (m.sender_type === 'agent' || m.sender_type === 'ai')) {
-             const showAfter = new Date(m.created_at).getTime();
+             const showAfter = safeParseDate(m.created_at);
              const waitTime = showAfter - now;
              if (waitTime > 0) {
                 m.metadata = safeMeta;
@@ -1801,7 +1814,7 @@ export default function WidgetPage() {
             try {
               if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta);
               if (safeMeta?.chunk_delay) {
-                 const showAfter = new Date(newMsg.created_at).getTime();
+                 const showAfter = safeParseDate(newMsg.created_at);
                  const waitTime = showAfter - Date.now();
                  if (waitTime > 0) delayMs = waitTime;
               }
@@ -3516,14 +3529,22 @@ export default function WidgetPage() {
                 const optimisticMessages = messages.filter(m => m.id.startsWith('temp-'));
                 let maxRealTime = 0;
                 if (realMessages.length > 0) {
-                  maxRealTime = Math.max(...realMessages.map(m => new Date(m.created_at).getTime()));
+                  maxRealTime = Math.max(...realMessages.map(m => safeParseDate(m.created_at)));
                 }
                 const processedOptimistic = optimisticMessages.map((om, index) => {
-                  const originalTime = new Date(om.created_at).getTime();
+                  const originalTime = safeParseDate(om.created_at);
                   const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
                   return { ...om, created_at: new Date(adjustedTime).toISOString() };
                 });
-                return [...realMessages, ...processedOptimistic].sort(sortMessagesComparator);
+                const sorted = [...realMessages, ...processedOptimistic].sort(sortMessagesComparator);
+                console.log("[Widget Rendering Messages Order]", sorted.map(m => ({
+                  id: m.id,
+                  sender: m.sender_type,
+                  content: m.content ? m.content.substring(0, 20) : '',
+                  created: m.created_at,
+                  parsedTime: safeParseDate(m.created_at)
+                })));
+                return sorted;
               })().map((msg, idx, arr) => {
                 const safeMeta = typeof msg.metadata === 'string'
                   ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
