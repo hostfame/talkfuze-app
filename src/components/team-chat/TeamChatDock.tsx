@@ -59,6 +59,11 @@ export default function TeamChatDock() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+  
+  // Custom Toast State for Team Chat
+  const [toast, setToast] = useState<{ id: string, name: string, content: string, avatar: string | null, chatId: string } | null>(null)
+  const flashIntervalRef = useRef<any>(null)
+  const originalTitleRef = useRef(typeof document !== 'undefined' ? document.title : 'Talkfuze')
 
   // Stable refs to avoid re-subscribing channels on every state change
   const isOpenRef = useRef(isOpen)
@@ -103,6 +108,26 @@ export default function TeamChatDock() {
     }
   }, [currentUser?.org_id, teamMembers, setChats])
 
+  // ------- Ask for Browser Notification Permission -------
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
+  }, [])
+
+  // ------- Stop Flashing when opened -------
+  useEffect(() => {
+    if (isOpen) {
+      if (flashIntervalRef.current) {
+        clearInterval(flashIntervalRef.current)
+        flashIntervalRef.current = null
+      }
+      document.title = originalTitleRef.current
+    }
+  }, [isOpen])
+
   // ------- 2. Broadcast Channel + Presence (subscribe ONCE) -------
   useEffect(() => {
     if (!currentUser?.id || !currentUser?.org_id) return
@@ -127,9 +152,27 @@ export default function TeamChatDock() {
         playCutePing()
         if (!isOpenRef.current || activeChatIdRef.current !== msg.chat_id) {
           incrementUnreadCount(msg.chat_id)
-        }
-        if (!isOpenRef.current) {
-          setIsOpen(true)
+          
+          // 1. Show custom in-app toast
+          setToast({ id: msg.id, name: msg.sender_name, content: msg.content, avatar: msg.sender_avatar, chatId: msg.chat_id })
+          setTimeout(() => setToast(current => current?.id === msg.id ? null : current), 6000)
+
+          // 2. Browser Notification
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification(`Team Chat: ${msg.sender_name}`, { body: msg.content, icon: msg.sender_avatar || undefined })
+            } catch(e) {}
+          }
+
+          // 3. Title Flashing
+          if (!flashIntervalRef.current && typeof document !== 'undefined') {
+            originalTitleRef.current = document.title
+            let isFlash = false
+            flashIntervalRef.current = setInterval(() => {
+              document.title = isFlash ? `(1) New Team Msg` : originalTitleRef.current
+              isFlash = !isFlash
+            }, 1000)
+          }
         }
       }
 
@@ -457,6 +500,26 @@ export default function TeamChatDock() {
             </span>
           )}
         </button>
+
+        {/* Custom Toast Popup */}
+        {toast && !isOpen && (
+          <div 
+            onClick={() => { setIsOpen(true); setActiveChatId(toast.chatId); setToast(null) }}
+            className="absolute top-0 right-12 w-64 bg-white dark:bg-[#111b21] rounded-xl shadow-[0_12px_48px_rgba(0,0,0,0.15)] border border-slate-200 dark:border-slate-800 p-3 cursor-pointer flex gap-3 items-start animate-in slide-in-from-right-8 fade-in duration-300"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
+              {toast.avatar ? (
+                <img src={toast.avatar} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-bold text-xs text-blue-600 bg-blue-100">{toast.name.charAt(0)}</div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200 truncate">{toast.name}</p>
+              <p className="text-[12px] text-slate-500 truncate">{toast.content.startsWith('[IMAGE]') ? 'Sent an image' : toast.content.startsWith('[AUDIO]') ? 'Sent a voice message' : toast.content}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Chat Window */}
