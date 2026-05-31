@@ -465,6 +465,9 @@
         }
     }
 
+    // Kick off nudge immediately after setup - don't rely on iframe.onload timing
+    setTimeout(checkAndTriggerNudge, 500);
+
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
         sessionStorage.setItem('tf_widget_open', isOpen);
