@@ -192,19 +192,56 @@ export async function logSipCallDirect(params: {
   conversationId: string | null
 }) {
   try {
-    // Log to call history
-    await supabaseAdmin.from('call_logs').insert({
-      org_id: params.orgId,
-      direction: params.direction,
-      from_number: params.fromNumber,
-      to_number: params.toNumber,
-      duration_seconds: params.durationSeconds,
-      status: params.status,
-      recording_url: null,
-      agent_name: params.agentName,
-      call_type: 'sip',
-      conversation_id: params.conversationId
-    })
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    
+    // Check if the webhook already inserted a log for this call
+    let matchQuery = supabaseAdmin
+      .from('call_logs')
+      .select('id, agent_name, call_type, recording_url')
+      .eq('org_id', params.orgId)
+      .gte('created_at', fiveMinsAgo)
+      .order('created_at', { ascending: false })
+
+    if (params.direction === 'outbound') {
+      const cleanTo = params.toNumber.replace(/\D/g, '')
+      const last10To = cleanTo.slice(-10)
+      matchQuery = matchQuery.like('to_number', `%${last10To}`)
+    } else {
+      const cleanFrom = params.fromNumber.replace(/\D/g, '')
+      const last10From = cleanFrom.slice(-10)
+      matchQuery = matchQuery.like('from_number', `%${last10From}`)
+    }
+
+    const { data: existingLogs } = await matchQuery
+    let finalRecordingUrl = null
+
+    if (existingLogs && existingLogs.length > 0) {
+      // Update the first matching log with agent name and conversation ID
+      const logToUpdate = existingLogs[0]
+      finalRecordingUrl = logToUpdate.recording_url
+
+      await supabaseAdmin.from('call_logs').update({
+        agent_name: params.agentName,
+        conversation_id: params.conversationId,
+        call_type: logToUpdate.call_type === 'pbx' ? 'pbx' : 'sip',
+        duration_seconds: params.durationSeconds > 0 ? params.durationSeconds : undefined,
+        status: params.status !== 'CANCELLED' ? params.status : undefined 
+      }).eq('id', logToUpdate.id)
+    } else {
+      // Insert new log if no webhook log exists yet
+      await supabaseAdmin.from('call_logs').insert({
+        org_id: params.orgId,
+        direction: params.direction,
+        from_number: params.fromNumber,
+        to_number: params.toNumber,
+        duration_seconds: params.durationSeconds,
+        status: params.status,
+        recording_url: null,
+        agent_name: params.agentName,
+        call_type: 'sip',
+        conversation_id: params.conversationId
+      })
+    }
 
     // If there is a conversation, log a badge in the chat thread
     if (params.conversationId) {
@@ -213,10 +250,6 @@ export async function logSipCallDirect(params: {
         ? `${Math.floor(params.durationSeconds / 60)}m ${params.durationSeconds % 60}s` 
         : `${params.durationSeconds}s`;
 
-      // DEDUPLICATION: Prevent multiple agents in a ring group from spamming the chat
-      // with identical call records (e.g., 4 agents ringing -> 3 cancelled, 1 answered)
-      // The CANCELLED event from other agents happened exactly when this call was ANSWERED.
-      // So if this call took 'durationSeconds', the CANCELLED event is roughly 'durationSeconds' ago.
       const targetTimeMs = Date.now() - (params.durationSeconds * 1000);
       const windowStart = new Date(targetTimeMs - 60000).toISOString();
       const windowEnd = new Date(targetTimeMs + 60000).toISOString();
@@ -240,11 +273,8 @@ export async function logSipCallDirect(params: {
         const recentMeta = typeof recentMsg.metadata === 'string' ? JSON.parse(recentMsg.metadata) : (recentMsg.metadata || {});
         
         if (params.status === 'CANCELLED') {
-          // If we are cancelled, and there's ANY recent call message (answered or cancelled), skip our insert
           shouldInsertMessage = false;
         } else if (params.status === 'ANSWERED' && recentMeta.status === 'CANCELLED') {
-          // If we ANSWERED, but a CANCELLED message was already inserted (race condition),
-          // we should UPDATE the existing message to reflect the answered state!
           await supabaseAdmin.from('messages').update({
             sender_id: agentId || null,
             content: contentStr,
@@ -253,13 +283,13 @@ export async function logSipCallDirect(params: {
               agent_name: params.agentName,
               duration: formattedDuration,
               status: params.status,
-              direction: params.direction
+              direction: params.direction,
+              recording_url: finalRecordingUrl || recentMeta.recording_url
             })
           }).eq('id', recentMsg.id);
           
           shouldInsertMessage = false;
         } else if (params.status === 'ANSWERED' && recentMeta.status === 'ANSWERED') {
-          // Unlikely, but if two agents somehow both answered (or same agent double fired)
           shouldInsertMessage = false;
         }
       }
@@ -278,7 +308,8 @@ export async function logSipCallDirect(params: {
             agent_name: params.agentName,
             duration: formattedDuration,
             status: params.status,
-            direction: params.direction
+            direction: params.direction,
+            recording_url: finalRecordingUrl // ATTACH RECORDING HERE!
           })
         })
         
