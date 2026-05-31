@@ -22,7 +22,7 @@ async function sendOTPWhatsApp(phone: string, code: string, firstname: string): 
       },
       body: JSON.stringify({
         to: cleanPhone,
-        message: `*Verify your Hostnin login*\n\nHello ${firstname},\n\nYour one-time login code is: *${code}*\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, please ignore.`
+        message: `Verify your Hostnin login\n\nHello ${firstname},\n\nYour one-time login code is: *${code}*\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, please ignore.`
       })
     })
 
