@@ -58,6 +58,7 @@ export default function TeamChatDock() {
   const [recording, setRecording] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
 
   // Stable refs to avoid re-subscribing channels on every state change
   const isOpenRef = useRef(isOpen)
@@ -280,6 +281,32 @@ export default function TeamChatDock() {
     await doSendMessage(text)
   }
 
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile()
+        if (file && activeChatId) {
+          setUploading(true)
+          try {
+            const formData = new FormData()
+            formData.append('file', file)
+            const res = await fetch('/api/upload', { method: 'POST', body: formData })
+            const data = await res.json()
+            if (data.url) {
+              await doSendMessage(`[IMAGE]${data.url}`)
+            }
+          } catch (err) {
+            console.error('Paste upload failed:', err)
+          } finally {
+            setUploading(false)
+          }
+        }
+        break // only handle first image
+      }
+    }
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !activeChatId) return
@@ -399,6 +426,19 @@ export default function TeamChatDock() {
   // ------- RENDER -------
   return (
     <>
+      {/* Zoom Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setZoomedImage(null)}
+        >
+          <img src={zoomedImage} alt="Zoomed" className="max-w-full max-h-full object-contain select-none animate-in zoom-in duration-200" />
+          <button className="absolute top-4 right-4 text-white/70 hover:text-white p-2" onClick={() => setZoomedImage(null)}>
+            <X size={24} />
+          </button>
+        </div>
+      )}
+
       {/* Floating Button - Right Edge Tab */}
       <div 
         className={cn(
@@ -531,7 +571,7 @@ export default function TeamChatDock() {
                             : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
                         }`}>
                           {msg.attachment_type === 'image' && msg.attachment_url && (
-                            <img src={msg.attachment_url} alt="Attachment" className="max-w-[150px] sm:max-w-[200px] rounded-lg mb-1 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(msg.attachment_url, '_blank')} />
+                            <img src={msg.attachment_url} alt="Attachment" className="max-w-[150px] sm:max-w-[200px] rounded-lg mb-1 object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => setZoomedImage(msg.attachment_url!)} />
                           )}
                           {msg.attachment_type === 'audio' && msg.attachment_url && (
                             <audio controls src={msg.attachment_url} className="w-[180px] h-8 mb-1 [&::-webkit-media-controls-panel]:bg-white/20 [&::-webkit-media-controls-play-button]:text-current" />
@@ -570,6 +610,7 @@ export default function TeamChatDock() {
                     type="text"
                     value={msgInput}
                     onChange={e => setMsgInput(e.target.value)}
+                    onPaste={handlePaste}
                     placeholder={recording ? "Recording..." : uploading ? "Uploading..." : "Message..."}
                     className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full px-4 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
                     disabled={sending || uploading || recording}
