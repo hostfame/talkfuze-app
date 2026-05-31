@@ -72,13 +72,15 @@ export const useMessageStore = create<MessageStore>((set) => ({
     }
   })),
 
-  // When a real message arrives via real-time, remove the first confirmed optimistic with matching content
+  // When a real message arrives via real-time, remove the first matching optimistic with matching content.
+  // Also drains 'failed' status - handles false-positive markFailed where INSERT succeeded
+  // but HTTP response timed out before reaching the client.
   confirmOptimisticMessage: (conversationId, content) => set((state) => {
     const msgs = state.optimisticMessages[conversationId] || [];
-    // First try to drain a 'confirmed' one (preferred - API already succeeded)
+    // Priority: confirmed > sending > failed (failed = possible false positive)
     let idx = msgs.findIndex(m => m.status === 'confirmed' && m.content === content);
-    // Fallback: drain a 'sending' one (real-time arrived before API response)
     if (idx === -1) idx = msgs.findIndex(m => m.status === 'sending' && m.content === content);
+    if (idx === -1) idx = msgs.findIndex(m => m.status === 'failed' && m.content === content);
     if (idx === -1) return state;
     const updated = [...msgs];
     updated.splice(idx, 1);
@@ -91,9 +93,10 @@ export const useMessageStore = create<MessageStore>((set) => ({
   }),
 
   // Drain a confirmed optimistic by content match (called when real-time INSERT arrives)
+  // Also drains 'failed' - handles false-positive where INSERT reached DB but response timed out
   drainConfirmedForContent: (conversationId, content) => set((state) => {
     const msgs = state.optimisticMessages[conversationId] || [];
-    const idx = msgs.findIndex(m => (m.status === 'confirmed' || m.status === 'sending') && m.content === content);
+    const idx = msgs.findIndex(m => (m.status === 'confirmed' || m.status === 'sending' || m.status === 'failed') && m.content === content);
     if (idx === -1) return state;
     const updated = [...msgs];
     updated.splice(idx, 1);
