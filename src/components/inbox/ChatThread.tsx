@@ -3226,13 +3226,13 @@ export default function ChatThread({
           }
 
           const sendTimer = setTimeout(async () => {
-            // Client-First DB Insert for extreme speed!
+            // Client-First DB Upsert for idempotent sends.
+            // temp_id column has a UNIQUE INDEX on (conversation_id, temp_id).
+            // If network drops after INSERT reaches DB but before 200 comes back,
+            // the client retries and upsert silently skips the duplicate.
+            // ignoreDuplicates: true means conflict = no error = no false Retry button.
             try {
-              // STEP 1: INSERT only - do NOT chain .select() here.
-              // If insert succeeds, message is in DB regardless of what happens next.
-              // Combining insert+select means a SELECT failure (RLS/network blip) 
-              // incorrectly triggers markFailed even though the message was sent.
-              const { error: insertError } = await supabase.from('messages').insert({
+              const { error: insertError } = await supabase.from('messages').upsert({
                 org_id: orgId,
                 conversation_id: conversationId,
                 sender_type: 'agent',
@@ -3240,12 +3240,16 @@ export default function ChatThread({
                 content: chunk,
                 content_type: 'text',
                 metadata: metaPayload,
+                temp_id: tempId,
                 is_internal: isInternal,
                 status: isInternal ? 'delivered' : (isScheduled ? 'sending' : 'sent'),
                 created_at: optimisticCreatedAt
+              }, {
+                onConflict: 'conversation_id,temp_id',
+                ignoreDuplicates: true
               });
 
-              // Only markFailed if the INSERT itself failed
+              // Only markFailed if the actual INSERT/UPSERT failed
               if (insertError) throw insertError;
               
               markConfirmed(conversationId, tempId);
@@ -3255,11 +3259,11 @@ export default function ChatThread({
                 return next;
               });
 
-              // STEP 2: Fetch inserted ID separately for webhook dispatch (non-blocking, non-fatal)
+              // Fetch inserted ID for webhook dispatch (non-blocking, non-fatal)
               supabase.from('messages')
                 .select('id')
                 .eq('conversation_id', conversationId)
-                .eq('metadata->>temp_id', tempId)
+                .eq('temp_id', tempId)
                 .single()
                 .then(({ data }) => {
                   if (data?.id) dispatchMessageWebhooks(data.id);
