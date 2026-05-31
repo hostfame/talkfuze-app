@@ -3551,7 +3551,7 @@ export default function WidgetPage() {
               </div>
             )}
 
-            <div ref={chatScrollContainerRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto p-5 pb-[148px] flex flex-col gap-1.5 bg-[#f9fafb]">
+            <div ref={chatScrollContainerRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto p-5 pb-[130px] flex flex-col gap-1.5 bg-[#f9fafb]">
               {/* Persistent Welcome Greeting - Only show for new conversations to avoid polluting chat history */}
               {activeConversationId === 'new' && (
                 <div className="flex flex-col gap-1 items-start mb-0.5 mt-1">

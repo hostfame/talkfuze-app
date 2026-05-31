@@ -197,6 +197,7 @@ export default function InboxPage() {
 
     let activeChannel: any = null;
     let hasConnectedOnce = false;
+    let lastRealtimeEventRef = { current: Date.now() };
 
     const subscribeToChannel = () => {
       const ch = supabase
@@ -228,6 +229,7 @@ export default function InboxPage() {
           }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
+          lastRealtimeEventRef.current = Date.now();
           const rawMsg = payload.new as any;
           const newMsg = normalizeMessage(rawMsg);
           if (!newMsg) return;
@@ -375,6 +377,7 @@ export default function InboxPage() {
           }
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
+          lastRealtimeEventRef.current = Date.now();
           const rawMsg = payload.new as any;
           const newMsg = normalizeMessage(rawMsg);
           if (!newMsg) return;
@@ -495,9 +498,57 @@ export default function InboxPage() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log('[Realtime] Tab became visible. Triggering sync to catch missed messages...');
+        lastRealtimeEventRef.current = Date.now(); // Reset heartbeat on tab focus
         syncDatabaseState();
       }
     };
+
+    // Polling fallback: catch messages if Realtime silently drops
+    // Widget already has this (4s), inbox didn't - adding 8s safety net
+
+    const pollInterval = setInterval(async () => {
+      const store = useInboxStore.getState();
+      const currentSelectedId = store.selectedId;
+      if (!currentSelectedId) return;
+
+      try {
+        const messages = store.messagesMap[currentSelectedId] || [];
+        const latestMsg = messages[messages.length - 1];
+        const since = latestMsg?.created_at || new Date(Date.now() - 60000).toISOString();
+
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', currentSelectedId)
+          .gt('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (data && data.length > 0) {
+          // Only add messages we don't already have
+          const existingIds = new Set(messages.map((m: any) => m.id));
+          const newMsgs = data.filter((m: any) => !existingIds.has(m.id));
+          if (newMsgs.length > 0) {
+            console.log(`[Poll Fallback] Caught ${newMsgs.length} missed message(s)`);
+            for (const msg of newMsgs) {
+              store.addMessage(currentSelectedId, normalizeMessage(msg));
+            }
+          }
+        }
+      } catch (err) {
+        // Silent - polling is a safety net, not primary
+      }
+    }, 8000);
+
+    // Heartbeat: if no realtime events for 45s, force resync
+    const heartbeatInterval = setInterval(() => {
+      const silentMs = Date.now() - lastRealtimeEventRef.current;
+      if (silentMs > 45000) {
+        console.warn(`[Heartbeat] No realtime events for ${Math.round(silentMs / 1000)}s, forcing resync`);
+        lastRealtimeEventRef.current = Date.now();
+        syncDatabaseState();
+      }
+    }, 30000);
     
     if (typeof window !== 'undefined') {
       window.addEventListener('visibilitychange', handleVisibilityChange);
@@ -507,6 +558,8 @@ export default function InboxPage() {
       if (typeof window !== 'undefined') {
         window.removeEventListener('visibilitychange', handleVisibilityChange);
       }
+      clearInterval(pollInterval);
+      clearInterval(heartbeatInterval);
       if (activeChannel) {
         try {
           supabase.removeChannel(activeChannel);

@@ -5,4 +5,13 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 
 // Create a single supabase client for interacting with your database in the browser
 // This automatically reads the authentication cookie set by Next.js
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
+// Custom Realtime config: faster reconnect + higher throughput for reliable message delivery
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 40,
+    },
+    heartbeatIntervalMs: 15000,
+    reconnectAfterMs: (tries: number) => Math.min(tries * 500, 5000),
+  },
+})
