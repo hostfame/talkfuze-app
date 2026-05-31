@@ -4734,14 +4734,66 @@ export default function ChatThread({
                       {(msg.status === 'sending' || msg.status === 'confirmed') ? (
                         <Check size={14} className="text-slate-400" />
                       ) : msg.status === 'failed' ? (
-                        <span 
-                          className="text-[10px] text-red-500 cursor-pointer hover:text-red-600 underline ml-1"
-                          onClick={() => {
-                            if (conversationId) removeOptimisticMessage(conversationId, msg.id)
-                          }}
-                          title="Failed - click to dismiss"
-                        >
-                          Failed
+                        <span className="flex items-center gap-1 ml-1">
+                          <span 
+                            className="text-[10px] text-blue-500 cursor-pointer hover:text-blue-600 underline"
+                            onClick={async () => {
+                              if (!conversationId) return;
+                              const failedContent = msg.content;
+                              const failedMeta = safeMeta;
+                              const failedIsInternal = msg.is_internal;
+                              // Remove old failed message
+                              removeOptimisticMessage(conversationId, msg.id);
+                              // Create new optimistic message
+                              const retryTempId = `retry_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+                              const retryCreatedAt = new Date().toISOString();
+                              addOptimisticMessage(conversationId, {
+                                id: retryTempId,
+                                sender_type: 'agent',
+                                sender_id: currentUser?.id ?? null,
+                                content: failedContent,
+                                content_type: msg.content_type || 'text',
+                                metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) } as any,
+                                is_internal: failedIsInternal,
+                                status: 'sending',
+                                created_at: retryCreatedAt
+                              });
+                              // Re-insert to DB
+                              try {
+                                const { data: insertedMessage, error } = await supabase.from('messages').insert({
+                                  org_id: orgId,
+                                  conversation_id: conversationId,
+                                  sender_type: 'agent',
+                                  sender_id: currentUser?.id,
+                                  content: failedContent,
+                                  content_type: msg.content_type || 'text',
+                                  metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) },
+                                  is_internal: failedIsInternal,
+                                  status: failedIsInternal ? 'delivered' : 'sent',
+                                  created_at: retryCreatedAt
+                                }).select('id').single();
+                                if (error) throw error;
+                                markConfirmed(conversationId, retryTempId);
+                                dispatchMessageWebhooks(insertedMessage.id);
+                              } catch (e) {
+                                console.error('[Retry] Failed:', e);
+                                markFailed(conversationId, retryTempId);
+                              }
+                            }}
+                            title="Retry sending"
+                          >
+                            Retry
+                          </span>
+                          <span className="text-[10px] text-slate-400">|</span>
+                          <span 
+                            className="text-[10px] text-red-400 cursor-pointer hover:text-red-500"
+                            onClick={() => {
+                              if (conversationId) removeOptimisticMessage(conversationId, msg.id)
+                            }}
+                            title="Dismiss"
+                          >
+                            ✕
+                          </span>
                         </span>
                       ) : msg.status === 'read' ? (
                         <CheckCheck size={14} className="text-blue-500" />

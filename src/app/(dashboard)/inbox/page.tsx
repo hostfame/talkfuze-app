@@ -551,7 +551,8 @@ export default function InboxPage() {
           if (newMsgs.length > 0) {
             console.log(`[Poll Fallback] Caught ${newMsgs.length} missed message(s)`);
             for (const msg of newMsgs) {
-              store.addMessage(currentSelectedId, normalizeMessage(msg));
+              const normalized = normalizeMessage(msg);
+              if (normalized) store.addMessage(currentSelectedId, normalized as AppMessage);
             }
           }
         }
