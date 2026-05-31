@@ -25,49 +25,45 @@ const safeParseDate = (dateStr: any): number => {
   if (typeof dateStr === 'number') return dateStr;
   
   if (typeof dateStr === 'string') {
-    let s = dateStr.trim().replace(' ', 'T');
-    const tzMatch = s.match(/(Z|[+-]\d{2}(?::?\d{2})?)$/);
-    let mainPart = s;
-    let tzPart = "";
-    if (tzMatch) {
-      tzPart = tzMatch[1];
-      mainPart = s.substring(0, s.length - tzPart.length);
+    // Normalize Postgres "2026-05-31 03:42:00.123456+00" to strict ISO "2026-05-31T03:42:00.123Z"
+    let normalized = dateStr.trim().replace(' ', 'T');
+    
+    // Ensure +00 becomes +00:00 for strict JS engines
+    normalized = normalized.replace(/\+(\d{2})$/, '+$1:00');
+    
+    // Truncate 6-digit microseconds to 3-digit milliseconds
+    normalized = normalized.replace(/(\.\d{3})\d+/, '$1');
+    
+    // Append 'Z' if no timezone is specified and we have a T
+    if (normalized.includes('T') && !normalized.match(/(Z|[+-]\d{2}(?::?\d{2})?)$/)) {
+      normalized += 'Z';
     }
-    const dotIndex = mainPart.indexOf('.');
-    if (dotIndex !== -1) {
-      const base = mainPart.substring(0, dotIndex);
-      let ms = mainPart.substring(dotIndex + 1);
-      ms = (ms + "000").substring(0, 3);
-      mainPart = base + "." + ms;
-    }
-    if (tzPart && (tzPart.startsWith('+') || tzPart.startsWith('-')) && tzPart.length === 3) {
-      tzPart = tzPart + ":00";
-    }
-    const normalized = mainPart + tzPart;
+
     const time = new Date(normalized).getTime();
     if (!isNaN(time)) return time;
+    
+    // Ultimate fallback for unhandled formats
+    const fallbackTime = new Date(dateStr).getTime();
+    if (!isNaN(fallbackTime)) return fallbackTime;
   }
   
-  const fallbackTime = new Date(dateStr).getTime();
-  return isNaN(fallbackTime) ? 0 : fallbackTime;
+  return 0;
 };
 
 const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
   const timeA = safeParseDate(a.created_at);
   const timeB = safeParseDate(b.created_at);
-  if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
+  
+  if (timeA !== timeB && timeA !== 0 && timeB !== 0) {
     return timeA - timeB;
   }
-  const getRank = (senderType: string) => {
-    switch (senderType) {
-      case 'contact': return 1;
-      case 'system': return 2;
-      case 'ai': return 3;
-      case 'agent': return 4;
-      default: return 5;
-    }
-  };
-  return getRank(a.sender_type) - getRank(b.sender_type);
+  
+  // Stable fallback if timestamps are identical or failed to parse
+  if (a.id && b.id && a.id !== b.id) {
+    return a.id.localeCompare(b.id);
+  }
+  
+  return 0;
 };
 
 function getStoredDeviceId() {
@@ -1855,7 +1851,7 @@ export default function WidgetPage() {
               }
             } catch(e) {}
 
-            const processIncoming = async () => {
+            const processIncoming = async (wasDelayed = false) => {
               if (newMsg.conversation_id !== activeConversationIdRef.current) return;
               
               if (newMsg.sender_type === 'agent' || newMsg.sender_type === 'system') {
@@ -1881,7 +1877,7 @@ export default function WidgetPage() {
                 
                 if (newMsg.sender_type !== 'contact') {
                     playUISound('receive', 'intercom');
-                    if (pendingDelaysRef.current === 0) {
+                    if (wasDelayed && pendingDelaysRef.current === 0) {
                         setIsAgentTyping(false);
                         setIsAgentRecording(false);
                     }
@@ -1908,10 +1904,10 @@ export default function WidgetPage() {
               pendingDelaysRef.current += 1;
               setTimeout(() => {
                 pendingDelaysRef.current -= 1;
-                processIncoming();
+                processIncoming(true);
               }, delayMs);
             } else {
-              processIncoming();
+              processIncoming(false);
             }
           }
         })
@@ -1955,12 +1951,9 @@ export default function WidgetPage() {
         .subscribe((status, err) => {
           console.log(`[Widget Realtime] channel status: ${status}`, err || '');
           if (status === 'SUBSCRIBED') {
-            if (hasConnectedOnce) {
-              console.log('[Widget Realtime] Channel reconnected. Syncing missed state...');
-              syncDatabaseState();
-            } else {
-              hasConnectedOnce = true;
-            }
+            console.log('[Widget Realtime] Channel subscribed. Syncing database state...');
+            syncDatabaseState();
+            hasConnectedOnce = true;
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
             console.error(`[Widget Realtime] Connection issue detected (${status}). Resubscribing in 5s...`);
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
@@ -3390,8 +3383,8 @@ export default function WidgetPage() {
                        </div>
                        <div className="flex flex-col">
                          <span className="font-bold text-[15px] text-slate-800 leading-tight tracking-tight">Team Hostnin</span>
-                         <span className="text-[12px] text-slate-500 leading-tight tracking-tight flex items-center gap-1 mt-0.5">
-                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                         <span className="text-[9px] text-slate-500 leading-tight tracking-tight flex items-center gap-1 mt-0.5">
+                           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                            Replies within minutes
                          </span>
                        </div>
@@ -3590,7 +3583,7 @@ export default function WidgetPage() {
                 if (isHandoff) {
                   const msgTime = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                   return (
-                    <div key={msg.id} className="flex justify-center my-1.5 select-none">
+                    <div key={msg.id} className="flex justify-center mt-1.5 mb-2.5 select-none">
                       <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 px-3 py-1 rounded-full text-slate-500 dark:text-slate-400 shadow-sm">
                         <svg className="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
@@ -3634,7 +3627,7 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' joined')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={msg.id} className="flex justify-center my-0.5 select-none">
+                      <div key={msg.id} className="flex justify-center mt-1 mb-2 select-none">
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
                           <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center">
                             {avatarUrl ? (
@@ -3659,7 +3652,7 @@ export default function WidgetPage() {
                     const agentName = msg.agent?.name || msg.content.split(' left')[0] || 'Agent';
                     const avatarUrl = msg.agent?.avatar_url;
                     return (
-                      <div key={msg.id} className="flex justify-center my-0.5 select-none opacity-80">
+                      <div key={msg.id} className="flex justify-center mt-1 mb-2 select-none opacity-80">
                         <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-800/80 px-2.5 py-1 rounded-full shadow-sm">
                           <div className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center opacity-80">
                             {avatarUrl ? (
@@ -3692,7 +3685,7 @@ export default function WidgetPage() {
                   }
 
                   return (
-                    <div key={msg.id} className="flex items-center gap-3 my-1 px-2 select-none">
+                    <div key={msg.id} className="flex items-center gap-3 mt-1.5 mb-2.5 px-2 select-none">
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium px-2 shrink-0 tracking-tight">
                         {displayContent}
@@ -3771,7 +3764,7 @@ export default function WidgetPage() {
               {(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in duration-300 mb-3" id="tf-typing-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={activeAgent?.avatar_url || "/team/4.avif"} className="w-full h-full object-cover" />
+                    <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-full h-full object-cover" />
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1 min-h-[36px]">
                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
@@ -3785,7 +3778,7 @@ export default function WidgetPage() {
               {isAgentRecording && !(isAgentTyping || isAutoTyping) && (
               <div className="flex items-start gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300 mb-3" id="tf-recording-indicator">
                  <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={activeAgent?.avatar_url || "/team/1.avif"} className="w-full h-full object-cover" />
+                    <img src={activeAgent?.avatar_url || "/team/9.avif"} className="w-full h-full object-cover" />
                  </div>
                  <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2.5 px-4 shadow-sm flex items-center gap-2.5 min-h-[40px]">
                     <div className="relative flex items-center justify-center w-5 h-5">
