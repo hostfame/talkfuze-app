@@ -419,11 +419,13 @@
     function showNudge(message) {
         nudgeText.innerText = message;
         nudge.style.display = 'block';
-        // delay to allow display block to apply
-        setTimeout(() => {
-            nudge.classList.add('tf-nudge-show');
-            if (!isSoundMuted) popAudio.play().catch(e => console.log('Audio play blocked:', e));
-        }, 50);
+        // Use double requestAnimationFrame for butter smooth initial transition
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                nudge.classList.add('tf-nudge-show');
+                if (!isSoundMuted) popAudio.play().catch(e => console.log('Audio play blocked:', e));
+            });
+        });
     }
 
     function hideNudge(dismissSession = false) {
@@ -436,14 +438,17 @@
         }, 400); 
     }
 
+    let nudgeFired = false;
+    let scrollListener = null;
+
     function checkAndTriggerNudge() {
         if (nudgeTimer) clearTimeout(nudgeTimer);
         
         // Desktop only
         if (window.innerWidth <= 768) return;
 
-        // Skip if widget is open or user dismissed it
-        if (isOpen || sessionStorage.getItem('tf_nudge_dismissed')) return;
+        // Skip if already fired, widget is open, or user dismissed it
+        if (nudgeFired || isOpen || sessionStorage.getItem('tf_nudge_dismissed')) return;
 
         const currentUrl = window.location.href.toLowerCase();
         let matchedMessage = null;
@@ -467,11 +472,30 @@
         }
 
         if (matchedMessage) {
-            nudgeTimer = setTimeout(() => {
+            const fireNudge = () => {
+                if (nudgeFired) return;
+                nudgeFired = true;
                 if (!isOpen && !sessionStorage.getItem('tf_nudge_dismissed')) {
                     showNudge(matchedMessage);
                 }
-            }, NUDGE_CONFIG.delayMs);
+                if (scrollListener) {
+                    window.removeEventListener('scroll', scrollListener);
+                }
+            };
+
+            // 1. Time delay (20s)
+            nudgeTimer = setTimeout(fireNudge, NUDGE_CONFIG.delayMs);
+
+            // 2. Scroll delay (300px)
+            if (!scrollListener) {
+                scrollListener = () => {
+                    if (window.scrollY > 300) {
+                        clearTimeout(nudgeTimer);
+                        fireNudge();
+                    }
+                };
+                window.addEventListener('scroll', scrollListener, { passive: true });
+            }
         }
     }
 
