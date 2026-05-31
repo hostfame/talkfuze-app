@@ -268,6 +268,17 @@ For English conversations, a `CRITICAL LANGUAGE OVERRIDE` instruction is appende
 - Key insight: Removing Bengali from the prompt was necessary but insufficient. The model needs EXPLICIT language enforcement instructions at the end of the user message.
 - Rule: Any new dynamic content source MUST pass through `stripBengaliLines()` for English conversations. Any new prompt section MUST use `detectedLanguage` for conditional assembly.
 
+**2026-05-31: Bengali Bleed-Through Fix (Composite - Approach 10)**
+- Problem: Customer sends pure English, AI drafts Bengali. Happened even with no Bengali/Banglish in any customer message.
+- Root cause: 8 sources of Bengali content unconditionally injected into EVERY system prompt regardless of conversation language: `banglaStyleContent`, both-language `fewShotBlock`, inline Bengali phrases in `stateAwareness`/`zeroFiller`/`langMatchingSection`, etc.
+- Solution (3 layers, 0ms added latency):
+  1. Server-side `detectedLanguage` via `BENGALI_REGEX` on latest customer message - source of truth, not the LLM's guess
+  2. All Bengali content (`banglaStyleContent`, fewShotBlock, system prompt phrases) gated behind `detectedLanguage === 'bn'`
+  3. Lightweight language anchor appended to user message as last line of defense
+- Key insight: The LLM was being fed Bengali text from 8+ sources then asked to "guess" the language. It guessed Bengali. The fix removes the guesswork by detecting server-side and eliminating Bengali bias from the prompt for English conversations.
+- Net effect: English conversations get smaller, Bengali-free prompts. Bengali conversations unchanged. Token count reduced for English.
+- Rule: `detectedLanguage` must be passed to `buildSystemPrompt()` and `getLearningData()` for every new prompt section or data source added.
+
 **2026-05-29: Bengali Style - Pattern Over Rejection**
 - Rewrote `bangla-style.ts` from mixed approach (some examples + some word bans) to pure pattern-based style guide
 - Principle: Describe the VOICE ("modern Bangladeshi tech startup"), give EXAMPLES of correct tone, let the LLM generalize

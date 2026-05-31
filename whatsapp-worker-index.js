@@ -1470,9 +1470,12 @@ async function processOutboundMessage(msg) {
 async function sendPendingOutboundMessages() {
   try {
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    const { data: pending, error } = await supabaseRealtime
+
+    // Fetch pending messages with channel type joined - filter WhatsApp-only in JS.
+    // DO NOT use .in('conversation_id', [...]) with large arrays - Supabase URL limit causes Bad Request.
+    const { data: allPending, error } = await supabaseRealtime
       .from('messages')
-      .select('*')
+      .select('*, conversation:conversations!inner(channel:channels!inner(type))')
       .in('status', ['sent', 'sending'])
       .in('sender_type', ['agent', 'ai'])
       .is('platform_message_id', null)
@@ -1485,9 +1488,21 @@ async function sendPendingOutboundMessages() {
       return;
     }
 
-    if (pending && pending.length > 0) {
-      console.log(`[SELF-HEAL] Found ${pending.length} pending outbound messages. Processing...`);
-      for (const msg of pending) {
+    // Only process WhatsApp channel messages - widget/messenger/etc. don't use platform_message_id
+    // and should never be handled by this worker (causes false failed status in DB)
+    const pending = (allPending || []).filter(m => {
+      const conv = Array.isArray(m.conversation) ? m.conversation[0] : m.conversation;
+      const chan = conv ? (Array.isArray(conv.channel) ? conv.channel[0] : conv.channel) : null;
+      return chan?.type === 'whatsapp';
+    });
+
+    // Strip the join data before passing msg to processOutboundMessage (it only expects message fields)
+    const pendingClean = pending.map(({ conversation: _conv, ...msg }) => msg);
+
+
+    if (pendingClean.length > 0) {
+      console.log(`[SELF-HEAL] Found ${pendingClean.length} pending WhatsApp messages. Processing...`);
+      for (const msg of pendingClean) {
         // Track self-heal retry count to prevent zombie loops
         const healAttempts = (msg.metadata?.self_heal_attempts || 0) + 1;
 

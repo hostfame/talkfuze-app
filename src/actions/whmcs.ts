@@ -95,12 +95,15 @@ export async function fetchWhmcsClientByDomain(domain: string) {
 
 export async function fetchWhmcsServices(clientId: number) {
   try {
+    // getClientsProducts and getClientsDomains already unwrap the nested .product/.domain
+    // arrays internally, so their .products/.domains fields are already flat arrays.
+    // Do NOT wrap them in normalizeArray again or you get double-nesting [[...items]].
     const productsRes = await getClientsProducts(clientId, 0, 100)
     const domainsRes = await getClientsDomains(clientId, 0, 100)
     
     return {
-      products: normalizeArray(productsRes.products),
-      domains: normalizeArray(domainsRes.domains)
+      products: productsRes.products || [],
+      domains: domainsRes.domains || []
     }
   } catch (error) {
     console.error("Failed to fetch WHMCS services:", error)

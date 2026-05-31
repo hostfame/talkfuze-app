@@ -6,7 +6,7 @@ import { Web, SessionState, UserAgent } from 'sip.js'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
-import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices } from '@/actions/whmcs'
+import { fetchWhmcsClient, fetchWhmcsServices, fetchWhmcsUnpaidInvoices, generateWHMCSSsoToken } from '@/actions/whmcs'
 import { getLastCallForNumber, findConversationByPhone, saveCallNote, logSipCallDirect } from '@/actions/calls'
 import { ICE_SERVERS } from '@/lib/webrtc'
 import { getTeammates } from '@/actions/team'
@@ -99,6 +99,7 @@ export default function SipDialer() {
   const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null)
   const matchedConversationIdRef = useRef<string | null>(null)
   const [teammates, setTeammates] = useState<any[]>([])
+  const [isLoggingInAsClient, setIsLoggingInAsClient] = useState(false)
   
   useEffect(() => {
     matchedConversationIdRef.current = matchedConversationId
@@ -381,6 +382,8 @@ export default function SipDialer() {
         setShowTransferInput(false)
         setTransferNumber('')
         setShowInCallKeypad(false)
+        setIncomingCallerName('')
+        setIsLoggingInAsClient(false)
         cleanupMediaTracks(session)
         
         // Broadcast that call has ended so other agents' UI resets
@@ -874,6 +877,8 @@ export default function SipDialer() {
     setShowTransferInput(false)
     setTransferNumber('')
     setShowInCallKeypad(false)
+    setIncomingCallerName('')
+    setIsLoggingInAsClient(false)
     
     try {
       await userAgent.hangup()
@@ -963,6 +968,8 @@ export default function SipDialer() {
     setShowTransferInput(false)
     setTransferNumber('')
     setShowInCallKeypad(false)
+    setIncomingCallerName('')
+    setIsLoggingInAsClient(false)
     
     try {
       await userAgent.decline()
@@ -1227,10 +1234,12 @@ export default function SipDialer() {
                   {isPhoneNumber(incomingCallerName) ? `+${incomingCallerName}` : incomingCallerName || 'Inbound Call'}
                 </span>
                 <span className="text-[11px] text-white/60 font-medium leading-none mt-1">
-                  {status === 'Connected' ? `from your iPhone - ${formatTime(callDuration)}` :
-                   status === 'Incoming Call...' ? 'Incoming Call...' :
-                   status === 'Connecting...' ? 'Connecting...' :
-                   status === 'Calling...' || status === 'Dialing...' ? 'Calling...' : status}
+                  {status === 'Connected'
+                    ? `${activeCallSession?.direction === 'inbound' ? 'Inbound' : 'Outbound'} - ${formatTime(callDuration)}`
+                    : status === 'Incoming Call...' ? 'Incoming Call...'
+                    : status === 'Connecting...' ? 'Connecting...'
+                    : status === 'Calling...' || status === 'Dialing...' ? 'Calling...'
+                    : status}
                 </span>
               </div>
             </div>
@@ -1408,7 +1417,7 @@ export default function SipDialer() {
               <ChevronDown size={18} strokeWidth={2.5} className={`transition-transform duration-200 ${isClientExpanded ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* End Call / Answer Trigger */}
+            {/* End Call / Decline / Answer */}
             {status === 'Incoming Call...' ? (
               <div className="flex gap-2 shrink-0">
                 <button 
@@ -1423,6 +1432,15 @@ export default function SipDialer() {
                 >
                   <VolumeX size={18} strokeWidth={2.5} />
                 </button>
+                {/* Decline */}
+                <button 
+                  onClick={handleDecline}
+                  className="w-[42px] h-[42px] rounded-full bg-[#ff3b30] hover:bg-[#ff453a] border border-[#ff3b30]/10 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(255,59,48,0.3)] active:scale-95 cursor-pointer"
+                  title="Decline"
+                >
+                  <PhoneOff size={18} strokeWidth={2.5} />
+                </button>
+                {/* Answer */}
                 <button 
                   onClick={handleAnswer}
                   className="w-[42px] h-[42px] rounded-full bg-[#34c759] hover:bg-[#30b351] border border-[#34c759]/10 text-white flex items-center justify-center transition-all shadow-[0_4px_12px_rgba(52,199,89,0.3)] active:scale-95 cursor-pointer animate-pulse"
@@ -1452,12 +1470,10 @@ export default function SipDialer() {
           </div>
 
           {/* Bottom Expandable Details Tray */}
-          {isClientExpanded && (whmcsClientInfo || lastCallInfo) && (
+          {isClientExpanded && (
             <div className="border-t border-white/10 bg-black/40 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-              
 
-
-              {/* In-Call DTMF Mini Keypad inside tray */}
+              {/* In-Call DTMF Mini Keypad - always accessible when keypad toggled, regardless of client info */}
               {showInCallKeypad && sessionState === SessionState.Established && (
                 <div className="grid grid-cols-4 gap-1 p-2 bg-white/5 rounded-lg border border-white/10">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((key) => (
@@ -1510,6 +1526,39 @@ export default function SipDialer() {
                       <ExternalLink size={12} />
                       View Profile
                     </a>
+                    {/* Login as Client - SSO direct login into client portal */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (isLoggingInAsClient) return
+                        setIsLoggingInAsClient(true)
+                        try {
+                          const result = await generateWHMCSSsoToken(whmcsClientInfo.id)
+                          if (result.success && result.redirect_url) {
+                            window.open(result.redirect_url, '_blank', 'noreferrer')
+                          } else {
+                            console.error('[SSO] Failed:', result.error)
+                          }
+                        } catch (e) {
+                          console.error('[SSO] Exception:', e)
+                        } finally {
+                          setIsLoggingInAsClient(false)
+                        }
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold text-white transition-all active:scale-[0.98] ${
+                        isLoggingInAsClient
+                          ? 'bg-emerald-700/60 cursor-not-allowed opacity-70'
+                          : 'bg-emerald-600 hover:bg-emerald-500 shadow-sm hover:shadow'
+                      }`}
+                      title="Log into client's WHMCS account"
+                    >
+                      {isLoggingInAsClient ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <ExternalLink size={12} />
+                      )}
+                      Login as Client
+                    </button>
                     {matchedConversationId && (
                       <button
                         onClick={() => setSelectedId(matchedConversationId)}
@@ -1543,6 +1592,10 @@ export default function SipDialer() {
                 </div>
               )}
 
+              {/* Empty state when no data */}
+              {!whmcsClientInfo && !lastCallInfo && (
+                <p className="text-center text-[11px] text-white/30 py-2">No client data found for this number.</p>
+              )}
 
             </div>
           )}

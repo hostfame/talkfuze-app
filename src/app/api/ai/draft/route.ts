@@ -36,8 +36,10 @@ const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|th
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string): string {
-  const currentBanglaStyle = banglaStyleContent;
+function buildSystemPrompt(hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string, lang: 'en' | 'bn' = 'bn'): string {
+  // Gate Bangla style guide - only inject for Bengali conversations
+  // For English conversations this removes ~400 tokens of Bengali content that biases the model
+  const currentBanglaStyle = lang === 'bn' ? banglaStyleContent : '';
   const salesContent = hasSalesIntent ? getSalesFunnelContent() : "";
   // Support triage is injected when support intent is detected AND sales intent is NOT
   // This prevents both workflows from competing in the same prompt
@@ -51,14 +53,16 @@ Match the customer's language autonomously:
 3. BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "kaj korbe", "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
 4. "BD" TRAP: If an English-speaking customer mentions "BD" or "Bangladesh", they are referring to a geographic location, NOT requesting Bengali language. Stay in English.`;
 
-  const stateAwareness = `2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("as I mentioned earlier" or "পূর্বে যেমনটি জানিয়েছিলাম").`;
+  // Removed hardcoded Bengali phrases from stateAwareness and zeroFiller.
+  // Bengali script in the system prompt biases the model toward Bengali even for English conversations.
+  const stateAwareness = `2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply (e.g. "as I mentioned earlier" or the equivalent in the reply language).`;
 
-  const zeroFiller = `4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing. Use "আপনি/আপনার" when in Bengali.`;
+  const zeroFiller = `4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (boss, sir, bhai, apu) in sales/pricing. Use formal "you" pronouns in Bengali.`;
 
   const escalationSection = `## ESCALATION
 Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply (match the language):
 - English: "If the issue is still not resolved, I will convert this chat into a support ticket so our technical team can check the details and solve it."
-- Bengali: "এরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"`;
+- Bengali: "এরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"`;
 
   return `## IDENTITY
 You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
@@ -96,7 +100,7 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string): Promise<{ fewShotBlock: string, masterBlueprint: string }> {
+async function getLearningData(orgId: string, lang: 'en' | 'bn' = 'bn'): Promise<{ fewShotBlock: string, masterBlueprint: string }> {
   let learnedRulesBlock = "";
   let masterBlueprint = "";
   try {
@@ -151,16 +155,12 @@ async function getLearningData(orgId: string): Promise<{ fewShotBlock: string, m
     ? dynamicExamplesEnglish 
     : [...dynamicExamplesEnglish, ...goldenEnglish.slice(0, 5 - dynamicExamplesEnglish.length)];
 
-  const fewShotBlock = `
-<english_examples>
-RECENT APPROVED ENGLISH REPLIES (Mimic this tone and brevity):
-${examplesEnglish.join('\n---\n')}
-</english_examples>
-
-<bengali_examples>
-RECENT APPROVED BENGALI REPLIES (Mimic this tone and brevity):
-${examplesBengali.join('\n---\n')}
-</bengali_examples>`;
+  // Only inject examples for the detected language.
+  // Sending both English and Bengali examples in the same prompt creates ambiguity -
+  // the model sees Bengali examples and may choose to output Bengali even for English conversations.
+  const fewShotBlock = lang === 'en'
+    ? `<english_examples>\nRECENT APPROVED ENGLISH REPLIES (Mimic this tone and brevity):\n${examplesEnglish.join('\n---\n')}\n</english_examples>`
+    : `<bengali_examples>\nRECENT APPROVED BENGALI REPLIES (Mimic this tone and brevity):\n${examplesBengali.join('\n---\n')}\n</bengali_examples>`;
   return { fewShotBlock, masterBlueprint };
 }
 
@@ -294,7 +294,14 @@ export async function POST(req: Request) {
       activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
-    // Auto-draft mode: Language detection is now handled entirely by the LLM.
+    // Server-side language detection: check latest customer message via Unicode range.
+    // This is the source of truth - not the LLM's guess from a prompt full of Bengali text.
+    // BENGALI_REGEX checks for actual Bengali Unicode script characters (no Banglish fragility).
+    // Default to 'bn' for ambiguous/short messages so Bengali customers aren't broken.
+    const detectedLanguage: 'en' | 'bn' = (
+      latestCustomerMessageCleaned.length > 3 &&
+      !BENGALI_REGEX.test(latestCustomerMessageCleaned)
+    ) ? 'en' : 'bn';
 
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
@@ -410,7 +417,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId)
+      ? getLearningData(orgId, detectedLanguage)
       : Promise.resolve({ fewShotBlock: '', masterBlueprint: '' });
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
@@ -486,7 +493,9 @@ Explain the image in the conversation\'s language.` : ''}
 
 ${instruction 
   ? `Draft by synthesizing the Agent Instruction with conversation history.` 
-  : `Draft a smart, helpful reply as the support agent.`}`;
+  : `Draft a smart, helpful reply as the support agent.`}
+
+${detectedLanguage === 'en' && !instruction ? `Reply language: English. The customer's message is in English - output '[Language: English]' and reply in English only.` : ''}${detectedLanguage === 'bn' && !instruction ? `Reply language: Bengali. The customer's message is in Bengali or Banglish - output '[Language: Bengali]' and reply in Bengali script only.` : ''}`;
     }
 
     // 5. Fire AI request (Gemini for Translation, Anthropic for Support Drafts)
@@ -690,7 +699,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain)
+                    content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain, detectedLanguage)
                   },
                   {
                     role: "user",
@@ -788,7 +797,7 @@ ${instruction
           messages: [
             {
               role: "system",
-              content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain)
+              content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain, detectedLanguage)
             },
             {
               role: "user",

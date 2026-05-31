@@ -13,6 +13,8 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     throw new Error("Missing required fields")
   }
 
+  const isPageView = metadata?.event === 'page_view' || content?.startsWith('Viewed:');
+
   const cacheKey = `${orgId}:${deviceId}`;
   const cached = widgetCache[cacheKey];
   let channelId: string;
@@ -33,6 +35,14 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
     if (contactResult.error) throw contactResult.error;
 
     let channel = channelResult.data?.[0];
+    let contact = contactResult.data?.[0];
+
+    // Page views must NOT create new contacts or conversations.
+    // Only log to an already-existing open conversation.
+    if (isPageView && !contact) {
+      return { success: true, conversationId: null, skipped: true, reason: "Page view: no existing contact" };
+    }
+
     if (!channel) {
       const { data: newChannel, error: channelErr } = await supabaseAdmin
         .from("channels").insert({ org_id: orgId, type: "widget" }).select("id").single()
@@ -40,7 +50,6 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
       channel = newChannel
     }
 
-    let contact = contactResult.data?.[0];
     if (!contact) {
       const { count } = await supabaseAdmin
         .from("contacts").select("id", { count: 'exact', head: true }).eq("org_id", orgId).eq("platform_type", "widget");
@@ -83,6 +92,10 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   }
 
   if (!conversationId) {
+    // Page views must NOT create a new conversation - visitor is just browsing.
+    if (isPageView) {
+      return { success: true, conversationId: null, skipped: true, reason: "Page view: no existing conversation" };
+    }
     const { data: newConv, error: convErr } = await supabaseAdmin
       .from("conversations").insert({ org_id: orgId, channel_id: channelId, contact_id: contactId, status: "open" }).select("id").single()
     if (convErr) throw convErr
@@ -121,7 +134,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
 
   const now = new Date().toISOString();
   
-  const isPageView = metadata?.event === 'page_view' || content?.startsWith('Viewed:');
+  const isPageViewMsg = metadata?.event === 'page_view' || content?.startsWith('Viewed:');
   
   const msgPromise = supabaseAdmin.from("messages").insert({
     org_id: orgId,
@@ -134,7 +147,7 @@ export async function sendWidgetMessage(orgId: string, deviceId: string, content
   });
 
   let msgResult;
-  if (!isPageView) {
+  if (!isPageViewMsg) {
     const convPromise = supabaseAdmin.from("conversations").update({ last_message_at: now, is_archived: false }).eq("id", conversationId);
     const [msgRes] = await Promise.all([msgPromise, convPromise]);
     msgResult = msgRes;

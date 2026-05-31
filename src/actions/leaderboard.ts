@@ -33,15 +33,24 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     }
   }
 
-  // 1. Get all users
+  // BD today/yesterday boundaries
+  const bdToday = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+  bdToday.setUTCHours(0, 0, 0, 0);
+  const todayStart = new Date(bdToday.getTime() - 6 * 60 * 60 * 1000);
+
+  const bdYesterday = new Date(bdToday.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStart = new Date(bdYesterday.getTime() - 6 * 60 * 60 * 1000);
+  const yesterdayEnd = new Date(todayStart.getTime() - 1);
+
+  // 1. Get all users with created_at for tenure
   const { data: agents } = await supabaseAdmin
     .from('users')
-    .select('id, name, avatar_url, role')
+    .select('id, name, avatar_url, role, created_at')
     .eq('org_id', orgId);
     
   if (!agents) return [];
 
-  // 2. Get all messages in this period to count regular vs internal and calculate response time
+  // 2. Get all messages in this period
   let messagesQuery = supabaseAdmin
     .from('messages')
     .select('id, sender_id, sender_type, conversation_id, created_at, is_internal, content')
@@ -54,7 +63,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   
   const { data: allMessages } = await messagesQuery.order('created_at', { ascending: true });
 
-  // 3. Get call logs in this period
+  // 3. Fetch last 14 days messages for hourly heatmap (always, regardless of selected period)
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const { data: recentMessages } = await supabaseAdmin
+    .from('messages')
+    .select('sender_id, created_at, sender_type, is_internal')
+    .eq('org_id', orgId)
+    .eq('sender_type', 'agent')
+    .eq('is_internal', false)
+    .gte('created_at', fourteenDaysAgo.toISOString())
+    .order('created_at', { ascending: true });
+
+  // 4. Get call logs in this period
   let calls: any[] = [];
   try {
     let callLogsQuery = supabaseAdmin
@@ -75,7 +95,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching call logs for leaderboard:", err);
   }
 
-  // 3.5. Get silent heartbeats in this period for active time
+  // 5. Get heartbeats for active time
   let heartbeats: any[] = [];
   try {
     let heartbeatsQuery = supabaseAdmin
@@ -96,7 +116,23 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching heartbeats for active time:", err);
   }
 
-  // 4. Process stats per agent
+  // 6. Get resolved conversations to compute resolvedCount per agent
+  // We need conversations that are resolved AND the agent sent at least 1 message in them
+  let resolvedConvIds = new Set<string>();
+  try {
+    const { data: resolvedConvs } = await supabaseAdmin
+      .from('conversations')
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('status', 'resolved');
+    if (resolvedConvs) {
+      resolvedConvs.forEach((c: any) => resolvedConvIds.add(c.id));
+    }
+  } catch (err) {
+    console.error("Error fetching resolved conversations:", err);
+  }
+
+  // 7. Process stats per agent
   const statsMap: Record<string, any> = {};
   
   agents.forEach(agent => {
@@ -105,6 +141,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       name: agent.name,
       avatar_url: agent.avatar_url,
       role: agent.role,
+      joinedAt: agent.created_at || null,
       messagesCount: 0,
       whispersCount: 0,
       chatsCount: 0,
@@ -112,23 +149,29 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       totalCallDuration: 0,
       activeMinutes: 0,
       actionsPerHour: 0,
-      avgResponseTime: 0, // In minutes
+      avgResponseTime: 0,
       totalResponseTimeMs: 0,
       responseTimeCount: 0,
-      // Hosting-specific performance metrics:
-      firstResponseSlaPercent: 100, // Default to 100%
+      firstResponseSlaPercent: 100,
       totalFirstResponses: 0,
       firstResponsesUnder60s: 0,
-      emergencyResponseTime: 0, // In seconds
+      emergencyResponseTime: 0,
       totalEmergencyResponseTimeMs: 0,
       emergencyResponseTimeCount: 0,
       escalatedTicketsCount: 0,
       aiDraftCount: 0,
-      aiAssistedPercent: 0
+      aiAssistedPercent: 0,
+      resolvedCount: 0,
+      msgsToday: 0,
+      msgsYesterday: 0,
+      // hourlyActivity[h] = message count in hour h (BDT, 0-23) over last 14 days
+      hourlyActivity: new Array(24).fill(0),
+      // dailyTrend: last 7 days
+      dailyTrend: [] as { day: string; count: number }[],
     };
   });
 
-  // Count heartbeats to calculate active time (1 heartbeat = 1 active minute)
+  // Count heartbeats
   if (heartbeats.length > 0) {
     heartbeats.forEach(hb => {
       if (statsMap[hb.agent_id]) {
@@ -137,7 +180,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     });
   }
 
-  // Match calls by agent name - Fuzzy matching enabled (e.g. Asad matches Asad Ujjaman)
+  // Match calls by agent name
   if (calls.length > 0) {
     calls.forEach(call => {
       if (!call.agent_name) return;
@@ -157,18 +200,17 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   if (allMessages && allMessages.length > 0) {
     const agentChats: Record<string, Set<string>> = {};
     const agentTimestamps: Record<string, number[]> = {};
+    const agentConvSet: Record<string, Set<string>> = {}; // all convs agent touched in period
     
-    // Group messages by conversation to calculate response times
     const convMessages: Record<string, typeof allMessages> = {};
 
     allMessages.forEach(msg => {
-      // 1. Group for response time
+      // Group by conversation for response time
       if (!convMessages[msg.conversation_id]) {
         convMessages[msg.conversation_id] = [];
       }
       convMessages[msg.conversation_id].push(msg);
 
-      // 2. Count messages sent by agents
       if (msg.sender_type === 'agent') {
         const agentId = msg.sender_id;
         if (!agentId || !statsMap[agentId]) return;
@@ -182,10 +224,12 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
         if (!agentChats[agentId]) agentChats[agentId] = new Set();
         agentChats[agentId].add(msg.conversation_id);
 
+        if (!agentConvSet[agentId]) agentConvSet[agentId] = new Set();
+        agentConvSet[agentId].add(msg.conversation_id);
+
         if (!agentTimestamps[agentId]) agentTimestamps[agentId] = [];
         agentTimestamps[agentId].push(new Date(msg.created_at).getTime());
       } else if (msg.sender_type === 'system' && msg.sender_id && statsMap[msg.sender_id]) {
-        // Track escalated tickets
         const contentStr = (msg.content || '').toLowerCase();
         if (contentStr.includes('ticket is created')) {
           statsMap[msg.sender_id].escalatedTicketsCount++;
@@ -193,9 +237,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       }
     });
 
+    // Compute resolvedCount: conversations the agent touched that are resolved
+    Object.keys(agentConvSet).forEach(agentId => {
+      if (!statsMap[agentId]) return;
+      let resolved = 0;
+      agentConvSet[agentId].forEach(convId => {
+        if (resolvedConvIds.has(convId)) resolved++;
+      });
+      statsMap[agentId].resolvedCount = resolved;
+    });
+
     // Calculate response times & hosting SLAs
     Object.values(convMessages).forEach(msgs => {
-      // Check if conversation contains emergency keywords in customer messages
       let isEmergency = false;
       msgs.forEach(msg => {
         if (msg.sender_type === 'contact') {
@@ -228,7 +281,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
             const replyTime = new Date(msg.created_at).getTime();
             const diffMs = replyTime - lastContactTime;
             
-            // Only count reasonable response times (< 12 hours) to avoid off-hours skewing stats
             if (diffMs > 0 && diffMs < 12 * 60 * 60 * 1000) {
               statsMap[agentId].totalResponseTimeMs += diffMs;
               statsMap[agentId].responseTimeCount++;
@@ -238,7 +290,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
                 statsMap[agentId].emergencyResponseTimeCount++;
               }
 
-              // First response SLA check (<60 seconds)
               if (isFirstResponse) {
                 statsMap[agentId].totalFirstResponses++;
                 if (diffMs < 60 * 1000) {
@@ -248,34 +299,27 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
               }
             }
             
-            // Reset contact time since agent replied
             lastContactTime = null;
           }
         }
       });
     });
 
-    // Calculate average response times and hosting metrics
+    // Finalise chat counts
     Object.keys(statsMap).forEach(agentId => {
       const stats = statsMap[agentId];
-
       if (agentChats[agentId]) {
         stats.chatsCount = agentChats[agentId].size;
       }
-
       if (stats.responseTimeCount > 0) {
         const avgMs = stats.totalResponseTimeMs / stats.responseTimeCount;
-        stats.avgResponseTime = Math.round((avgMs / (60 * 1000)) * 10) / 10; // In minutes
+        stats.avgResponseTime = Math.round((avgMs / (60 * 1000)) * 10) / 10;
       }
-      
-      // First Response SLA Percent
       if (stats.totalFirstResponses > 0) {
         stats.firstResponseSlaPercent = Math.round((stats.firstResponsesUnder60s / stats.totalFirstResponses) * 100);
       } else {
         stats.firstResponseSlaPercent = 100;
       }
-
-      // Emergency Response Time (in seconds)
       if (stats.emergencyResponseTimeCount > 0) {
         const avgEmergencyMs = stats.totalEmergencyResponseTimeMs / stats.emergencyResponseTimeCount;
         stats.emergencyResponseTime = Math.round(avgEmergencyMs / 1000);
@@ -285,7 +329,77 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     });
   }
 
-  // 5. Query AI draft usage per agent in this period
+  // 8. Compute hourlyActivity (last 14 days, BDT hour 0-23) and msgsToday/msgsYesterday from recentMessages
+  if (recentMessages && recentMessages.length > 0) {
+    recentMessages.forEach(msg => {
+      const agentId = msg.sender_id;
+      if (!agentId || !statsMap[agentId]) return;
+
+      const msgTime = new Date(msg.created_at);
+      // Convert to BDT: UTC+6
+      const bdtTime = new Date(msgTime.getTime() + 6 * 60 * 60 * 1000);
+      const hour = bdtTime.getUTCHours(); // 0-23 in BDT
+
+      statsMap[agentId].hourlyActivity[hour]++;
+
+      // Today vs yesterday
+      const msgMs = msgTime.getTime();
+      if (msgMs >= todayStart.getTime()) {
+        statsMap[agentId].msgsToday++;
+      } else if (msgMs >= yesterdayStart.getTime() && msgMs <= yesterdayEnd.getTime()) {
+        statsMap[agentId].msgsYesterday++;
+      }
+    });
+  }
+
+  // 9. Compute dailyTrend (last 7 days per agent) using recentMessages
+  if (recentMessages && recentMessages.length > 0) {
+    // Build 7-day labels (BDT dates, oldest first)
+    const sevenDaysLabels: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() + 6 * 60 * 60 * 1000 - i * 24 * 60 * 60 * 1000);
+      const label = d.toISOString().split('T')[0]; // YYYY-MM-DD in BDT
+      sevenDaysLabels.push(label);
+    }
+
+    // Initialize per-agent trend buckets
+    Object.keys(statsMap).forEach(agentId => {
+      const buckets: Record<string, number> = {};
+      sevenDaysLabels.forEach(day => { buckets[day] = 0; });
+      statsMap[agentId]._trendBuckets = buckets;
+    });
+
+    const sevenDaysAgo = new Date(now.getTime() + 6 * 60 * 60 * 1000 - 7 * 24 * 60 * 60 * 1000);
+
+    recentMessages.forEach(msg => {
+      const agentId = msg.sender_id;
+      if (!agentId || !statsMap[agentId]) return;
+      const msgTime = new Date(msg.created_at);
+      if (msgTime.getTime() < sevenDaysAgo.getTime()) return;
+      const bdtTime = new Date(msgTime.getTime() + 6 * 60 * 60 * 1000);
+      const dayLabel = bdtTime.toISOString().split('T')[0];
+      if (statsMap[agentId]._trendBuckets[dayLabel] !== undefined) {
+        statsMap[agentId]._trendBuckets[dayLabel]++;
+      }
+    });
+
+    // Convert buckets to sorted array
+    Object.keys(statsMap).forEach(agentId => {
+      const buckets = statsMap[agentId]._trendBuckets;
+      statsMap[agentId].dailyTrend = sevenDaysLabels.map(day => ({ day, count: buckets[day] || 0 }));
+      delete statsMap[agentId]._trendBuckets;
+    });
+  } else {
+    // Fill empty trend
+    Object.keys(statsMap).forEach(agentId => {
+      statsMap[agentId].dailyTrend = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(now.getTime() + 6 * 60 * 60 * 1000 - (6 - i) * 24 * 60 * 60 * 1000);
+        return { day: d.toISOString().split('T')[0], count: 0 };
+      });
+    });
+  }
+
+  // 10. Query AI draft usage
   try {
     let aiDraftsQuery = supabaseAdmin
       .from('ai_draft_logs')
@@ -310,7 +424,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching AI draft stats:", err);
   }
 
-  // Calculate AI assisted percentage and Actions Per Hour (APH)
+  // 11. Calculate AI assisted % and Actions Per Hour
   Object.values(statsMap).forEach((stats: any) => {
     if (stats.messagesCount > 0) {
       stats.aiAssistedPercent = Math.round((stats.aiDraftCount / stats.messagesCount) * 100);
@@ -324,7 +438,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     }
   });
 
-  // Sort by public messagesCount descending
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
 }
 
@@ -395,21 +508,14 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
   conversations.forEach(conv => {
     if (!conv.messages || conv.messages.length === 0) return;
     
-    // Sort messages ascending by time
     const msgs = [...conv.messages].sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     
-    // Check if the last message was from contact
     const lastMsg = msgs[msgs.length - 1];
     if (lastMsg.sender_type === 'contact') {
       const msgTime = new Date(lastMsg.created_at).getTime();
       const timeDiffMins = (now.getTime() - msgTime) / (1000 * 60);
       
-      // If last message from contact was more than 30 mins ago, it's considered "Missed"
       if (timeDiffMins >= 30) {
-        // Did an agent ever reply in this conversation on that same day? 
-        // Not necessarily, but the conversation is effectively currently "missed" if they haven't replied.
-        // What if it was resolved? Even if resolved, if the customer replied "thanks" and agent didn't reply, that's not missed, that's just a polite end.
-        // Let's filter out very short messages like "ok", "thanks" if we want, but Imran wants simple missed chats tracking.
         const contact = Array.isArray(conv.contacts) ? conv.contacts[0] : conv.contacts;
         missedChats.push({
           id: conv.id,
@@ -424,6 +530,5 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
     }
   });
 
-  // Sort descending by time
   return missedChats.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 }
