@@ -410,6 +410,13 @@
         }
     }
 
+    // Fallback avatars if API returns none
+    const FALLBACK_AVATARS = [
+        { avatar_url: `${baseUrl}/team/4.avif` },
+        { avatar_url: `${baseUrl}/team/5.avif` },
+        { avatar_url: `${baseUrl}/team/6.avif` },
+    ];
+
     // Fetch agent avatars from API
     fetch(`${baseUrl}/api/widget/agents?org_id=${orgId}`)
         .then(res => res.json())
@@ -417,11 +424,11 @@
             if (data.success && data.agents && data.agents.length > 0) {
                 startAvatarCarousel(data.agents);
             } else {
-                if (chatIconEl) chatIconEl.style.opacity = '1';
+                startAvatarCarousel(FALLBACK_AVATARS);
             }
         })
         .catch(() => {
-            if (chatIconEl) chatIconEl.style.opacity = '1';
+            startAvatarCarousel(FALLBACK_AVATARS);
         });
 
     // ==========================================

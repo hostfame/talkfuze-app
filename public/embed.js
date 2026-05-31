@@ -42,7 +42,8 @@
         return;
     }
 
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
+    const isMobile = window.innerWidth <= 480;
+    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
     const NUDGE_HEIGHT = 54;
@@ -503,6 +504,13 @@
         }
     }
 
+    // Fallback avatars if API returns none (uses TalkFuze app's team photos)
+    const FALLBACK_AVATARS = [
+        { avatar_url: `${baseUrl}/team/4.avif` },
+        { avatar_url: `${baseUrl}/team/5.avif` },
+        { avatar_url: `${baseUrl}/team/6.avif` },
+    ];
+
     // Fetch agent avatars from API
     fetch(`${baseUrl}/api/widget/agents?org_id=${orgId}`)
         .then(res => res.json())
@@ -510,15 +518,13 @@
             if (data.success && data.agents && data.agents.length > 0) {
                 startAvatarCarousel(data.agents);
             } else {
-                // No avatars - show chat icon
-                if (chatIconEl) chatIconEl.style.opacity = '1';
-                revealLauncher();
+                // No agents configured - use fallback team photos
+                startAvatarCarousel(FALLBACK_AVATARS);
             }
         })
         .catch(() => {
-            // Network error - show chat icon
-            if (chatIconEl) chatIconEl.style.opacity = '1';
-            revealLauncher();
+            // Network error - use fallback
+            startAvatarCarousel(FALLBACK_AVATARS);
         });
 
     // =============================================
