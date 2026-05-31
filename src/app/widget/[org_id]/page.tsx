@@ -1683,13 +1683,6 @@ export default function WidgetPage() {
   // Auto-reply after 1 minute of inactivity
   useEffect(() => {
     const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-    
-    const hasContactMessage = messages.some(m => m.sender_type === 'contact');
-    const hasAgentJoinedOrReplied = messages.some(
-      m => m.sender_type === 'agent' || m.sender_type === 'ai' || (m.sender_type === 'system' && m.content.includes('joined'))
-    );
-    const showConnecting = hasContactMessage && !hasAgentJoinedOrReplied;
-  
     if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') {
       setIsAutoTyping(false);
       return;
@@ -2442,6 +2435,12 @@ export default function WidgetPage() {
   }
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  
+  const hasContactMessage = messages.some(m => m.sender_type === 'contact');
+  const hasAgentJoinedOrReplied = messages.some(
+    m => m.sender_type === 'agent' || m.sender_type === 'ai' || (m.sender_type === 'system' && m.content.includes('joined'))
+  );
+  const showConnecting = hasContactMessage && !hasAgentJoinedOrReplied;
 
   const [isMuted, setIsMuted] = useState(false)
 
