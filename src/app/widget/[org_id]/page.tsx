@@ -58,6 +58,13 @@ const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
     return timeA - timeB;
   }
   
+  // Same timestamp: system events (joined/left) always before regular messages
+  // This ensures "Agent joined the chat" appears before their first message
+  const aIsSystem = a.sender_type === 'system';
+  const bIsSystem = b.sender_type === 'system';
+  if (aIsSystem && !bIsSystem) return -1;
+  if (!aIsSystem && bIsSystem) return 1;
+  
   // Stable fallback if timestamps are identical or failed to parse
   if (a.id && b.id && a.id !== b.id) {
     return a.id.localeCompare(b.id);
