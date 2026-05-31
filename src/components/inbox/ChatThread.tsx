@@ -3260,15 +3260,16 @@ export default function ChatThread({
               });
 
               // Fetch inserted ID for webhook dispatch (non-blocking, non-fatal)
-              supabase.from('messages')
-                .select('id')
-                .eq('conversation_id', conversationId)
-                .eq('temp_id', tempId)
-                .single()
-                .then(({ data }) => {
+              void (async () => {
+                try {
+                  const { data } = await supabase.from('messages')
+                    .select('id')
+                    .eq('conversation_id', conversationId)
+                    .eq('temp_id', tempId)
+                    .single();
                   if (data?.id) dispatchMessageWebhooks(data.id);
-                })
-                .catch(() => { /* webhook dispatch skipped - non-fatal */ });
+                } catch { /* webhook dispatch skipped - non-fatal */ }
+              })();
 
             } catch (e: unknown) {
               console.error(e);
