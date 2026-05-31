@@ -3227,9 +3227,10 @@ export default function ChatThread({
 
           const sendTimer = setTimeout(async () => {
             try {
-              // Idempotent upsert: temp_id column + UNIQUE INDEX (conversation_id, temp_id).
-              // ignoreDuplicates: true → ON CONFLICT DO NOTHING → no false Retry on network retry.
-              const { error: insertError } = await supabase.from('messages').upsert({
+              // INSERT only - no .select() chained.
+              // Separating insert from select means SELECT failures (RLS/network)
+              // don't incorrectly trigger markFailed. Real insert failures still do.
+              const { error: insertError } = await supabase.from('messages').insert({
                 org_id: orgId,
                 conversation_id: conversationId,
                 sender_type: 'agent',
@@ -3237,13 +3238,9 @@ export default function ChatThread({
                 content: chunk,
                 content_type: 'text',
                 metadata: metaPayload,
-                temp_id: tempId,
                 is_internal: isInternal,
                 status: isInternal ? 'delivered' : (isScheduled ? 'sending' : 'sent'),
                 created_at: optimisticCreatedAt
-              }, {
-                onConflict: 'conversation_id,temp_id',
-                ignoreDuplicates: true
               });
 
               if (insertError) throw insertError;
@@ -3255,13 +3252,13 @@ export default function ChatThread({
                 return next;
               });
 
-              // Non-blocking webhook dispatch via temp_id column
+              // Non-blocking webhook dispatch via temp_id in metadata
               void (async () => {
                 try {
                   const { data } = await supabase.from('messages')
                     .select('id')
                     .eq('conversation_id', conversationId)
-                    .eq('temp_id', tempId)
+                    .eq('metadata->>temp_id', tempId)
                     .single();
                   if (data?.id) dispatchMessageWebhooks(data.id);
                 } catch { /* non-fatal */ }
