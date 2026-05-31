@@ -50,7 +50,7 @@
             height: 700px;
             max-height: calc(100vh - ${MARGIN * 2 + BUTTON_SIZE + 20}px);
             max-width: calc(100vw - ${MARGIN * 2}px);
-            background: transparent;
+            background: #1a2744;
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 12px 28px rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.08);

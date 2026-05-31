@@ -62,21 +62,22 @@
         }
 
         #tf-iframe-container {
-            width: 400px;
-            height: 700px;
-            max-height: calc(100vh - ${MARGIN * 2 + BUTTON_SIZE + 20}px);
-            max-width: calc(100vw - ${MARGIN * 2}px);
-            background: transparent;
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
+            right: ${MARGIN}px;
+            width: 390px;
+            max-width: calc(100vw - 32px);
+            height: min(700px, calc(100vh - 110px));
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
             opacity: 0;
-            transform: scale(0.95) translateY(20px);
-            transform-origin: bottom right;
-            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: auto;
+            transform: scale(0.95) translateY(10px);
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
             margin-bottom: 20px;
             display: none;
+            background-color: #1a2744;
         }
 
         #tf-iframe-container.tf-open {
@@ -86,6 +87,7 @@
         #tf-iframe-container.tf-animate-in {
             opacity: 1;
             transform: scale(1) translateY(0);
+            pointer-events: auto;
         }
 
         #tf-iframe {
