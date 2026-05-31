@@ -105,9 +105,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, opacity 0.35s ease;
             position: relative;
             overflow: hidden;
+            opacity: 0;
+            transform: scale(0.7);
+        }
+
+        #tf-launcher.tf-launcher-ready {
+            opacity: 1;
+            transform: scale(1);
         }
 
         #tf-launcher:hover {
@@ -159,6 +166,11 @@
 
         #tf-agent-avatar.tf-show {
             opacity: 1;
+        }
+
+        /* When widget is open, hide avatar so X icon is visible */
+        .tf-open #tf-agent-avatar {
+            opacity: 0 !important;
         }
 
         .tf-badge {
@@ -336,9 +348,65 @@
         checkAndTriggerNudge();
     }
 
+    // Skeleton loading overlay - prevents white flash while iframe loads
+    const skeleton = document.createElement('div');
+    skeleton.id = 'tf-skeleton';
+    skeleton.style.cssText = `
+        position:absolute;
+        inset:0;
+        background:#0f172a;
+        border-radius:16px;
+        z-index:10;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        transition:opacity 0.3s ease;
+    `;
+    skeleton.innerHTML = `
+        <div style="padding:20px 20px 16px;display:flex;align-items:center;gap:12px;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
+            <div style="flex:1;">
+                <div style="height:10px;width:120px;border-radius:6px;background:rgba(255,255,255,0.1);margin-bottom:7px;"></div>
+                <div style="height:8px;width:80px;border-radius:6px;background:rgba(255,255,255,0.06);"></div>
+            </div>
+        </div>
+        <div style="flex:1;background:#f8fafc;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
+                <div style="background:#e2e8f0;border-radius:12px 12px 12px 3px;padding:10px 14px;max-width:65%;">
+                    <div style="height:9px;width:110px;background:#cbd5e1;border-radius:4px;margin-bottom:6px;"></div>
+                    <div style="height:9px;width:80px;background:#cbd5e1;border-radius:4px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;">
+                <div style="background:#dbeafe;border-radius:12px 12px 3px 12px;padding:10px 14px;max-width:55%;">
+                    <div style="height:9px;width:90px;background:#bfdbfe;border-radius:4px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
+                <div style="background:#e2e8f0;border-radius:12px 12px 12px 3px;padding:10px 14px;max-width:70%;">
+                    <div style="height:9px;width:140px;background:#cbd5e1;border-radius:4px;"></div>
+                </div>
+            </div>
+        </div>
+        <div style="background:#fff;border-top:1px solid #e2e8f0;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:38px;border-radius:20px;background:#f1f5f9;"></div>
+            <div style="width:38px;height:38px;border-radius:50%;background:#0070f3;flex-shrink:0;"></div>
+        </div>
+    `;
+
     iframe.onload = () => {
         sendPageView();
+        // Fade out skeleton once iframe is ready
+        setTimeout(() => {
+            skeleton.style.opacity = '0';
+            setTimeout(() => { skeleton.remove(); }, 320);
+        }, 100);
     };
+
+    iframeContainer.appendChild(skeleton);
+    iframeContainer.appendChild(iframe);
 
     // SPA Navigation Tracking
     const originalPushState = history.pushState;
@@ -357,7 +425,6 @@
         setTimeout(sendPageView, 100);
     });
 
-    iframeContainer.appendChild(iframe);
 
     // Create launcher button
     const launcher = document.createElement('div');
@@ -393,6 +460,10 @@
     const avatarEl = document.getElementById('tf-agent-avatar');
     const chatIconEl = document.getElementById('tf-icon-chat');
 
+    function revealLauncher() {
+        launcher.classList.add('tf-launcher-ready');
+    }
+
     function showAvatar(url) {
         if (!avatarEl || !url) return;
         const img = new Image();
@@ -400,11 +471,12 @@
             avatarEl.src = url;
             avatarEl.classList.add('tf-show');
             if (chatIconEl) chatIconEl.style.opacity = '0';
+            revealLauncher();
         };
         img.onerror = () => {
-            // If avatar fails, show chat icon fallback
             avatarEl.classList.remove('tf-show');
             if (chatIconEl) chatIconEl.style.opacity = '1';
+            revealLauncher();
         };
         img.src = url;
     }
@@ -438,13 +510,15 @@
             if (data.success && data.agents && data.agents.length > 0) {
                 startAvatarCarousel(data.agents);
             } else {
-                // Fallback to chat icon
+                // No avatars - show chat icon
                 if (chatIconEl) chatIconEl.style.opacity = '1';
+                revealLauncher();
             }
         })
         .catch(() => {
             // Network error - show chat icon
             if (chatIconEl) chatIconEl.style.opacity = '1';
+            revealLauncher();
         });
 
     // =============================================
