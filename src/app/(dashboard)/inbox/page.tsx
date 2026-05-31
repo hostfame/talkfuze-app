@@ -584,8 +584,8 @@ export default function InboxPage() {
           } else {
             // Check for unread count / status changes
             for (const newConv of data as any[]) {
-              const existing = currentConvs.find((c: any) => c.id === newConv.id);
-              if (existing && (existing.unread_count !== newConv.unread_count || existing.status !== newConv.status)) {
+              const existing = currentConvs.find((c: any) => c.id === newConv.id) as any;
+              if (existing && ((existing as any).unread_count !== newConv.unread_count || existing.status !== newConv.status)) {
                 store.setConversations(data as ConversationWithDetails[]);
                 break;
               }
