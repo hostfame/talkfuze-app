@@ -27,8 +27,7 @@
         return;
     }
 
-    const isMobile = window.innerWidth <= 480;
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
+    const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
 
@@ -100,6 +99,15 @@
 
         #tf-launcher:active {
             transform: scale(0.95);
+        }
+
+        /* Desktop: hide launcher when widget is open - use widget's own header X to close */
+        @media (min-width: 481px) {
+            #tf-launcher.tf-open {
+                opacity: 0 !important;
+                pointer-events: none !important;
+                transform: scale(0.75) !important;
+            }
         }
 
         .tf-icon {
