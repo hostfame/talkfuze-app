@@ -79,7 +79,7 @@ export async function fetchTeamMessages(chatId: string) {
   return messages.reverse().map((m: any) => {
     let content = m.content;
     let attachment_url = undefined;
-    let attachment_type = undefined;
+    let attachment_type: 'image' | 'audio' | undefined = undefined;
 
     if (content.startsWith('[IMAGE]')) {
       attachment_type = 'image';
