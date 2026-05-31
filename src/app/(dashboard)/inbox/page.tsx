@@ -228,6 +228,26 @@ export default function InboxPage() {
             store.setArchivedConversations(archNext as ConversationWithDetails[]);
           }
         })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations', filter: `org_id=eq.${ORG_ID}` }, async (payload) => {
+          lastRealtimeEventRef.current = Date.now();
+          const newConv = payload.new as any;
+          if (!newConv?.id) return;
+
+          // Fetch the full conversation with relations (contact, channel, etc)
+          try {
+            const fullConv = await getConversationById(newConv.id);
+            if (fullConv) {
+              const store = useInboxStore.getState();
+              const existing = store.conversations || [];
+              if (!existing.some((c: any) => c.id === fullConv.id)) {
+                store.setConversations([fullConv as ConversationWithDetails, ...existing]);
+                console.log('[Realtime] New conversation detected:', fullConv.id);
+              }
+            }
+          } catch (err) {
+            console.error('[Realtime] Failed to fetch new conversation:', err);
+          }
+        })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           lastRealtimeEventRef.current = Date.now();
           const rawMsg = payload.new as any;
@@ -549,6 +569,32 @@ export default function InboxPage() {
         syncDatabaseState();
       }
     }, 30000);
+
+    // Conversation-list poll: catch missed unread counts, new convos, status changes
+    const convoPollInterval = setInterval(async () => {
+      try {
+        const data = await getConversations(ORG_ID, 'all', currentUser?.id);
+        if (data) {
+          const store = useInboxStore.getState();
+          const currentConvs = store.conversations || [];
+          // Only update if there's a difference (new convo count or unread change)
+          if (data.length !== currentConvs.length) {
+            store.setConversations(data as ConversationWithDetails[]);
+          } else {
+            // Check for unread count / status changes
+            for (const newConv of data as any[]) {
+              const existing = currentConvs.find((c: any) => c.id === newConv.id);
+              if (existing && (existing.unread_count !== newConv.unread_count || existing.status !== newConv.status)) {
+                store.setConversations(data as ConversationWithDetails[]);
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Silent - safety net
+      }
+    }, 30000);
     
     if (typeof window !== 'undefined') {
       window.addEventListener('visibilitychange', handleVisibilityChange);
@@ -560,6 +606,7 @@ export default function InboxPage() {
       }
       clearInterval(pollInterval);
       clearInterval(heartbeatInterval);
+      clearInterval(convoPollInterval);
       if (activeChannel) {
         try {
           supabase.removeChannel(activeChannel);
