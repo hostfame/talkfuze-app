@@ -3097,7 +3097,25 @@ export default function ChatThread({
     try {
       // Send text message first if exists
       if (msgText) {
-        const msgChunks = msgText.split(/\n\s*\n/).map(chunk => chunk.trim()).filter(Boolean);
+        let msgChunks = msgText.split(/\n\s*\n/).map(chunk => chunk.trim()).filter(Boolean);
+        
+        // Automated smart paragraph breaking for outgoing public messages
+        if (!isInternal && msgChunks.length === 1) {
+          const rawChunk = msgChunks[0];
+          const sentenceRegex = /[^.!?\u0964]+[.!?\u0964]+/g;
+          const sentences = rawChunk.match(sentenceRegex) || [];
+          
+          if (sentences.length > 1) {
+            const lastSentence = sentences[sentences.length - 1].trim();
+            const hasQuestionAtEnd = lastSentence.endsWith('?');
+            const isLongEnough = rawChunk.length > 55;
+            
+            if (hasQuestionAtEnd && isLongEnough) {
+              const precedingPart = sentences.slice(0, -1).join('').trim();
+              msgChunks = [precedingPart, lastSentence];
+            }
+          }
+        }
         let accumulatedDelay = 0;
         
         // Find existing max pending delay in queue to append these new chunks correctly
