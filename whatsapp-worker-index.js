@@ -5,6 +5,7 @@ const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const { uploadToR2 } = require('./r2.js');
 const { registerUnblockRoute } = require('./unblock-ip.js');
+const { Queue, Worker: BullWorker } = require('bullmq');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -26,6 +27,46 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
+
+// ─────────────────────────────────────────────
+// BullMQ: Durable inbound message queue
+// ─────────────────────────────────────────────
+
+const REDIS_CONNECTION = { host: '127.0.0.1', port: 6379 };
+
+const inboundQueue = new Queue('inbound-messages', {
+  connection: REDIS_CONNECTION,
+  defaultJobOptions: {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: { count: 1000 },
+    removeOnFail: { count: 5000 },
+  }
+});
+
+const inboundWorker = new BullWorker('inbound-messages', async (job) => {
+  const { type, data } = job.data;
+  if (type === 'message') {
+    await processMessage(data);
+  } else if (type === 'call') {
+    await handleIncomingWhatsAppCall(data);
+  }
+}, {
+  connection: REDIS_CONNECTION,
+  concurrency: 3,
+  limiter: { max: 10, duration: 1000 },
+});
+
+inboundWorker.on('failed', (job, err) => {
+  console.error(`[QUEUE] Job ${job?.id} failed (attempt ${job?.attemptsMade}/${job?.opts?.attempts}):`, err.message);
+});
+
+inboundWorker.on('completed', (job) => {
+  // Only log every 100th completed job to avoid noise
+  if (job.id && parseInt(job.id) % 100 === 0) {
+    console.log(`[QUEUE] Processed ${job.id} jobs`);
+  }
+});
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -71,12 +112,59 @@ function unwrapMessage(msg) {
 function extractText(msg) {
   const m = unwrapMessage(msg);
   if (!m) return '';
-  return m.conversation
-    || m.extendedTextMessage?.text
-    || m.imageMessage?.caption
-    || m.videoMessage?.caption
-    || m.documentMessage?.caption
-    || '';
+  // Standard text
+  if (m.conversation) return m.conversation;
+  if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+  if (m.imageMessage?.caption) return m.imageMessage.caption;
+  if (m.videoMessage?.caption) return m.videoMessage.caption;
+  if (m.documentMessage?.caption) return m.documentMessage.caption;
+  // Location
+  if (m.locationMessage) {
+    const loc = m.locationMessage;
+    const name = loc.name || loc.address || '';
+    const link = `https://maps.google.com/?q=${loc.degreesLatitude},${loc.degreesLongitude}`;
+    return `📍 Location: ${name ? name + ' - ' : ''}${link}`;
+  }
+  if (m.liveLocationMessage) {
+    const loc = m.liveLocationMessage;
+    const link = `https://maps.google.com/?q=${loc.degreesLatitude},${loc.degreesLongitude}`;
+    return `📍 Live Location: ${link}`;
+  }
+  // Contact card
+  if (m.contactMessage) {
+    const vcard = m.contactMessage.vcard || '';
+    const displayName = m.contactMessage.displayName || 'Unknown';
+    const phoneMatch = vcard.match(/TEL[^:]*:(\+?[\d\s-]+)/i);
+    const phone = phoneMatch ? phoneMatch[1].trim() : '';
+    return `👤 Contact: ${displayName}${phone ? ' - ' + phone : ''}`;
+  }
+  if (m.contactsArrayMessage) {
+    const contacts = m.contactsArrayMessage.contacts || [];
+    return contacts.map(c => {
+      const vcard = c.vcard || '';
+      const phoneMatch = vcard.match(/TEL[^:]*:(\+?[\d\s-]+)/i);
+      const phone = phoneMatch ? phoneMatch[1].trim() : '';
+      return `👤 ${c.displayName || 'Unknown'}${phone ? ' - ' + phone : ''}`;
+    }).join('\n');
+  }
+  // Poll
+  if (m.pollCreationMessage || m.pollCreationMessageV3) {
+    const poll = m.pollCreationMessage || m.pollCreationMessageV3;
+    const question = poll.name || 'Poll';
+    const options = (poll.options || []).map(o => o.optionName).join(', ');
+    return `📊 Poll: "${question}" - Options: ${options}`;
+  }
+  // List/button responses
+  if (m.listResponseMessage) {
+    return m.listResponseMessage.title || m.listResponseMessage.description || '[List Response]';
+  }
+  if (m.buttonsResponseMessage) {
+    return m.buttonsResponseMessage.selectedDisplayText || '[Button Response]';
+  }
+  if (m.templateButtonReplyMessage) {
+    return m.templateButtonReplyMessage.selectedDisplayText || '[Template Button Response]';
+  }
+  return '';
 }
 
 function getContentType(msg) {
@@ -87,6 +175,11 @@ function getContentType(msg) {
   if (m.videoMessage) return 'video';
   if (m.documentMessage) return 'file';
   if (m.stickerMessage) return 'image';
+  if (m.locationMessage || m.liveLocationMessage) return 'location';
+  if (m.contactMessage || m.contactsArrayMessage) return 'contact_card';
+  if (m.pollCreationMessage || m.pollCreationMessageV3) return 'poll';
+  if (m.listResponseMessage) return 'list_response';
+  if (m.buttonsResponseMessage || m.templateButtonReplyMessage) return 'button_response';
   return 'text';
 }
 
@@ -562,10 +655,18 @@ async function downloadAndUploadMedia(msg, contentType, conversationJid) {
 
     console.log(`[MEDIA] Uploading filename: ${fileName}, mimeType: ${mimeType}, size: ${buffer.length} bytes`);
 
-    const r2Url = await uploadToR2(buffer, fileName, mimeType);
+    let r2Url = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      r2Url = await uploadToR2(buffer, fileName, mimeType);
+      if (r2Url) break;
+      if (attempt < 3) {
+        console.warn(`[MEDIA] R2 upload attempt ${attempt} failed, retrying in ${attempt * 2}s...`);
+        await new Promise(r => setTimeout(r, attempt * 2000));
+      }
+    }
 
     if (!r2Url) {
-      console.error('[MEDIA] R2 upload failed');
+      console.error('[MEDIA] R2 upload failed after 3 attempts');
       return null;
     }
 
@@ -592,6 +693,22 @@ async function acquireLock(key) {
     locks.delete(key);
     resolveLock();
   };
+}
+
+async function withRetry(fn, label, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxRetries) {
+        console.error(`[RETRY] ${label} failed after ${maxRetries} attempts:`, err.message);
+        throw err;
+      }
+      const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+      console.warn(`[RETRY] ${label} attempt ${attempt} failed, retrying in ${delay}ms:`, err.message);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
 }
 
 async function processMessage(msg) {
@@ -756,8 +873,8 @@ async function processMessage(msg) {
       }
     }
 
-    // Insert message
-    await supabase.from('messages').insert({
+    // Insert message (with retry for transient failures)
+    await withRetry(() => supabase.from('messages').insert({
       org_id: ORG_ID,
       conversation_id: conversationId,
       platform_message_id: msgId,
@@ -768,7 +885,7 @@ async function processMessage(msg) {
       metadata,
       status: 'delivered',
       created_at: createdAt
-    });
+    }).then(r => { if (r.error) throw new Error(r.error.message); return r; }), 'message-insert');
 
     // Update conversation last_message_at and strip alert tags if customer replies
     if (!fromMe) {
@@ -923,82 +1040,95 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/webhook/evolution', async (req, res) => {
-  res.status(200).send('ok'); // respond fast
-
   const body = req.body;
   const event = body.event;
 
-  if (event === 'messages.upsert') {
-    const messages = body.data?.messages || (body.data ? [body.data] : []);
-    for (const msg of messages) {
-      await processMessage(msg).catch(err => console.error('processMessage failed:', err.message));
-    }
-  } else if (event === 'call') {
-    const callData = body.data;
-    if (callData && !callData.fromMe) {
-      await handleIncomingWhatsAppCall(callData).catch(err => console.error('handleIncomingWhatsAppCall failed:', err.message));
-    }
-  } else if (event === 'connection.update') {
-    const state = body.data?.state;
-    console.log(`[CONNECTION] Status: ${state}`);
+  try {
+    if (event === 'messages.upsert') {
+      const messages = body.data?.messages || (body.data ? [body.data] : []);
+      for (const msg of messages) {
+        await inboundQueue.add('process-message', { type: 'message', data: msg }, {
+          jobId: `msg-${msg.key?.id || Date.now()}`,
+        });
+      }
+      res.status(200).send('queued');
+    } else if (event === 'call') {
+      const callData = body.data;
+      if (callData && !callData.fromMe) {
+        await inboundQueue.add('process-call', { type: 'call', data: callData }, {
+          jobId: `call-${callData.id || Date.now()}`,
+        });
+      }
+      res.status(200).send('queued');
+    } else if (event === 'connection.update') {
+      const state = body.data?.state;
+      console.log(`[CONNECTION] Status: ${state}`);
 
-    // Fetch existing channel config to preserve QR and pairing codes
-    const { data: channel } = await supabase.from('channels')
-      .select('config')
-      .eq('org_id', ORG_ID)
-      .eq('type', 'whatsapp')
-      .maybeSingle();
+      // Fetch existing channel config to preserve QR and pairing codes
+      const { data: channel } = await supabase.from('channels')
+        .select('config')
+        .eq('org_id', ORG_ID)
+        .eq('type', 'whatsapp')
+        .maybeSingle();
 
-    const currentConfig = channel?.config || {};
-    const qrCode = currentConfig.qr_code || null;
-    const pairingCode = currentConfig.pairing_code || null;
+      const currentConfig = channel?.config || {};
+      const qrCode = currentConfig.qr_code || null;
+      const pairingCode = currentConfig.pairing_code || null;
 
-    if (state === 'open') {
-      // Device linked, QR no longer needed
+      if (state === 'open') {
+        // Device linked, QR no longer needed
+        await supabase.from('channels')
+          .update({ 
+            config: { status: 'connected', qr_code: null, pairing_code: null }, 
+            is_active: true 
+          })
+          .eq('org_id', ORG_ID)
+          .eq('type', 'whatsapp');
+      } else if (state === 'close') {
+        // Disconnected but keep the QR/pairing code so user can scan/reconnect
+        await supabase.from('channels')
+          .update({ 
+            config: { status: 'disconnected', qr_code: qrCode, pairing_code: pairingCode }, 
+            is_active: true 
+          })
+          .eq('org_id', ORG_ID)
+          .eq('type', 'whatsapp');
+      } else if (state === 'connecting') {
+        // Connecting / starting up: preserve QR code so UI doesn't buffer infinitely
+        await supabase.from('channels')
+          .update({ 
+            config: { status: 'pending', qr_code: qrCode, pairing_code: pairingCode }, 
+            is_active: true 
+          })
+          .eq('org_id', ORG_ID)
+          .eq('type', 'whatsapp');
+      }
+      res.status(200).send('ok');
+    } else if (event === 'qrcode.updated') {
+      const qrBase64 = body.data?.qrcode?.base64 || body.data?.base64 || '';
+      const pairingCode = body.data?.qrcode?.pairingCode || '';
+      console.log('[QR] New QR code received!');
+      if (pairingCode) console.log('[QR] Pairing Code:', pairingCode);
+      console.log('[QR] Scan via Evolution Manager: http://46.225.152.127:8080/manager');
+      if (qrBase64) console.log('[QR] Base64 length:', qrBase64.length, '(has content)');
+      const channelId = await getOrCreateChannel();
       await supabase.from('channels')
-        .update({ 
-          config: { status: 'connected', qr_code: null, pairing_code: null }, 
-          is_active: true 
+        .update({
+          config: {
+            status: 'pending',
+            qr_code: formatQrCode(qrBase64),
+            pairing_code: pairingCode || null
+          },
+          is_active: true
         })
-        .eq('org_id', ORG_ID)
-        .eq('type', 'whatsapp');
-    } else if (state === 'close') {
-      // Disconnected but keep the QR/pairing code so user can scan/reconnect
-      await supabase.from('channels')
-        .update({ 
-          config: { status: 'disconnected', qr_code: qrCode, pairing_code: pairingCode }, 
-          is_active: true 
-        })
-        .eq('org_id', ORG_ID)
-        .eq('type', 'whatsapp');
-    } else if (state === 'connecting') {
-      // Connecting / starting up: preserve QR code so UI doesn't buffer infinitely
-      await supabase.from('channels')
-        .update({ 
-          config: { status: 'pending', qr_code: qrCode, pairing_code: pairingCode }, 
-          is_active: true 
-        })
-        .eq('org_id', ORG_ID)
-        .eq('type', 'whatsapp');
+        .eq('id', channelId);
+      res.status(200).send('ok');
+    } else {
+      res.status(200).send('ok');
     }
-  } else if (event === 'qrcode.updated') {
-    const qrBase64 = body.data?.qrcode?.base64 || body.data?.base64 || '';
-    const pairingCode = body.data?.qrcode?.pairingCode || '';
-    console.log('[QR] New QR code received!');
-    if (pairingCode) console.log('[QR] Pairing Code:', pairingCode);
-    console.log('[QR] Scan via Evolution Manager: http://46.225.152.127:8080/manager');
-    if (qrBase64) console.log('[QR] Base64 length:', qrBase64.length, '(has content)');
-    const channelId = await getOrCreateChannel();
-    await supabase.from('channels')
-      .update({
-        config: {
-          status: 'pending',
-          qr_code: formatQrCode(qrBase64),
-          pairing_code: pairingCode || null
-        },
-        is_active: true
-      })
-      .eq('id', channelId);
+  } catch (err) {
+    console.error(`[WEBHOOK] Failed to queue ${event}:`, err.message);
+    res.status(500).send('queue_error');
   }
 });
 
@@ -1017,7 +1147,8 @@ async function sendTextMessage(jid, text, quoted) {
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) {
     const err = await res.text();
@@ -1059,7 +1190,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
           'apikey': EVOLUTION_API_KEY,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
       });
 
       const resBody = await res.text();
@@ -1094,7 +1226,8 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
       'apikey': EVOLUTION_API_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) {
     const err = await res.text();
@@ -1107,7 +1240,7 @@ async function sendMediaMessage(jid, mediaUrl, caption, mimetype, originalFileNa
 // Supabase Realtime: watch for agent messages
 // ─────────────────────────────────────────────
 
-const supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
+let supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
   realtime: { transport: WebSocket }
 });
@@ -1336,15 +1469,15 @@ async function processOutboundMessage(msg) {
 // Self-healing sweep for pending outbound messages sent while worker was restarting/offline
 async function sendPendingOutboundMessages() {
   try {
-    const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: pending, error } = await supabaseRealtime
       .from('messages')
       .select('*')
-      .eq('status', 'sent')
+      .in('status', ['sent', 'sending'])
       .in('sender_type', ['agent', 'ai'])
       .is('platform_message_id', null)
       .is('is_internal', false)
-      .gt('created_at', oneHourAgo)
+      .gt('created_at', thirtyMinAgo)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -1355,6 +1488,32 @@ async function sendPendingOutboundMessages() {
     if (pending && pending.length > 0) {
       console.log(`[SELF-HEAL] Found ${pending.length} pending outbound messages. Processing...`);
       for (const msg of pending) {
+        // Track self-heal retry count to prevent zombie loops
+        const healAttempts = (msg.metadata?.self_heal_attempts || 0) + 1;
+
+        if (healAttempts > 3) {
+          // Permanently mark as failed after 3 self-heal attempts
+          console.warn(`[SELF-HEAL] Message ${msg.id} failed after ${healAttempts - 1} self-heal attempts. Marking permanently failed.`);
+          await supabaseRealtime.from('messages').update({
+            status: 'failed',
+            metadata: {
+              ...(msg.metadata || {}),
+              self_heal_attempts: healAttempts,
+              delivery_error: 'Message failed after 3 self-heal retries',
+              delivery_failed_at: new Date().toISOString()
+            }
+          }).eq('id', msg.id);
+          continue;
+        }
+
+        // Update retry counter before attempting send
+        await supabaseRealtime.from('messages').update({
+          metadata: {
+            ...(msg.metadata || {}),
+            self_heal_attempts: healAttempts
+          }
+        }).eq('id', msg.id);
+
         await processOutboundMessage(msg);
       }
     }
@@ -1640,67 +1799,85 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
   }
 }
 
-// Supabase Realtime Channels setup
-supabaseRealtime
-  .channel('outbound_messages')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'messages',
-    filter: `org_id=eq.${ORG_ID}`
-  }, async (payload) => {
-    payload.new.received_at_local = Date.now();
-    await processOutboundMessage(payload.new);
-  })
-  .on('postgres_changes', {
-    event: 'UPDATE',
-    schema: 'public',
-    table: 'messages',
-    filter: `org_id=eq.${ORG_ID}`
-  }, async (payload) => {
-    await processOutboundMessageUpdate(payload.old, payload.new);
-  })
-  .subscribe((status) => {
-    console.log('[REALTIME-MESSAGES] Status:', status);
-  });
-
-// Supabase Broadcast Channel for agent activity and typing status
-supabaseRealtime
-  .channel(`typing:${ORG_ID}`)
-  .on('broadcast', { event: 'typingStatus' }, async (payload) => {
-    const { conversation_id, direction, is_typing } = payload.payload;
-    if (direction !== 'agent') return;
-
-    try {
-      const { data: conv } = await supabaseRealtime
-        .from('conversations')
-        .select('contact_id, channels!inner(type)')
-        .eq('id', conversation_id)
-        .single();
-
-      if (!conv || conv.channels?.type !== 'whatsapp') return;
-
-      const { data: contact } = await supabaseRealtime
-        .from('contacts')
-        .select('platform_id')
-        .eq('id', conv.contact_id)
-        .single();
-
-      if (!contact) return;
-
-      let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
-      if (jid.endsWith('@lid')) {
-        jid = jid.replace('@lid', '@s.whatsapp.net');
+function setupRealtimeSubscriptions() {
+  // Supabase Realtime Channels setup
+  supabaseRealtime
+    .channel('outbound_messages')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `org_id=eq.${ORG_ID}`
+    }, async (payload) => {
+      lastRealtimeEvent = Date.now();
+      payload.new.received_at_local = Date.now();
+      await processOutboundMessage(payload.new);
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+      filter: `org_id=eq.${ORG_ID}`
+    }, async (payload) => {
+      lastRealtimeEvent = Date.now();
+      await processOutboundMessageUpdate(payload.old, payload.new);
+    })
+    .subscribe((status) => {
+      console.log('[REALTIME-MESSAGES] Status:', status);
+      if (status === 'SUBSCRIBED') {
+        lastRealtimeEvent = Date.now();
       }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error(`[REALTIME-MESSAGES] ${status} - will recover via self-heal + watchdog`);
+        // Immediately run self-heal to catch any missed messages
+        sendPendingOutboundMessages().catch(err =>
+          console.error('[REALTIME-RECOVERY] Self-heal failed:', err.message)
+        );
+      }
+    });
 
-      await sendWhatsAppPresence(jid, is_typing ? 'composing' : 'paused');
-    } catch (err) {
-      console.error('[TYPING-SYNC] Error:', err.message);
-    }
-  })
-  .subscribe((status) => {
-    console.log('[REALTIME-TYPING] Status:', status);
-  });
+  // Supabase Broadcast Channel for agent activity and typing status
+  supabaseRealtime
+    .channel(`typing:${ORG_ID}`)
+    .on('broadcast', { event: 'typingStatus' }, async (payload) => {
+      lastRealtimeEvent = Date.now();
+      const { conversation_id, direction, is_typing } = payload.payload;
+      if (direction !== 'agent') return;
+
+      try {
+        const { data: conv } = await supabaseRealtime
+          .from('conversations')
+          .select('contact_id, channels!inner(type)')
+          .eq('id', conversation_id)
+          .single();
+
+        if (!conv || conv.channels?.type !== 'whatsapp') return;
+
+        const { data: contact } = await supabaseRealtime
+          .from('contacts')
+          .select('platform_id')
+          .eq('id', conv.contact_id)
+          .single();
+
+        if (!contact) return;
+
+        let jid = contact.platform_id.includes('@') ? contact.platform_id : `${contact.platform_id}@s.whatsapp.net`;
+        if (jid.endsWith('@lid')) {
+          jid = jid.replace('@lid', '@s.whatsapp.net');
+        }
+
+        await sendWhatsAppPresence(jid, is_typing ? 'composing' : 'paused');
+      } catch (err) {
+        console.error('[TYPING-SYNC] Error:', err.message);
+      }
+    })
+    .subscribe((status) => {
+      console.log('[REALTIME-TYPING] Status:', status);
+    });
+}
+
+// Initialize subscriptions
+setupRealtimeSubscriptions();
 
 // ─────────────────────────────────────────────
 // Register webhook with Evolution API on startup
@@ -1749,6 +1926,53 @@ async function registerWebhook() {
 // Register IP unblock endpoint
 registerUnblockRoute(app);
 
+// ─────────────────────────────────────────────
+// Realtime Watchdog + Periodic Self-Heal
+// ─────────────────────────────────────────────
+
+let lastRealtimeEvent = Date.now();
+
+function startRealtimeWatchdog() {
+  setInterval(async () => {
+    const silentMs = Date.now() - lastRealtimeEvent;
+    if (silentMs > 90000) { // 90s with no events
+      console.warn(`[WATCHDOG] No realtime events for ${Math.round(silentMs / 1000)}s, recreating Realtime client...`);
+      lastRealtimeEvent = Date.now(); // reset to avoid spam
+
+      // removeAllChannels() corrupts the Phoenix socket, causing CHANNEL_ERROR on resubscribe.
+      // Fix: create a completely fresh Supabase Realtime client.
+      try {
+        // Attempt to cleanly close old channels
+        try { supabaseRealtime.removeAllChannels(); } catch (_) {}
+
+        // Create fresh Realtime client
+        supabaseRealtime = createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: { persistSession: false },
+          realtime: { transport: WebSocket }
+        });
+
+        setupRealtimeSubscriptions();
+        console.log('[WATCHDOG] Fresh Realtime client created and subscribed');
+
+        // Also run self-heal sweep immediately after reconnect
+        await sendPendingOutboundMessages();
+      } catch (err) {
+        console.error('[WATCHDOG] Resubscribe failed:', err.message);
+      }
+    }
+  }, 30000); // check every 30s
+}
+
+function startPeriodicSelfHeal() {
+  setInterval(async () => {
+    try {
+      await sendPendingOutboundMessages();
+    } catch (err) {
+      console.error('[PERIODIC-SELF-HEAL] Error:', err.message);
+    }
+  }, 60 * 1000); // every 1 minute (was 5min, too slow when Realtime is down)
+}
+
 app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
   console.log(`[SERVER] TalkFuze Evolution Bridge running on port ${WEBHOOK_PORT}`);
   
@@ -1759,6 +1983,11 @@ app.listen(WEBHOOK_PORT, '0.0.0.0', async () => {
 
   // Sweep for and send any outbound messages created while worker was offline
   await sendPendingOutboundMessages();
+
+  // Start reliability monitors
+  startRealtimeWatchdog();
+  startPeriodicSelfHeal();
+  console.log('[READY] Watchdog + periodic self-heal active');
   
   // Signal PM2 that the application is ready (for wait_ready zero-downtime reloads)
   if (process.send) {
@@ -1782,10 +2011,12 @@ process.on('unhandledRejection', (reason, promise) => {
 
 async function gracefulShutdown(signal) {
   console.log(`\n[SHUTDOWN] Received ${signal}, starting graceful shutdown...`);
-  // PM2 sends SIGINT by default on restart/reload
   try {
-    // We could close db connections here if we had long-lived pools
-    console.log('[SHUTDOWN] Cleanup complete. Exiting.');
+    // Close BullMQ worker gracefully (finish current jobs)
+    console.log('[SHUTDOWN] Closing BullMQ worker...');
+    await inboundWorker.close();
+    await inboundQueue.close();
+    console.log('[SHUTDOWN] BullMQ closed. Cleanup complete. Exiting.');
     process.exit(0);
   } catch (err) {
     console.error('[SHUTDOWN] Error during cleanup:', err);

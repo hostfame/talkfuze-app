@@ -42,7 +42,8 @@
         return;
     }
 
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
+    const isMobile = window.innerWidth <= 480;
+    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
     const NUDGE_HEIGHT = 54;
