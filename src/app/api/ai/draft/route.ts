@@ -409,9 +409,10 @@ export async function POST(req: Request) {
         if (cleanLatest.length < 20 && !hasDiagnosticOrSalesIntent && !isUrl) return;
 
         // Formulate search intent: Use the latest customer message.
-        // If it's very short (e.g., "ok", "yes", or just a link), include the preceding Agent message for context.
+        // Only prepend context if the message is ambiguous or extremely short.
         let searchIntent = latestCustomerMessageCleaned;
-        if (searchIntent.length < 35) {
+        const isAmbiguous = AMBIGUOUS_MSG.test(searchIntent.trim()) || searchIntent.trim().length < 10;
+        if (isAmbiguous) {
           const agentMessages = parsedMessages.filter(m => m.sender === 'Agent');
           if (agentMessages.length > 0) {
             searchIntent = `Agent: ${agentMessages[agentMessages.length - 1].content}\nCustomer: ${searchIntent}`;
@@ -441,7 +442,7 @@ export async function POST(req: Request) {
           
           const { data: vectorDocs } = await supabaseAdmin.rpc('match_knowledge', {
             query_embedding,
-            match_threshold: 0.50,
+            match_threshold: 0.40,
             match_count: 6
           });
           

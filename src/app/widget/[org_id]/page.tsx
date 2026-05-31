@@ -19,6 +19,24 @@ type WidgetMessage = AppMessage & {
   } | null;
 }
 
+const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
+  const timeA = new Date(a.created_at).getTime();
+  const timeB = new Date(b.created_at).getTime();
+  if (timeA !== timeB) {
+    return timeA - timeB;
+  }
+  const getRank = (senderType: string) => {
+    switch (senderType) {
+      case 'contact': return 1;
+      case 'system': return 2;
+      case 'ai': return 3;
+      case 'agent': return 4;
+      default: return 5;
+    }
+  };
+  return getRank(a.sender_type) - getRank(b.sender_type);
+};
+
 function getStoredDeviceId() {
   if (typeof window === 'undefined') return ""
 
@@ -1582,7 +1600,7 @@ export default function WidgetPage() {
                  playUISound('receive', 'intercom');
              }
           }
-          return newMessages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          return newMessages.sort(sortMessagesComparator);
         });
 
         delayedMsgs.forEach(m => {
@@ -1605,7 +1623,7 @@ export default function WidgetPage() {
                     playUISound('receive', 'intercom');
                     if (pendingDelaysRef.current === 0) setIsAgentTyping(false);
                  }
-                 return [...prev, m].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                 return [...prev, m].sort(sortMessagesComparator);
               });
            }, delayMs);
         });
@@ -1665,6 +1683,13 @@ export default function WidgetPage() {
   // Auto-reply after 1 minute of inactivity
   useEffect(() => {
     const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    
+    const hasContactMessage = messages.some(m => m.sender_type === 'contact');
+    const hasAgentJoinedOrReplied = messages.some(
+      m => m.sender_type === 'agent' || m.sender_type === 'ai' || (m.sender_type === 'system' && m.content.includes('joined'))
+    );
+    const showConnecting = hasContactMessage && !hasAgentJoinedOrReplied;
+  
     if (!lastMessage || lastMessage.sender_type !== 'contact' || lastMessage.status === 'uploading' || lastMessage.status === 'sending') {
       setIsAutoTyping(false);
       return;
@@ -1831,7 +1856,7 @@ export default function WidgetPage() {
                 }
                 
                 const nextState = [...prev, newMsg as WidgetMessage];
-                return nextState.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                return nextState.sort(sortMessagesComparator);
               });
             };
 
@@ -3499,17 +3524,7 @@ export default function WidgetPage() {
                   const adjustedTime = Math.max(originalTime, maxRealTime + 1 + index);
                   return { ...om, created_at: new Date(adjustedTime).toISOString() };
                 });
-                return [...realMessages, ...processedOptimistic].sort((a, b) => {
-                  let timeA = new Date(a.created_at).getTime();
-                  let timeB = new Date(b.created_at).getTime();
-
-                  if (timeA === timeB) {
-                    // System messages should appear before other messages if they have the same timestamp
-                    if (a.sender_type === 'system' && b.sender_type !== 'system') return -1;
-                    if (b.sender_type === 'system' && a.sender_type !== 'system') return 1;
-                  }
-                  return timeA - timeB;
-                });
+                return [...realMessages, ...processedOptimistic].sort(sortMessagesComparator);
               })().map((msg, idx, arr) => {
                 const safeMeta = typeof msg.metadata === 'string'
                   ? (() => { try { return JSON.parse(msg.metadata) } catch(e) { return {} } })()
@@ -3682,6 +3697,21 @@ export default function WidgetPage() {
                   );
                 })()
               })}
+              
+              {/* Connecting Indicator */}
+              {showConnecting && (
+              <div className="flex items-start gap-1.5 animate-in fade-in duration-300 mb-3" id="tf-connecting-indicator">
+                 <div className="w-6 h-6 rounded-full border border-slate-100 bg-white shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+                    <img src="/team/4.avif" className="w-full h-full object-cover" alt="Support Team" />
+                 </div>
+                 <div className="bg-white border border-slate-100 rounded-[16px] rounded-tl-[4px] py-2 px-3.5 shadow-sm text-slate-500 text-[13px] flex items-center gap-1.5 min-h-[36px]">
+                    <span className="font-semibold text-slate-400 text-[12px] tracking-tight">Connecting to agent</span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                 </div>
+              </div>
+              )}
               
               {/* Typing Indicator */}
               {(isAgentTyping || isAutoTyping) && (
