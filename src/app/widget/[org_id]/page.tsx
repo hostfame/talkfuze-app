@@ -2034,7 +2034,16 @@ export default function WidgetPage() {
 
     activeChannel = subscribeToChannel();
 
+    // Polling fallback: Realtime can silently fail in iframes.
+    // Poll every 4s to guarantee messages always appear.
+    const pollInterval = setInterval(() => {
+      if (activeConversationIdRef.current && activeConversationIdRef.current !== 'new') {
+        fetchMsgs();
+      }
+    }, 4000);
+
     return () => {
+      clearInterval(pollInterval);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (activeChannel) {
         try {
