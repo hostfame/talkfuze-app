@@ -11,7 +11,7 @@
 
     for (let i = 0; i < scripts.length; i++) {
         const src = scripts[i].src;
-        if (src && src.includes('talkfuze-widget.js')) {
+        if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
             currentScript = scripts[i];
             orgId = currentScript.getAttribute('data-org-id');
             if (src.startsWith('http://localhost')) {
