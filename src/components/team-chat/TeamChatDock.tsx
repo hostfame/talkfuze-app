@@ -154,7 +154,7 @@ export default function TeamChatDock() {
           incrementUnreadCount(msg.chat_id)
           
           // 1. Show custom in-app toast
-          setToast({ id: msg.id, name: msg.sender_name, content: msg.content, avatar: msg.sender_avatar, chatId: msg.chat_id })
+          setToast({ id: msg.id, name: msg.sender_name || 'Agent', content: msg.content, avatar: msg.sender_avatar || null, chatId: msg.chat_id })
           setTimeout(() => setToast(current => current?.id === msg.id ? null : current), 6000)
 
           // 2. Browser Notification
