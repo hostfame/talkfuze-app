@@ -3228,7 +3228,11 @@ export default function ChatThread({
           const sendTimer = setTimeout(async () => {
             // Client-First DB Insert for extreme speed!
             try {
-              const { data: insertedMessage, error } = await supabase.from('messages').insert({
+              // STEP 1: INSERT only - do NOT chain .select() here.
+              // If insert succeeds, message is in DB regardless of what happens next.
+              // Combining insert+select means a SELECT failure (RLS/network blip) 
+              // incorrectly triggers markFailed even though the message was sent.
+              const { error: insertError } = await supabase.from('messages').insert({
                 org_id: orgId,
                 conversation_id: conversationId,
                 sender_type: 'agent',
@@ -3239,9 +3243,10 @@ export default function ChatThread({
                 is_internal: isInternal,
                 status: isInternal ? 'delivered' : (isScheduled ? 'sending' : 'sent'),
                 created_at: optimisticCreatedAt
-              }).select('id').single();
+              });
 
-              if (error) throw error;
+              // Only markFailed if the INSERT itself failed
+              if (insertError) throw insertError;
               
               markConfirmed(conversationId, tempId);
               setLocallyDeliveredIds(prev => {
@@ -3250,14 +3255,24 @@ export default function ChatThread({
                 return next;
               });
 
-              // Offload heavy webhook routing to background server action
-              dispatchMessageWebhooks(insertedMessage.id);
+              // STEP 2: Fetch inserted ID separately for webhook dispatch (non-blocking, non-fatal)
+              supabase.from('messages')
+                .select('id')
+                .eq('conversation_id', conversationId)
+                .eq('metadata->>temp_id', tempId)
+                .single()
+                .then(({ data }) => {
+                  if (data?.id) dispatchMessageWebhooks(data.id);
+                })
+                .catch(() => { /* webhook dispatch skipped - non-fatal */ });
+
             } catch (e: unknown) {
               console.error(e);
               markFailed(conversationId, tempId);
             }
           }, accumulatedDelay);
           activeTimersRef.current.push(sendTimer);
+
         }
 
         if (accumulatedDelay > 0 && !isInternal) {
