@@ -2453,7 +2453,7 @@ export default function WidgetPage() {
   const hasAgentJoinedOrReplied = messages.some(
     m => m.sender_type === 'agent' || m.sender_type === 'ai' || (m.sender_type === 'system' && m.content.includes('joined'))
   );
-  const showConnecting = hasContactMessage && !hasAgentJoinedOrReplied;
+  const showConnecting = hasContactMessage && !hasAgentJoinedOrReplied && !isAgentTyping && !isAutoTyping;
 
   const [isMuted, setIsMuted] = useState(false)
 
@@ -2478,7 +2478,7 @@ export default function WidgetPage() {
   const greetingTitle = settings?.greetingTitle || 'Hey there! 👋'
   const greetingSubtitle = settings?.greetingSubtitle || 'How can we help?'
   
-  const lastAgentMessage = [...messages].reverse().find(m => m.sender_type === 'agent' && m.agent);
+  const lastAgentMessage = [...messages].reverse().find(m => (m.sender_type === 'agent' || m.sender_type === 'system') && m.agent);
   const activeAgent = lastAgentMessage?.agent || null;
   const headerName = activeAgent?.name || 'Support Team';
   const headerSubtitle = activeAgent ? 'Active' : 'Active now';
