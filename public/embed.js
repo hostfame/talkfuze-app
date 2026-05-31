@@ -125,8 +125,9 @@
         }
 
         #tf-icon-chat {
-            opacity: 1;
+            opacity: 0;
             transform: rotate(0deg) scale(1);
+            transition: opacity 0.3s ease;
         }
 
         #tf-icon-close {
@@ -192,8 +193,8 @@
         /* Floating pill input bar nudge */
         #tf-nudge {
             position: fixed;
-            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
-            right: ${MARGIN}px;
+            bottom: ${MARGIN}px;
+            right: ${MARGIN + BUTTON_SIZE + 12}px;
             background: #ffffff;
             border-radius: 100px;
             box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
@@ -204,7 +205,7 @@
             padding: 0;
             pointer-events: auto;
             opacity: 0;
-            transform: translateY(16px);
+            transform: translateX(16px);
             transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             cursor: text;
@@ -214,7 +215,7 @@
 
         #tf-nudge.tf-nudge-show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0);
         }
 
         #tf-nudge-input {
@@ -425,12 +426,7 @@
         }
     });
 
-    // Typing opens the widget
-    nudgeInput.addEventListener('input', () => {
-        if (nudgeInput.value.length === 1 && !isOpen) {
-            openWidgetWithMessage('');
-        }
-    });
+
 
     function showNudge() {
         if (window.innerWidth <= 768) return;
