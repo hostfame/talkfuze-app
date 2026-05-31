@@ -4747,67 +4747,75 @@ export default function ChatThread({
                       {(msg.status === 'sending' || msg.status === 'confirmed') ? (
                         <Check size={14} className="text-slate-400" />
                       ) : msg.status === 'failed' ? (
-                        <span className="flex items-center gap-1 ml-1">
-                          <span 
-                            className="text-[10px] text-blue-500 cursor-pointer hover:text-blue-600 underline"
-                            onClick={async () => {
-                              if (!conversationId) return;
-                              const failedContent = msg.content;
-                              const failedMeta = safeMeta;
-                              const failedIsInternal = msg.is_internal;
-                              // Remove old failed message
-                              removeOptimisticMessage(conversationId, msg.id);
-                              // Create new optimistic message
-                              const retryTempId = `retry_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                              const retryCreatedAt = new Date().toISOString();
-                              addOptimisticMessage(conversationId, {
-                                id: retryTempId,
-                                sender_type: 'agent',
-                                sender_id: currentUser?.id ?? null,
-                                content: failedContent,
-                                content_type: msg.content_type || 'text',
-                                metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) } as any,
-                                is_internal: failedIsInternal,
-                                status: 'sending',
-                                created_at: retryCreatedAt
-                              });
-                              // Re-insert to DB
-                              try {
-                                const { data: insertedMessage, error } = await supabase.from('messages').insert({
-                                  org_id: orgId,
-                                  conversation_id: conversationId,
+                        // Only show Retry for OPTIMISTIC messages (id starts with 'temp-' or 'retry_').
+                        // DB messages with status='failed' (set by self-heal worker) show a warning icon only
+                        // because: 1) Retry would create duplicates 2) Widget customers get msgs via Realtime anyway
+                        msg.id.startsWith('temp-') || msg.id.startsWith('retry_') ? (
+                          <span className="flex items-center gap-1 ml-1">
+                            <span 
+                              className="text-[10px] text-blue-500 cursor-pointer hover:text-blue-600 underline"
+                              onClick={async () => {
+                                if (!conversationId) return;
+                                const failedContent = msg.content;
+                                const failedMeta = safeMeta;
+                                const failedIsInternal = msg.is_internal;
+                                // Remove old failed message
+                                removeOptimisticMessage(conversationId, msg.id);
+                                // Create new optimistic message
+                                const retryTempId = `retry_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+                                const retryCreatedAt = new Date().toISOString();
+                                addOptimisticMessage(conversationId, {
+                                  id: retryTempId,
                                   sender_type: 'agent',
-                                  sender_id: currentUser?.id,
+                                  sender_id: currentUser?.id ?? null,
                                   content: failedContent,
                                   content_type: msg.content_type || 'text',
-                                  metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) },
+                                  metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) } as any,
                                   is_internal: failedIsInternal,
-                                  status: failedIsInternal ? 'delivered' : 'sent',
+                                  status: 'sending',
                                   created_at: retryCreatedAt
-                                }).select('id').single();
-                                if (error) throw error;
-                                markConfirmed(conversationId, retryTempId);
-                                dispatchMessageWebhooks(insertedMessage.id);
-                              } catch (e) {
-                                console.error('[Retry] Failed:', e);
-                                markFailed(conversationId, retryTempId);
-                              }
-                            }}
-                            title="Retry sending"
-                          >
-                            Retry
+                                });
+                                // Re-insert to DB
+                                try {
+                                  const { data: insertedMessage, error } = await supabase.from('messages').insert({
+                                    org_id: orgId,
+                                    conversation_id: conversationId,
+                                    sender_type: 'agent',
+                                    sender_id: currentUser?.id,
+                                    content: failedContent,
+                                    content_type: msg.content_type || 'text',
+                                    metadata: { temp_id: retryTempId, ...(failedMeta?.reply_to ? { reply_to: failedMeta.reply_to } : {}) },
+                                    is_internal: failedIsInternal,
+                                    status: failedIsInternal ? 'delivered' : 'sent',
+                                    created_at: retryCreatedAt
+                                  }).select('id').single();
+                                  if (error) throw error;
+                                  markConfirmed(conversationId, retryTempId);
+                                  dispatchMessageWebhooks(insertedMessage.id);
+                                } catch (e) {
+                                  console.error('[Retry] Failed:', e);
+                                  markFailed(conversationId, retryTempId);
+                                }
+                              }}
+                              title="Retry sending"
+                            >
+                              Retry
+                            </span>
+                            <span className="text-[10px] text-slate-400">|</span>
+                            <span 
+                              className="text-[10px] text-red-400 cursor-pointer hover:text-red-500"
+                              onClick={() => {
+                                if (conversationId) removeOptimisticMessage(conversationId, msg.id)
+                              }}
+                              title="Dismiss"
+                            >
+                              ✕
+                            </span>
                           </span>
-                          <span className="text-[10px] text-slate-400">|</span>
-                          <span 
-                            className="text-[10px] text-red-400 cursor-pointer hover:text-red-500"
-                            onClick={() => {
-                              if (conversationId) removeOptimisticMessage(conversationId, msg.id)
-                            }}
-                            title="Dismiss"
-                          >
-                            ✕
-                          </span>
-                        </span>
+                        ) : (
+                          // DB message failed delivery - show silent warning, no Retry (would cause duplicates)
+                          <span className="text-[10px] text-amber-400 ml-1" title="Delivery failed">⚠</span>
+                        )
                       ) : msg.status === 'read' ? (
                         <CheckCheck size={14} className="text-blue-500" />
                       ) : msg.status === 'delivered' ? (
