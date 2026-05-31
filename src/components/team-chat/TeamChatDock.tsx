@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
-import { MessageSquare, X, Send, ChevronLeft, Loader2, Users } from 'lucide-react'
+import { MessageSquare, X, Send, ChevronLeft, Loader2, Users, Paperclip, Mic, Square } from 'lucide-react'
 import { useTeamChatStore, TeamChat, TeamMessage } from '@/lib/team-chat-store'
 import { useInboxStore } from '@/lib/store'
 import { useAuth } from '@/lib/auth-context'
@@ -52,6 +52,12 @@ export default function TeamChatDock() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [recording, setRecording] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   // Stable refs to avoid re-subscribing channels on every state change
   const isOpenRef = useRef(isOpen)
@@ -211,26 +217,37 @@ export default function TeamChatDock() {
   }, [activeChatId, messages, setMessages, setUnreadCount, scrollToBottom])
 
   // ------- 4. SEND: Optimistic + Broadcast + Direct DB Insert -------
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!msgInput.trim() || !activeChatId || sending) return
-    
-    const text = msgInput.trim()
-    setMsgInput('')
+  const doSendMessage = async (rawText: string) => {
+    if (!activeChatId) return;
     setSending(true)
 
     const sender = teamMembers.find(t => t.id === currentUser?.id)
-    const now = new Date().toISOString()
     const optimisticId = `optimistic-${Date.now()}`
+
+    let content = rawText;
+    let attachment_type: any = undefined;
+    let attachment_url: any = undefined;
+    
+    if (content.startsWith('[IMAGE]')) {
+      attachment_type = 'image';
+      attachment_url = content.substring(7);
+      content = 'Sent an image';
+    } else if (content.startsWith('[AUDIO]')) {
+      attachment_type = 'audio';
+      attachment_url = content.substring(7);
+      content = 'Sent a voice message';
+    }
 
     const msgPayload: TeamMessage = {
       id: optimisticId,
       chat_id: activeChatId,
       sender_id: currentUser?.id || '',
-      content: text,
-      created_at: now,
+      content,
+      created_at: new Date().toISOString(),
       sender_name: sender?.name || currentUser?.name || 'You',
-      sender_avatar: sender?.avatar_url || null
+      sender_avatar: sender?.avatar_url || null,
+      attachment_url,
+      attachment_type
     }
 
     // STEP 1: Show in OUR UI instantly (0ms)
@@ -238,20 +255,95 @@ export default function TeamChatDock() {
     scrollToBottom()
 
     // STEP 2: Broadcast to OTHER clients via WebSocket (~20ms)
+    // Send rawText so they parse it
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
         type: 'broadcast',
         event: 'new_message',
-        payload: msgPayload
+        payload: { ...msgPayload, content: rawText, attachment_url: undefined, attachment_type: undefined }
       })
     }
 
-    // STEP 3: Persist via server action (fire-and-forget, uses admin to bypass RLS)
-    sendTeamMessage(activeChatId, text).catch(err => {
+    // STEP 3: Persist via server action
+    sendTeamMessage(activeChatId, rawText).catch(err => {
       console.error('Failed to persist message:', err)
     })
 
     setSending(false)
+  }
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!msgInput.trim() || !activeChatId || sending) return
+    const text = msgInput.trim()
+    setMsgInput('')
+    await doSendMessage(text)
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !activeChatId) return
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.url) {
+        const text = file.type.startsWith('audio/') ? `[AUDIO]${data.url}` : `[IMAGE]${data.url}`
+        await doSendMessage(text)
+      }
+    } catch (err) {
+      console.error('Upload failed:', err)
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data)
+      }
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' })
+        const file = new File([audioBlob], `voice-${Date.now()}.mp3`, { type: 'audio/mp3' })
+        setUploading(true)
+        try {
+          const formData = new FormData()
+          formData.append('file', file)
+          const res = await fetch('/api/upload', { method: 'POST', body: formData })
+          const data = await res.json()
+          if (data.url) {
+            await doSendMessage(`[AUDIO]${data.url}`)
+          }
+        } catch (err) {
+          console.error('Voice upload failed:', err)
+        } finally {
+          setUploading(false)
+        }
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      mediaRecorder.start()
+      setRecording(true)
+    } catch (err) {
+      console.error('Failed to start recording:', err)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recording) {
+      mediaRecorderRef.current.stop()
+      setRecording(false)
+    }
   }
 
   // ------- 5. Start Direct Chat -------
@@ -413,16 +505,52 @@ export default function TeamChatDock() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {messages[activeChatId]?.map(msg => {
                   const isMe = msg.sender_id === currentUser?.id
+                  const sender = teamMembers.find(t => t.id === msg.sender_id)
+                  const senderName = isMe ? 'You' : (sender?.name || msg.sender_name || 'Agent')
+                  const senderAvatar = isMe ? (currentUser?.avatar_url) : (sender?.avatar_url || msg.sender_avatar)
+
                   return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      {!isMe && <span className="text-[9px] text-slate-400 mb-1 ml-1">{msg.sender_name}</span>}
-                      <div className={`max-w-[85%] rounded-[18px] px-3.5 py-2 text-[13px] shadow-sm leading-relaxed ${
-                        isMe 
-                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-sm' 
-                          : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
-                      }`}>
-                        {msg.content}
+                    <div key={msg.id} className={`flex gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'} items-end mb-1`}>
+                      {!isMe && (
+                        <div className="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-slate-200 dark:bg-slate-700">
+                          {senderAvatar ? (
+                            <img src={senderAvatar} alt={senderName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                              {senderName.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
+                        {!isMe && <span className="text-[9px] text-slate-400 mb-1 ml-1">{senderName}</span>}
+                        <div className={`rounded-[18px] px-3.5 py-2 text-[13px] shadow-sm leading-relaxed ${
+                          isMe 
+                            ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-sm' 
+                            : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700/50 rounded-bl-sm'
+                        }`}>
+                          {msg.attachment_type === 'image' && msg.attachment_url && (
+                            <img src={msg.attachment_url} alt="Attachment" className="max-w-[150px] sm:max-w-[200px] rounded-lg mb-1 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(msg.attachment_url, '_blank')} />
+                          )}
+                          {msg.attachment_type === 'audio' && msg.attachment_url && (
+                            <audio controls src={msg.attachment_url} className="w-[180px] h-8 mb-1 [&::-webkit-media-controls-panel]:bg-white/20 [&::-webkit-media-controls-play-button]:text-current" />
+                          )}
+                          {msg.content !== 'Sent an image' && msg.content !== 'Sent a voice message' && msg.content}
+                        </div>
                       </div>
+
+                      {isMe && (
+                        <div className="w-6 h-6 rounded-full shrink-0 overflow-hidden bg-slate-200 dark:bg-slate-700">
+                          {senderAvatar ? (
+                            <img src={senderAvatar} alt="You" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white font-bold text-[10px]">
+                              {currentUser?.name ? currentUser.name.charAt(0) : 'Y'}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -432,21 +560,38 @@ export default function TeamChatDock() {
               {/* Input */}
               <div className="p-2.5 bg-white/80 dark:bg-[#111b21]/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 shrink-0">
                 <form onSubmit={handleSendMessage} className="flex gap-2 items-center relative">
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*,audio/*" onChange={handleFileUpload} />
+                  
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading || recording} className="w-8 h-8 rounded-full text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer disabled:opacity-50">
+                    <Paperclip size={16} />
+                  </button>
+                  
                   <input
                     type="text"
                     value={msgInput}
                     onChange={e => setMsgInput(e.target.value)}
-                    placeholder="Message..."
-                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full pl-4 pr-10 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
-                    disabled={sending}
+                    placeholder={recording ? "Recording..." : uploading ? "Uploading..." : "Message..."}
+                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full px-4 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
+                    disabled={sending || uploading || recording}
                   />
-                  <button
-                    type="submit"
-                    disabled={!msgInput.trim() || sending}
-                    className="absolute right-1 w-7 h-7 rounded-full bg-blue-600 text-white disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-sm hover:shadow"
-                  >
-                    {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={12} className="ml-0.5" />}
-                  </button>
+                  
+                  {recording ? (
+                    <button type="button" onClick={stopRecording} className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center shrink-0 transition-colors animate-pulse">
+                      <Square size={14} className="fill-current" />
+                    </button>
+                  ) : msgInput.trim() === '' ? (
+                    <button type="button" onClick={startRecording} disabled={uploading} className="w-8 h-8 rounded-full text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center shrink-0 transition-colors cursor-pointer disabled:opacity-50">
+                      <Mic size={16} />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!msgInput.trim() || sending || uploading}
+                      className="w-8 h-8 rounded-full bg-blue-600 text-white disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-sm hover:shadow"
+                    >
+                      {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} className="-ml-0.5" />}
+                    </button>
+                  )}
                 </form>
               </div>
             </div>

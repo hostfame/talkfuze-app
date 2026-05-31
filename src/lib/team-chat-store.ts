@@ -8,6 +8,8 @@ export interface TeamMessage {
   created_at: string;
   sender_name?: string;
   sender_avatar?: string | null;
+  attachment_url?: string;
+  attachment_type?: 'image' | 'audio';
 }
 
 export interface TeamChat {
@@ -47,26 +49,41 @@ export const useTeamChatStore = create<TeamChatState>((set) => ({
     const existing = state.messages[chatId] || [];
     // 1. Exact ID match = skip
     if (existing.some(m => m.id === message.id)) return state;
+    
+    // Parse attachments if coming directly from realtime (not yet parsed)
+    let parsedMsg = { ...message };
+    if (!parsedMsg.attachment_url && parsedMsg.content) {
+      if (parsedMsg.content.startsWith('[IMAGE]')) {
+        parsedMsg.attachment_type = 'image';
+        parsedMsg.attachment_url = parsedMsg.content.substring(7);
+        parsedMsg.content = 'Sent an image';
+      } else if (parsedMsg.content.startsWith('[AUDIO]')) {
+        parsedMsg.attachment_type = 'audio';
+        parsedMsg.attachment_url = parsedMsg.content.substring(7);
+        parsedMsg.content = 'Sent a voice message';
+      }
+    }
+
     // 2. Content+sender dedup within 10s window (catches broadcast vs postgres_changes duplicates)
-    const msgTime = new Date(message.created_at).getTime();
+    const msgTime = new Date(parsedMsg.created_at).getTime();
     const contentDupe = existing.find(
-      m => m.content === message.content 
-        && m.sender_id === message.sender_id 
+      m => m.content === parsedMsg.content 
+        && m.sender_id === parsedMsg.sender_id 
         && Math.abs(new Date(m.created_at).getTime() - msgTime) < 10000
     );
     if (contentDupe) {
       // If existing is optimistic and new is real, upgrade it
-      if (contentDupe.id.startsWith('optimistic-') && !message.id.startsWith('optimistic-')) {
+      if (contentDupe.id.startsWith('optimistic-') && !parsedMsg.id.startsWith('optimistic-')) {
         const idx = existing.indexOf(contentDupe);
         const updated = [...existing];
-        updated[idx] = message;
+        updated[idx] = parsedMsg;
         return { messages: { ...state.messages, [chatId]: updated } };
       }
       // Otherwise it's a true duplicate, skip
       return state;
     }
     return {
-      messages: { ...state.messages, [chatId]: [...existing, message] }
+      messages: { ...state.messages, [chatId]: [...existing, parsedMsg] }
     };
   }),
   setMessages: (chatId, messages) => set((state) => ({

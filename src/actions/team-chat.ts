@@ -68,7 +68,7 @@ export async function fetchTeamMessages(chatId: string) {
       users (name, avatar_url)
     `)
     .eq('chat_id', chatId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(100)
 
   if (error) {
@@ -76,15 +76,33 @@ export async function fetchTeamMessages(chatId: string) {
     return []
   }
 
-  return messages.map((m: any) => ({
-    id: m.id,
-    chat_id: m.chat_id,
-    sender_id: m.sender_id,
-    content: m.content,
-    created_at: m.created_at,
-    sender_name: m.users?.name || null,
-    sender_avatar: m.users?.avatar_url || null
-  }))
+  return messages.reverse().map((m: any) => {
+    let content = m.content;
+    let attachment_url = undefined;
+    let attachment_type = undefined;
+
+    if (content.startsWith('[IMAGE]')) {
+      attachment_type = 'image';
+      attachment_url = content.substring(7);
+      content = 'Sent an image';
+    } else if (content.startsWith('[AUDIO]')) {
+      attachment_type = 'audio';
+      attachment_url = content.substring(7);
+      content = 'Sent a voice message';
+    }
+
+    return {
+      id: m.id,
+      chat_id: m.chat_id,
+      sender_id: m.sender_id,
+      content,
+      created_at: m.created_at,
+      sender_name: m.users?.name || null,
+      sender_avatar: m.users?.avatar_url || null,
+      attachment_url,
+      attachment_type
+    };
+  })
 }
 
 export async function sendTeamMessage(chatId: string, content: string) {
