@@ -117,15 +117,6 @@
             transform: scale(1);
         }
 
-        /* Desktop: hide launcher when widget is open - use widget's own header X to close */
-        @media (min-width: 481px) {
-            #tf-launcher.tf-open {
-                opacity: 0 !important;
-                pointer-events: none !important;
-                transform: scale(0.75) !important;
-            }
-        }
-
         #tf-launcher:hover {
             transform: scale(1.06);
             box-shadow: 0 6px 20px rgba(0, 112, 243, 0.55), 0 3px 8px rgba(0,0,0,0.15);

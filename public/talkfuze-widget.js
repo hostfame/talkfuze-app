@@ -27,7 +27,8 @@
         return;
     }
 
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
+    const isMobile = window.innerWidth <= 480;
+    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
 
@@ -99,15 +100,6 @@
 
         #tf-launcher:active {
             transform: scale(0.95);
-        }
-
-        /* Desktop: hide launcher when widget is open - use widget's own header X to close */
-        @media (min-width: 481px) {
-            #tf-launcher.tf-open {
-                opacity: 0 !important;
-                pointer-events: none !important;
-                transform: scale(0.75) !important;
-            }
         }
 
         .tf-icon {
@@ -369,6 +361,69 @@
     container.appendChild(launcher);
     document.body.appendChild(container);
 
+    // =============================================
+    // Agent Avatar Carousel (fetched from API)
+    // =============================================
+    let agentAvatars = [];
+    let avatarIndex = 0;
+    let avatarRotateTimer = null;
+    const avatarEl = document.getElementById('tf-agent-avatar');
+    const chatIconEl = document.getElementById('tf-icon-chat');
+
+    function revealLauncher() {
+        launcher.style.opacity = '1';
+    }
+
+    function showAvatar(url) {
+        if (!avatarEl || !url) return;
+        const img = new Image();
+        img.onload = () => {
+            avatarEl.src = url;
+            avatarEl.classList.add('tf-show');
+            if (chatIconEl) chatIconEl.style.opacity = '0';
+            revealLauncher();
+        };
+        img.onerror = () => {
+            avatarEl.classList.remove('tf-show');
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+            revealLauncher();
+        };
+        img.src = url;
+    }
+
+    function rotateAvatar() {
+        if (agentAvatars.length === 0) return;
+        avatarIndex = (avatarIndex + 1) % agentAvatars.length;
+        showAvatar(agentAvatars[avatarIndex].avatar_url);
+    }
+
+    function startAvatarCarousel(agents) {
+        agentAvatars = agents;
+        if (agents.length === 0) {
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+            return;
+        }
+        showAvatar(agents[0].avatar_url);
+        if (agents.length > 1) {
+            if (avatarRotateTimer) clearInterval(avatarRotateTimer);
+            avatarRotateTimer = setInterval(rotateAvatar, 10000);
+        }
+    }
+
+    // Fetch agent avatars from API
+    fetch(`${baseUrl}/api/widget/agents?org_id=${orgId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.agents && data.agents.length > 0) {
+                startAvatarCarousel(data.agents);
+            } else {
+                if (chatIconEl) chatIconEl.style.opacity = '1';
+            }
+        })
+        .catch(() => {
+            if (chatIconEl) chatIconEl.style.opacity = '1';
+        });
+
     // ==========================================
     // Nudge - Floating pill input bar (desktop only)
     // ==========================================
@@ -570,17 +625,19 @@
         }
 
         if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
-            const avatarEl = document.getElementById('tf-agent-avatar');
-            const chatIconEl = document.getElementById('tf-icon-chat');
-            if (avatarEl && chatIconEl) {
-                if (event.data.avatarUrl) {
-                    avatarEl.src = event.data.avatarUrl;
-                    avatarEl.classList.add('tf-show');
-                    chatIconEl.style.opacity = '0';
-                } else {
-                    avatarEl.classList.remove('tf-show');
-                    chatIconEl.style.opacity = '1';
+            if (event.data.avatarUrl) {
+                // Stop carousel and pin to this agent's avatar
+                if (avatarRotateTimer) clearInterval(avatarRotateTimer);
+                showAvatar(event.data.avatarUrl);
+            } else if (agentAvatars.length > 0) {
+                // Resume carousel
+                showAvatar(agentAvatars[0].avatar_url);
+                if (agentAvatars.length > 1) {
+                    avatarRotateTimer = setInterval(rotateAvatar, 10000);
                 }
+            } else {
+                if (avatarEl) avatarEl.classList.remove('tf-show');
+                if (chatIconEl) chatIconEl.style.opacity = '1';
             }
         }
     });
