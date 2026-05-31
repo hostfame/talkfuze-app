@@ -1254,7 +1254,7 @@ async function processOutboundMessage(msg) {
           console.warn(`[OUTBOUND] Failed to fetch agent name for user ${msg.sender_id}:`, agentErr.message);
         }
       } else if (msg.sender_type === 'ai') {
-        agentName = 'Aisha Siddika';
+        // No prepended name for system/AI messages
       }
 
       let formattedContent = msg.content || '';
@@ -1592,7 +1592,7 @@ async function processOutboundMessageUpdate(oldMsg, newMsg) {
           agentName = agentUser.name;
         }
       } else if (newMsg.sender_type === 'ai') {
-        agentName = 'Aisha Siddika';
+        // No prepended name for system/AI messages
       }
 
       if (agentName) {

@@ -602,9 +602,10 @@ export default function WidgetPage() {
   
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
+  const hasAutoResumedRef = useRef(false)
   
-  const getResumeConversationId = () => {
-    const lastConv = conversations[0];
+  const getResumeConversationId = (convs: any[] = conversations) => {
+    const lastConv = convs[0];
     if (!lastConv) return 'new';
     if (lastConv.status === 'resolved' || lastConv.status === 'closed' || lastConv.is_archived) return 'new';
     const lastActivity = new Date(lastConv.last_message_at || lastConv.created_at).getTime();
@@ -1558,7 +1559,19 @@ export default function WidgetPage() {
     if (!org_id || !deviceId) return
     try {
       const data = await getWidgetConversations(org_id, deviceId, Date.now())
-      if (data) setConversations(data)
+      if (data) {
+        setConversations(data)
+        
+        // Approach 4: Database-driven Auto-Resume
+        if (!hasAutoResumedRef.current && !isStandaloneCall) {
+          hasAutoResumedRef.current = true;
+          const resumeId = getResumeConversationId(data);
+          if (resumeId !== 'new') {
+            setActiveConversationId(resumeId);
+            setActiveTab('chat');
+          }
+        }
+      }
     } catch (e) {
       console.error("Fetch convs error", e)
     }
@@ -1666,6 +1679,18 @@ export default function WidgetPage() {
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId
   }, [activeConversationId])
+
+  // Fetch messages when conversation changes
+  useEffect(() => {
+    fetchMsgs()
+  }, [activeConversationId, deviceId, org_id])
+
+  // Mark messages as read when viewing chat
+  useEffect(() => {
+    if (activeTab === 'chat' && activeConversationId && activeConversationId !== 'new') {
+      markMessagesAsRead(activeConversationId, 'contact');
+    }
+  }, [activeTab, activeConversationId, messages])
 
   // Stable typing channel - never tears down on conversation switch
   // Uses ref to always read the current activeConversationId
@@ -2961,7 +2986,7 @@ export default function WidgetPage() {
       const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation';
       const transcript = messages.map(m => {
           if (m.sender_type === 'system') return `* ${m.content} *`
-          if (m.sender_type === 'ai') return `Aisha Siddika:\n${m.content}`
+          if (m.sender_type === 'ai') return `System:\n${m.content}`
           const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
           return `${name}:\n${m.content}`
       }).join('\n\n');

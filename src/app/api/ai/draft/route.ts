@@ -112,11 +112,11 @@ Match the customer's language:
 
   const escalationSection = detectedLanguage === 'Bengali'
     ? `## ESCALATION
-If a technical issue is not resolved after 2-3 exchanges of basic guidance, offer ticket conversion:
-"আপনার ইস্যুটি আমাদের সিনিয়র টিম বিস্তারিত চেক করতে পারে। চাইলে আমি এটি সাপোর্ট টিকিটে কনভার্ট করে দিতে পারি, ইমেইলে আপডেট পাবেন।"`
+Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply:
+"এরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"`
     : `## ESCALATION
-If a technical issue is not resolved after 2-3 exchanges of basic guidance, offer ticket conversion:
-"I can convert this to a support ticket so our team can investigate in detail and update you by email."`;
+Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply:
+"If the issue is still not resolved, I will convert this chat into a support ticket so our technical team can check the details and solve it."`;
 
   return `## IDENTITY
 You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
@@ -183,7 +183,7 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     "আপনার ইস্যুটি আমি বিস্তারিত চেক করছি। একটু সময় দিবেন।",
     "আমাদের টিম বিস্তারিত চেক করে আপনাকে ইমেইলে আপডেট জানাবেন।",
     "জি, আমাদের এডভান্সড হোস্টিং প্যাকেজের মূল্য ৫৪৯ টাকা/মাস।\n\nপ্যাকেজটি সিলেক্ট করতে কি আমি আপনাকে সাহায্য করতে পারি?",
-    "আপনার ই-কমার্স ওয়েবসাইটের ভিজিটর কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
+    "আপনার ই-কমার্স ওয়েবসাইটের কাস্টমার বা অডিয়েন্স কোন কোন দেশ থেকে আসতে পারে? শুধুমাত্র বাংলাদেশ টার্গেট করে হবে নাকি পুরোবিশ্ব?",
     "আপনার ডোমেইনটি সাকসেসফুলি কানেক্ট হয়েছে। তবে ডিএনএস প্রোপাগেট হতে সাধারণত ২৪ ঘণ্টার মত সময় লাগতে পারে।"
   ];
   
@@ -191,7 +191,7 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
     "I am looking into this details for you. Please give me a moment.",
     "Our technical team will investigate and follow up with you via email shortly.",
     "Yes, our Advanced hosting plan is ৳549/month.\n\nWould you like me to help you choose a package?",
-    "Where is your target audience or visitors located? Are you targeting Bangladesh only, or is it global?",
+    "Where is your target audience located? Are you targeting Bangladesh only, or is it global?",
     "Your domain has been successfully connected. Please note it can take up to 24 hours for DNS propagation."
   ];
 

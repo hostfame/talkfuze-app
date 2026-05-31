@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার একাউন্ট কিভাবে ভেরিফাই করব?",
+    "instruction": "how to verify account",
+    "expected_features": "ভেরিফাই, একাউন্ট, escalation",
+    "ai_response": "আপনার একাউন্ট ভেরিফাই করতে আপনার ইমেইলে একটি ভেরিফিকেশন লিংক পাঠানো হয়েছে। অনুগ্রহপুর্বক আপনার ইনবক্স বা স্প্যাম ফোল্ডার চেক করে লিংকে ক্লিক করুন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 2,
+    "type": "Tech",
+    "lang": "EN",
+    "customer_msg": "How do I change my domain name?",
+    "instruction": "explain how to change domain",
+    "expected_features": "escalation",
+    "ai_response": "You cannot directly change a domain name on an existing hosting account. You would need to purchase a new domain and set up a new hosting package for it.\n\nIf you already have a new domain, I can help you point it to your current hosting. Could you please provide your domain name so I can check your account and verify this?"
+  },
+  {
+    "id": 3,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "সিপ্যানেলে কিভাবে লগ ইন করব?",
+    "instruction": "how to login to cpanel",
+    "expected_features": "লগইন, escalation",
+    "ai_response": "সিপ্যানেল লগইন করার জন্য আপনার ডোমেইনের শেষে /cpanel যোগ করে ব্রাউজারে ওপেন করুন। যেমন: yourdomain.com/cpanel\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 4,
+    "type": "Sales",
+    "lang": "BN",
+    "customer_msg": "অ্যাডভান্স প্যাকেজ এর দাম কত?",
+    "instruction": "price is 549/mo",
+    "expected_features": "প্যাকেজ (No escalation expected if short)",
+    "ai_response": "অ্যাডভান্সড হোস্টিং প্যাকেজের মূল্য ৫৪৯ টাকা/মাস।\n\nপ্যাকেজটি সিলেক্ট করতে কি আমি আপনাকে সাহায্য করতে পারি?"
+  },
+  {
+    "id": 5,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার ওয়েবসাইট এর ডাটাবেস এ এরর দেখাচ্ছে",
+    "instruction": "how to fix database error",
+    "expected_features": "ডাটাবেস, এরর/ইস্যু, escalation",
+    "ai_response": "ডাটাবেস ইস্যু সমাধানের জন্য প্রথমে আপনার cPanel এ গিয়ে phpMyAdmin থেকে ডাটাবেস চেক করুন এবং Repair টেবল অপশনটি ব্যবহার করে দেখুন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 6,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার আগের অর্ডার টা কিভাবে প্রতিলিপি করব?",
+    "instruction": "how to duplicate order",
+    "expected_features": "ডুপ্লিকেট, escalation",
+    "ai_response": "আপনার আগের অর্ডারটি ডুপ্লিকেট করতে চাইলে আমাদের টিমকে জানাতে হবে। আপনি কি পুরনো অর্ডারের মতো একই প্যাকেজ এবং বিলিং সাইকেল চান?"
+  },
+  {
+    "id": 7,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "পাসওয়ার্ড কিভাবে সেভ করব?",
+    "instruction": "how to save password",
+    "expected_features": "সেভ, escalation",
+    "ai_response": "আপনার হোষ্টনিন একাউন্টে লগইন করে My Services > আপনার সার্ভিস > Login Details সেকশন থেকে পাসওয়ার্ড কপি করে নিতে পারেন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 8,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "ভিপিএস কিভাবে পুনরারম্ভ করব?",
+    "instruction": "how to restart vps",
+    "expected_features": "রিস্টার্ট, escalation",
+    "ai_response": "আপনার VPS রিস্টার্ট করতে হলে Hostnin কন্ট্রোল প্যানেলে লগইন করে VPS সেকশন থেকে আপনার সার্ভার সিলেক্ট করে Restart বাটনে ক্লিক করুন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 9,
+    "type": "Sales",
+    "lang": "EN",
+    "customer_msg": "Compare Titan and Nebula plans",
+    "instruction": "Titan is basic, Nebula has more RAM",
+    "expected_features": "No escalation",
+    "ai_response": "Titan is our entry-level shared hosting plan, while Nebula offers more RAM and resources for better performance under higher traffic.\n\nWhich type of website are you building, and how much traffic do you expect?"
+  },
+  {
+    "id": 10,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "কাস্টমার কে কিভাবে বার্তা পাঠাব?",
+    "instruction": "how to send message to customer",
+    "expected_features": "কাস্টমার, মেসেজ, escalation",
+    "ai_response": "আপনার হোষ্টনিন একাউন্টের কাস্টমারদের মেসেজ পাঠাতে পারেন আমাদের ক্লায়েন্ট এরিয়া থেকে। সেখানে গিয়ে Billing > Manage Contacts অপশনে ক্লিক করে ইমেইল পাঠাতে পারবেন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 11,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার সার্ভারের এক্সেস কিভাবে পাব?",
+    "instruction": "how to get server access",
+    "expected_features": "এক্সেস, escalation",
+    "ai_response": "আপনার হোষ্টনিন একাউন্টে লগইন করে cPanel বা DirectAdmin এ যান। সেখান থেকে আপনার সার্ভারের সম্পূর্ণ এক্সেস পাবেন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 12,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার পেমেন্ট নিশ্চিত হচ্ছে না",
+    "instruction": "how to confirm payment",
+    "expected_features": "কনফার্ম, escalation",
+    "ai_response": "আপনার পেমেন্ট কনফার্ম করতে ইনভয়েস নম্বরটি জানালে আমি চেক করে গাইডলাইন দিতে পারবো।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 13,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার ওয়ার্ডপ্রেস সফলভাবে ইন্সটল হয়েছে কি?",
+    "instruction": "check if wp is successfully installed",
+    "expected_features": "সাকসেসফুলি/ইন্সটল, escalation",
+    "ai_response": "আপনার ওয়ার্ডপ্রেস ইন্সটলেশন সফল হয়েছে কিনা চেক করতে আপনার সাইটের URL বা ডোমেইন লিংকটি দিন।"
+  },
+  {
+    "id": 14,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "নতুন ডোমেইন কিভাবে যুক্ত করব?",
+    "instruction": "how to add new domain",
+    "expected_features": "এড, escalation",
+    "ai_response": "আপনার ডোমেইন যুক্ত করতে Hostnin একাউন্টে লগইন করে \"ডোমেইন\" সেকশনে গিয়ে \"নতুন ডোমেইন রেজিস্টার\" অপশন সিলেক্ট করুন।\n\nএরপর আপনার পছন্দের ডোমেইন নাম লিখে সার্চ করে অর্ডার কমপ্লিট করুন।"
+  },
+  {
+    "id": 15,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার সার্ভিস কিভাবে বাতিল করব?",
+    "instruction": "how to cancel service",
+    "expected_features": "ক্যানসেল, escalation",
+    "ai_response": "আপনার ইমেইল এড্রেসটি আমাদের শেয়ার করবেন যাতে আমরা আপনার একাউন্ট চেক করে ক্যানসেলেশন প্রসেস শুরু করতে পারি।"
+  },
+  {
+    "id": 16,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আপনারা কি আমাকে এই তথ্য প্রদান করবেন?",
+    "instruction": "provide the details",
+    "expected_features": "প্রোভাইড/দিন, ডিটেইলস/ডাটা, escalation",
+    "ai_response": "আপনার ইমেইলে ইতিমধ্যেই যাবতীয় লগইন তথ্য পাঠানো হয়েছে। ইমেইলের প্রাইমারী ফোল্ডারে না পেলে স্প্যাম ফোল্ডার চেক করুন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 17,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আমার রিকোয়েস্ট এর কি হলো?",
+    "instruction": "check request status",
+    "expected_features": "রিকোয়েস্ট, escalation",
+    "ai_response": "আপনার রিকোয়েস্টটি আমি চেক করছি। একটু সময় দিবেন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 18,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আপনাদের পদ্ধতি কি?",
+    "instruction": "explain process",
+    "expected_features": "সিস্টেম/প্রসেস, escalation",
+    "ai_response": "আমাদের প্রক্রিয়া খুবই সিম্পল। প্রথমে আপনার প্রয়োজন অনুযায়ী একটি হোস্টিং প্যাকেজ সিলেক্ট করুন, তারপর ডোমেইন কানেক্ট করে ওয়েবসাইট আপলোড করে দিন।\n\nআপনার কি ধরনের ওয়েবসাইট হোস্ট করতে চান? সে অনুযায়ী আমি সঠিক প্যাকেজটি রিকমেন্ড করতে পারবো।"
+  },
+  {
+    "id": 19,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "ডাটাবেস কানেকশন ত্রুটি",
+    "instruction": "how to fix connection error",
+    "expected_features": "কানেকশন, এরর/ইস্যু, escalation",
+    "ai_response": "আপনার ডাটাবেস কানেকশন এরর সাধারণত wp-config.php ফাইলে ভুল ডাটাবেস ক্রেডেনশিয়াল থাকলে হয়। আপনার সঠিক ডাটাবেস নাম, ইউজারনেম ও পাসওয়ার্ড চেক করে আপডেট করুন।\n\nএরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"
+  },
+  {
+    "id": 20,
+    "type": "Tech",
+    "lang": "BN",
+    "customer_msg": "আপনারা কি সমাধান দিলেন?",
+    "instruction": "provide solution",
+    "expected_features": "সল্যুশন/ফিক্স, escalation",
+    "ai_response": "আমি আপনার ইস্যুটি চেক করে দেখছি, সমাধান হয়ে গেলে আপনাকে জানিয়ে দিব।"
+  }
+]
