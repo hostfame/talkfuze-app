@@ -3,27 +3,42 @@
     if (window.TalkFuzeWidgetInitialized) return;
     window.TalkFuzeWidgetInitialized = true;
 
-    // Find the script tag to extract parameters
-    const scripts = document.getElementsByTagName('script');
-    let currentScript = null;
-    let orgId = null;
+    // Set parameters
+    let orgId = 'ec2f8436-05dc-4621-8a7f-57202f865b8e';
     let baseUrl = 'https://app.talkfuze.com';
 
-    for (let i = 0; i < scripts.length; i++) {
-        const src = scripts[i].src;
-        if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
-            currentScript = scripts[i];
-            orgId = currentScript.getAttribute('data-org-id');
-            if (src.startsWith('http://localhost')) {
-                const url = new URL(src);
-                baseUrl = url.origin;
+    // Allow dynamic override if the script tag has data-org-id
+    const injector = document.getElementById('talkfuze-script-injector');
+    if (injector) {
+        const dynamicOrgId = injector.getAttribute('data-org-id');
+        if (dynamicOrgId) orgId = dynamicOrgId;
+    }
+
+    // Fallback: Find the script tag by searching src/attributes
+    if (!injector) {
+        const scripts = document.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            const dataOrgId = scripts[i].getAttribute('data-org-id');
+            if (dataOrgId) {
+                orgId = dataOrgId;
+                if (src && src.startsWith('http://localhost')) {
+                    baseUrl = new URL(src).origin;
+                }
+                break;
             }
-            break;
+            if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
+                orgId = scripts[i].getAttribute('data-org-id');
+                if (src.startsWith('http://localhost')) {
+                    baseUrl = new URL(src).origin;
+                }
+                break;
+            }
         }
     }
 
     if (!orgId) {
-        console.error('TalkFuze Widget: Missing data-org-id attribute on the script tag.');
+        console.error('TalkFuze Widget: Missing data-org-id.');
         return;
     }
 
