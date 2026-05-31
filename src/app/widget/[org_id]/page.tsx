@@ -603,6 +603,8 @@ export default function WidgetPage() {
   type Tab = 'home' | 'messages' | 'chat' | 'tickets' | 'about'
   const [activeTab, setActiveTab] = useState<Tab>('home')
   const hasAutoResumedRef = useRef(false)
+  const isWidgetOpenRef = useRef(false)
+  const unreadCountRef = useRef(0)
   
   const getResumeConversationId = (convs: any[] = conversations) => {
     const lastConv = convs[0];
@@ -1536,6 +1538,14 @@ export default function WidgetPage() {
   // Journey Tracking
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'TALKFUZE_OPENED') {
+        isWidgetOpenRef.current = true;
+        unreadCountRef.current = 0;
+        window.parent.postMessage({ type: 'TALKFUZE_UNREAD_COUNT', count: 0 }, '*');
+      }
+      if (event.data?.type === 'TALKFUZE_CLOSED') {
+        isWidgetOpenRef.current = false;
+      }
       if (event.data?.type === 'TALKFUZE_PAGE_VIEW') {
         const { title, url, userAgent, referrer } = event.data
         if (activeConversationId && activeConversationId !== 'new' && deviceId) {
@@ -1813,6 +1823,16 @@ export default function WidgetPage() {
     };
   }, [messages, org_id, deviceId, settings, activeConversationId]);
 
+  // Sync agent avatar to parent widget
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastAgentMsg = [...messages].reverse().find(m => (m.sender_type === 'agent' || m.sender_type === 'ai') && m.agent?.avatar_url);
+      if (lastAgentMsg) {
+        window.parent.postMessage({ type: 'TALKFUZE_AGENT_AVATAR', avatarUrl: lastAgentMsg.agent?.avatar_url }, '*');
+      }
+    }
+  }, [messages]);
+
   useEffect(() => {
     // Check if this conversation already has feedback submitted in this browser
     const storedFeedbackStatus = localStorage.getItem(`tf_feedback_${activeConversationId}`);
@@ -1859,7 +1879,7 @@ export default function WidgetPage() {
 
       const ch = supabase
         .channel('public:messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `org_id=eq.${org_id}` }, async (payload) => {
           fetchConversations()
           
           const newMsg = payload.new as any;
@@ -1902,6 +1922,12 @@ export default function WidgetPage() {
                 
                 if (newMsg.sender_type !== 'contact') {
                     playUISound('receive', 'intercom');
+                    
+                    if (!isWidgetOpenRef.current) {
+                        unreadCountRef.current += 1;
+                        window.parent.postMessage({ type: 'TALKFUZE_UNREAD_COUNT', count: unreadCountRef.current }, '*');
+                    }
+                    
                     if (wasDelayed && pendingDelaysRef.current === 0) {
                         setIsAgentTyping(false);
                         setIsAgentRecording(false);
@@ -1936,7 +1962,7 @@ export default function WidgetPage() {
             }
           }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, async (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `org_id=eq.${org_id}` }, async (payload) => {
           const updatedMsg = payload.new as any;
           if (updatedMsg && updatedMsg.conversation_id === activeConversationId && !updatedMsg.is_internal) {
             
@@ -1970,7 +1996,7 @@ export default function WidgetPage() {
             });
           }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, async (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `org_id=eq.${org_id}` }, async (payload) => {
           fetchConversations()
         })
         .subscribe((status, err) => {

@@ -132,6 +132,51 @@
             transform: rotate(0deg) scale(1);
         }
 
+        #tf-agent-avatar {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #tf-agent-avatar.tf-show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .tf-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background-color: #ef4444; /* Red */
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .tf-badge.tf-show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
         #tf-nudge {
             position: absolute;
             right: 100%;
@@ -283,7 +328,13 @@
         </svg>
     `;
 
-    launcher.innerHTML = chatIcon + closeIcon;
+    // Agent Avatar Img
+    const agentAvatar = `<img id="tf-agent-avatar" src="" alt="Agent" />`;
+
+    // Unread Badge
+    const badge = `<div id="tf-badge" class="tf-badge"></div>`;
+
+    launcher.innerHTML = agentAvatar + chatIcon + closeIcon + badge;
 
     container.appendChild(iframeContainer);
     container.appendChild(launcher);
@@ -403,6 +454,10 @@
             
             // Tell iframe it's opened
             iframe.contentWindow.postMessage({ type: 'TALKFUZE_OPENED' }, '*');
+            
+            // Clear unread badge
+            const badgeEl = document.getElementById('tf-badge');
+            if (badgeEl) badgeEl.classList.remove('tf-show');
         } else {
             launcher.classList.remove('tf-open');
             iframeContainer.classList.remove('tf-animate-in');
@@ -417,6 +472,9 @@
             setTimeout(() => {
                 iframeContainer.classList.remove('tf-open');
             }, 300); // match transition duration
+            
+            // Tell iframe it's closed
+            iframe.contentWindow.postMessage({ type: 'TALKFUZE_CLOSED' }, '*');
         }
     }
 
@@ -458,6 +516,33 @@
             const left = (window.screen.width / 2) - (width / 2);
             const top = (window.screen.height / 2) - (height / 2);
             window.open(callUrl, 'TalkFuzeSecureCall', `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no,resizable=no`);
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_UNREAD_COUNT') {
+            const badgeEl = document.getElementById('tf-badge');
+            if (badgeEl) {
+                if (event.data.count > 0) {
+                    badgeEl.innerText = event.data.count > 9 ? '9+' : event.data.count;
+                    badgeEl.classList.add('tf-show');
+                } else {
+                    badgeEl.classList.remove('tf-show');
+                }
+            }
+        }
+
+        if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
+            const avatarEl = document.getElementById('tf-agent-avatar');
+            const chatIcon = document.getElementById('tf-icon-chat');
+            if (avatarEl && chatIcon) {
+                if (event.data.avatarUrl) {
+                    avatarEl.src = event.data.avatarUrl;
+                    avatarEl.classList.add('tf-show');
+                    chatIcon.style.opacity = '0';
+                } else {
+                    avatarEl.classList.remove('tf-show');
+                    chatIcon.style.opacity = '1';
+                }
+            }
         }
     });
 
