@@ -612,7 +612,7 @@ export default function TeamChatDock() {
                     onChange={e => setMsgInput(e.target.value)}
                     onPaste={handlePaste}
                     placeholder={recording ? "Recording..." : uploading ? "Uploading..." : "Message..."}
-                    className="flex-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-full px-4 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
+                    className="flex-1 min-w-0 bg-slate-100/80 dark:bg-slate-800/60 rounded-full px-4 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white dark:focus:bg-slate-800 text-slate-800 dark:text-white transition-all"
                     disabled={sending || uploading || recording}
                   />
                   
