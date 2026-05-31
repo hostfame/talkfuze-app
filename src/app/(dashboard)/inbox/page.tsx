@@ -23,7 +23,7 @@ export default function InboxPage() {
     activeFilter,
     conversations, setConversations, 
     selectedId, setSelectedId,
-    messagesMap, setMessages, addMessage,
+    messagesMap, setMessages, mergeFetchedMessages, addMessage,
     teamMembers, setTeamMembers,
     isLoaded, setCurrentUser,
     mobileView, setMobileView,
@@ -141,7 +141,7 @@ export default function InboxPage() {
             supabase.rpc('get_conversation_messages', { conv_id: conv.id, msg_limit: 50 })
           ).then(({ data }) => {
             if (data && data.length > 0) {
-              useInboxStore.getState().setMessages(conv.id, (data as AppMessage[]).reverse())
+              useInboxStore.getState().mergeFetchedMessages(conv.id, (data as AppMessage[]).reverse())
             }
           }).catch(() => {})
         })
@@ -182,11 +182,11 @@ export default function InboxPage() {
               msg_limit: 50
             });
           if (msgData && msgData.length > 0) {
-            useInboxStore.getState().setMessages(currentSelectedId, (msgData as AppMessage[]).reverse());
+            useInboxStore.getState().mergeFetchedMessages(currentSelectedId, (msgData as AppMessage[]).reverse());
           } else {
             const fallbackData = await getMessages(currentSelectedId);
             if (fallbackData) {
-              useInboxStore.getState().setMessages(currentSelectedId, fallbackData as AppMessage[]);
+              useInboxStore.getState().mergeFetchedMessages(currentSelectedId, fallbackData as AppMessage[]);
             }
           }
         }
@@ -212,6 +212,10 @@ export default function InboxPage() {
           
           if (convIndex !== -1) {
             next[convIndex] = { ...next[convIndex], ...updatedConv };
+            
+            // Re-sort conversations so the updated one jumps to the top
+            next.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+            
             store.setConversations(next as ConversationWithDetails[]);
           }
           
@@ -536,12 +540,12 @@ export default function InboxPage() {
       if (!isActive) return
 
       if (data && data.length > 0) {
-        setMessages(selectedId, (data as AppMessage[]).reverse())
+        mergeFetchedMessages(selectedId, (data as AppMessage[]).reverse())
       } else {
         // ALWAYS fallback if RPC returns empty. The RPC might be failing or empty.
         const fallbackData = await getMessages(selectedId)
         if (!isActive) return
-        setMessages(selectedId, (fallbackData || []) as AppMessage[])
+        mergeFetchedMessages(selectedId, (fallbackData || []) as AppMessage[])
       }
       setIsFetchingMessages(selectedId, false)
     }

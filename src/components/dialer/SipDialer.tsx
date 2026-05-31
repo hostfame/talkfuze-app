@@ -485,6 +485,11 @@ export default function SipDialer() {
         authorizationPassword: sipPassword,
         authorizationUsername: sipExtension,
         displayName: sipUser?.name || "TalkFuze Agent",
+        noAnswerTimeout: 120, // Wait up to 120 seconds before giving up on an outbound call
+        transportOptions: {
+          server,
+          keepAliveInterval: 15, // Send WebSocket pings every 15s to prevent proxy timeouts during ringing
+        },
         sessionDescriptionHandlerFactoryOptions: {
           iceGatheringTimeout: 1500, // Send 200 OK fast - don't wait 5s for all TURN candidates
           peerConnectionConfiguration: {

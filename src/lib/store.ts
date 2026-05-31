@@ -129,6 +129,7 @@ interface InboxState {
   setActiveFilter: (filter: 'mine' | 'all' | 'unassigned' | 'assigned' | 'mentions' | 'messenger' | 'whatsapp' | 'instagram' | 'widget' | 'pinned' | 'calls' | 'archived' | 'alerts' | 'ticketed' | 'unread') => void
   setCurrentUser: (user: UserProfile | null) => void
   setMessages: (convoId: string, messages: AppMessage[]) => void
+  mergeFetchedMessages: (convoId: string, messages: AppMessage[]) => void
   addMessage: (convoId: string, message: AppMessage) => void
   updateConversation: (id: string, payload: Partial<ConversationWithDetails>) => void
   removeConversation: (id: string) => void
@@ -176,6 +177,41 @@ export const useInboxStore = create<InboxState>((set) => ({
   setMessages: (convoId, messages) => set((state) => ({
     messagesMap: { ...state.messagesMap, [convoId]: messages }
   })),
+  mergeFetchedMessages: (convoId, fetchedMessages) => set((state) => {
+    const existing = state.messagesMap[convoId] || []
+    if (existing.length === 0) {
+      return { messagesMap: { ...state.messagesMap, [convoId]: fetchedMessages } }
+    }
+    
+    // Find the latest time of the fetched messages
+    const latestFetchedTime = fetchedMessages.length > 0 
+      ? Math.max(...fetchedMessages.map(m => new Date(m.created_at).getTime()))
+      : 0;
+      
+    // Keep local messages that are newer than the latest fetched one
+    // (This prevents wiping out realtime messages that arrived during the fetch)
+    const newerLocal = existing.filter(m => new Date(m.created_at).getTime() > latestFetchedTime);
+    
+    const all = [...fetchedMessages, ...newerLocal];
+    
+    // Deduplicate by ID
+    const uniqueMap = new Map();
+    all.forEach(m => {
+       const existingMsg = uniqueMap.get(m.id);
+       if (existingMsg) {
+         // Keep the newer status/data
+         uniqueMap.set(m.id, { ...existingMsg, ...m });
+       } else {
+         uniqueMap.set(m.id, m);
+       }
+    });
+    
+    const finalMessages = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    return {
+      messagesMap: { ...state.messagesMap, [convoId]: finalMessages }
+    }
+  }),
   addMessage: (convoId, message) => set((state) => {
     const existing = state.messagesMap[convoId] || []
     if (existing.some(m => m.id === message.id)) return state

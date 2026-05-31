@@ -96,22 +96,23 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string): Promise<{ fewShotBlock: string, masterBlueprint: string }> {
   let learnedRulesBlock = "";
+  let masterBlueprint = "";
   try {
-    const { data: dbRules } = await supabaseAdmin
-      .from('ai_knowledge_base')
-      .select('question, answer')
+    const { data: blueprintData } = await supabaseAdmin
+      .from('ai_permanent_rules')
+      .select('rule_text')
+      .eq('org_id', orgId)
+      .eq('category', 'master_blueprint')
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .single();
 
-    if (dbRules && dbRules.length > 0) {
-      learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments):\n` +
-        dbRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
+    if (blueprintData && blueprintData.rule_text) {
+      masterBlueprint = `\n\n## MASTER STYLE BLUEPRINT (CRITICAL)\nFollow these universal tone and style constraints strictly:\n${blueprintData.rule_text}`;
     }
   } catch (err: any) {
-    console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
+    console.warn('[getLearningData] Failed to fetch master blueprint:', err.message);
   }
 
   const goldenBengali = [
@@ -159,9 +160,8 @@ ${examplesEnglish.join('\n---\n')}
 <bengali_examples>
 RECENT APPROVED BENGALI REPLIES (Mimic this tone and brevity):
 ${examplesBengali.join('\n---\n')}
-</bengali_examples>
-${learnedRulesBlock}`;
-  return { fewShotBlock };
+</bengali_examples>`;
+  return { fewShotBlock, masterBlueprint };
 }
 
 // ============================================================
@@ -411,11 +411,11 @@ export async function POST(req: Request) {
 
     const learningPromise = (orgId && !isTranslation)
       ? getLearningData(orgId)
-      : Promise.resolve({ fewShotBlock: '' });
+      : Promise.resolve({ fewShotBlock: '', masterBlueprint: '' });
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
 
-    const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
+    const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock, masterBlueprint }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
 
     const fewShotBlock = rawFewShotBlock;
@@ -438,6 +438,8 @@ Output ONLY the translation in raw plain text.`;
 
 ## CONVERSATIONAL CONTINUITY (MANDATORY):
 If the customer's latest message is short or vague ("send", "share", "details", or just a link), synthesize intent from the preceding Agent message. Carry over context variables, BUT NEVER simply repeat the Agent's previous question. Acknowledge the new information and move the conversation forward.
+
+${masterBlueprint}
 
 ${fewShotBlock}
 ${highPrioritySemanticRules ? `\nSITUATIONAL RULES MATCHED:\n${highPrioritySemanticRules}\n` : ''}

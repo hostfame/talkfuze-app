@@ -294,7 +294,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const recording_url = recording ? `https://sip.talkfuze.com/recordings/${recording}` : null
+    const recording_url = (recording && recording !== 'None' && recording !== 'null') ? `https://sip.talkfuze.com/recordings/${recording}` : null
     
     // Delay slightly to prevent race conditions where PBX webhook arrives before the frontend logs the final SIP call leg
     await new Promise(resolve => setTimeout(resolve, 3000))

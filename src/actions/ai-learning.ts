@@ -61,7 +61,7 @@ export async function logAiDraft(
 /**
  * Helper to generate a 1-sentence correction insight from Claude by comparing AI draft with Agent sent.
  */
-async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, style_corrections: string, question: string, answer: string, rule_short?: string } | null> {
+async function extractLearningData(context: string, aiDraft: string, agentSent: string): Promise<{ rule: string, style_corrections: string, question: string, answer: string, rule_short?: string, is_global_style?: boolean } | null> {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return null;
@@ -87,7 +87,7 @@ async function extractLearningData(context: string, aiDraft: string, agentSent: 
 
 Your outputs are used to permanently train the AI to write like a natural, warm, WhatsApp-style human support agent, NOT a corporate robot.
 
-Output valid JSON strictly containing these keys: 'rule', 'style_corrections', 'question', 'answer', 'rule_short'.
+Output valid JSON strictly containing these keys: 'rule', 'style_corrections', 'question', 'answer', 'rule_short', 'is_global_style'.
 You MUST return ONLY the raw JSON string. Do not wrap it in markdown code blocks.`,
         messages: [
           {
@@ -112,32 +112,21 @@ ANALYSIS TASKS:
 
 2. 'style_corrections': A detailed multi-line string (in English) analyzing EVERY stylistic change the agent made. This is the MOST IMPORTANT field. Analyze:
    a) VOCABULARY SHIFTS: List every word the agent replaced and why.
-      Example: "Replaced bookish 'ক্ষোভ' (formal frustration) with natural 'রাগ' (anger). Replaced textbook 'বিক্রয়' with transliterated 'সেলস'. Replaced 'ক্ষতি' with 'লস'."
    b) VERB FORM CHANGES: Did the agent change verb structures?
-      Example: "Changed 'বুঝছি' (direct) to 'বুঝতে পারছি' (polite auxiliary). Changed 'করুন' (command) to 'করতে পারেন' (suggestion)."
    c) DELETED LINES: What entire sentences/phrases did the agent remove and WHY?
-      Example: "Deleted 'এই পরিস্থিতিটি গুরুতর' because it sounds like corporate robot speak. Deleted follow-up question 'What kind of website?' because the customer did not ask for recommendations."
    d) ADDED CONNECTORS: Did the agent add natural flow words?
-      Example: "Added 'কিন্তু' (but) as a conversational connector instead of starting abruptly."
    e) TONE SHIFT: Did the agent make it warmer, shorter, more direct, less formal?
-      Example: "Shortened 3-paragraph response to 1 paragraph. Removed unnecessary assurances like 'আমরা সবসময় আপনার সেবায় আছি'."
    f) ROBOTIC PATTERNS REMOVED: What patterns sound like a bot vs a human?
-      Example: "Removed 'সম্পূর্ণভাবে' (completely) which sounds over-formal. Agents use 'পুরোপুরি' or omit entirely."
-
-   If the messages are in English, analyze English style shifts similarly.
-   If there are NO style changes (only factual), write "No significant style changes."
 
 3. 'question': A clean, standalone 1-sentence summary of the customer's specific problem.
 
 4. 'answer': The agent's verified final message (exactly as written).
 
-5. 'rule_short': A max-30-word single-sentence actionable instruction (in English) that the AI can follow immediately. This should be a direct "Do this" or "Never do this" statement. Examples:
-   - "Never list VPS prices manually. Share the pricing page link instead."
-   - "Match the conversation's language. If agent switched to English, reply in English."
-   - "Answer direct questions first, then ask follow-ups. Do not skip the answer."
-   If the correction is purely a minor style change, write the most important vocabulary or tone fix.
+5. 'rule_short': A max-30-word single-sentence actionable instruction (in English) that the AI can follow immediately.
 
-Output strictly as JSON: {"rule": "...", "style_corrections": "...", "question": "...", "answer": "...", "rule_short": "..."}`
+6. 'is_global_style': boolean. Set to TRUE if the correction is purely about tone, brevity, robotic language, unsolicited follow-ups, or universal communication style. Set to FALSE if it involves a factual correction, specific tech issue (SSL, VPS, pricing), or situational logic.
+
+Output strictly as JSON: {"rule": "...", "style_corrections": "...", "question": "...", "answer": "...", "rule_short": "...", "is_global_style": true/false}`
           }
         ]
       })
@@ -241,48 +230,87 @@ export async function completeAiDraftLog(
           correctionFeedback = `${learningData.rule}${stylePart}`;
 
           // Insert into permanent vector database (RAG) with smart deduplication
-          // Uses vector similarity to find semantically similar questions, then UPDATES stale answers
+          // OR if it's a global style rule, compile it into the Master Blueprint
           try {
-            const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
-            });
-            const embData = await embeddingRes.json();
-            const newEmbedding = embData.data?.[0]?.embedding;
+            if (learningData.is_global_style) {
+              // 1. Fetch current Master Blueprint
+              const { data: existingBP } = await supabaseAdmin
+                .from('ai_permanent_rules')
+                .select('id, rule_text')
+                .eq('org_id', log.org_id)
+                .eq('category', 'master_blueprint')
+                .single();
 
-            if (newEmbedding) {
-              const enrichedAnswer = `[CRITICAL RULE]: ${learningData.rule}\n[STYLE CORRECTION]: ${learningData.style_corrections}\n\n[VERIFIED REPLY]: ${learningData.answer}`;
+              const currentBlueprint = existingBP?.rule_text || "1. Be natural, polite, and terse.";
 
-              // Vector similarity check: find existing entries with >0.85 similarity
-              const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
-                query_embedding: newEmbedding,
-                match_threshold: 0.85,
-                match_count: 1
+              // 2. Ask Sonnet to compile and compress
+              const compileRes = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: "claude-haiku-4-5-20251001",
+                  max_tokens: 200,
+                  system: "You are an AI support trainer. You maintain a highly compressed Master Style Blueprint (maximum 100 words). Merge the new lesson into the existing blueprint. Do not lose existing rules unless they contradict the new lesson. Be extremely terse. Output ONLY the updated raw blueprint text.",
+                  messages: [{ role: "user", content: `CURRENT BLUEPRINT:\n${currentBlueprint}\n\nNEW LESSON (Integrate this):\n${learningData.style_corrections}\n${learningData.rule_short}` }]
+                })
               });
+              
+              if (compileRes.ok) {
+                const compileData = await compileRes.json();
+                let newBlueprint = compileData.content?.[0]?.text || "";
+                newBlueprint = newBlueprint.substring(0, 800); // safety cap
 
-              if (similarEntries && similarEntries.length > 0) {
-                // Semantically similar question exists, UPDATE with fresh answer (self-heal stale data)
-                await supabaseAdmin
-                  .from('ai_knowledge_base')
-                  .update({ 
+                // 3. Upsert back to ai_permanent_rules
+                if (existingBP) {
+                  await supabaseAdmin.from('ai_permanent_rules').update({ rule_text: newBlueprint }).eq('id', existingBP.id);
+                } else {
+                  await supabaseAdmin.from('ai_permanent_rules').insert({ org_id: log.org_id, category: 'master_blueprint', rule_text: newBlueprint });
+                }
+                console.log("Master Blueprint re-compiled successfully.");
+              }
+            } else {
+              // FACTUAL RULE: Insert into Vector RAG
+              const embeddingRes = await fetch('https://api.openai.com/v1/embeddings', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'text-embedding-3-small', input: learningData.question })
+              });
+              const embData = await embeddingRes.json();
+              const newEmbedding = embData.data?.[0]?.embedding;
+  
+              if (newEmbedding) {
+                const enrichedAnswer = `[CRITICAL RULE]: ${learningData.rule}\n[STYLE CORRECTION]: ${learningData.style_corrections}\n\n[VERIFIED REPLY]: ${learningData.answer}`;
+  
+                // Vector similarity check: find existing entries with >0.85 similarity
+                const { data: similarEntries } = await supabaseAdmin.rpc('match_knowledge', {
+                  query_embedding: newEmbedding,
+                  match_threshold: 0.85,
+                  match_count: 1
+                });
+  
+                if (similarEntries && similarEntries.length > 0) {
+                  // Semantically similar question exists, UPDATE with fresh answer (self-heal stale data)
+                  await supabaseAdmin
+                    .from('ai_knowledge_base')
+                    .update({ 
+                      answer: enrichedAnswer,
+                      embedding: newEmbedding,
+                      rule_short: learningData.rule_short || null,
+                      verified_reply_text: learningData.answer || null
+                    })
+                    .eq('id', similarEntries[0].id);
+                  console.log("Updated stale knowledge entry with fresh agent answer and rules.");
+                } else {
+                  // Genuinely new question, INSERT
+                  await supabaseAdmin.from('ai_knowledge_base').insert({
+                    question: learningData.question,
                     answer: enrichedAnswer,
                     embedding: newEmbedding,
                     rule_short: learningData.rule_short || null,
                     verified_reply_text: learningData.answer || null
-                  })
-                  .eq('id', similarEntries[0].id);
-                console.log("Updated stale knowledge entry with fresh agent answer and rules.");
-              } else {
-                // Genuinely new question, INSERT
-                await supabaseAdmin.from('ai_knowledge_base').insert({
-                  question: learningData.question,
-                  answer: enrichedAnswer,
-                  embedding: newEmbedding,
-                  rule_short: learningData.rule_short || null,
-                  verified_reply_text: learningData.answer || null
-                });
-                console.log("Inserted new knowledge entry with compounding rules.");
+                  });
+                  console.log("Inserted new knowledge entry with compounding rules.");
+                }
               }
             }
           } catch (err) {

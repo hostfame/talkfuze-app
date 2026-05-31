@@ -78,6 +78,12 @@ export async function updateTeammateRole(targetUserId: string, newRole: string) 
 
 export async function addTeammate(name: string, email: string, role: string = "Agent") {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("Unauthorized")
+    const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
+    if (!profile) throw new Error("Profile not found")
+
     // 1. Create the user in Supabase Auth using Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
@@ -86,6 +92,9 @@ export async function addTeammate(name: string, email: string, role: string = "A
       user_metadata: {
         name: name,
         role: role
+      },
+      app_metadata: {
+        org_id: profile.org_id
       }
     })
 
@@ -99,11 +108,6 @@ export async function addTeammate(name: string, email: string, role: string = "A
     }
 
     // 2. Insert into the public.users table
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error("Unauthorized")
-    const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
-    if (!profile) throw new Error("Profile not found")
 
     const { error: dbError } = await supabaseAdmin
       .from("users")

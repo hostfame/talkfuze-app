@@ -1655,10 +1655,16 @@ export default function WidgetPage() {
             !immediateMsgs.some(dbMsg => dbMsg.content === optMsg.content && dbMsg.sender_type === 'contact')
           );
 
-          const newMessages = [...immediateMsgs, ...pendingOptimistic];
+          // Preserve any realtime messages that arrived while we were fetching
+          const realtimeMessages = prev.filter(m => 
+            !m.id.startsWith('temp-') && 
+            !immediateMsgs.some(dbMsg => dbMsg.id === m.id)
+          );
+
+          const newMessages = [...immediateMsgs, ...pendingOptimistic, ...realtimeMessages];
           
           const prevLen = prev.filter(m => !m.id.startsWith('temp-')).length;
-          const newLen = immediateMsgs.length;
+          const newLen = newMessages.filter(m => !m.id.startsWith('temp-')).length;
           if (newLen > prevLen) {
              const lastMsg = immediateMsgs[immediateMsgs.length - 1];
              if (lastMsg && lastMsg.sender_type !== 'contact' && !prev.some(m => m.id === lastMsg.id)) {
