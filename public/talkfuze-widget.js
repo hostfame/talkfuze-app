@@ -180,55 +180,72 @@
         #tf-nudge {
             position: absolute;
             right: 100%;
-            bottom: 10px;
-            margin-right: 15px;
-            background: white;
-            color: #1e293b;
-            padding: 12px 16px;
-            border-radius: 12px;
+            bottom: 0px;
+            margin-right: 20px;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 16px;
             border-bottom-right-radius: 4px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.4;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            width: max-content;
-            max-width: 250px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), 0 4px 8px rgba(15, 23, 42, 0.04);
+            width: 260px;
             pointer-events: auto;
-            cursor: pointer;
             opacity: 0;
-            transform: translateX(20px);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(10px) scale(0.95);
+            transform-origin: bottom right;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: none;
-            border: 1px solid #f1f5f9;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         #tf-nudge.tf-nudge-show {
             display: block;
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0) scale(1);
         }
 
         #tf-nudge-close {
             position: absolute;
-            top: -6px;
-            right: -6px;
-            width: 18px;
-            height: 18px;
-            background: #f1f5f9;
-            color: #64748b;
+            top: 12px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            color: #94a3b8;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.2s, background 0.2s;
         }
 
         #tf-nudge-close:hover {
-            background: #e2e8f0;
+            background: #f1f5f9;
             color: #0f172a;
+        }
+        
+        #tf-nudge-btn {
+            width: 100%;
+            background: #0f172a;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+            margin-top: 4px;
+        }
+        
+        #tf-nudge-btn:hover {
+            background: #1e293b;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+        
+        #tf-nudge-btn:active {
+            transform: scale(0.97);
         }
             
         @media (max-width: 480px) {
@@ -346,16 +363,24 @@
     const nudge = document.createElement('div');
     nudge.id = 'tf-nudge';
     
-    const nudgeText = document.createElement('span');
-    nudgeText.id = 'tf-nudge-text';
-    
-    const nudgeClose = document.createElement('div');
-    nudgeClose.id = 'tf-nudge-close';
-    nudgeClose.innerHTML = '✕';
-    
-    nudge.appendChild(nudgeText);
-    nudge.appendChild(nudgeClose);
+    nudge.innerHTML = `
+        <div id="tf-nudge-close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
+            <div style="width:24px; height:24px; border-radius:50%; background:#0070f3; display:flex; align-items:center; justify-content:center;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"/></svg>
+            </div>
+            <span style="font-weight:700; font-size:13px; color:#0f172a;">Hostnin Support</span>
+        </div>
+        <div id="tf-nudge-text" style="color:#475569; font-size:13.5px; line-height:1.5; margin-bottom:12px;"></div>
+        <button id="tf-nudge-btn">Chat with us</button>
+    `;
     launcher.appendChild(nudge);
+
+    const nudgeText = nudge.querySelector('#tf-nudge-text');
+    const nudgeClose = nudge.querySelector('#tf-nudge-close');
+    const nudgeBtn = nudge.querySelector('#tf-nudge-btn');
 
     const NUDGE_CONFIG = {
         rules: [
@@ -364,7 +389,7 @@
             { pathMatch: '/cart', message: 'Having trouble completing your order? 💳' },
             { pathMatch: 'cart.php', message: 'Having trouble completing your order? 💳' }
         ],
-        delayMs: 45000 // 45 seconds
+        delayMs: 20000 // 20 seconds
     };
     let nudgeTimer = null;
 
@@ -375,7 +400,13 @@
 
     // Nudge actions
     nudge.addEventListener('click', (e) => {
-        if (e.target === nudgeClose) return;
+        if (e.target === nudgeClose || e.target === nudgeBtn) return;
+        if (!isOpen) toggleWidget(true);
+        hideNudge(true);
+    });
+    
+    nudgeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (!isOpen) toggleWidget(true);
         hideNudge(true);
     });
@@ -408,6 +439,9 @@
     function checkAndTriggerNudge() {
         if (nudgeTimer) clearTimeout(nudgeTimer);
         
+        // Desktop only
+        if (window.innerWidth <= 768) return;
+
         // Skip if widget is open or user dismissed it
         if (isOpen || sessionStorage.getItem('tf_nudge_dismissed')) return;
 
@@ -419,6 +453,17 @@
                 matchedMessage = rule.message;
                 break;
             }
+        }
+
+        // If no specific URL match, use dynamic OS text
+        if (!matchedMessage) {
+            const ua = navigator.userAgent;
+            let device = "your device";
+            if (ua.includes("Mac OS X")) device = "your Mac";
+            else if (ua.includes("Windows")) device = "your Windows PC";
+            else if (ua.includes("Linux")) device = "your Linux machine";
+            
+            matchedMessage = `Welcome back! Need any help configuring hosting for ${device}? Talk with our product experts - we're just a message away.`;
         }
 
         if (matchedMessage) {
