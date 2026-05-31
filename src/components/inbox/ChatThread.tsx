@@ -3226,13 +3226,10 @@ export default function ChatThread({
           }
 
           const sendTimer = setTimeout(async () => {
-            // Client-First DB Upsert for idempotent sends.
-            // temp_id column has a UNIQUE INDEX on (conversation_id, temp_id).
-            // If network drops after INSERT reaches DB but before 200 comes back,
-            // the client retries and upsert silently skips the duplicate.
-            // ignoreDuplicates: true means conflict = no error = no false Retry button.
             try {
-              const { error: insertError } = await supabase.from('messages').upsert({
+              // Plain INSERT - separating from .select() to avoid false Retry on SELECT failure.
+              // temp_id is in metadata only (not the column) until PostgREST schema cache reloads.
+              const { error: insertError } = await supabase.from('messages').insert({
                 org_id: orgId,
                 conversation_id: conversationId,
                 sender_type: 'agent',
@@ -3240,18 +3237,13 @@ export default function ChatThread({
                 content: chunk,
                 content_type: 'text',
                 metadata: metaPayload,
-                temp_id: tempId,
                 is_internal: isInternal,
                 status: isInternal ? 'delivered' : (isScheduled ? 'sending' : 'sent'),
                 created_at: optimisticCreatedAt
-              }, {
-                onConflict: 'conversation_id,temp_id',
-                ignoreDuplicates: true
               });
 
-              // Only markFailed if the actual INSERT/UPSERT failed
               if (insertError) throw insertError;
-              
+
               markConfirmed(conversationId, tempId);
               setLocallyDeliveredIds(prev => {
                 const next = new Set(prev);
@@ -3259,16 +3251,16 @@ export default function ChatThread({
                 return next;
               });
 
-              // Fetch inserted ID for webhook dispatch (non-blocking, non-fatal)
+              // Non-blocking webhook dispatch
               void (async () => {
                 try {
                   const { data } = await supabase.from('messages')
                     .select('id')
                     .eq('conversation_id', conversationId)
-                    .eq('temp_id', tempId)
+                    .eq('metadata->>temp_id', tempId)
                     .single();
                   if (data?.id) dispatchMessageWebhooks(data.id);
-                } catch { /* webhook dispatch skipped - non-fatal */ }
+                } catch { /* non-fatal */ }
               })();
 
             } catch (e: unknown) {
