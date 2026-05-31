@@ -216,6 +216,9 @@ export default function CallsPage() {
     getCallLogs(orgId).then(data => {
       setLogs(data)
       setIsLoading(false)
+    }).catch(err => {
+      console.error("Failed to fetch call logs:", err)
+      setIsLoading(false)
     })
 
     // Establish dynamic real-time postgres_changes subscription for newly logged calls
