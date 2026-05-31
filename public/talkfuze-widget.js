@@ -14,7 +14,6 @@
         if (src && src.includes('talkfuze-widget.js')) {
             currentScript = scripts[i];
             orgId = currentScript.getAttribute('data-org-id');
-            // Allow overriding baseUrl for local testing
             if (src.startsWith('http://localhost')) {
                 const url = new URL(src);
                 baseUrl = url.origin;
@@ -28,12 +27,10 @@
         return;
     }
 
-    // Config
     const WIDGET_URL = `${baseUrl}/widget/${orgId}`;
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
 
-    // Create a shadow DOM or just inject CSS into head. Injecting CSS into head is safer for cross-origin iframes.
     const style = document.createElement('style');
     style.innerHTML = `
         #tf-widget-container {
@@ -44,9 +41,9 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            pointer-events: none; /* Let clicks pass through the container */
+            pointer-events: none;
         }
-        
+
         #tf-iframe-container {
             width: 400px;
             height: 700px;
@@ -68,7 +65,7 @@
         #tf-iframe-container.tf-open {
             display: block;
         }
-        
+
         #tf-iframe-container.tf-animate-in {
             opacity: 1;
             transform: scale(1) translateY(0);
@@ -85,7 +82,7 @@
             width: ${BUTTON_SIZE}px;
             height: ${BUTTON_SIZE}px;
             border-radius: 50%;
-            background-color: #0070f3; /* Default hostnin/talkfuze blue */
+            background-color: #0070f3;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             cursor: pointer;
             pointer-events: auto;
@@ -152,7 +149,7 @@
             position: absolute;
             top: -4px;
             right: -4px;
-            background-color: #ef4444; /* Red */
+            background-color: #ef4444;
             color: white;
             font-size: 12px;
             font-weight: bold;
@@ -177,77 +174,90 @@
             transform: scale(1);
         }
 
+        /* Floating pill input bar nudge */
         #tf-nudge {
-            position: absolute;
-            right: 100%;
-            bottom: 0px;
-            margin-right: 20px;
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
+            right: ${MARGIN}px;
             background: #ffffff;
-            padding: 16px;
-            border-radius: 16px;
-            border-bottom-right-radius: 4px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), 0 4px 8px rgba(15, 23, 42, 0.04);
-            width: 260px;
+            border-radius: 100px;
+            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            display: flex;
+            align-items: center;
+            width: 280px;
+            padding: 0;
             pointer-events: auto;
             opacity: 0;
-            transform: translateY(10px) scale(0.95);
-            transform-origin: bottom right;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: none;
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            transform: translateY(16px);
+            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            cursor: text;
+            overflow: hidden;
+            z-index: 2147483646;
         }
 
         #tf-nudge.tf-nudge-show {
-            display: block;
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
         }
 
-        #tf-nudge-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 24px;
-            height: 24px;
+        #tf-nudge-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: #0f172a;
+            padding: 14px 6px 14px 20px;
+            font-family: inherit;
+            cursor: text;
+            min-width: 0;
+            caret-color: #0070f3;
+        }
+
+        #tf-nudge-input::placeholder {
             color: #94a3b8;
+            font-weight: 400;
+        }
+
+        #tf-nudge-send {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            background: #0f172a;
+            border: none;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            cursor: pointer;
-            transition: color 0.2s, background 0.2s;
+            flex-shrink: 0;
+            margin: 6px 6px 6px 4px;
+            transition: background 0.2s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        #tf-nudge-close:hover {
-            background: #f1f5f9;
-            color: #0f172a;
-        }
-        
-        #tf-nudge-btn {
-            width: 100%;
-            background: #0f172a;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 10px 0;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
-            margin-top: 4px;
-        }
-        
-        #tf-nudge-btn:hover {
+        #tf-nudge-send:hover {
             background: #1e293b;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+            transform: scale(1.08);
         }
-        
-        #tf-nudge-btn:active {
-            transform: scale(0.97);
+
+        #tf-nudge-send:active {
+            transform: scale(0.93);
         }
-            
+
+        #tf-nudge-send svg {
+            width: 15px;
+            height: 15px;
+            fill: white;
+            transform: translateX(1px);
+        }
+
+        @media (max-width: 768px) {
+            #tf-nudge {
+                display: none !important;
+            }
+        }
+
         @media (max-width: 480px) {
             #tf-widget-container.tf-mobile-open {
                 bottom: 0px !important;
@@ -258,7 +268,7 @@
                 height: 100% !important;
                 align-items: stretch !important;
             }
-            
+
             #tf-widget-container.tf-mobile-open #tf-iframe-container {
                 width: 100% !important;
                 height: 100% !important;
@@ -289,19 +299,17 @@
     iframe.id = 'tf-iframe';
     iframe.src = WIDGET_URL;
     iframe.allow = 'autoplay; microphone; camera; display-capture';
-    
+
     // Pageview tracking
     function sendPageView() {
         if (iframe.contentWindow) {
-            iframe.contentWindow.postMessage({ 
-                type: 'TALKFUZE_PAGE_VIEW', 
-                title: document.title, 
-                url: window.location.href 
+            iframe.contentWindow.postMessage({
+                type: 'TALKFUZE_PAGE_VIEW',
+                title: document.title,
+                url: window.location.href
             }, '*');
         }
-        if (typeof checkAndTriggerNudge === 'function') {
-            checkAndTriggerNudge();
-        }
+        checkAndTriggerNudge();
     }
 
     iframe.onload = () => {
@@ -314,7 +322,7 @@
         originalPushState.apply(this, arguments);
         setTimeout(sendPageView, 100);
     };
-    
+
     const originalReplaceState = history.replaceState;
     history.replaceState = function() {
         originalReplaceState.apply(this, arguments);
@@ -324,31 +332,26 @@
     window.addEventListener('popstate', () => {
         setTimeout(sendPageView, 100);
     });
-    
+
     iframeContainer.appendChild(iframe);
 
     // Create launcher button
     const launcher = document.createElement('div');
     launcher.id = 'tf-launcher';
 
-    // SVG for chat icon (default intercom-ish or generic chat bubble)
     const chatIcon = `
         <svg id="tf-icon-chat" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z" fill="currentColor"/>
         </svg>
     `;
 
-    // SVG for close icon
     const closeIcon = `
         <svg id="tf-icon-close" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
         </svg>
     `;
 
-    // Agent Avatar Img
     const agentAvatar = `<img id="tf-agent-avatar" src="" alt="Agent" />`;
-
-    // Unread Badge
     const badge = `<div id="tf-badge" class="tf-badge"></div>`;
 
     launcher.innerHTML = agentAvatar + chatIcon + closeIcon + badge;
@@ -358,206 +361,162 @@
     document.body.appendChild(container);
 
     // ==========================================
-    // Nudge Logic (Lurker Catcher)
+    // Nudge - Floating pill input bar (desktop only)
     // ==========================================
     const nudge = document.createElement('div');
     nudge.id = 'tf-nudge';
-    
     nudge.innerHTML = `
-        <div id="tf-nudge-close">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
-            <div style="width:24px; height:24px; border-radius:50%; background:#0070f3; display:flex; align-items:center; justify-content:center;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"/></svg>
-            </div>
-            <span style="font-weight:700; font-size:13px; color:#0f172a;">Hostnin Support</span>
-        </div>
-        <div id="tf-nudge-text" style="color:#475569; font-size:13.5px; line-height:1.5; margin-bottom:12px;"></div>
-        <button id="tf-nudge-btn">Chat with us</button>
+        <input id="tf-nudge-input" type="text" placeholder="Write a message..." autocomplete="off" />
+        <button id="tf-nudge-send" aria-label="Send">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
     `;
-    launcher.appendChild(nudge);
+    document.body.appendChild(nudge);
 
-    const nudgeText = nudge.querySelector('#tf-nudge-text');
-    const nudgeClose = nudge.querySelector('#tf-nudge-close');
-    const nudgeBtn = nudge.querySelector('#tf-nudge-btn');
-
-    const NUDGE_CONFIG = {
-        rules: [
-            { pathMatch: '/vps', message: 'Need help picking the right VPS plan? 👋' },
-            { pathMatch: '/shared-hosting', message: 'Looking for web hosting? We can help you choose! 🚀' },
-            { pathMatch: '/cart', message: 'Having trouble completing your order? 💳' },
-            { pathMatch: 'cart.php', message: 'Having trouble completing your order? 💳' }
-        ],
-        delayMs: 20000 // 20 seconds
-    };
-    let nudgeTimer = null;
+    const nudgeInput = nudge.querySelector('#tf-nudge-input');
+    const nudgeSend = nudge.querySelector('#tf-nudge-send');
 
     let isOpen = sessionStorage.getItem('tf_widget_open') === 'true';
     const swooshAudio = new Audio(baseUrl + '/swoosh.mp3');
-    const popAudio = new Audio(baseUrl + '/pop.mp3');
     let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
 
-    // Nudge actions
+    function openWidgetWithMessage(text) {
+        if (!isOpen) toggleWidget(true);
+        hideNudge();
+        if (text && text.trim()) {
+            setTimeout(() => {
+                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: text.trim() }, '*');
+            }, 380);
+        }
+    }
+
+    // Clicking anywhere on pill focuses the input
     nudge.addEventListener('click', (e) => {
-        if (e.target === nudgeClose || e.target === nudgeBtn) return;
-        if (!isOpen) toggleWidget(true);
-        hideNudge(true);
-    });
-    
-    nudgeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!isOpen) toggleWidget(true);
-        hideNudge(true);
-    });
-    
-    nudgeClose.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hideNudge(true); // dismiss for session
+        if (e.target !== nudgeSend && !nudgeSend.contains(e.target)) {
+            nudgeInput.focus();
+        }
     });
 
-    function showNudge(message) {
-        nudgeText.innerText = message;
-        nudge.style.display = 'block';
-        // Use double requestAnimationFrame for butter smooth initial transition
+    // Send button click
+    nudgeSend.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openWidgetWithMessage(nudgeInput.value);
+    });
+
+    // Enter key sends
+    nudgeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            openWidgetWithMessage(nudgeInput.value);
+        }
+    });
+
+    // Typing opens the widget
+    nudgeInput.addEventListener('input', () => {
+        if (nudgeInput.value.length === 1 && !isOpen) {
+            openWidgetWithMessage('');
+        }
+    });
+
+    function showNudge() {
+        if (window.innerWidth <= 768) return;
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 nudge.classList.add('tf-nudge-show');
-                if (!isSoundMuted) popAudio.play().catch(e => console.log('Audio play blocked:', e));
             });
         });
     }
 
-    function hideNudge(dismissSession = false) {
-        if (dismissSession) {
-            sessionStorage.setItem('tf_nudge_dismissed', 'true');
-        }
+    function hideNudge() {
         nudge.classList.remove('tf-nudge-show');
-        setTimeout(() => {
-            nudge.style.display = 'none';
-        }, 400); 
     }
 
     let nudgeFired = false;
+    let nudgeTimer = null;
     let scrollListener = null;
 
     function checkAndTriggerNudge() {
         if (nudgeTimer) clearTimeout(nudgeTimer);
-        
+
         // Desktop only
         if (window.innerWidth <= 768) return;
 
-        // Skip if already fired, widget is open, or user dismissed it
-        if (nudgeFired || isOpen || sessionStorage.getItem('tf_nudge_dismissed')) return;
+        // Skip if already fired or widget is open
+        if (nudgeFired || isOpen) return;
 
-        const currentUrl = window.location.href.toLowerCase();
-        let matchedMessage = null;
+        const fireNudge = () => {
+            if (nudgeFired || isOpen) return;
+            nudgeFired = true;
+            showNudge();
+            if (scrollListener) window.removeEventListener('scroll', scrollListener);
+        };
 
-        for (const rule of NUDGE_CONFIG.rules) {
-            if (currentUrl.includes(rule.pathMatch)) {
-                matchedMessage = rule.message;
-                break;
-            }
-        }
+        // After 8 seconds on page
+        nudgeTimer = setTimeout(fireNudge, 8000);
 
-        // If no specific URL match, use dynamic OS text
-        if (!matchedMessage) {
-            const ua = navigator.userAgent;
-            let device = "your device";
-            if (ua.includes("Mac OS X")) device = "your Mac";
-            else if (ua.includes("Windows")) device = "your Windows PC";
-            else if (ua.includes("Linux")) device = "your Linux machine";
-            
-            matchedMessage = `Welcome back! Need any help configuring hosting for ${device}? Talk with our product experts - we're just a message away.`;
-        }
-
-        if (matchedMessage) {
-            const fireNudge = () => {
-                if (nudgeFired) return;
-                nudgeFired = true;
-                if (!isOpen && !sessionStorage.getItem('tf_nudge_dismissed')) {
-                    showNudge(matchedMessage);
-                }
-                if (scrollListener) {
-                    window.removeEventListener('scroll', scrollListener);
+        // Or after 300px scroll - whichever first
+        if (!scrollListener) {
+            scrollListener = () => {
+                if (window.scrollY > 300) {
+                    clearTimeout(nudgeTimer);
+                    fireNudge();
                 }
             };
-
-            // 1. Time delay (20s)
-            nudgeTimer = setTimeout(fireNudge, NUDGE_CONFIG.delayMs);
-
-            // 2. Scroll delay (300px)
-            if (!scrollListener) {
-                scrollListener = () => {
-                    if (window.scrollY > 300) {
-                        clearTimeout(nudgeTimer);
-                        fireNudge();
-                    }
-                };
-                window.addEventListener('scroll', scrollListener, { passive: true });
-            }
+            window.addEventListener('scroll', scrollListener, { passive: true });
         }
     }
 
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
         sessionStorage.setItem('tf_widget_open', isOpen);
-        
+
         if (isOpen) {
-            hideNudge(false);
+            hideNudge();
             if (nudgeTimer) clearTimeout(nudgeTimer);
             launcher.classList.add('tf-open');
             iframeContainer.classList.add('tf-open');
-            
-            // Lock body scroll and apply full-screen styles on mobile viewports
+
             if (window.innerWidth <= 480) {
                 document.body.style.overflow = 'hidden';
                 container.classList.add('tf-mobile-open');
             }
-            
-            if (playSound && !isSoundMuted) swooshAudio.play().catch(e => console.log('Audio play blocked:', e));
-            // small delay to allow display:block to apply before animating opacity/transform
+
+            if (playSound && !isSoundMuted) swooshAudio.play().catch(() => {});
             setTimeout(() => {
                 iframeContainer.classList.add('tf-animate-in');
             }, 10);
-            
-            // Tell iframe it's opened
+
             iframe.contentWindow.postMessage({ type: 'TALKFUZE_OPENED' }, '*');
-            
-            // Clear unread badge
+
             const badgeEl = document.getElementById('tf-badge');
             if (badgeEl) badgeEl.classList.remove('tf-show');
         } else {
             launcher.classList.remove('tf-open');
             iframeContainer.classList.remove('tf-animate-in');
-            
-            // Unlock body scroll and remove full-screen overlay styles on mobile
+
             if (window.innerWidth <= 480) {
                 document.body.style.overflow = '';
                 container.classList.remove('tf-mobile-open');
             }
-            
-            if (playSound && !isSoundMuted) swooshAudio.play().catch(e => console.log('Audio play blocked:', e));
+
+            if (playSound && !isSoundMuted) swooshAudio.play().catch(() => {});
             setTimeout(() => {
                 iframeContainer.classList.remove('tf-open');
-            }, 300); // match transition duration
-            
-            // Tell iframe it's closed
+            }, 300);
+
             iframe.contentWindow.postMessage({ type: 'TALKFUZE_CLOSED' }, '*');
         }
     }
 
     // Initialize state on load
     if (isOpen) {
-        isOpen = false; // reset so toggle flips it to true
-        toggleWidget(false); // open without sound on load
+        isOpen = false;
+        toggleWidget(false);
     }
 
     launcher.addEventListener('click', toggleWidget);
 
     // Listen for messages from iframe
     window.addEventListener('message', (event) => {
-        // Most secure and robust way: verify the message came from OUR iframe, regardless of its origin URL
         if (event.source !== iframe.contentWindow) return;
 
         if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
@@ -567,7 +526,7 @@
         if (event.data && event.data.type === 'TALKFUZE_OPEN') {
             if (!isOpen) toggleWidget();
         }
-        
+
         if (event.data && event.data.type === 'TALKFUZE_SET_COLOR') {
             launcher.style.backgroundColor = event.data.color;
         }
@@ -579,7 +538,6 @@
 
         if (event.data && event.data.type === 'TALKFUZE_OPEN_CALL') {
             const callUrl = `${baseUrl}/widget/${orgId}?standalone_call=true&convId=${event.data.convId}&deviceId=${event.data.deviceId}`;
-            // Open as a gorgeous center-screen calling popup window
             const width = 380;
             const height = 550;
             const left = (window.screen.width / 2) - (width / 2);
@@ -601,15 +559,15 @@
 
         if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
             const avatarEl = document.getElementById('tf-agent-avatar');
-            const chatIcon = document.getElementById('tf-icon-chat');
-            if (avatarEl && chatIcon) {
+            const chatIconEl = document.getElementById('tf-icon-chat');
+            if (avatarEl && chatIconEl) {
                 if (event.data.avatarUrl) {
                     avatarEl.src = event.data.avatarUrl;
                     avatarEl.classList.add('tf-show');
-                    chatIcon.style.opacity = '0';
+                    chatIconEl.style.opacity = '0';
                 } else {
                     avatarEl.classList.remove('tf-show');
-                    chatIcon.style.opacity = '1';
+                    chatIconEl.style.opacity = '1';
                 }
             }
         }
