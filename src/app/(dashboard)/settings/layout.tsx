@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Paintbrush, Globe, Sparkles, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Webhook, User, Volume2 } from "lucide-react"
+import { Paintbrush, Globe, Sparkles, MessageSquare, Zap, MessageCircle, Monitor, BookOpen, Ticket, Users, Webhook, User, Volume2, BrainCircuit, BarChart3 } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { redirect } from "next/navigation"
@@ -49,6 +49,8 @@ export default async function SettingsLayout({ children }: { children: React.Rea
             
             <div className="px-2 pb-4 space-y-0.5 border-b border-slate-100 dark:border-slate-800">
               <NavLink href="/settings/brand" icon={<Paintbrush size={18} />} label="Brand" />
+              <NavLink href="/settings/ai-training" icon={<BrainCircuit size={18} />} label="AI Observer" />
+              <NavLink href="/settings/analytics" icon={<BarChart3 size={18} />} label="AI Performance" />
               <NavLink href="/settings/channels" icon={<Globe size={18} />} label="Integrations" />
               <NavLink href="/settings/ai" icon={<Sparkles size={18} />} label="AI providers" />
               <NavLink href="/settings/webhooks" icon={<Webhook size={18} />} label="CRM Webhooks" />

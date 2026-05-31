@@ -1,10 +1,15 @@
 import { getContacts } from '@/actions/contacts'
 import { Search, User, MessageCircle, MoreHorizontal, Download, Upload, Plus } from 'lucide-react'
 
+import Link from 'next/link'
+
 export const dynamic = 'force-dynamic'
 
-export default async function ContactsPage() {
-  const contacts = await getContacts()
+export default async function ContactsPage({ searchParams }: { searchParams: { page?: string } }) {
+  const page = parseInt(searchParams?.page || '1', 10)
+  const pageSize = 100
+  const { contacts, totalCount } = await getContacts(page, pageSize)
+  const totalPages = Math.ceil(totalCount / pageSize)
   const renderedAt = new Date().getTime()
 
   function formatDate(dateStr: string) {
@@ -29,7 +34,7 @@ export default async function ContactsPage() {
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          Contacts <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{contacts.length}</span>
+          Contacts <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{totalCount}</span>
         </h1>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -132,6 +137,35 @@ export default async function ContactsPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="text-sm text-slate-500">
+            Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} contacts
+          </div>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link href={`/contacts?page=${page - 1}`} className="px-3 py-1.5 text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                Previous
+              </Link>
+            ) : (
+              <button disabled className="px-3 py-1.5 text-sm font-medium border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 rounded-md cursor-not-allowed">
+                Previous
+              </button>
+            )}
+            
+            {page < totalPages ? (
+              <Link href={`/contacts?page=${page + 1}`} className="px-3 py-1.5 text-sm font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                Next
+              </Link>
+            ) : (
+              <button disabled className="px-3 py-1.5 text-sm font-medium border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 rounded-md cursor-not-allowed">
+                Next
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

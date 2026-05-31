@@ -141,9 +141,6 @@ const ISSUE_GUIDES_BENGALI = `
 ### টিকিট কনভার্সন ফ্রেজ
 টিকিটে কনভার্ট করার সময় ন্যাচারাল ফ্রেজ ব্যবহার করুন:`;
 
-export function getSupportTriageContent(language: 'Bengali' | 'English'): string {
-  if (language === 'English') {
-    return TRIAGE_RULES + ISSUE_GUIDES_ENGLISH + ENGLISH_PHRASES;
-  }
-  return TRIAGE_RULES + ISSUE_GUIDES_BENGALI + BENGALI_PHRASES;
+export function getSupportTriageContent(): string {
+  return TRIAGE_RULES + '\n\n### ENGLISH WORKFLOW\n' + ISSUE_GUIDES_ENGLISH + '\n' + ENGLISH_PHRASES + '\n\n### BENGALI WORKFLOW\n' + ISSUE_GUIDES_BENGALI + '\n' + BENGALI_PHRASES;
 }

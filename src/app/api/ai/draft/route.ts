@@ -29,94 +29,36 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
-function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System Auto-Reply');
-  if (customerMessages.length === 0) return 'English';
-
-  const latestCustomerMsg = customerMessages[customerMessages.length - 1].content.trim();
-  
-  // Layer 1: Bengali script in latest message (deterministic, 100% confidence)
-  if (BENGALI_REGEX.test(latestCustomerMsg)) return 'Bengali';
-  
-  // Layer 2: Banglish word match on latest message
-  if (BANGLISH_REGEX.test(latestCustomerMsg)) return 'Bengali';
-  
-  // Layer 3: Agent ground truth - if our agents replied in Bengali, the conversation IS Bengali.
-  // This is the strongest contextual signal and prevents cascading language drift.
-  // A human agent's language choice is gold standard - no algorithm should override it.
-  const agentMessages = messages.filter(m => m.sender === 'Agent');
-  const recentAgentMsgs = agentMessages.slice(-5);
-  const agentUsedBengali = recentAgentMsgs.some(m => BENGALI_REGEX.test(m.content));
-  
-  // Long ASCII message: only treat as English switch if agents were NOT using Bengali.
-  // If agents were replying in Bengali, this is likely Banglish, not a language switch.
-  if (latestCustomerMsg.length > 20 && /^[a-zA-Z0-9\s.,!?'-]+$/.test(latestCustomerMsg)) {
-    if (!agentUsedBengali) return 'English';
-    // Agent was replying in Bengali - fall through to history check
-  }
-
-  // Layer 4: Customer history (last 3 messages)
-  const lastThree = customerMessages.slice(-3);
-  if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) {
-    return 'Bengali';
-  }
-  
-  // Layer 5: Agent history fallback - if agents used Bengali, maintain it
-  if (agentUsedBengali) return 'Bengali';
-
-  return 'English';
-}
-
-// Nuclear defensive layer: strip any line containing Bengali script from dynamic content
-// Used for English conversations to guarantee zero Bengali contamination from any source
-function stripBengaliLines(text: string): string {
-  if (!text) return text;
-  return text.split('\n').filter(line => !BENGALI_REGEX.test(line)).join('\n');
-}
 // ============================================================
 // SYSTEM PROMPT BUILDER
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(detectedLanguage: 'Bengali' | 'English', hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string, alwaysIncludeBanglaStyle = false): string {
-  const currentBanglaStyle = (detectedLanguage === "Bengali" || alwaysIncludeBanglaStyle) ? banglaStyleContent : "";
-  const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
+function buildSystemPrompt(hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string): string {
+  const currentBanglaStyle = banglaStyleContent;
+  const salesContent = hasSalesIntent ? getSalesFunnelContent() : "";
   // Support triage is injected when support intent is detected AND sales intent is NOT
   // This prevents both workflows from competing in the same prompt
-  const supportTriageContent = (!hasSalesIntent && hasSupportIntent) ? getSupportTriageContent(detectedLanguage) : "";
-  const globalBrain = getGlobalBrain(detectedLanguage);
+  const supportTriageContent = (!hasSalesIntent && hasSupportIntent) ? getSupportTriageContent() : "";
+  const globalBrain = getGlobalBrain();
 
-  // Language-specific examples in the system prompt
-  const langMatchingSection = detectedLanguage === 'Bengali'
-    ? `## LANGUAGE MATCHING
-Match the customer's language:
-- BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
-- BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
-- PURE ENGLISH: If the customer writes in English, output '[Language: English]' and reply in English.`
-    : `## LANGUAGE MATCHING
-Match the customer's language:
-- PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English. Translate any knowledge to English. Zero Bengali script in output.
-- BENGALI: If the customer writes in Bengali script, output '[Language: Bengali]' and reply in Bengali.
-- BANGLISH: If the customer writes in Banglish (Bengali in Latin letters), output '[Language: Bengali]' and reply in Bengali script.`;
+  const langMatchingSection = `## LANGUAGE DETECTION RULES (CRITICAL)
+Match the customer's language autonomously:
+1. PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English.
+2. BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
+3. BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "kaj korbe", "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
+4. "BD" TRAP: If an English-speaking customer mentions "BD" or "Bangladesh", they are referring to a geographic location, NOT requesting Bengali language. Stay in English.`;
 
-  const stateAwareness = detectedLanguage === 'Bengali'
-    ? `2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("পূর্বে যেমনটি জানিয়েছিলাম").`
-    : `2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("as I mentioned earlier").`;
+  const stateAwareness = `2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("as I mentioned earlier" or "পূর্বে যেমনটি জানিয়েছিলাম").`;
 
-  const zeroFiller = detectedLanguage === 'Bengali'
-    ? `4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing. Use "আপনি/আপনার".`
-    : `4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics in sales/pricing conversations.`;
+  const zeroFiller = `4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing. Use "আপনি/আপনার" when in Bengali.`;
 
-  const escalationSection = detectedLanguage === 'Bengali'
-    ? `## ESCALATION
-Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply:
-"এরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"`
-    : `## ESCALATION
-Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply:
-"If the issue is still not resolved, I will convert this chat into a support ticket so our technical team can check the details and solve it."`;
+  const escalationSection = `## ESCALATION
+Whenever you provide ANY technical guidance, troubleshooting steps, or solutions, you MUST always append this exact sentence at the end of your reply (match the language):
+- English: "If the issue is still not resolved, I will convert this chat into a support ticket so our technical team can check the details and solve it."
+- Bengali: "এরপরেও যদি সমাধান না হয় তবে আমি এই চ্যাটটি একটি সাপোর্ট টিকিটে কনভার্ট করে দিচ্ছি যাতে আমাদের টেকনিক্যাল টিম বিস্তারিত চেক করে সমাধান করতে পারেন"`;
 
   return `## IDENTITY
 You are Hostnin's support agent - a premium web hosting company in Bangladesh. You are a professional coach: calm, direct, practical. Never an excited cheerleader. You converse like a real human, never mechanical.
@@ -154,7 +96,7 @@ Output ONLY the tag and the draft message.`;
 // LEARNING DATA (Dynamic rules from Supabase)
 // ============================================================
 
-async function getLearningData(orgId: string, language: 'Bengali' | 'English'): Promise<{ fewShotBlock: string }> {
+async function getLearningData(orgId: string): Promise<{ fewShotBlock: string }> {
   let learnedRulesBlock = "";
   try {
     const { data: dbRules } = await supabaseAdmin
@@ -165,15 +107,8 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
       .limit(5);
 
     if (dbRules && dbRules.length > 0) {
-      // Filter out Bengali rules from English prompts
-      const filteredRules = language === 'English'
-        ? dbRules.filter(r => !BENGALI_REGEX.test(r.answer))
-        : dbRules;
-      
-      if (filteredRules.length > 0) {
-        learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments):\n` +
-          filteredRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
-      }
+      learnedRulesBlock = `\n\nDYNAMIC STYLE RULES LEARNED FROM AGENT EDITS (CRITICAL: Prioritize these adjustments):\n` +
+        dbRules.map((rule, idx) => `[Rule ${idx + 1}] Context/Mistake: ${rule.question}\nCorrection/Instruction: ${rule.answer}`).join('\n---\n');
     }
   } catch (err: any) {
     console.warn('[getLearningData] Failed to fetch dynamic rules:', err.message);
@@ -196,31 +131,36 @@ async function getLearningData(orgId: string, language: 'Bengali' | 'English'): 
   ];
 
   // Try to get dynamic approved examples (real drafts agents approved without editing)
-  let dynamicExamples: string[] = [];
+  let dynamicExamplesBengali: string[] = [];
+  let dynamicExamplesEnglish: string[] = [];
   try {
     const { getApprovedExamples } = await import("@/actions/ai-learning");
     const approved = await getApprovedExamples(orgId);
-    dynamicExamples = language === 'Bengali' ? approved.bengali : approved.english;
+    dynamicExamplesBengali = approved.bengali;
+    dynamicExamplesEnglish = approved.english;
   } catch (e) {
     // Silently fall back to static examples
   }
 
-  // Use dynamic examples if we have enough, otherwise blend with static
-  const staticExamples = language === 'Bengali' ? goldenBengali : goldenEnglish;
-  let examples: string[];
-  if (dynamicExamples.length >= 3) {
-    // Enough dynamic examples - use them (more representative of current tone)
-    examples = dynamicExamples;
-  } else {
-    // Blend: dynamic first, then fill with static
-    examples = [...dynamicExamples, ...staticExamples.slice(0, 5 - dynamicExamples.length)];
-  }
+  const examplesBengali = dynamicExamplesBengali.length >= 3 
+    ? dynamicExamplesBengali 
+    : [...dynamicExamplesBengali, ...goldenBengali.slice(0, 5 - dynamicExamplesBengali.length)];
 
-  const exampleLabel = dynamicExamples.length >= 3 
-    ? 'RECENT APPROVED REPLIES (Our agents approved these AI drafts without editing - match this tone)' 
-    : `GOLDEN ${language === 'Bengali' ? 'BENGALI' : 'ENGLISH'} REPLY EXAMPLES (Mimic this tone and brevity)`;
-  
-  const fewShotBlock = `\n\n${exampleLabel}:\n${examples.join('\n---\n')}${learnedRulesBlock}`;
+  const examplesEnglish = dynamicExamplesEnglish.length >= 3 
+    ? dynamicExamplesEnglish 
+    : [...dynamicExamplesEnglish, ...goldenEnglish.slice(0, 5 - dynamicExamplesEnglish.length)];
+
+  const fewShotBlock = `
+<english_examples>
+RECENT APPROVED ENGLISH REPLIES (Mimic this tone and brevity):
+${examplesEnglish.join('\n---\n')}
+</english_examples>
+
+<bengali_examples>
+RECENT APPROVED BENGALI REPLIES (Mimic this tone and brevity):
+${examplesBengali.join('\n---\n')}
+</bengali_examples>
+${learnedRulesBlock}`;
   return { fewShotBlock };
 }
 
@@ -354,37 +294,7 @@ export async function POST(req: Request) {
       activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
-    // Language detection: TWO modes
-    // Auto-draft (no instruction): follow customer's latest message language
-    // AI Assist (instruction present): follow instruction language (rescue system)
-    let detectedLanguage: 'Bengali' | 'English';
-    
-    if (instruction && instruction.replace(/^\/\/\s*/, '').trim().length > 0) {
-      const cleanInstruction = instruction.replace(/^\/\/\s*/, '').trim();
-      const lowerInst = cleanInstruction.toLowerCase();
-      
-      // 1. Explicit overrides
-      if (lowerInst.startsWith('en ') || lowerInst.startsWith('english ')) {
-        detectedLanguage = 'English';
-      } else if (lowerInst.startsWith('bn ') || lowerInst.startsWith('bengali ')) {
-        detectedLanguage = 'Bengali';
-      } else if (BENGALI_REGEX.test(cleanInstruction)) {
-        // 2. Bengali script instruction -> Bengali
-        detectedLanguage = 'Bengali';
-      } else if (BANGLISH_REGEX.test(cleanInstruction)) {
-        // 3. Banglish word matched in instruction -> Bengali
-        detectedLanguage = 'Bengali';
-      } else if (AMBIGUOUS_MSG.test(cleanInstruction) || cleanInstruction.length < 5) {
-        // 4. Short / Ambiguous instruction -> Fallback to conversation language
-        detectedLanguage = detectConversationLanguage(parsedMessages);
-      } else {
-        // 5. English instruction -> English
-        detectedLanguage = 'English';
-      }
-    } else {
-      // Auto-draft mode: follow conversation history
-      detectedLanguage = detectConversationLanguage(parsedMessages);
-    }
+    // Auto-draft mode: Language detection is now handled entirely by the LLM.
 
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
@@ -435,7 +345,7 @@ export async function POST(req: Request) {
             const score = cosineSimilarity(query_embedding, vector as number[]);
             if (score > bestScore && score >= 0.25) {
               bestScore = score;
-              activeSubBrain = getSubBrain(intentMap[intent], detectedLanguage);
+              activeSubBrain = getSubBrain(intentMap[intent]);
             }
           }
           
@@ -468,19 +378,11 @@ export async function POST(req: Request) {
                 }
 
                 // Collect verified agent replies as golden examples (max 2)
-                // Skip Bengali examples for English conversations to prevent language contamination
                 if (verifiedReply && verifiedReply.length > 15 && goldenExamples.length < 2) {
-                  const isBengaliReply = BENGALI_REGEX.test(verifiedReply);
-                  if (!(detectedLanguage === 'English' && isBengaliReply)) {
-                    goldenExamples.push({ question: d.question, reply: verifiedReply });
-                  }
+                  goldenExamples.push({ question: d.question, reply: verifiedReply });
                 }
               } else {
-                // Skip Bengali knowledge docs for English conversations
-                const isBengaliAnswer = BENGALI_REGEX.test(d.answer);
-                if (!(detectedLanguage === 'English' && isBengaliAnswer)) {
-                  cleanVectorDocs.push(d);
-                }
+                cleanVectorDocs.push(d);
               }
             }
 
@@ -508,7 +410,7 @@ export async function POST(req: Request) {
     })();
 
     const learningPromise = (orgId && !isTranslation)
-      ? getLearningData(orgId, detectedLanguage)
+      ? getLearningData(orgId)
       : Promise.resolve({ fewShotBlock: '' });
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
@@ -516,14 +418,7 @@ export async function POST(req: Request) {
     const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
 
-    // NUCLEAR SANITIZATION: For English conversations, strip ALL Bengali from every dynamic source
-    // This is the final defensive layer that catches anything we missed.
-    // Bypass if instruction (Copilot) is present, since the final output language will be decided by the LLM.
-    if (detectedLanguage === 'English' && !instruction) {
-      knowledgeContext = stripBengaliLines(knowledgeContext);
-      highPrioritySemanticRules = stripBengaliLines(highPrioritySemanticRules);
-    }
-    const fewShotBlock = (detectedLanguage === 'English' && !instruction) ? stripBengaliLines(rawFewShotBlock) : rawFewShotBlock;
+    const fewShotBlock = rawFewShotBlock;
 
     const holidaySettings = orgData?.settings || {};
     const isHolidayMode = !!holidaySettings.holiday_mode_enabled;
@@ -553,7 +448,7 @@ The human agent has provided a shorthand directive: >>> "${instruction}" <<<
 Assess the language of this Agent Instruction:
 1. If the instruction is written in English (e.g., "tell them we are checking", "explain cPanel limit"), draft the response in ENGLISH.
 2. If the instruction is written in Bengali script or Banglish (Bengali words in Latin letters, e.g., "bhalo kore check koro" or "wait korte bolo" or "dukhito wait koren"), draft the response in BENGALI SCRIPT.
-3. If the instruction is a short ambiguous command (e.g., "ok", "done", "yes"), draft the response in the conversation's active language: [Active Language: ${detectedLanguage}].
+3. If the instruction is a short ambiguous command (e.g., "ok", "done", "yes"), draft the response in the language the customer used.
 
 You MUST output the corresponding tag ('[Language: Bengali]' or '[Language: English]') on the very first line of your response.
 
@@ -581,12 +476,7 @@ ${cappedContextMessages}
 - If the customer's intent and scale are clear, recommend confidently. If not, ask ONE smart question.
 - Always end with a clear next step the customer can act on.
 - PARAGRAPH BREAKING: If your reply contains multiple sentences or distinct ideas (such as pricing details AND a follow-up question), you MUST split them into exactly two paragraphs using a double line break (\n\n). Never output a single dense paragraph for a multi-part message.
-${detectedLanguage === 'English' ? `
-## CRITICAL LANGUAGE OVERRIDE:
-This conversation is in ENGLISH. You MUST reply in English ONLY.
-Output '[Language: English]' and write your entire reply in English.
-Do NOT use Bengali script. Do NOT switch languages. The customer said 'BD' referring to Bangladesh as a geographic location, NOT requesting Bengali language.
-ZERO Bengali characters allowed in your output.` : ''}
+
 
 ${imageBlock ? `\nIMAGE ATTACHED: The customer sent an image ${imageDistance ?? 0} messages ago.
 ${(imageDistance !== null && imageDistance >= 2) ? 'This is a HISTORICAL image. Only reference if current discussion relates to it.' : 'This is a RECENT image. Analyze and address it.'}
@@ -798,7 +688,7 @@ ${instruction
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain, !!instruction)
+                    content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain)
                   },
                   {
                     role: "user",
@@ -896,7 +786,7 @@ ${instruction
           messages: [
             {
               role: "system",
-              content: buildSystemPrompt(detectedLanguage, hasSalesIntent, hasSupportIntent, activeSubBrain, !!instruction)
+              content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain)
             },
             {
               role: "user",

@@ -47,8 +47,8 @@ const BENGALI_EXAMPLES = `
     - $200+/day = \u09AA\u09BE\u09B0\u09AB\u09B0\u09CD\u09AE\u09CD\u09AF\u09BE\u09A8\u09CD\u09B8 \u09AE\u09CD\u09AF\u09BE\u0995\u09CD\u09B8 (Performance Max / Dedicated Server)
 `;
 
-export function getSalesFunnelContent(language: 'Bengali' | 'English'): string {
-  return FUNNEL_RULES + (language === 'Bengali' ? BENGALI_EXAMPLES : ENGLISH_EXAMPLES);
+export function getSalesFunnelContent(): string {
+  return FUNNEL_RULES + '\n\n### ENGLISH EXAMPLES\n' + ENGLISH_EXAMPLES + '\n\n### BENGALI EXAMPLES\n' + BENGALI_EXAMPLES;
 }
 
 // Keep backward compat export for any other importers

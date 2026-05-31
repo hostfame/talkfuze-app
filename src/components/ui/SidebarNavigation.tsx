@@ -49,13 +49,6 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
       visible: !isAgent
     },
     {
-      href: "/analytics",
-      label: "AI Analytics",
-      icon: BarChart3,
-      isActive: pathname.startsWith("/analytics"),
-      visible: !isAgent
-    },
-    {
       href: "/reports",
       label: "Volume Reports",
       icon: TrendingUp,
@@ -75,13 +68,6 @@ export default function SidebarNavigation({ isAgent }: SidebarNavigationProps) {
       icon: Library,
       isActive: pathname.startsWith("/snippets"),
       visible: true
-    },
-    {
-      href: "/ai-training",
-      label: "AI Observer",
-      icon: BrainCircuit,
-      isActive: pathname.startsWith("/ai-training"),
-      visible: !isAgent
     }
   ]
 

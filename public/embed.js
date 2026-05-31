@@ -210,6 +210,76 @@
       const top = (window.screen.height / 2) - (height / 2);
       window.open(callUrl, 'TalkFuzeSecureCall', 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',status=no,menubar=no,toolbar=no,location=no,resizable=no');
     }
+    if (event.data.type === 'TALKFUZE_ZOOM_IMAGE') {
+      var imgOverlay = document.createElement('div');
+      imgOverlay.style.cssText = '\
+        position: fixed;\
+        top: 0;\
+        left: 0;\
+        width: 100vw;\
+        height: 100vh;\
+        background: rgba(15, 23, 42, 0.9);\
+        z-index: 2147483647;\
+        display: flex;\
+        align-items: center;\
+        justify-content: center;\
+        backdrop-filter: blur(8px);\
+        -webkit-backdrop-filter: blur(8px);\
+        cursor: zoom-out;\
+        opacity: 0;\
+        transition: opacity 0.3s ease;\
+      ';
+      
+      var img = document.createElement('img');
+      img.src = event.data.src;
+      img.style.cssText = '\
+        max-width: 90%;\
+        max-height: 90%;\
+        object-fit: contain;\
+        border-radius: 12px;\
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);\
+        transform: scale(0.95);\
+        transition: transform 0.3s ease;\
+      ';
+
+      var closeBtn = document.createElement('div');
+      closeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+      closeBtn.style.cssText = '\
+        position: absolute;\
+        top: 20px;\
+        right: 20px;\
+        width: 48px;\
+        height: 48px;\
+        background: rgba(255,255,255,0.1);\
+        border-radius: 50%;\
+        display: flex;\
+        align-items: center;\
+        justify-content: center;\
+        cursor: pointer;\
+        transition: background 0.2s;\
+      ';
+      closeBtn.onmouseover = function() { closeBtn.style.background = 'rgba(255,255,255,0.2)'; };
+      closeBtn.onmouseout = function() { closeBtn.style.background = 'rgba(255,255,255,0.1)'; };
+
+      imgOverlay.appendChild(img);
+      imgOverlay.appendChild(closeBtn);
+      document.body.appendChild(imgOverlay);
+
+      requestAnimationFrame(function() {
+        imgOverlay.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+      });
+
+      imgOverlay.addEventListener('click', function() {
+        imgOverlay.style.opacity = '0';
+        img.style.transform = 'scale(0.95)';
+        setTimeout(function() {
+          if (imgOverlay.parentNode) {
+            imgOverlay.parentNode.removeChild(imgOverlay);
+          }
+        }, 300);
+      });
+    }
   });
 
   // Assemble

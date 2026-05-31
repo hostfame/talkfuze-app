@@ -16,7 +16,7 @@ type ContactWithConversations = Contact & {
   conversations?: ContactConversation[] | null
 }
 
-export async function getContacts() {
+export async function getContacts(page: number = 1, pageSize: number = 100) {
   noStore();
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -25,22 +25,26 @@ export async function getContacts() {
   const { data: profile } = await supabaseAdmin.from("users").select("org_id").eq("id", user.id).single()
   if (!profile) throw new Error("Profile not found")
 
-  const { data, error } = await supabaseAdmin
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabaseAdmin
     .from('contacts')
     .select(`
       *,
       conversations (id, last_message_at, channels (type))
-    `)
+    `, { count: 'exact' })
     .eq('org_id', profile.org_id)
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) {
     console.error('Error fetching contacts:', error)
-    return []
+    return { contacts: [], totalCount: 0 }
   }
   
   // Transform data to match UI needs
-  return (data as ContactWithConversations[]).map(contact => {
+  const contacts = (data as ContactWithConversations[]).map(contact => {
     // Sort conversations to find the latest one
     const sortedConvs = [...(contact.conversations || [])].sort((a, b) => {
       const timeA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
@@ -57,6 +61,8 @@ export async function getContacts() {
       channel_type: latestConv?.channels?.type || 'unknown'
     }
   })
+
+  return { contacts, totalCount: count || 0 }
 }
 
 export async function updateContactName(contactId: string, newName: string) {

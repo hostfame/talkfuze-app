@@ -201,7 +201,7 @@ export default function InboxPage() {
     const subscribeToChannel = () => {
       const ch = supabase
         .channel('inbox:conversations:list')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           const updatedConv = payload.new as any;
           const store = useInboxStore.getState();
           
@@ -223,7 +223,7 @@ export default function InboxPage() {
             store.setArchivedConversations(archNext as ConversationWithDetails[]);
           }
         })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           const rawMsg = payload.new as any;
           const newMsg = normalizeMessage(rawMsg);
           if (!newMsg) return;
@@ -370,7 +370,7 @@ export default function InboxPage() {
             }
           }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           const rawMsg = payload.new as any;
           const newMsg = normalizeMessage(rawMsg);
           if (!newMsg) return;
@@ -391,7 +391,7 @@ export default function InboxPage() {
             }
           }
         })
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           const oldMsg = payload.old as any;
           if (oldMsg && oldMsg.id) {
              const store = useInboxStore.getState();
@@ -405,7 +405,7 @@ export default function InboxPage() {
              }
           }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts' }, (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contacts', filter: `org_id=eq.${ORG_ID}` }, (payload) => {
           const newContact = payload.new as any;
           if (newContact && newContact.id) {
              const store = useInboxStore.getState();

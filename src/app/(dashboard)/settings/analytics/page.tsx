@@ -76,8 +76,7 @@ export default async function AnalyticsPage(props: PageProps) {
   const rulesLearned = rulesData || [];
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-[#0b141a]">
-      <div className="flex-1 flex flex-col w-full p-4 md:p-6 space-y-4 md:space-y-5 overflow-hidden">
+    <div className="space-y-6">
         {/* Top Header & Stats Bar */}
         <div className="bg-white dark:bg-[#111b21] p-4 rounded-xl border border-slate-200 dark:border-[#222e35] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
           <div>
@@ -172,7 +171,7 @@ export default async function AnalyticsPage(props: PageProps) {
                   <div className="flex items-center gap-4">
                     {page > 1 ? (
                       <a 
-                        href={`/analytics?page=${page - 1}`}
+                        href={`/settings/analytics?page=${page - 1}`}
                         className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         Previous Page
@@ -189,7 +188,7 @@ export default async function AnalyticsPage(props: PageProps) {
 
                     {page < totalPages ? (
                       <a 
-                        href={`/analytics?page=${page + 1}`}
+                        href={`/settings/analytics?page=${page + 1}`}
                         className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         Next Page
@@ -206,7 +205,6 @@ export default async function AnalyticsPage(props: PageProps) {
           </div>
 
         </div>
-      </div>
     </div>
   );
 }

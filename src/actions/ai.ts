@@ -6,38 +6,10 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getSalesFunnelContent } from "@/data/sales-funnel";
 import { banglaStyleContent } from "@/data/bangla-style";
 
-const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|apni|kemon|valo|ki|kobe|kothay|keno|tk|taka|bhai|vai|lagbe|chai|nibo|neta|hobe|korbo|kore|ache|nai|hoy|dib|den|niye|jonno|theke|sathe|amar)\b/i;
-const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
-
-function detectConversationLanguage(messages: { sender: string; content: string }[]): 'Bengali' | 'English' {
-  const customerMessages = messages.filter(m => m.sender !== 'Agent' && m.sender !== 'System' && m.sender !== 'System Auto-Reply');
-  if (customerMessages.length === 0) return 'English';
-
-  const latestMsg = customerMessages[customerMessages.length - 1].content.trim();
-
-  // Layer 1: Bengali script (deterministic)
-  if (BENGALI_REGEX.test(latestMsg)) return 'Bengali';
-  
-  // Layer 2: Banglish word match
-  if (BANGLISH_REGEX.test(latestMsg)) return 'Bengali';
-
-  // Layer 3: Agent ground truth - if agents replied in Bengali, conversation IS Bengali
-  const agentMessages = messages.filter(m => m.sender === 'Agent');
-  const recentAgentMsgs = agentMessages.slice(-5);
-  const agentUsedBengali = recentAgentMsgs.some(m => BENGALI_REGEX.test(m.content));
-
-  // Short/ambiguous message: check history
-  if (AMBIGUOUS_MSG.test(latestMsg)) {
-    const lastThree = customerMessages.slice(-3);
-    if (lastThree.some(m => BENGALI_REGEX.test(m.content) || BANGLISH_REGEX.test(m.content))) return 'Bengali';
-  }
-
-  // Agent history fallback
-  if (agentUsedBengali) return 'Bengali';
-
-  return 'English';
-}
+// ============================================================
+// SYSTEM PROMPT BUILDER
+// Personality + Dynamic situational context modules
+// ============================================================
 
 export async function generateAiDraft(contextMessages: string, contactName: string = "Customer", orgId?: string): Promise<{ success: boolean; text?: string; error?: string; language?: string }> {
   try {
@@ -82,14 +54,23 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       activeStateInstruction = `[ACTIVE STATE]: The customer's latest message has ALREADY been responded to/addressed by the Agent. The last message in the thread is an Agent message. Do NOT repeat or duplicate greetings, acknowledgments, links, or diagnostic answers that the Agent has already sent. Focus strictly on generating a continuation or follow-up that builds upon the Agent's latest message.`;
     }
     
-    // Language detection for DB logging and golden examples matching
-    const detectedLanguage = detectConversationLanguage(parsedMessages);
+    // Language is natively detected by the LLM now. We don't guess it here.
+    const detectedLanguage = 'unknown';
 
     let fewShotBlock = '';
     if (examples) {
-      const filteredExamples = detectedLanguage === 'Bengali' ? examples.bengali : examples.english;
-      if (filteredExamples.length > 0) {
-        fewShotBlock = `\n\nAGENT-APPROVED REPLY EXAMPLES (learn from their tone and style):\n${filteredExamples.join('\n---\n')}`;
+      const examplesBengali = examples.bengali;
+      const examplesEnglish = examples.english;
+      if (examplesBengali.length > 0 || examplesEnglish.length > 0) {
+        fewShotBlock = `\n\n<english_examples>
+RECENT APPROVED ENGLISH REPLIES (Mimic this tone and brevity):
+${examplesEnglish.join('\n---\n')}
+</english_examples>
+
+<bengali_examples>
+RECENT APPROVED BENGALI REPLIES (Mimic this tone and brevity):
+${examplesBengali.join('\n---\n')}
+</bengali_examples>`;
       }
     }
 
@@ -112,13 +93,13 @@ export async function generateAiDraft(contextMessages: string, contactName: stri
       ? customerMessages[customerMessages.length - 1].content.trim()
       : '';
 
-    const currentBanglaStyle = (detectedLanguage === "Bengali") ? banglaStyleContent : "";
+    const currentBanglaStyle = banglaStyleContent;
 
     // Detect sales/pricing intent in conversation context
     const salesKeywords = /price|cost|buy|order|plan|package|hosting|domain|payment|renew|taka|bdt|charge|discount|coupon|offer|টাকা|দাম|প্যাকেজ|হোস্টিং|কিনি|কিনতে|সার্ভার|রিনিউ/i;
     const hasSalesIntent = salesKeywords.test(latestCustomerMessageCleaned) || 
                           parsedMessages.some(m => salesKeywords.test(m.content));
-    const salesContent = hasSalesIntent ? getSalesFunnelContent(detectedLanguage) : "";
+    const salesContent = hasSalesIntent ? getSalesFunnelContent() : "";
 
 
 
@@ -132,16 +113,17 @@ You MUST begin your response with exactly one classification tag on the very fir
 Then output a blank line, then start your actual draft response.
 
 ## LANGUAGE MATCHING
-Match the customer's language:
-- PURE ENGLISH: If customer writes in English, output '[Language: English]' and reply in English. Translate any Bengali knowledge to English. Zero Bengali script. Any examples labeled 'Bengali:' in these instructions are style references only — adapt their intent and structure to English, never copy their language.
-- BENGALI SCRIPT: If customer writes in Bengali script, output '[Language: Bengali]' and reply in pure Bengali script.
-- BANGLISH: If customer writes in Banglish (Bengali words in Latin letters), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish—never mechanical.
+Match the customer's language autonomously:
+1. PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English.
+2. BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
+3. BANGLISH: If the customer writes in Banglish (Bengali words in Latin letters, e.g. "kaj korbe", "Ami new e-commerce shuru korte chai"), this IS Bengali. Output '[Language: Bengali]' and reply in pure Bengali script. Never reply in transliterated Banglish.
+4. "BD" TRAP: If an English-speaking customer mentions "BD" or "Bangladesh", they are referring to a geographic location, NOT requesting Bengali language. Stay in English.
 
 ## REPLY STYLE
 1. CONCISE & STRUCTURED: Keep responses under 2-3 sentences (< 45 words). If the response contains distinct parts (e.g., pricing/details followed by a question), split them with a blank line into 2 brief paragraphs. Keep simple one-sentence replies on a single line (no blank line). Never use bullet lists or bold (**). Go straight to the point with zero filler.
-2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply.
+2. STATE AWARENESS: Read conversation history. NEVER repeat greetings, acknowledgments, or actions already completed. Always advance forward. If customer repeats a question already answered, reference your prior reply ("as I mentioned earlier" or "পূর্বে যেমনটি জানিয়েছিলাম").
 3. AGENT OVERRIDE: If there is a whispered instruction (starting with "//"), expand and polish it. Match the conversation's language.
-4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics in sales/pricing.
+4. ZERO FILLER: No "great question", "excellent", "wonderful", "very nice project". No honorifics (বস, স্যার, ভাই, আপু) in sales/pricing. Use "আপনি/আপনার" when in Bengali.
 5. LANGUAGE TRANSLATION: Technical terms are language-neutral. Translate RAG matches to the response language.
 
 ## ESCALATION

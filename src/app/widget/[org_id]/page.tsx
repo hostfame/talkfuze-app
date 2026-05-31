@@ -642,6 +642,18 @@ export default function WidgetPage() {
   const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false)
   const [hasProvidedContact, setHasProvidedContact] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+
+  const handleImageZoom = (url: string) => {
+    try {
+      if (window !== window.parent) {
+        window.parent.postMessage({ type: 'TALKFUZE_ZOOM_IMAGE', src: url }, '*');
+      } else {
+        setLightboxImage(url);
+      }
+    } catch (e) {
+      setLightboxImage(url);
+    }
+  };
   
   // Co-Browsing WebRTC State
   const [showCoBrowseRequest, setShowCoBrowseRequest] = useState(false)
@@ -1607,12 +1619,13 @@ export default function WidgetPage() {
 
   const fetchMsgs = async () => {
     if (!org_id || !deviceId) return
-    if (activeConversationId === 'new') {
+    const currentConvId = activeConversationIdRef.current;
+    if (currentConvId === 'new') {
       setMessages([])
       return
     }
     try {
-      const data = await getWidgetMessages(org_id, deviceId, activeConversationId, Date.now())
+      const data = await getWidgetMessages(org_id, deviceId, currentConvId, Date.now())
       if (data) {
         const dbMessages = data as WidgetMessage[];
         const now = Date.now();
@@ -1834,6 +1847,24 @@ export default function WidgetPage() {
   }, [messages]);
 
   useEffect(() => {
+    if (!org_id || !deviceId) return;
+    const presenceChannel = supabase.channel(`presence:${org_id}`)
+    presenceChannel.on('presence', { event: 'sync' }, () => {})
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({
+          user: deviceId,
+          activeConversationId: activeConversationId || null,
+          online_at: new Date().toISOString()
+        })
+      }
+    })
+    return () => {
+      try { supabase.removeChannel(presenceChannel) } catch (e) {}
+    }
+  }, [org_id, deviceId, activeConversationId])
+
+  useEffect(() => {
     // Check if this conversation already has feedback submitted in this browser
     const storedFeedbackStatus = localStorage.getItem(`tf_feedback_${activeConversationId}`);
     setHasSubmittedFeedback(storedFeedbackStatus === 'true')
@@ -1846,17 +1877,6 @@ export default function WidgetPage() {
       }
       return prev;
     });
-    const presenceChannel = supabase.channel(`presence:${org_id}`)
-    presenceChannel.on('presence', { event: 'sync' }, () => {})
-    presenceChannel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await presenceChannel.track({
-          user: deviceId,
-          activeConversationId: activeConversationId || null,
-          online_at: new Date().toISOString()
-        })
-      }
-    })
 
     const syncDatabaseState = async () => {
       console.log('[Widget Realtime Sync] Reconnection or sync triggered. Syncing widget states...');
@@ -1883,7 +1903,7 @@ export default function WidgetPage() {
           fetchConversations()
           
           const newMsg = payload.new as any;
-          if (newMsg && newMsg.conversation_id === activeConversationId && !newMsg.is_internal) {
+          if (newMsg && newMsg.conversation_id === activeConversationIdRef.current && !newMsg.is_internal) {
             
             let delayMs = 0;
             let safeMeta = newMsg.metadata;
@@ -1964,7 +1984,7 @@ export default function WidgetPage() {
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `org_id=eq.${org_id}` }, async (payload) => {
           const updatedMsg = payload.new as any;
-          if (updatedMsg && updatedMsg.conversation_id === activeConversationId && !updatedMsg.is_internal) {
+          if (updatedMsg && updatedMsg.conversation_id === activeConversationIdRef.current && !updatedMsg.is_internal) {
             
             // Re-fetch agent details if needed (usually already there for updates, but safe to check)
             if (updatedMsg.sender_type === 'agent' || updatedMsg.sender_type === 'system') {
@@ -2032,11 +2052,8 @@ export default function WidgetPage() {
           supabase.removeChannel(activeChannel);
         } catch (e) {}
       }
-      try {
-        supabase.removeChannel(presenceChannel);
-      } catch (e) {}
     }
-  }, [org_id, deviceId, activeConversationId])
+  }, [org_id, deviceId])
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -2139,6 +2156,7 @@ export default function WidgetPage() {
                 }, activeConversationId || undefined)
 
                 if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
+                  activeConversationIdRef.current = res.conversationId
                   setActiveConversationId(res.conversationId)
                 }
 
@@ -2320,6 +2338,7 @@ export default function WidgetPage() {
             }, activeConversationId || undefined);
 
             if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
+              activeConversationIdRef.current = res.conversationId
               setActiveConversationId(res.conversationId);
             }
 
@@ -2491,6 +2510,7 @@ export default function WidgetPage() {
       }
       const res = await sendWidgetMessage(org_id, deviceId, messageText, 'text', {}, activeConversationId || undefined)
       if (res?.success && res.conversationId && res.conversationId !== activeConversationId) {
+        activeConversationIdRef.current = res.conversationId
         setActiveConversationId(res.conversationId)
       }
     } catch (e) {
@@ -3759,7 +3779,7 @@ export default function WidgetPage() {
                         <div className="w-6 h-6 shrink-0" />
                       )}
                       <div className={msg.content_type === 'text' ? `bg-[#f3f4f6] rounded-[18px] ${showAvatar ? 'rounded-bl-[4px]' : ''} py-2.5 px-3.5 text-[14.5px] text-slate-800 max-w-[85%] whitespace-pre-wrap tracking-tight` : "max-w-[85%]"}>
-                        {renderMessageContent(msg, false, setLightboxImage)}
+                        {renderMessageContent(msg, false, handleImageZoom)}
                         {msg.metadata?.auto_reply && (
                           <button
                             onClick={handleWhatsAppHandoff}
@@ -3782,7 +3802,7 @@ export default function WidgetPage() {
                   return (
                     <div key={msg.id} className="flex flex-col gap-0.5 items-end mb-[1px] mt-[2px]">
                       <div className={msg.content_type === 'text' ? "bg-[#64748b] rounded-[18px] rounded-br-[4px] py-2.5 px-3.5 text-[14.5px] text-white shadow-sm max-w-[85%] whitespace-pre-wrap tracking-tight" : "max-w-[85%]"}>
-                        {renderMessageContent(msg, true, setLightboxImage)}
+                        {renderMessageContent(msg, true, handleImageZoom)}
                       </div>
                       <div className="flex items-center gap-1 mr-0.5">
                         {msgTime && <span className="text-[11px] text-slate-400">{msgTime}</span>}

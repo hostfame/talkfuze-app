@@ -194,10 +194,10 @@ export default function AITrainingDashboard() {
   }, [activeTab])
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#F8FAFC] dark:bg-[#0b141a] overflow-hidden">
+    <div className="space-y-6">
       
       {/* Application Toolbar / Header */}
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111b21] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 z-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <div>
             <h1 className="text-lg font-semibold text-slate-900 dark:text-[#e9edef]">
@@ -252,8 +252,7 @@ export default function AITrainingDashboard() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl w-full mx-auto p-6">
+      <div>
         
         {/* Tab 1: Observer Dashboard View */}
         {activeTab === 'observer' && (
@@ -460,7 +459,6 @@ export default function AITrainingDashboard() {
           </div>
         )}
 
-        </div>
       </div>
     </div>
   )

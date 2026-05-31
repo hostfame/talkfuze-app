@@ -443,10 +443,71 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
       return { success: false, error: "No grouped messages generated." }
     }
 
-    // 6. Generate the ticket subject from the oldest customer text message
-    const firstCustomerMsg = publicMessages.find(m => m.sender_type !== 'agent' && m.content && m.content_type === 'text')
-    const subjectText = firstCustomerMsg ? firstCustomerMsg.content : "WhatsApp Chat Escalation"
-    const subject = subjectText.substring(0, 50) + (subjectText.length > 50 ? "..." : "")
+    // Helper function to generate ticket subject and summary using OpenAI
+    async function generateTicketSubjectAndSummary(messages: any[]): Promise<{ subject: string | null, summary: string | null }> {
+      try {
+        const apiKey = process.env.OPENAI_API_KEY
+        if (!apiKey) return { subject: null, summary: null }
+
+        // Compile a short transcript for the AI (last 20 messages to keep prompt small)
+        const recentMessages = messages.slice(-20);
+        const transcript = recentMessages.map(m => {
+           const sender = m.sender_type === 'agent' ? 'Agent' : 'Customer';
+           return `${sender}: ${m.content || '[Media]'}`;
+        }).join('\n');
+
+        const prompt = `You are an expert IT support assistant. A customer service chat is being converted into a support ticket.
+        
+Read the following chat transcript and generate:
+1. A short, meaningful ticket subject (maximum 6 words).
+2. A brief summary of the issue (2-3 sentences) to help the next support agent understand the problem quickly.
+
+Return ONLY a JSON object in this exact format, with no markdown formatting or extra text:
+{"subject": "Short subject here", "summary": "Brief summary here."}
+
+Transcript:
+${transcript}`;
+
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            response_format: { type: "json_object" }
+          }),
+        })
+
+        if (!res.ok) return { subject: null, summary: null }
+
+        const data = await res.json()
+        const content = data.choices?.[0]?.message?.content
+        if (!content) return { subject: null, summary: null }
+
+        const parsed = JSON.parse(content)
+        return {
+           subject: parsed.subject || null,
+           summary: parsed.summary || null
+        }
+      } catch (err) {
+        console.error('Failed to generate subject and summary:', err)
+        return { subject: null, summary: null }
+      }
+    }
+
+    // 6. Generate the ticket subject and summary using AI, with fallback
+    const aiResult = await generateTicketSubjectAndSummary(publicMessages);
+    
+    let subject = aiResult.subject;
+    if (!subject) {
+      const firstCustomerMsg = publicMessages.find(m => m.sender_type !== 'agent' && m.content && m.content_type === 'text')
+      const subjectText = firstCustomerMsg ? firstCustomerMsg.content : "WhatsApp Chat Escalation"
+      subject = subjectText.substring(0, 50) + (subjectText.length > 50 ? "..." : "")
+    }
 
     // 7. Open the ticket using the first grouped message
     const firstGroup = groups[0]
@@ -454,9 +515,14 @@ export async function convertChatToTicket(conversationId: string, clientId: numb
     
     // texts array may have been modified by fetchAttachmentsAndTranscribe with transcription
     const firstGroupText = firstGroup.texts.join("\n")
-    const firstGroupMessage = firstGroup.sender_type === 'agent'
+    let firstGroupMessage = firstGroup.sender_type === 'agent'
       ? `👨‍💼 [Agent - ${firstGroup.sender_name}]:\n\n${firstGroupText}`
       : firstGroupText
+
+    // Prepend the AI summary if available
+    if (aiResult.summary) {
+      firstGroupMessage = `🤖 **AI Conversation Summary:**\n${aiResult.summary}\n\n---\n\n${firstGroupMessage}`
+    }
 
     const result = await openTicket(clientId, deptId, subject, firstGroupMessage, undefined, firstGroupAttachments)
     if (!result || !result.id) {
