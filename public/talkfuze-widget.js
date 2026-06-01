@@ -175,23 +175,26 @@
             transform: scale(1);
         }
 
-        /* Floating pill input bar nudge */
+        /* =============================================
+           NUDGE PILL - Premium, aligned with bubble
+           ============================================= */
         #tf-nudge {
             position: fixed;
-            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
-            right: ${MARGIN}px;
+            bottom: ${MARGIN + Math.round((BUTTON_SIZE - 54) / 2)}px;
+            right: ${MARGIN + BUTTON_SIZE + 16}px;
             background: #ffffff;
             border-radius: 100px;
-            box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 1px 4px rgba(15, 23, 42, 0.06);
-            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             align-items: center;
-            width: 280px;
+            width: 320px;
+            height: 54px;
             padding: 0;
             pointer-events: auto;
             opacity: 0;
-            transform: translateY(16px);
-            transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateX(12px) scale(0.97);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             cursor: text;
             overflow: hidden;
@@ -200,7 +203,7 @@
 
         #tf-nudge.tf-nudge-show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0) scale(1);
         }
 
         #tf-nudge-input {
@@ -208,13 +211,16 @@
             border: none;
             outline: none;
             background: transparent;
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 400;
             color: #0f172a;
-            padding: 14px 6px 14px 20px;
+            padding: 0 12px 0 24px;
             font-family: inherit;
             cursor: text;
             min-width: 0;
-            caret-color: #0070f3;
+            height: 100%;
+            caret-color: #0f172a;
+            letter-spacing: -0.01em;
         }
 
         #tf-nudge-input::placeholder {
@@ -223,34 +229,39 @@
         }
 
         #tf-nudge-send {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: #0f172a;
+            background: #e2e8f0;
+            color: #334155;
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            margin: 6px 6px 6px 4px;
-            transition: background 0.2s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            margin: 0 8px 0 6px;
+            transition: background 0.18s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         #tf-nudge-send:hover {
-            background: #1e293b;
-            transform: scale(1.08);
+            background: #cbd5e1;
+            color: #0f172a;
+            transform: scale(1.05);
         }
 
         #tf-nudge-send:active {
-            transform: scale(0.93);
+            transform: scale(0.92);
         }
 
         #tf-nudge-send svg {
-            width: 15px;
-            height: 15px;
-            fill: white;
-            transform: translateX(1px);
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
         }
 
         @media (max-width: 768px) {
@@ -439,7 +450,9 @@
     nudge.innerHTML = `
         <input id="tf-nudge-input" type="text" placeholder="Write a message..." autocomplete="off" />
         <button id="tf-nudge-send" aria-label="Send">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L12 20M12 4L6 10M12 4L18 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </button>
     `;
     document.body.appendChild(nudge);

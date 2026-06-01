@@ -245,14 +245,14 @@
         #tf-nudge {
             position: fixed;
             bottom: ${MARGIN + Math.round((BUTTON_SIZE - NUDGE_HEIGHT) / 2)}px;
-            right: ${MARGIN + BUTTON_SIZE + 10}px;
+            right: ${MARGIN + BUTTON_SIZE + 16}px;
             background: #ffffff;
             border-radius: 100px;
-            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.10), 0 1px 4px rgba(15, 23, 42, 0.06);
-            border: 1.5px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             align-items: center;
-            width: 288px;
+            width: 320px;
             height: ${NUDGE_HEIGHT}px;
             padding: 0;
             pointer-events: auto;
@@ -275,15 +275,15 @@
             border: none;
             outline: none;
             background: transparent;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 400;
             color: #0f172a;
-            padding: 0 10px 0 22px;
+            padding: 0 12px 0 24px;
             font-family: inherit;
             cursor: text;
             min-width: 0;
             height: 100%;
-            caret-color: #0070f3;
+            caret-color: #0f172a;
             letter-spacing: -0.01em;
         }
 
@@ -293,10 +293,11 @@
         }
 
         #tf-nudge-send {
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: #0070f3;
+            background: #e2e8f0;
+            color: #334155;
             border: none;
             cursor: pointer;
             display: flex;
@@ -305,12 +306,12 @@
             flex-shrink: 0;
             margin: 0 8px 0 6px;
             transition: background 0.18s, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 2px 8px rgba(0, 112, 243, 0.35);
         }
 
         #tf-nudge-send:hover {
-            background: #0060df;
-            transform: scale(1.08);
+            background: #cbd5e1;
+            color: #0f172a;
+            transform: scale(1.05);
         }
 
         #tf-nudge-send:active {
@@ -318,10 +319,13 @@
         }
 
         #tf-nudge-send svg {
-            width: 16px;
-            height: 16px;
-            fill: white;
-            transform: translateX(1px);
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
         }
 
         @media (max-width: 768px) {
@@ -570,7 +574,9 @@
     nudge.innerHTML = `
         <input id="tf-nudge-input" type="text" placeholder="Write a message..." autocomplete="off" />
         <button id="tf-nudge-send" aria-label="Send">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L12 20M12 4L6 10M12 4L18 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </button>
     `;
     document.body.appendChild(nudge);
