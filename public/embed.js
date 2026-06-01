@@ -289,8 +289,8 @@
         #tf-nudge.tf-nudge-focused {
             right: ${MARGIN}px;
             width: ${280 + BUTTON_SIZE + 16}px;
-            border-color: rgba(0, 112, 243, 0.4);
-            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(0, 112, 243, 0.15);
+            border-color: #0070f3;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(0, 112, 243, 0.25);
         }
 
         #tf-nudge-input {
