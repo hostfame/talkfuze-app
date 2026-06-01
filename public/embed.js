@@ -6,10 +6,12 @@
     // Set parameters
     let orgId = 'ec2f8436-05dc-4621-8a7f-57202f865b8e';
     let baseUrl = 'https://app.talkfuze.com';
+    let scriptTag = null;
 
     // Allow dynamic override if the script tag has data-org-id
     const injector = document.getElementById('talkfuze-script-injector');
     if (injector) {
+        scriptTag = injector;
         const dynamicOrgId = injector.getAttribute('data-org-id');
         if (dynamicOrgId) orgId = dynamicOrgId;
     }
@@ -22,6 +24,7 @@
             const dataOrgId = scripts[i].getAttribute('data-org-id');
             if (dataOrgId) {
                 orgId = dataOrgId;
+                scriptTag = scripts[i];
                 if (src && src.startsWith('http://localhost')) {
                     baseUrl = new URL(src).origin;
                 }
@@ -29,6 +32,7 @@
             }
             if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
                 orgId = scripts[i].getAttribute('data-org-id') || orgId;
+                scriptTag = scripts[i];
                 if (src.startsWith('http://localhost')) {
                     baseUrl = new URL(src).origin;
                 }
@@ -42,8 +46,37 @@
         return;
     }
 
+    // SSO Identity: Read user data from script tag attributes
+    let userIdentity = null;
+    if (scriptTag) {
+        const userEmail = scriptTag.getAttribute('data-user-email');
+        const userName = scriptTag.getAttribute('data-user-name');
+        const userClientId = scriptTag.getAttribute('data-user-client-id');
+        const userSig = scriptTag.getAttribute('data-user-sig');
+        const userTs = scriptTag.getAttribute('data-user-ts');
+
+        if (userEmail && userSig && userTs) {
+            userIdentity = {
+                email: userEmail,
+                name: userName || '',
+                clientId: userClientId || '',
+                sig: userSig,
+                ts: userTs
+            };
+        }
+    }
+
     const isMobile = window.innerWidth <= 480;
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
+    let WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
+
+    // Append identity params to iframe URL if available
+    if (userIdentity) {
+        WIDGET_URL += `&user_email=${encodeURIComponent(userIdentity.email)}`;
+        WIDGET_URL += `&user_name=${encodeURIComponent(userIdentity.name)}`;
+        WIDGET_URL += `&user_client_id=${encodeURIComponent(userIdentity.clientId)}`;
+        WIDGET_URL += `&user_sig=${encodeURIComponent(userIdentity.sig)}`;
+        WIDGET_URL += `&user_ts=${encodeURIComponent(userIdentity.ts)}`;
+    }
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
     const NUDGE_HEIGHT = 54;
@@ -748,5 +781,37 @@
             }
         }
     });
+
+    // =============================================
+    // TalkFuze SDK - Public API
+    // =============================================
+    window.TalkFuze = {
+        // Identify a logged-in user at runtime (for SPA login flows)
+        identify: function(data) {
+            if (!data || !data.email || !data.signature || !data.timestamp) {
+                console.error('TalkFuze.identify: email, signature, and timestamp are required');
+                return;
+            }
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_IDENTIFY',
+                    email: data.email,
+                    name: data.name || '',
+                    clientId: data.clientId || '',
+                    signature: data.signature,
+                    timestamp: data.timestamp
+                }, '*');
+            }
+        },
+        open: function() {
+            if (!isOpen) toggleWidget();
+        },
+        close: function() {
+            if (isOpen) toggleWidget();
+        },
+        toggle: function() {
+            toggleWidget();
+        }
+    };
 
 })();

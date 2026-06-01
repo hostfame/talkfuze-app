@@ -476,7 +476,7 @@ export async function markMessagesAsRead(conversationId: string, role: 'contact'
   }
 }
 
-export async function updateWidgetContactDetails(orgId: string, deviceId: string, name: string, phone: string) {
+export async function updateWidgetContactDetails(orgId: string, deviceId: string, name: string, phone: string, email?: string, metadata?: Record<string, any>) {
   noStore();
   if (!orgId || !deviceId) {
     throw new Error("Missing required parameters");
@@ -485,7 +485,7 @@ export async function updateWidgetContactDetails(orgId: string, deviceId: string
   try {
     const { data: contacts } = await supabaseAdmin
       .from("contacts")
-      .select("id")
+      .select("id, metadata")
       .eq("org_id", orgId)
       .eq("platform_type", "widget")
       .eq("platform_id", deviceId)
@@ -495,29 +495,40 @@ export async function updateWidgetContactDetails(orgId: string, deviceId: string
 
     if (!contact) {
       const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&length=1`;
+      const insertData: Record<string, any> = {
+        org_id: orgId,
+        platform_type: "widget",
+        platform_id: deviceId,
+        name: name.trim(),
+        phone: phone.trim() || null,
+        avatar_url: avatarUrl
+      };
+      if (email) insertData.email = email.toLowerCase();
+      if (metadata) insertData.metadata = metadata;
+      
       const { data: newContact, error: contactErr } = await supabaseAdmin
         .from("contacts")
-        .insert({
-          org_id: orgId,
-          platform_type: "widget",
-          platform_id: deviceId,
-          name: name.trim(),
-          phone: phone.trim() || null,
-          avatar_url: avatarUrl
-        })
+        .insert(insertData)
         .select("id")
         .single();
         
       if (contactErr) throw contactErr;
     } else {
       const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&length=1`;
+      const updateData: Record<string, any> = {
+        name: name.trim(),
+        phone: phone.trim() || null,
+        avatar_url: avatarUrl
+      };
+      if (email) updateData.email = email.toLowerCase();
+      if (metadata) {
+        const existingMeta = (contact.metadata || {}) as Record<string, any>;
+        updateData.metadata = { ...existingMeta, ...metadata };
+      }
+      
       const { error: updateErr } = await supabaseAdmin
         .from("contacts")
-        .update({
-          name: name.trim(),
-          phone: phone.trim() || null,
-          avatar_url: avatarUrl
-        })
+        .update(updateData)
         .eq("id", contact.id);
 
       if (updateErr) throw updateErr;

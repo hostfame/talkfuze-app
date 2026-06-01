@@ -30,22 +30,26 @@ import {
 // ---------- Tiny Sparkline Bars ----------
 function SparklineBars({ data }: { data: { day: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1);
+  const dayShort = ['S','M','T','W','T','F','S'];
   return (
-    <div className="flex items-end gap-[2px] h-7">
+    <div className="flex items-end gap-[3px] h-10">
       {data.map((d, i) => {
-        const h = Math.max(2, Math.round((d.count / max) * 28));
+        const h = Math.max(3, Math.round((d.count / max) * 36));
         const isToday = i === data.length - 1;
+        const date = new Date(d.day + 'T00:00:00Z');
         return (
-          <div
-            key={d.day}
-            title={`${d.day}: ${d.count} msgs`}
-            style={{ height: `${h}px` }}
-            className={`w-[6px] rounded-sm shrink-0 ${
-              isToday
-                ? 'bg-[#0070f3]'
-                : 'bg-slate-300 dark:bg-[#2a3942]'
-            }`}
-          />
+          <div key={d.day} className="flex flex-col items-center gap-0.5" title={`${d.day}: ${d.count} msgs`}>
+            <span className={`text-[8px] font-bold leading-none ${d.count > 0 ? 'text-slate-500 dark:text-[#8696a0]' : 'text-transparent'}`}>{d.count}</span>
+            <div
+              style={{ height: `${h}px` }}
+              className={`w-[8px] rounded-sm shrink-0 ${
+                isToday
+                  ? 'bg-[#0070f3]'
+                  : d.count > 0 ? 'bg-slate-300 dark:bg-[#3a4a52]' : 'bg-slate-200 dark:bg-[#202c33]'
+              }`}
+            />
+            <span className={`text-[7px] font-medium ${isToday ? 'text-[#0070f3]' : 'text-slate-400 dark:text-[#8696a0]'}`}>{isToday ? 'T' : dayShort[date.getUTCDay()]}</span>
+          </div>
         );
       })}
     </div>
@@ -55,9 +59,11 @@ function SparklineBars({ data }: { data: { day: string; count: number }[] }) {
 // ---------- Active Shift Text ----------
 function ActiveShiftText({ text }: { text: string }) {
   if (!text) return <span className="text-xs text-slate-400 dark:text-[#8696a0]">-</span>;
+  // Clean up edge cases
+  const display = text === '12AM - 12AM' ? 'All Day' : text;
   return (
     <span className="text-xs font-semibold text-slate-600 dark:text-[#d1d7db]">
-      {text}
+      {display}
     </span>
   );
 }
@@ -65,51 +71,32 @@ function ActiveShiftText({ text }: { text: string }) {
 // ---------- Full-size Heatmap for Modal ----------
 function HeatmapFull({ data }: { data: number[] }) {
   const max = Math.max(...data, 1);
-  const labels = ['12A','1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12P','1P','2P','3P','4P','5P','6P','7P','8P','9P','10P','11P'];
+  const labels = ['12 AM','1 AM','2 AM','3 AM','4 AM','5 AM','6 AM','7 AM','8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM','10 PM','11 PM'];
   return (
-    <div>
-      <div className="grid grid-cols-12 gap-1 mb-1">
-        {data.slice(0, 12).map((count, h) => {
-          const intensity = count / max;
-          const opacity = count === 0 ? 0.05 : 0.15 + intensity * 0.85;
-          return (
-            <div key={h} className="flex flex-col items-center">
+    <div className="space-y-[2px]">
+      {data.map((count, h) => {
+        const pct = max > 0 ? (count / max) * 100 : 0;
+        const isActive = count > max * 0.1;
+        return (
+          <div key={h} className="flex items-center gap-2">
+            <span className={`text-[10px] font-medium w-[42px] text-right shrink-0 ${
+              isActive ? 'text-slate-600 dark:text-[#d1d7db]' : 'text-slate-400 dark:text-[#8696a0]'
+            }`}>{labels[h]}</span>
+            <div className="flex-1 h-[14px] bg-slate-100 dark:bg-[#202c33] rounded-sm overflow-hidden relative">
               <div
-                title={`${labels[h]} - ${count} messages`}
-                className="w-full rounded-md"
+                className="h-full rounded-sm transition-all"
                 style={{
-                  height: '24px',
-                  backgroundColor: `rgba(0, 112, 243, ${opacity})`,
+                  width: `${pct}%`,
+                  backgroundColor: count === 0 ? 'transparent' : `rgba(0, 112, 243, ${0.3 + (pct / 100) * 0.7})`,
                 }}
               />
-              <span className="text-[9px] text-slate-400 dark:text-[#8696a0] mt-0.5">{labels[h]}</span>
             </div>
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-12 gap-1">
-        {data.slice(12).map((count, h) => {
-          const intensity = count / max;
-          const opacity = count === 0 ? 0.05 : 0.15 + intensity * 0.85;
-          return (
-            <div key={h + 12} className="flex flex-col items-center">
-              <div
-                title={`${labels[h + 12]} - ${count} messages`}
-                className="w-full rounded-md"
-                style={{
-                  height: '24px',
-                  backgroundColor: `rgba(0, 112, 243, ${opacity})`,
-                }}
-              />
-              <span className="text-[9px] text-slate-400 dark:text-[#8696a0] mt-0.5">{labels[h + 12]}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-between mt-2">
-        <span className="text-[10px] font-medium text-slate-400 dark:text-[#8696a0]">AM</span>
-        <span className="text-[10px] font-medium text-slate-400 dark:text-[#8696a0]">PM</span>
-      </div>
+            <span className={`text-[10px] font-bold w-[28px] text-right ${
+              count > 0 ? 'text-slate-600 dark:text-[#d1d7db]' : 'text-slate-300 dark:text-[#2a3942]'
+            }`}>{count}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -120,33 +107,34 @@ function SparklineFull({ data }: { data: { day: string; count: number }[] }) {
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   return (
     <div>
-      <div className="flex items-end gap-[4px] h-16 mb-1">
+      <div className="flex items-end gap-2 h-20 mb-1">
         {data.map((d, i) => {
-          const h = Math.max(3, Math.round((d.count / max) * 64));
+          const h = Math.max(4, Math.round((d.count / max) * 72));
           const isToday = i === data.length - 1;
           return (
-            <div
-              key={d.day}
-              title={`${d.day}: ${d.count} msgs`}
-              className="flex-1 rounded-t-sm relative group"
-              style={{
-                height: `${h}px`,
-                backgroundColor: isToday ? '#0070f3' : 'rgba(0,112,243,0.25)',
-              }}
-            >
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] text-slate-600 dark:text-[#8696a0] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                {d.count}
-              </span>
+            <div key={d.day} className="flex-1 flex flex-col items-center justify-end gap-1">
+              <span className={`text-[11px] font-bold ${
+                isToday ? 'text-[#0070f3]' : 'text-slate-500 dark:text-[#8696a0]'
+              }`}>{d.count}</span>
+              <div
+                className="w-full rounded-t-md"
+                style={{
+                  height: `${h}px`,
+                  backgroundColor: isToday ? '#0070f3' : d.count > 0 ? 'rgba(0,112,243,0.25)' : 'rgba(0,112,243,0.08)',
+                }}
+              />
             </div>
           );
         })}
       </div>
-      <div className="flex gap-[4px]">
+      <div className="flex gap-2">
         {data.map((d, i) => {
           const date = new Date(d.day + 'T00:00:00Z');
           const dayLabel = i === data.length - 1 ? 'Today' : dayNames[date.getUTCDay()];
           return (
-            <div key={d.day} className="flex-1 text-center text-[9px] text-slate-400 dark:text-[#8696a0]">{dayLabel}</div>
+            <div key={d.day} className={`flex-1 text-center text-[10px] font-medium ${
+              i === data.length - 1 ? 'text-[#0070f3]' : 'text-slate-400 dark:text-[#8696a0]'
+            }`}>{dayLabel}</div>
           );
         })}
       </div>

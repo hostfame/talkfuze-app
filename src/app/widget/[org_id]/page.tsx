@@ -542,6 +542,13 @@ export default function WidgetPage() {
   const isStandaloneCall = searchParams.get('standalone_call') === 'true'
   const standaloneConvId = searchParams.get('convId')
 
+  // SSO Identity parameters (from embed.js data-* attributes)
+  const ssoEmail = searchParams.get('user_email')
+  const ssoName = searchParams.get('user_name')
+  const ssoClientId = searchParams.get('user_client_id')
+  const ssoSig = searchParams.get('user_sig')
+  const ssoTs = searchParams.get('user_ts')
+
   const [messages, setMessages] = useState<WidgetMessage[]>([])
   const [input, setInput] = useState("")
   const [isAgentTyping, setIsAgentTyping] = useState(false)
@@ -1495,6 +1502,41 @@ export default function WidgetPage() {
         setTicketView('list')
       }
     } catch (e) {}
+
+    // SSO Identity: If identity params are present, verify with server and auto-login
+    if (ssoEmail && ssoSig && ssoTs && deviceId && org_id) {
+      (async () => {
+        try {
+          const res = await fetch('/api/widget/identify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: ssoEmail,
+              name: ssoName || '',
+              clientId: ssoClientId || '',
+              orgId: org_id,
+              deviceId: deviceId,
+              timestamp: ssoTs,
+              signature: ssoSig
+            })
+          })
+          const data = await res.json()
+          if (data.success && data.clientId) {
+            const user = { clientId: data.clientId, name: data.name || ssoName || 'User' }
+            setWhmcsUser(user)
+            localStorage.setItem('whmcs_user', JSON.stringify(user))
+            setTicketView('list')
+            // Update contact name for chat display
+            if (data.name) {
+              setTempName(data.name)
+              setHasProvidedContact(true)
+            }
+          }
+        } catch (err) {
+          console.error('[Widget SSO] Identity verification failed:', err)
+        }
+      })()
+    }
   }, [])
 
   // Standalone call mount trigger
@@ -1591,6 +1633,39 @@ export default function WidgetPage() {
           setTimeout(() => {
             handleSend(text);
           }, 350);
+        }
+      }
+      // SSO: Runtime identify via postMessage (for SPA login flows)
+      if (event.data?.type === 'TALKFUZE_IDENTIFY') {
+        const { email, name, clientId, signature, timestamp } = event.data;
+        if (email && signature && timestamp && deviceId && org_id) {
+          fetch('/api/widget/identify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              name: name || '',
+              clientId: clientId || '',
+              orgId: org_id,
+              deviceId,
+              timestamp,
+              signature
+            })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.clientId) {
+                const user = { clientId: data.clientId, name: data.name || name || 'User' };
+                setWhmcsUser(user);
+                localStorage.setItem('whmcs_user', JSON.stringify(user));
+                setTicketView('list');
+                if (data.name) {
+                  setTempName(data.name);
+                  setHasProvidedContact(true);
+                }
+              }
+            })
+            .catch(err => console.error('[Widget SSO] Runtime identify failed:', err));
         }
       }
     }
