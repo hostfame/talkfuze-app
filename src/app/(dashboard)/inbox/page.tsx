@@ -872,10 +872,79 @@ export default function InboxPage() {
             participants: currentParticipants.filter((p: any) => p.user_id !== user_id && p.id !== user_id)
           });
         }
+      } else if (event.type === 'typingStatus') {
+        const payload = event.payload;
+        const { conversation_id, direction, is_typing, is_recording, agent_name, agent_id, agent_avatar, text, is_whisper, activity_type } = payload;
+        
+        // Track customer typing
+        if (direction === 'contact') {
+          setTypingState(prev => ({
+            ...prev,
+            [conversation_id]: is_typing
+          }));
+          
+          setTypingTextState(prev => ({
+            ...prev,
+            [conversation_id]: is_typing ? (text || "") : ""
+          }));
+          
+          if (is_recording !== undefined) {
+            setRecordingState(prev => ({
+              ...prev,
+              [conversation_id]: is_recording
+            }));
+          }
+          
+          if (typingTimeoutRefs.current[conversation_id]) {
+            clearTimeout(typingTimeoutRefs.current[conversation_id]);
+          }
+          
+          if (is_typing) {
+            typingTimeoutRefs.current[conversation_id] = setTimeout(() => {
+              setTypingState(prev => ({
+                ...prev,
+                [conversation_id]: false
+              }));
+              setTypingTextState(prev => ({
+                ...prev,
+                [conversation_id]: ""
+              }));
+            }, 3000);
+          }
+        } else if (direction === 'agent' && agent_id && agent_id !== currentUser?.id) {
+          // Track other agents typing - completely remove them when typing stops
+          setAgentActivity(prev => {
+            const next = { ...prev };
+            if (!next[conversation_id]) next[conversation_id] = {};
+            
+            if (is_typing) {
+              next[conversation_id] = {
+                ...next[conversation_id],
+                [agent_id]: {
+                  name: agent_name || 'Agent',
+                  avatar_url: agent_avatar,
+                  activity: 'typing',
+                  is_whisper: !!is_whisper,
+                  activity_type: activity_type || 'typing',
+                  timestamp: Date.now()
+                }
+              };
+            } else {
+              const agents = { ...next[conversation_id] };
+              delete agents[agent_id];
+              if (Object.keys(agents).length === 0) {
+                delete next[conversation_id];
+              } else {
+                next[conversation_id] = agents;
+              }
+            }
+            return next;
+          });
+        }
       }
     });
     return unsub;
-  }, []);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     // Periodically clean up stale agent activity (older than 10s)

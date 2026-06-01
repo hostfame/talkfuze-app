@@ -13,7 +13,8 @@ const CHANNEL_NAME = 'talkfuze-inbox';
 
 export type TabSyncEvent =
   | { type: 'conversationJoined'; conversation_id: string; user_id: string; user_name?: string }
-  | { type: 'conversationLeft'; conversation_id: string; user_id: string };
+  | { type: 'conversationLeft'; conversation_id: string; user_id: string }
+  | { type: 'typingStatus'; payload: any };
 
 let _channel: BroadcastChannel | null = null;
 

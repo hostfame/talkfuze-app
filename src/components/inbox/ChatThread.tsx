@@ -1832,72 +1832,71 @@ export default function ChatThread({
     return () => clearInterval(interval);
   }, [conversationId, isAiDrafting, isAiStreaming, stagedAttachments, input, isRecording, editingMessage]);
 
-  // Determine current activity type for richer indicator
-  const getCurrentActivityType = (): 'recording' | 'editing' | 'drafting' | 'typing' => {
-    if (isRecording) return 'recording';
-    if (editingMessage) return 'editing';
-    if (isAiDrafting || isAiStreaming) return 'drafting';
-    return 'typing';
-  };
+  // Use ref to avoid stale closures in the broadcast interval
+  const activityTypeRef = useRef<'recording' | 'editing' | 'drafting' | 'typing'>('typing');
+  useEffect(() => {
+    if (isRecording) activityTypeRef.current = 'recording';
+    else if (editingMessage) activityTypeRef.current = 'editing';
+    else if (isAiDrafting || isAiStreaming) activityTypeRef.current = 'drafting';
+    else activityTypeRef.current = 'typing';
+  }, [isRecording, editingMessage, isAiDrafting, isAiStreaming]);
 
   useEffect(() => {
     if (!conversationId) return;
 
-    const activityType = getCurrentActivityType();
-
     if (isActivelyComposing) {
       if (!lastBroadcastRef.current) {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: {
-            conversation_id: conversationId,
-            direction: 'agent',
-            is_typing: true,
-            is_whisper: isInternal,
-            activity_type: activityType,
-            agent_name: currentUser?.name,
-            agent_avatar: currentUser?.avatar_url,
-            agent_id: currentUser?.id
-          }
-        });
+        const payload = {
+          conversation_id: conversationId,
+          direction: 'agent',
+          is_typing: true,
+          is_whisper: isInternal,
+          activity_type: activityTypeRef.current,
+          agent_name: currentUser?.name,
+          agent_avatar: currentUser?.avatar_url,
+          agent_id: currentUser?.id
+        };
+        try {
+          supabase.channel(`typing:${orgId}`).send({ type: 'broadcast', event: 'typingStatus', payload });
+        } catch (e) {}
+        postTabSync({ type: 'typingStatus', payload });
         lastBroadcastRef.current = true;
       }
       
       const pingInterval = setInterval(() => {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: {
-            conversation_id: conversationId,
-            direction: 'agent',
-            is_typing: true,
-            is_whisper: isInternal,
-            activity_type: getCurrentActivityType(),
-            agent_name: currentUser?.name,
-            agent_avatar: currentUser?.avatar_url,
-            agent_id: currentUser?.id
-          }
-        });
+        const payload = {
+          conversation_id: conversationId,
+          direction: 'agent',
+          is_typing: true,
+          is_whisper: isInternal,
+          activity_type: activityTypeRef.current,
+          agent_name: currentUser?.name,
+          agent_avatar: currentUser?.avatar_url,
+          agent_id: currentUser?.id
+        };
+        try {
+          supabase.channel(`typing:${orgId}`).send({ type: 'broadcast', event: 'typingStatus', payload });
+        } catch (e) {}
+        // DO NOT postTabSync on the ping interval, only on state change, to avoid cross-tab flood
       }, 2000); // tighter ping interval
       
       return () => clearInterval(pingInterval);
     } else {
       if (lastBroadcastRef.current) {
-        supabase.channel(`typing:${orgId}`).send({
-          type: 'broadcast',
-          event: 'typingStatus',
-          payload: {
-            conversation_id: conversationId,
-            direction: 'agent',
-            is_typing: false,
-            is_whisper: isInternal,
-            activity_type: activityType,
-            agent_name: currentUser?.name,
-            agent_avatar: currentUser?.avatar_url,
-            agent_id: currentUser?.id
-          }
-        });
+        const payload = {
+          conversation_id: conversationId,
+          direction: 'agent',
+          is_typing: false,
+          is_whisper: isInternal,
+          activity_type: activityTypeRef.current,
+          agent_name: currentUser?.name,
+          agent_avatar: currentUser?.avatar_url,
+          agent_id: currentUser?.id
+        };
+        try {
+          supabase.channel(`typing:${orgId}`).send({ type: 'broadcast', event: 'typingStatus', payload });
+        } catch (e) {}
+        postTabSync({ type: 'typingStatus', payload });
         lastBroadcastRef.current = false;
       }
     }
