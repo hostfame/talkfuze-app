@@ -636,7 +636,7 @@ export default function WidgetPage() {
   
   // WHMCS Tickets State
   const [ticketView, setTicketView] = useState<'login' | 'list' | 'detail' | 'new'>('login')
-  const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string } | null>(null)
+  const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string, email?: string, avatar_url?: string | null } | null>(null)
   const [whmcsTickets, setWhmcsTickets] = useState<any[]>([])
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [ticketEmail, setTicketEmail] = useState("")
@@ -1650,7 +1650,7 @@ export default function WidgetPage() {
       }
       // SSO: Runtime identify via postMessage (for SPA login flows)
       if (event.data?.type === 'TALKFUZE_IDENTIFY') {
-        const { email, name, clientId, signature, timestamp } = event.data;
+        const { email, name, clientId, signature, timestamp, avatarUrl } = event.data;
         if (email && signature && timestamp && deviceId && org_id) {
           fetch('/api/widget/identify', {
             method: 'POST',
@@ -1668,7 +1668,7 @@ export default function WidgetPage() {
             .then(res => res.json())
             .then(data => {
               if (data.success && data.clientId) {
-                const user = { clientId: data.clientId, name: data.name || name || 'User' };
+                const user = { clientId: data.clientId, name: data.name || name || 'User', email: email, avatar_url: avatarUrl };
                 setWhmcsUser(user);
                 localStorage.setItem('whmcs_user', JSON.stringify(user));
                 setTicketView('list');
@@ -3497,8 +3497,11 @@ export default function WidgetPage() {
               <div
                 className="group bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
                 onClick={async () => {
+                  if (isProfileModalOpen) return; // Prevent multiple clicks
                   setProfileSaveError('')
                   setProfileSaveSuccess(false)
+                  setIsProfileModalOpen(true) // Open immediately
+                  setIsSavingProfile(true) // Use as loading state
                   // Fetch current profile from WHMCS
                   try {
                     const res = await fetch(`/api/widget/whmcs/profile?clientId=${whmcsUser.clientId}&deviceId=${deviceId}&orgId=${org_id}`)
@@ -3511,13 +3514,13 @@ export default function WidgetPage() {
                       setProfileEmail(data.profile.email || '')
                     }
                   } catch {}
-                  setIsProfileModalOpen(true)
+                  setIsSavingProfile(false)
                 }}
               >
                 <div className="p-4 flex items-center justify-between text-left">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                      <User size={16} className="text-blue-600" />
+                    <div className="w-10 h-10 rounded-full border border-slate-100 shadow-sm overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
+                      <img src={whmcsUser.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(whmcsUser.name || 'User')}&backgroundColor=0070f3&textColor=ffffff`} alt={whmcsUser.name || 'User'} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">My Profile</h3>
