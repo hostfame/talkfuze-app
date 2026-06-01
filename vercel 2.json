@@ -1,0 +1,21 @@
+{
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/poll-meta",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/unpaid-autodialer",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/hot-calls-autodialer",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/ai/learn-conversations",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}

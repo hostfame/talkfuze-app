@@ -1,0 +1,32 @@
+#!/bin/bash
+# Usage: /root/log_call.sh <direction> <from> <to> <duration> <status> <recording_file> <agent_name>
+
+DIRECTION=$1
+FROM_NUMBER=$2
+TO_NUMBER=$3
+DURATION=$4
+STATUS=$5
+RECORDING=$6
+AGENT_NAME=$7
+PRESSED_DIGIT=$8
+AGENT_TALKED=$9
+
+ORG_ID="ec2f8436-05dc-4621-8a7f-57202f865b8e"
+WEBHOOK_URL="https://app.talkfuze.com/api/webhooks/calls"
+
+curl -s -L -X POST "$WEBHOOK_URL" \
+     -H "Content-Type: application/json" \
+     -H "x-webhook-secret: e58d7b1f868172449d6cf77214207cf8f2d5ea737df431f4696d4402194b27b3" \
+     -d '{
+           "org_id": "'$ORG_ID'",
+           "direction": "'$DIRECTION'",
+           "from": "'$FROM_NUMBER'",
+           "to": "'$TO_NUMBER'",
+           "duration": "'$DURATION'",
+           "status": "'$STATUS'",
+           "recording": "'$RECORDING'",
+           "agent_name": "'"$AGENT_NAME"'",
+           "pressed_digit": "'"$PRESSED_DIGIT"'",
+           "agent_talked": "'"$AGENT_TALKED"'"
+         }'
+

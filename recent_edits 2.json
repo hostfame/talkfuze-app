@@ -1,0 +1,103 @@
+◇ injected env (40) from .env.local // tip: ⌘ suppress logs { quiet: true }
+[
+  {
+    "ai_draft": "Hey Md Shahjalal Dhali, thanks for reaching out!\n\nI'm here to help you with your domain nameservers. Are you looking to update your nameservers after purchasing hosting with us, or do you need to point an existing domain to Hostnin?\n\nLet me know what you're trying to do and I'll walk you through it.",
+    "agent_sent": "Hey Md Shahjalal Dhali, thanks for reaching out!",
+    "correction_feedback": "Avoid unnecessary elaboration or assumptions in initial responses; provide a concise acknowledgment instead."
+  },
+  {
+    "ai_draft": "Hey Shakil, thanks for sharing that!\n\nI can see the zone editor setup you've got there. So here's what we can do: since Vercel is controlling that subdomain's DNS, we can't create the email directly through cPanel. But I've got a couple of solid workarounds for you.\n\nOption 1 is the quickest: create support@softsasi.com (your main domain) in cPanel, then set up an email forward or alias to redirect it wherever you need.\n\nOption 2: if you absolutely need the cubicsec subdomain email, you'd need to handle that through Vercel's email integrations or use a service like Mailgun or SendGrid.\n\nWhich approach works better for what you're trying to do?",
+    "agent_sent": "Hey Shakil, thanks for sharing that!\n\nI can see the zone editor setup you've got there. So here's what we can do: since Vercel is controlling that subdomain's DNS, we can't create the email directly through cPanel. But I've got a couple of solid workarounds for you.\n\nOption 1 is the quickest: create support@softsasi.com (your main domain) in cPanel, then set up an email forward or alias to redirect it wherever you need.\n\nOption 2: if you absolutely need the cubicsec subdomain email, you'd need to handle that through Vercel's email integrations or use a service like Mailgun or SendGrid.",
+    "correction_feedback": "Ensure the message content remains consistent and clear while retaining all necessary information, avoiding unnecessary changes that do not clarify or improve the response."
+  },
+  {
+    "ai_draft": "Hey Mohammad, great question!\n\nI've got you covered. We handle free site migration from any provider, and our team takes care of the entire process for you, so you don't have to worry about downtime or technical details.\n\nWhat's your current hosting provider, and roughly how large is your website? That'll help me give you the most accurate timeline and make sure everything goes smoothly.",
+    "agent_sent": "Sure, you can ask",
+    "correction_feedback": "Avoid making assumptions about customer inquiries and focus on inviting questions instead."
+  },
+  {
+    "ai_draft": "আপনার অর্গানাইজেশনের জন্য আমাদের কাছে পারফেক্ট প্ল্যান আছে।\n\n200 ডেইলি ভিজিটর এর জন্য আমাদের স্টার্টার প্ল্যান দিয়ে শুরু করা যায়। এটা মাসিক ৳199 থেকে শুরু হয় এবং আনলিমিটেড ব্যান্ডউইথ, ফ্রি SSL, ডেইলি ব্যাকআপ সহ আসে।\n\nএছাড়াও আপনি যদি বছরের জন্য নিলেন তাহলে একটা ফ্রি .com অথবা .net ডোমেইন পাবেন।\n\nআপনি এই প্ল্যানে ইন্টারেস্টেড কিনা জানাবেন? আমি আপনার অর্ডার প্রসেস করতে পারি।",
+    "agent_sent": "বুঝতে পেরেছি, সেক্ষেত্রে আপনি আমাদের ওয়েব প্রো দিয়ে ব‍র্তমানে শুরু করতে পারেন",
+    "correction_feedback": "Avoid making sales pitches or providing specific pricing details prematurely; focus on understanding the customer's needs first."
+  },
+  {
+    "ai_draft": "আপনার সংস্থার জন্য ওয়েবসাইট লঞ্চ করতে চাইছেন, এটা খুবই ভালো।\n\nআমাদের কাছে ডোমেইন এবং হোস্টিং দুটোই আছে। বলুন তো, আপনার ওয়েবসাইটটি কী ধরনের হবে? এটা একটা কর্পোরেট সাইট, ই-কমার্স, ব্লগ, নাকি অন্য কিছু?\n\nএটা জানলে আমি আপনার জন্য পারফেক্ট প্ল্যান রিকমেন্ড করতে পারব।",
+    "agent_sent": "ডেইলি কি পরিমান ভিজিটর আসতে পারে আপনার সাইটে আমি কি জানতে পারি?",
+    "correction_feedback": "Avoid making assumptions about the customer's needs; instead, ask clarifying questions to gain more specific information."
+  },
+  {
+    "ai_draft": "আপনাকে স্বাগতম রনি!\n\nআপনার অর্গানাইজেশনের ওয়েবসাইটের জন্য আমরা আপনাকে সাহায্য করতে প্রস্তুত। আমাদের কাছে বিভিন্ন ধরনের হোস্টিং প্ল্যান রয়েছে যা সব ধরনের প্রয়োজনের জন্য উপযুক্ত।\n\nআপনার ওয়েবসাইটটি কি ধরনের হবে বা কোন বিশেষ ফিচার প্রয়োজন তা একটু বলবেন? এরপর আমরা আপনার জন্য সবচেয়ে ভালো প্ল্যান এবং দামের তথ্য দিতে পারব।",
+    "agent_sent": "ডেইলি কি পরিমান ভিজিটর আসতে পারে আপনার সাইটে?",
+    "correction_feedback": "Ask specific questions to gather essential information rather than offering generic assistance."
+  },
+  {
+    "ai_draft": "হেই, থ্যাংকস ফর রিচিং আউট!\n\nআপনি যে স্পেসিফিকেশন শেয়ার করেছেন সেটা আমাদের ক্লাউড হোস্টিং প্ল্যানের একটা টপ টায়ার প্ল্যানের মতো দেখাচ্ছে। তবে আপনি ঠিক কোন প্ল্যানের কথা বলছেন সেটা কনফার্ম করতে পারলে আমি আপনাকে সঠিক প্রাইসিং দিতে পারব।\n\nআপনার ওয়েবসাইট কেমন ধরনের এবং কোন লোকেশনের জন্য সবচেয়ে ভালো পারফরম্যান্স দরকার?",
+    "agent_sent": "আপনি কি আমাদের ক্লাউড হোস্টিং প্রো এর কথা বলছেন? \n\nআমাদের দু্ই বছরের একসাথে প্যাকেজ নেই",
+    "correction_feedback": "Avoid making assumptions about the specific hosting plan the customer is referring to and provide clear pricing information when it's not available."
+  },
+  {
+    "ai_draft": "Thanks Istiak, we really appreciate it!\n\nWhenever you're ready, just let me know and I'll get you set up. Feel free to reach out if you have any other questions before you decide.\n\nLooking forward to hosting your madrasa website!",
+    "agent_sent": "Thanks Istiak, we really appreciate it!",
+    "correction_feedback": "Avoid including unnecessary details in final responses; focus on concise communication."
+  },
+  {
+    "ai_draft": "Hey Istiak, great question!\n\nRenewal cost is the same as what you pay upfront, so ৳149/month on a 3-year renewal or ৳199/month on yearly renewal. No surprises, no price jumps.\n\nSince you're going with yearly, you'll get that free .edu.bd domain included both on purchase and renewal as well.",
+    "agent_sent": "Hey Istiak, great question!\n\nRenewal cost is the same as what you pay upfront, so ৳149/month on a 3-year renewal or ৳199/month on yearly renewal. No surprises, no price jumps.",
+    "correction_feedback": "Avoid adding unnecessary information that is not directly related to the customer's question, such as details about free domain inclusion unless explicitly asked."
+  },
+  {
+    "ai_draft": "Hey Istiak, got it, that makes total sense!\n\nFor your madrasa website with that kind of traffic, our Web Starter plan is perfect for you. It's the most affordable option and handles everything you need, with unlimited bandwidth, free SSL, daily backups, and cPanel. No overkill, just what you actually need.\n\nWeb Starter is ৳149/month on a 3-year plan, or ৳199/month on yearly. Plus you get a free .edu.bd domain with the yearly plan.\n\nWant me to walk you through the pricing options, or do you have other questions?",
+    "agent_sent": "Hey Istiak, got it, that makes total sense!\n\nFor your madrasa website with that kind of traffic, our Web Starter plan is perfect for you. It's the most affordable option and handles everything you need, with unlimited bandwidth, free SSL, daily backups, and cPanel. No overkill, just what you actually need.",
+    "correction_feedback": "Avoid including specific pricing details or additional services unless explicitly requested by the customer, as it may not align with their current needs or preferences."
+  },
+  {
+    "ai_draft": "আইস্তিয়াক, পারফেক্ট সেই ক্ষেত্রে আমাদের স্টার্টার প্ল্যান আপনার জন্য আইডিয়াল হবে।\n\nস্টার্টার প্ল্যান এ আপনি পাবেন আনলিমিটেড ব্যান্ডউইথ, আনলিমিটেড ডাটাবেস, ফ্রি এসএসএল এবং ডেইলি ব্যাকআপ। এমনকি রেজাল্ট পাবলিশ করার সময় হাজার হাজার ভিজিটর একসাথে আসলেও কোনো সমস্যা হবে না।\n\nদাম মাত্র ৳১৪৯ মাসে থ্রি ইয়ার প্ল্যানে, এবং আপনি ফ্রি ডোমেইন পাবেন এক বছরের জন্য।\n\nআপনি কি এখনই অর্ডার করতে চাইবেন নাকি আগে আরো জানতে চাইবেন?",
+    "agent_sent": "এক্ষেত্রে আমাদের ওয়েব প্রো প্ল্যানটি আপনার জন্য আইডিয়াল হবে।\n\nপ্রো প্ল্যান এ আপনি আনলিমিটেড ব্যান্ডউইথ পাবেন, আনলিমিটেড ডাটাবেইস, ফ্রি এসএসএল এবং ডেইলি ব্যাকআপ। এমনকি রেজাল্ট পাবলিশ করার সময় হাজার হাজার ভিজিটর একসাথে আসলেও কোনো সমস্যা হবে না।",
+    "correction_feedback": "Use the appropriate hosting plan that fits the customer's requirements rather than suggesting a less suitable option."
+  },
+  {
+    "ai_draft": "আইস্টিয়াক, আপনার মাদ্রাসার জন্য আমি পারফেক্ট সলিউশন রেকমেন্ড করতে পারি।\n\nএডুকেশনাল ওয়েবসাইটের জন্য আমাদের ওয়েব হোস্টিং প্ল্যানগুলো বেস্ট, কারণ নোটিস, রেজাল্ট এবং অ্যাডমিশন ফর্ম পোস্ট করার জন্য যা কিছু দরকার তা সব আছে।\n\nআপনার বাজেট কত এবং কতজন স্টুডেন্ট/ভিজিটর প্রতিদিন আসবে বলে মনে করছেন?",
+    "agent_sent": "জ্বী বুঝতে পেরেছি, আপনার মাদ্রাসার জন্য আমি পারফেক্ট সলিউশন রেকমেন্ড করতে পারি।\n\nএডুকেশনাল ওয়েবসাইটের জন্য আমাদের ওয়েব হোস্টিং প্ল্যানগুলো বেস্ট, কারণ নোটিস, রেজাল্ট এবং অ্যাডমিশন ফর্ম পোস্ট করার জন্য যা কিছু দরকার তা সব আছে।\n\nআপনার কতজন স্টুডেন্ট/ভিজিটর প্রতিদিন আসবে বলে মনে করছেন?",
+    "correction_feedback": "Avoid using slang or informal language; instead, use polite and formal language when addressing customer inquiries."
+  },
+  {
+    "ai_draft": "আসালামু আলাইকুম!\n\nজ্বী, আমরা আপনাকে কল দিতে পারি। আপনার নম্বর নিয়েছি।\n\nএই চ্যাটের উপরে কল আইকনে ক্লিক করে আপনিও সরাসরি আমাদের কল করতে পারেন, অথবা আমরা কয়েক মিনিটের মধ্যে আপনাকে কল করব। কীভাবে হেল্প করতে পারি?",
+    "agent_sent": "আসালামু আলাইকুম!\n\nজ্বী, আমরা আপনাকে কল দিতে পারি। আপনার নম্বর নিয়েছি।\n\nএই চ্যাটের উপরে কল আইকনে ক্লিক করে আপনিও সরাসরি আমাদের কল করতে পারেন, \n\nঅথবা আমরা কয়েক মিনিটের মধ্যে আপনাকে কল করব। কীভাবে হেল্প করতে পারি?",
+    "correction_feedback": "Ensure proper spacing and punctuation in messages for clarity and professionalism."
+  },
+  {
+    "ai_draft": "হাই ইস্টিয়াক, আপনাকে স্বাগতম।\n\nআমরা এখানে আছি আপনাকে হেল্প করার জন্য। আপনার কী প্রয়োজন, বলুন তো?",
+    "agent_sent": "কি ধরনের ওয়েবসাইটের জন্য হোষ্টিং নিতে চাচ্ছেন? আপনার ওয়েবসাইট বা প্রজেক্টের ব্যাপারে জানাতে পারেন যাতে আমি আপনার প্রয়োজন অনুযায়ী বেস্ট প্যাকেজটি সাজেস্ট করতে পারি।",
+    "correction_feedback": "Avoid generic responses and directly address the customer's specific needs or questions related to their inquiry for better engagement."
+  },
+  {
+    "ai_draft": "Hey Istiak, thanks for reaching out!\n\nWhat can I help you with today? Are you looking for hosting, a domain, or do you have questions about an existing account?",
+    "agent_sent": "Hey Istiak, thanks for reaching out!\n\nWhat can I help you with today?",
+    "correction_feedback": "Avoid including unnecessary information or options in initial responses when the customer's intent is not clearly defined."
+  },
+  {
+    "ai_draft": "আপনার অ্যাকাউন্ট অ্যাক্সেস পেয়ে গেছেন?\n\nযদি এখনও কোনো সমস্যা থাকে তাহলে জানাবেন, আমি তৎক্ষণাৎ ফিক্স করে দেব।",
+    "agent_sent": "আপনার অ্যাকাউন্ট অ্যাক্সেস পেয়েছেন?\n\nযদি এখনও কোনো সমস্যা থাকে তাহলে জানাবেন।",
+    "correction_feedback": "Avoid unnecessary verbose phrases that do not add value to the message and can be considered redundant."
+  },
+  {
+    "ai_draft": "আমরা শুধু ডাইরেক্ট কল সাপোর্ট দিই, তবে আপনি চাইলে হোয়াটসঅ্যাপ থেকে অডিও কল পাঠাতে পারেন।\n\nআমাদের টিম সেটা দেখে রেসপন্ড করব।",
+    "agent_sent": "আমরা শুধু ডাইরেক্ট কল সাপোর্ট দিই, তবে আপনি চাইলে হোয়াটসঅ্যাপ থেকে অডিও কল পাঠাতে পারেন।\n\nআমাদের টিম সেটা দেখে রেসপন্ড করবেন।",
+    "correction_feedback": "Ensure subject-verb agreement in future responses, using the correct form based on the subject's plurality."
+  },
+  {
+    "ai_draft": "Thanks for looking into our plans, Md Saiful Islam!\n\nWhen you're ready to order, just head to https://hostnin.com and pick your preferred server location during checkout. USA is available for VPS, and we'll make sure everything is set up perfectly for you.\n\nFeel free to reach out if you have any other questions before you decide.",
+    "agent_sent": "Happy to help you,anytime!",
+    "correction_feedback": "Avoid unnecessary details and focus on providing a concise and polite closing message."
+  },
+  {
+    "ai_draft": "Hey Saiful, thanks for sticking with us!\n\nFor our VPS, we've got servers in Bangladesh, Singapore, Germany, Finland, and USA. Unfortunately UK isn't available at the moment, but USA is definitely an option for you.\n\nWhich location works best for your needs?",
+    "agent_sent": "For our VPS, we've got servers in Bangladesh, Singapore, Germany, Finland, and USA. Unfortunately UK isn't available at the moment, but USA is definitely an option for you.",
+    "correction_feedback": "Avoid unnecessary greetings and focus on delivering the essential information directly to the customer."
+  },
+  {
+    "ai_draft": "Hey Md Saiful Islam, thanks for reaching out!\n\nI appreciate the question, but I want to clarify something first. We actually don't offer VPS hosting at Hostnin, only web hosting, cloud hosting, and BDIX hosting options.\n\nIf you're looking for a server location with performance and flexibility, our BDIX hosting is hosted right here in Bangladesh on our own infrastructure, which gives you the fastest speeds for Bangladesh-targeted sites. We also offer cloud hosting with locations in Singapore, Germany, Finland, and the USA if you need global reach.\n\nWhat's your main goal with the website you're planning to host? That'll help me recommend the best fit for you.",
+    "agent_sent": "You can choose the location from our site",
+    "correction_feedback": "Avoid providing incorrect information about services offered; ensure the response accurately addresses the customer's inquiry about server locations for VPS hosting."
+  }
+]

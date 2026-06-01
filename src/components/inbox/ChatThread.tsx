@@ -778,7 +778,7 @@ type ChatThreadProps = {
   customerTypingText?: string
   isCustomerRecording?: boolean
   isCustomerOnline?: boolean
-  activeAgents?: { name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]
+  activeAgents?: { name: string; avatar_url?: string; activity: 'viewing' | 'typing'; is_whisper?: boolean; activity_type?: 'typing' | 'recording' | 'editing' | 'drafting' }[]
   conversation?: ConversationWithDetails | null
   currentUser?: UserProfile | null
   isFetching?: boolean
@@ -1800,16 +1800,15 @@ export default function ChatThread({
   const chunksSendingUntilRef = useRef<number>(0);
   
   const currentTypingAgents = activeAgents?.filter(a => a.activity === 'typing') || [];
-  const [displayTypingAgents, setDisplayTypingAgents] = useState<{ name: string; avatar_url?: string; activity: 'viewing' | 'typing' }[]>(currentTypingAgents);
+  const [displayTypingAgents, setDisplayTypingAgents] = useState<{ name: string; avatar_url?: string; activity: 'viewing' | 'typing'; is_whisper?: boolean; activity_type?: 'typing' | 'recording' | 'editing' | 'drafting' }[]>(currentTypingAgents);
   const currentTypingAgentsLen = currentTypingAgents.length;
   useEffect(() => {
-    if (currentTypingAgentsLen > 0) {
-      setDisplayTypingAgents(activeAgents?.filter(a => a.activity === 'typing') || []);
-    }
+    // Always update - not just when count > 0 (bug fix: stale indicator on agent stop)
+    setDisplayTypingAgents(activeAgents?.filter(a => a.activity === 'typing') || []);
   }, [currentTypingAgentsLen, activeAgents]);
 
   useEffect(() => {
-    if (!conversationId || isInternal) {
+    if (!conversationId) {
       setIsActivelyComposing(false);
       return;
     }
@@ -1819,26 +1818,48 @@ export default function ChatThread({
       const isUploading = stagedAttachments.some(a => a.status === 'uploading');
       const isSendingChunks = Date.now() < chunksSendingUntilRef.current;
       const timeSinceLastActivity = Date.now() - lastActivityTimeRef.current;
+      const isEditing = !!editingMessage;
       
-      // Consider "active" if AI is working, actively uploading, sending chunks, OR typed/changed something within last 1.5 seconds
-      const active = isAiWorking || isUploading || isSendingChunks || (timeSinceLastActivity < 1500 && input.trim().length > 0);
+      // Include: AI working, uploading, sending chunks, recording, editing, or typed within 1.5s
+      // NOTE: works in BOTH reply and whisper/internal mode now
+      const active = isAiWorking || isUploading || isSendingChunks || isRecording || isEditing ||
+        (timeSinceLastActivity < 1500 && input.trim().length > 0);
       
       setIsActivelyComposing(active);
     };
 
-    const interval = setInterval(checkActivity, 1000);
+    const interval = setInterval(checkActivity, 500); // 500ms for faster response
     return () => clearInterval(interval);
-  }, [conversationId, isInternal, isAiDrafting, isAiStreaming, stagedAttachments, input]);
+  }, [conversationId, isAiDrafting, isAiStreaming, stagedAttachments, input, isRecording, editingMessage]);
+
+  // Determine current activity type for richer indicator
+  const getCurrentActivityType = (): 'recording' | 'editing' | 'drafting' | 'typing' => {
+    if (isRecording) return 'recording';
+    if (editingMessage) return 'editing';
+    if (isAiDrafting || isAiStreaming) return 'drafting';
+    return 'typing';
+  };
 
   useEffect(() => {
-    if (!conversationId || isInternal) return;
+    if (!conversationId) return;
+
+    const activityType = getCurrentActivityType();
 
     if (isActivelyComposing) {
       if (!lastBroadcastRef.current) {
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
+          payload: {
+            conversation_id: conversationId,
+            direction: 'agent',
+            is_typing: true,
+            is_whisper: isInternal,
+            activity_type: activityType,
+            agent_name: currentUser?.name,
+            agent_avatar: currentUser?.avatar_url,
+            agent_id: currentUser?.id
+          }
         });
         lastBroadcastRef.current = true;
       }
@@ -1847,9 +1868,18 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: true, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
+          payload: {
+            conversation_id: conversationId,
+            direction: 'agent',
+            is_typing: true,
+            is_whisper: isInternal,
+            activity_type: getCurrentActivityType(),
+            agent_name: currentUser?.name,
+            agent_avatar: currentUser?.avatar_url,
+            agent_id: currentUser?.id
+          }
         });
-      }, 2500);
+      }, 2000); // tighter ping interval
       
       return () => clearInterval(pingInterval);
     } else {
@@ -1857,7 +1887,16 @@ export default function ChatThread({
         supabase.channel(`typing:${orgId}`).send({
           type: 'broadcast',
           event: 'typingStatus',
-          payload: { conversation_id: conversationId, direction: 'agent', is_typing: false, agent_name: currentUser?.name, agent_avatar: currentUser?.avatar_url, agent_id: currentUser?.id }
+          payload: {
+            conversation_id: conversationId,
+            direction: 'agent',
+            is_typing: false,
+            is_whisper: isInternal,
+            activity_type: activityType,
+            agent_name: currentUser?.name,
+            agent_avatar: currentUser?.avatar_url,
+            agent_id: currentUser?.id
+          }
         });
         lastBroadcastRef.current = false;
       }
@@ -5289,33 +5328,75 @@ export default function ChatThread({
 
       <div className="px-4 pb-4 pt-2 bg-white dark:bg-[#0b141a] relative">
         {/* Agent Typing Bubble (Floating above composer) */}
-        <div 
-          className={`absolute bottom-[calc(100%+8px)] left-4 z-40 transition-all duration-300 ease-out flex items-center ${currentTypingAgents.length > 0 ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-2 invisible'}`}
-        >
-          <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5">
-            <div className="flex -space-x-1.5">
-              {displayTypingAgents.slice(0, 3).map((agent, i) => {
-                const matchedAgent = teamMembers.find(t => t.name === agent.name);
-                const avatar = agent.avatar_url || matchedAgent?.avatar_url;
-                return avatar ? (
-                  <img key={i} src={avatar} alt={agent.name} className="w-5 h-5 rounded-full border border-white dark:border-slate-800 object-cover shrink-0" />
-                ) : (
-                  <div key={i} className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-white dark:border-slate-800 flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0">
-                    {agent.name.charAt(0).toUpperCase()}
+        {(() => {
+          const whisperAgents = displayTypingAgents.filter(a => a.is_whisper);
+          const replyAgents = displayTypingAgents.filter(a => !a.is_whisper);
+          const allVisible = currentTypingAgents.length > 0;
+          if (!allVisible) return null;
+
+          const renderBubble = (agents: typeof displayTypingAgents, isWhisper: boolean, offset: number) => {
+            if (agents.length === 0) return null;
+            const agent = agents[0]; // Use first for activity type
+            const actType = agent.activity_type || 'typing';
+            const actLabel = actType === 'recording' ? 'recording voice'
+              : actType === 'editing' ? 'editing a message'
+              : actType === 'drafting' ? 'drafting with AI'
+              : isWhisper ? 'whispering'
+              : 'typing';
+
+            return (
+              <div
+                key={isWhisper ? 'whisper' : 'reply'}
+                className="transition-all duration-300 ease-out opacity-100 translate-y-0"
+                style={{ marginBottom: offset > 0 ? `${offset}px` : undefined }}
+              >
+                <div className={`border shadow-md rounded-2xl rounded-bl-sm px-3.5 py-2 flex items-center gap-2.5 ${
+                  isWhisper
+                    ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200/70 dark:border-amber-700/50'
+                    : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60'
+                }`}>
+                  <div className="flex -space-x-1.5">
+                    {agents.slice(0, 3).map((ag, i) => {
+                      const matchedAgent = teamMembers.find(t => t.name === ag.name);
+                      const avatar = ag.avatar_url || matchedAgent?.avatar_url;
+                      return avatar ? (
+                        <img key={i} src={avatar} alt={ag.name} className={`w-5 h-5 rounded-full border object-cover shrink-0 ${isWhisper ? 'border-amber-100 dark:border-amber-900' : 'border-white dark:border-slate-800'}`} />
+                      ) : (
+                        <div key={i} className={`w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-bold overflow-hidden shrink-0 ${
+                          isWhisper
+                            ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-900'
+                            : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border-white dark:border-slate-800'
+                        }`}>
+                          {ag.name.charAt(0).toUpperCase()}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                  {isWhisper && (
+                    <span className="text-[10px] font-semibold tracking-widest text-amber-600 dark:text-amber-400 uppercase select-none">WHISPER</span>
+                  )}
+                  <span className={`text-[12px] font-medium tracking-tight truncate ${
+                    isWhisper ? 'text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-300'
+                  }`}>
+                    {agents.map(a => a.name.split(' ')[0]).join(', ')} {agents.length > 1 ? 'are' : 'is'} {actLabel}
+                  </span>
+                  <div className="flex gap-[3px] items-center pr-1">
+                    <span className={`w-1 h-1 rounded-full animate-bounce ${isWhisper ? 'bg-amber-400 dark:bg-amber-500' : 'bg-slate-400 dark:bg-slate-500'}`} style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
+                    <span className={`w-1 h-1 rounded-full animate-bounce ${isWhisper ? 'bg-amber-400 dark:bg-amber-500' : 'bg-slate-400 dark:bg-slate-500'}`} style={{ animationDelay: "150ms", animationDuration: "1s" }}></span>
+                    <span className={`w-1 h-1 rounded-full animate-bounce ${isWhisper ? 'bg-amber-400 dark:bg-amber-500' : 'bg-slate-400 dark:bg-slate-500'}`} style={{ animationDelay: "300ms", animationDuration: "1s" }}></span>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <div className="absolute bottom-[calc(100%+8px)] left-4 z-40 flex flex-col gap-1.5">
+              {renderBubble(replyAgents, false, 0)}
+              {renderBubble(whisperAgents, true, 0)}
             </div>
-            <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300 tracking-tight truncate">
-              {displayTypingAgents.map(a => a.name.split(' ')[0]).join(', ')} {displayTypingAgents.length > 1 ? 'are' : 'is'} typing
-            </span>
-            <div className="flex gap-[3px] items-center pr-1">
-              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "0ms", animationDuration: "1s" }}></span>
-              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "150ms", animationDuration: "1s" }}></span>
-              <span className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: "300ms", animationDuration: "1s" }}></span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
         {/* Actual composer - always shown, locked to whisper if not picked up */}
         <div className={`relative ${showJoinOverlay ? "mt-4" : ""}`}>
           {showJoinOverlay && (

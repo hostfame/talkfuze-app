@@ -1,0 +1,53 @@
+◇ injected env (40) from .env.local // tip: ⌘ enable debugging { debug: true }
+[
+  {
+    "ai_draft": "আপনি এই চ্যাটের উপরে কল আইকনে ক্লিক করে সরাসরি কল দিতে পারবেন।\n\nআমাদের সাপোর্ট টিম এখনই আপনার কলের জন্য অপেক্ষা করছে।",
+    "language": "bn",
+    "agent_id": "2a916716-7a37-4cc6-8cbd-31ebdc97564f"
+  },
+  {
+    "ai_draft": "Hey there, thanks for reaching out!\n\nI'm here to help. What can I assist you with today? Are you looking for hosting, a domain, or do you have questions about an existing account?",
+    "language": "en",
+    "agent_id": "9e65b88f-5bc9-4772-bf9e-566323fc3bb8"
+  },
+  {
+    "ai_draft": "আপনার পাসওয়ার্ড রিসেট করুন এবং আবার লগইন করুন।\n\nরিসেট করার জন্য লগইন পেইজে \"Forgot Password\" এ ক্লিক করবেন এবং আপনার আপডেটেড মেইলটি দিয়ে প্রসেস সম্পন্ন করবেন।\n\nএরপর লগইন করে দেখবেন ইস্যু সমাধান হয়ে গেছে কিনা।",
+    "language": "bn",
+    "agent_id": "2a916716-7a37-4cc6-8cbd-31ebdc97564f"
+  },
+  {
+    "ai_draft": "Hey there, thanks for reaching out!\n\nWe've got 4 web hosting plans that scale with your needs. Starting at ৳149/month on a 3-year plan, all the way up to ৳549/month for our most powerful option. All plans include unlimited subdomains, unlimited emails, free SSL, daily backups, and our 99.9% uptime guarantee.\n\nWhat kind of website are you planning to host? That'll help me recommend the perfect fit for you.",
+    "language": "en",
+    "agent_id": "d5b082b5-18c4-4507-a814-edd74eb38ad7"
+  },
+  {
+    "ai_draft": "ওয়ালাইকুম আসসালাম!\n\nআপনাকে কিভাবে হেল্প করতে পারি?",
+    "language": "en",
+    "agent_id": "9e65b88f-5bc9-4772-bf9e-566323fc3bb8"
+  },
+  {
+    "ai_draft": "Hey Niyaj, I got it!\n\nLet me change that for you. I'll update your domain to point to orsus-lab.com instead of the temporary site name.\n\nGive me just a moment to make this adjustment in your account.",
+    "language": "en",
+    "agent_id": "2a916716-7a37-4cc6-8cbd-31ebdc97564f"
+  },
+  {
+    "ai_draft": "Hey there, thanks for reaching out!\n\nI'm happy to help you with your nameservers. Are you looking to update them to point to a new host, or are you having trouble with your current nameserver configuration?",
+    "language": "en",
+    "agent_id": "9e65b88f-5bc9-4772-bf9e-566323fc3bb8"
+  },
+  {
+    "ai_draft": "Please forward your email to sales@hostnin.com",
+    "language": "en",
+    "agent_id": "d5b082b5-18c4-4507-a814-edd74eb38ad7"
+  },
+  {
+    "ai_draft": "Okay, I'm forwarding this to the relevant team.",
+    "language": "en",
+    "agent_id": "d5b082b5-18c4-4507-a814-edd74eb38ad7"
+  },
+  {
+    "ai_draft": "Which email did you send the mail to?",
+    "language": "en",
+    "agent_id": "d5b082b5-18c4-4507-a814-edd74eb38ad7"
+  }
+]

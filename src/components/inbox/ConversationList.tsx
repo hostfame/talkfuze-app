@@ -141,15 +141,22 @@ export default function ConversationList({
     }
     if (isAlert) return false;
 
+    // Pre-calculate valid messages for filtering logic
+    const validMsgs = conv.messages?.filter((m: any) => {
+      let safeMeta = m.metadata;
+      try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
+      return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
+    }) || [];
+
+    // Hide empty conversations forever unless they are currently selected
+    if (validMsgs.length === 0 && conv.id !== selectedId) {
+      return false;
+    }
+
     if (activeFilter === 'unread') {
       const channel = firstRelation(conv.channels);
       if (channel?.type !== 'whatsapp' && channel?.type !== 'widget') return false;
 
-      const validMsgs = conv.messages?.filter((m: any) => {
-        let safeMeta = m.metadata;
-        try { if (typeof safeMeta === 'string') safeMeta = JSON.parse(safeMeta); } catch (e) {}
-        return safeMeta?.event !== 'page_view' && !m.content?.startsWith('Viewed:');
-      }) || [];
       const lastMsg = (conv as any).matched_message || (validMsgs.length > 0 ? validMsgs[0] : null);
       return lastMsg && lastMsg.sender_type === 'contact' && lastMsg.status !== 'read' && lastMsg.content_type !== 'system';
     }

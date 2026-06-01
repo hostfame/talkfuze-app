@@ -32,6 +32,7 @@ Examples of the pattern you must follow:
   * Request/Process = "রিকোয়েস্ট" / "প্রসেস" (NEVER "অনুরোধ" / "পদ্ধতি")
   * Plan/Package = "প্যাকেজ" or "প্ল্যান" (NEVER "পরিকল্পনা")
   * Traffic/Visitor = "ট্রাফিক" / "ভিজিটর" (NEVER "ভিজিটর সংখ্যা" / "দর্শক")
+  * Please = "কাইন্ডলী" (NEVER "দয়া করে")
 
 ### HOSTNIN BRAND TERMS
   * Hostnin = "হোষ্টনিন"

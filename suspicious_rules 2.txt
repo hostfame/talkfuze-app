@@ -1,0 +1,1176 @@
+[1] ID: 66a4c09f-5493-4250-9574-32cb086ebe0a
+DATE: 2026-05-22T01:07:09.47182+00:00
+RULE: The agent completely replaced the AI's detailed hosting plan information with a simple personal greeting, indicating that addressing the customer by n...
+
+[2] ID: c1d9de09-eaf1-4af2-b817-23af0935d98c
+DATE: 2026-05-23T19:15:46.553615+00:00
+RULE: Never propose plan upgrades or upselling when the customer explicitly blames the hosting server for the problem. The customer stated 'আপনাদের হোস্টিং ...
+
+[3] ID: a9bb51a6-153f-473d-b615-90c26a402013
+DATE: 2026-05-23T19:14:51.915161+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced robotic 'আমি আপনাকে সাহায্য করতে পারব' (I can help you) with the warme...
+
+[4] ID: e6ddfdfc-31c1-4805-9405-8e3fe27c7c80
+DATE: 2026-05-23T19:13:33.476452+00:00
+RULE: When a customer firmly blames the hosting server and rejects earlier explanations (WordPress errors, internal processes, plugin conflicts), do NOT re-...
+
+[5] ID: 1523b20f-334a-4f40-bae4-0a358537710c
+DATE: 2026-05-22T09:40:01.06106+00:00
+RULE: Never promise specific technical actions or timeframes (like 'I'm checking this right now' or 'within the next few minutes') that you cannot personall...
+
+[6] ID: a2c5ecae-2e40-4047-91a9-00548fa63469
+DATE: 2026-05-23T19:10:05.843621+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - CRITICAL OBSERVATION:
+
+The agent removed an entire paragraph that the AI added: 'আপন...
+
+[7] ID: 3b467e8a-1704-409f-95c4-f0fdef92607f
+DATE: 2026-05-24T06:28:13.127772+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINE: The agent removed the entire opening phrase 'Happy to help with migration.' This delet...
+
+[8] ID: ff8210c1-30fd-4ef0-8e0a-11a524d81881
+DATE: 2026-05-23T19:09:24.45912+00:00
+RULE: Never diagnose technical issues in English when the customer is communicating in Bengali. Never provide unsolicited troubleshooting steps (plugin chec...
+
+[9] ID: cc095519-4336-4f5e-9429-6821b1c3a8cd
+DATE: 2026-05-23T19:03:55.770214+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'এখানে আছি' (we are here) - sounds like corporate presence statement, r...
+
+[10] ID: 4eda0d6e-ecb4-474d-a825-14ac4e63cd90
+DATE: 2026-05-22T10:39:34.780625+00:00
+RULE: When describing package terms in Bengali, use specific duration phrases like 'একসাথে ১ বছরের জন্য কিনলে' (if purchased together for 1 year) instead of...
+
+[11] ID: 2c8b0362-b0f4-48d6-afb3-e914cfca52da
+DATE: 2026-05-23T22:04:36.783109+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent removed the entire final paragraph: 'What kind of website are you plannin...
+
+[12] ID: a239e76e-f5a2-4694-90fe-27fc69188acb
+DATE: 2026-05-23T19:02:22.349228+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'জানাবেন' (formal imperative 'please inform') with 'জানাতে পারেন' (sof...
+
+[13] ID: bab28d4a-78ee-455c-9553-25d8f75b37ec
+DATE: 2026-05-23T19:01:34.469273+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES ANALYSIS:
+
+The agent removed the entire middle paragraph: 'হোস্টিং আমাদের সাইড থেকে সম...
+
+[14] ID: 342922d9-b635-4342-850e-d56ae2c14383
+DATE: 2026-05-23T18:58:03.468456+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY & PHRASING SHIFTS:
+
+1. CRITICAL ADDITION - Affirmative Opening:
+   - AI Draft started exp...
+
+[15] ID: 33fca529-0d15-462a-a417-1af354138ee2
+DATE: 2026-05-23T18:49:32.955159+00:00
+RULE: Do not provide detailed billing/credit adjustment explanations unless explicitly requested by the customer. The customer only asked IF upgrade is poss...
+
+[16] ID: 28b8a8a7-8a28-442c-96e8-0097447ab4f3
+DATE: 2026-05-23T22:28:23.059984+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - CRITICAL PATTERN:
+
+The agent removed the ENTIRE final paragraph about converting to ...
+
+[17] ID: 4a4923c0-9d24-40eb-9bd9-930e3f161522
+DATE: 2026-05-22T10:57:20.018997+00:00
+RULE: Always use the correct pricing for domain renewals and avoid using currency symbols that may not display properly; verify the accurate price is 1,875 ...
+
+[18] ID: 91141476-1f40-44e3-9a24-472bc2f390ee
+DATE: 2026-05-23T18:44:50.436132+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY DETAIL:
+
+a) DELETED ENTIRE EXPLANATIONS: The AI provided a 3-paragra...
+
+[19] ID: 4f9d8a3a-b272-41a6-aee6-d11211644a3c
+DATE: 2026-05-22T14:01:39.08137+00:00
+RULE: Clarify that customers cannot use two Cloudflare Pro subscriptions together and must update nameservers to our hosting to access Cloudflare Pro featur...
+
+[20] ID: 4107adac-1b77-48f5-8087-5fbdd1c996ef
+DATE: 2026-05-23T18:44:46.982352+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Retained 'সম্পূর্ণ ফ্রি' (completely free) but the agent removed the verbose co...
+
+[21] ID: 8f372042-7700-4ec7-a54c-5f8ec787eb75
+DATE: 2026-05-23T18:43:46.644123+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced formal 'বুঝে যাবে' (will understand) with more natural 'বুঝতে পারবে' (...
+
+[22] ID: 291fda42-9266-4abb-9555-767eee568405
+DATE: 2026-05-23T18:41:11.699404+00:00
+RULE: Do not mention free .net/.org domains or make it sound like multiple TLD options are free. Only .COM domains are free for 1 year with hosting plans. D...
+
+[23] ID: bad7728c-174a-4dad-a1f3-86a8653dbe97
+DATE: 2026-05-24T03:14:25.031423+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted the generic acknowledgment 'জ্বী স্বাগতম!' (Yes, welcome!) entirely. Th...
+
+[24] ID: 3dbf4b09-c826-45f3-bedf-4fc1bfe5d842
+DATE: 2026-05-23T18:19:22.723317+00:00
+RULE: Do not mention payment methods or payment processes unless the customer explicitly asks about payment. The customer only requested login credentials a...
+
+[25] ID: f78833eb-32d8-4a8e-9664-650aa18a40d9
+DATE: 2026-05-24T03:21:02.485824+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - Major reduction in verbosity:
+
+a) The agent removed the entire second sentence which...
+
+[26] ID: 052ec0d4-13e8-4ac1-a6a8-a71ca2acee2c
+DATE: 2026-05-23T17:52:23.745899+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced the overly formal greeting 'আপনাকে স্বাগতম! কংগ্রেচুলেশন্স হোস্টিং এর ...
+
+[27] ID: c2714c22-97c7-453c-a480-04b8f36f99aa
+DATE: 2026-05-23T17:15:42.517576+00:00
+RULE: When a customer explicitly requests AI assistance in English but the AI responds in Bengali, this is a critical language mismatch error. Always match ...
+
+[28] ID: 49d82093-d758-4442-9373-5fef78a03d2d
+DATE: 2026-05-23T16:44:28.922106+00:00
+RULE: When a customer provides an EPP code in English and states their domain 'isn't active' in English, respond in English, not Bengali. Match the customer...
+
+[29] ID: 0e14b2fd-b98f-4056-a06e-40dfdd8b533e
+DATE: 2026-05-23T15:29:59.218843+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+
+The agent removed the entire closing segment: 'This plan is perfect for e-commerce s...
+
+[30] ID: 8a1f96fb-8a95-45b5-9d27-93c6a73180be
+DATE: 2026-05-22T18:34:45.204425+00:00
+RULE: Never offer to manually renew domains or ask for payment method preferences when an automated invoice payment link already exists; always provide the ...
+
+[31] ID: 3a42137f-f309-47a1-b1c9-1743a88c1bf9
+DATE: 2026-05-24T10:45:30.887863+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION AND BREVITY SHIFT:
+
+a) ENTIRE PHRASE REMOVAL: The agent deleted 'Happy to help. Just ...
+
+[32] ID: 96984cf4-5885-4f84-8d40-a89863a8a9b0
+DATE: 2026-05-23T20:04:19.155328+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - The agent removed two entire segments that the AI over-explained:
+
+1. REMOVED REDUND...
+
+[33] ID: 9b0e3536-e17e-4558-a16f-ed8809729b96
+DATE: 2026-05-23T20:09:12.014845+00:00
+RULE: Do not provide unsolicited guidance or suggestions beyond what the customer explicitly asked. The customer only asked what the screenshot means, not h...
+
+[34] ID: d206554a-7af5-4622-9ab6-cfa21e731605
+DATE: 2026-05-23T03:17:35.079273+00:00
+RULE: Do not request payment confirmation details when the customer has already paid and the invoice has been verified, as this creates unnecessary friction...
+
+[35] ID: 6426cbee-740d-450f-876c-4cce6a45d645
+DATE: 2026-05-23T20:09:35.98467+00:00
+RULE: When a customer asks for clarification on a screenshot they've already shared and the conversation context shows they understand their hosting renewal...
+
+[36] ID: 8351f3be-3aa3-4eeb-b531-f34bb3274dcd
+DATE: 2026-05-23T04:38:12.717481+00:00
+RULE: Do not prematurely close the conversation with acknowledgments like 'ভালো' (good/okay) or thank the customer for their trust when the interaction is s...
+
+[37] ID: fd08c159-d8d0-4430-9d43-6f74c7425d60
+DATE: 2026-05-24T09:21:15.337423+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED ENTIRE FOLLOW-UP QUESTION: The agent removed the probing question 'What kind of website are ...
+
+[38] ID: 8e5edca0-d089-4153-920b-9e8532eb278f
+DATE: 2026-05-24T03:58:37.426234+00:00
+RULE: Style-only correction, no factual error. | STYLE: No significant style changes. The AI draft and the agent's final message are identical. Both use the...
+
+[39] ID: 5dd242e6-2d13-45cb-8e07-ce553e0e73b0
+DATE: 2026-05-23T20:15:49.694694+00:00
+RULE: Never provide specific auto-renewal details (date, amount, billing method) unless the customer explicitly asks for them. The customer only wanted conf...
+
+[40] ID: 805df549-6a8e-492b-b2a9-7183307783b7
+DATE: 2026-05-23T20:18:15.448395+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE MESSAGE DELETION AND REPLACEMENT:
+
+The agent deleted the entire AI draft (4 sentences, ~50 ...
+
+[41] ID: a31b2d1b-7ca7-4858-961f-390890539ea0
+DATE: 2026-05-23T20:25:42.108697+00:00
+RULE: Do NOT claim React and FastAPI work on Web Starter plans. React and FastAPI require Node.js hosting, not shared Web Hosting. Always recommend Node.js ...
+
+[42] ID: 202fb6e1-7090-47ed-9489-cd84357ed6a2
+DATE: 2026-05-23T20:29:44.949087+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES AND OVER-EXPLANATION:
+
+a) The agent removed the entire third paragraph ('So here's wha...
+
+[43] ID: 1c554a08-3850-4755-9705-b2d70a9c71b9
+DATE: 2026-05-23T20:21:27.054205+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- No vocabulary replacements; agent kept all original wording intact.
+
+VERB FORM ...
+
+[44] ID: 8cd34abb-9cb3-4247-8a20-4a207d0ff53a
+DATE: 2026-05-23T20:21:54.109855+00:00
+RULE: Never assume pricing details from a screenshot without verifying the exact hosting package purchased. The AI incorrectly stated that 1,650 BDT covers ...
+
+[45] ID: 1a873992-beb6-4993-b21e-a5cb2ec2dc40
+DATE: 2026-05-23T15:49:54.827591+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE MESSAGE DELETION AND REPLACEMENT:
+
+a) ENTIRE AI DRAFT REMOVED: The agent deleted the entire...
+
+[46] ID: d1872459-8805-4216-bf90-d78ef40df3a1
+DATE: 2026-05-23T15:21:36.801371+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'Perfect, so you're building an e-commerce site with WordPress. That's ...
+
+[47] ID: bba7f182-67bb-4fac-8935-b4f877ec8aba
+DATE: 2026-05-23T20:22:37.858573+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'টিকিটের' (ticket's) before 'মেইলে' in the opening line. Agent changed ...
+
+[48] ID: e4ce147d-7320-4182-8819-441ebd5eeb8c
+DATE: 2026-05-24T12:59:30.384945+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced formal third-person reference 'our agent' with first-person 'i' to mai...
+
+[49] ID: 22ef523b-7aba-4607-b3ae-a4b10a2d8e53
+DATE: 2026-05-23T16:28:30.387516+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'চেক করে দেখছি' (checking and seeing) which sounds redundant and roboti...
+
+[50] ID: e7a731bf-5b9a-4d09-8809-4fd91c15f8a6
+DATE: 2026-05-23T20:24:12.474476+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES / OVER-PROMISING REMOVAL:
+- The agent removed 'I'll check your account right now to co...
+
+[51] ID: 8a2a90b1-fc4c-4871-a502-60ab0b7aba6c
+DATE: 2026-05-23T20:26:52.493911+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Agent removed the opening greeting 'Hey Istiak!' entirely. This was unnecessary rep...
+
+[52] ID: 6ddd17ca-240f-4d42-9eb3-01dfe4f5e5d2
+DATE: 2026-05-23T16:46:10.550209+00:00
+RULE: When customer asks for domain availability check and agent says 'checking', do NOT send a full Bengali explanation with links while they are still wai...
+
+[53] ID: e6d4485a-05b7-4966-9bd6-45e4648f6065
+DATE: 2026-05-23T16:58:04.047202+00:00
+RULE: When a customer asks a yes/no technical question in English, respond in English with a concise answer matching their language choice. Do not switch to...
+
+[54] ID: b8a7c0ce-fbeb-42b0-bb37-ba218d6c0bb1
+DATE: 2026-05-23T16:54:07.419275+00:00
+RULE: Never claim completion ('domain will be connected very soon') without explaining discovered blockers. Always inform the customer immediately if the EP...
+
+[55] ID: 222d33a6-dadd-4b5c-bd27-33b27366eabe
+DATE: 2026-05-24T14:40:11.640289+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY CONTENT: The AI generated a 3-paragraph response with detailed quest...
+
+[56] ID: d9e1f61b-7d63-458e-8038-4addbc4894ac
+DATE: 2026-05-23T17:30:28.023947+00:00
+RULE: Do not provide unsolicited information unless the customer explicitly asks for it. If a customer asks for payment methods, provide only the list witho...
+
+[57] ID: 92f5d3a9-680b-4f47-ba64-cdbd4119c2e9
+DATE: 2026-05-24T06:31:17.873222+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETION OF ENTIRE CLOSING PARAGRAPH: The agent removed the final paragraph that offered technical t...
+
+[58] ID: c9d3f323-de49-46e4-ab9a-a803c4974ed3
+DATE: 2026-05-24T06:38:20.883811+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent removed the entire second paragraph: 'Feel free to reach out if you have ...
+
+[59] ID: 79d313c5-a809-4bb5-a3a4-0c1d95f87a5c
+DATE: 2026-05-24T14:43:32.14745+00:00
+RULE: Cloud hosting nameservers are FOUR (ns1, ns2, ns3, ns4.stackdns.com), not two. Always provide all four nameservers for cloud hosting to ensure proper ...
+
+[60] ID: 5f92ce71-0af3-4b5d-9424-0ef009bc71ba
+DATE: 2026-05-23T17:44:18.595193+00:00
+RULE: Do not instruct customers to change their email themselves via client area settings. Email changes must be handled by the support team through a ticke...
+
+[61] ID: a08561e7-706e-4262-a9d7-750a191f9074
+DATE: 2026-05-23T20:24:35.265722+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted entire opening phrase 'জ্বী, মেসেজ পেয়েছি' (Yes, received your message...
+
+[62] ID: 1af1d4af-11ce-48f0-8f39-d3308edb3d20
+DATE: 2026-05-23T20:33:20.058074+00:00
+RULE: Never promise to create invoices, process payments, or provide payment methods without explicit confirmation from backend systems or senior staff. The...
+
+[63] ID: f83725b9-5201-4fa0-a61c-27f791a2adc1
+DATE: 2026-05-23T17:51:19.183411+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- No vocabulary replacements occurred. Both messages use identical word choices t...
+
+[64] ID: 82b800b9-0162-4a1b-8824-39e3136be651
+DATE: 2026-05-23T17:47:24.054931+00:00
+RULE: Never promise specific resolution timelines ('১৫ মিনিটের মধ্যে ফিক্স করে দেবে') or redirect customers to ticket systems when already engaged in WhatsA...
+
+[65] ID: a6d69c45-00f2-4db6-bab2-3b6e582cc365
+DATE: 2026-05-23T20:25:33.694329+00:00
+RULE: Do not add unnecessary elaboration or confirmation phrases when the customer has already moved on from the topic. The agent removed 'Got it, thanks fo...
+
+[66] ID: 8fcef625-cee1-4d71-9814-1d603e9f89e4
+DATE: 2026-05-24T09:23:19.529919+00:00
+RULE: When referring to VPS plan categories, use the generic term 'ভিপিএস প্ল্যানগুলোর প্যাকেজে' (VPS plan packages) instead of incorrectly naming a specifi...
+
+[67] ID: 55cb0f69-bf90-4d55-8e28-9b972ad75dd4
+DATE: 2026-05-23T18:08:19.163059+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY CONTENT:
+
+a) REMOVED ENTIRE FIRST PARAGRAPH: The AI opened with 'জ্ব...
+
+[68] ID: 79cb393a-6a42-4afd-a334-fa57cb920ec6
+DATE: 2026-05-23T18:02:43.722762+00:00
+RULE: Never promise specific actions (like 'I will switch you to Node.js plan') without first collecting necessary information or confirming the customer's ...
+
+[69] ID: 9f27ca7a-578b-4e9e-8384-782c25e0c833
+DATE: 2026-05-23T17:57:05.587625+00:00
+RULE: Never provide multiple navigation paths or overly detailed plan breakdowns when a customer asks 'how to purchase'. Provide only the single, most direc...
+
+[70] ID: 550ed5ab-9d54-4136-964e-f667de86ee41
+DATE: 2026-05-23T06:49:07.745386+00:00
+RULE: Do not ask customers for additional confirmation details like service or invoice numbers when the request can be handled by the relevant team without ...
+
+[71] ID: a23ec477-18d3-4e31-b28a-c475e05c6bae
+DATE: 2026-05-23T18:19:09.205611+00:00
+RULE: Do not add unsolicited details about pro-rata billing, refunds, or pricing mechanisms unless the customer specifically asks about payment differences....
+
+[72] ID: 22fd0961-aa43-4836-b0f0-104c431ae461
+DATE: 2026-05-23T18:10:29.467438+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY CONTENT:
+
+a) ENTIRE OPENING DELETED: The AI opened with 'জ্বী, বুঝতে...
+
+[73] ID: f5d9b266-c488-4753-ab8f-ad69c9d3859b
+DATE: 2026-05-23T18:07:06.397987+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION OF ENTIRE PARAGRAPHS:
+
+a) REMOVED SECOND PARAGRAPH ENTIRELY: The AI draft included a ...
+
+[74] ID: 0c9d3ccf-ccef-4d6d-bb8b-86ab8b60cfc5
+DATE: 2026-05-23T20:31:13.705722+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Agent completely removed the final sentence: 'Once confirmed, we will clarify the e...
+
+[75] ID: 32a9b007-b6a9-4d8a-8963-bbb0e6236804
+DATE: 2026-05-24T06:34:14.931541+00:00
+RULE: Never claim WooCommerce Hosting is BDIX-based if it's actually hosted in Singapore. Always clarify the actual server location (Singapore) and explain ...
+
+[76] ID: afb4f332-49cf-448b-8c1b-fd6cec91fec2
+DATE: 2026-05-23T18:16:08.100256+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR REWRITE - Agent completely replaced the AI's verbose 3-paragraph response with a single concis...
+
+[77] ID: 672c966c-6da3-4b62-8e43-2869d1f5fcbe
+DATE: 2026-05-23T18:15:13.69952+00:00
+RULE: Do not assume or push for immediate order placement when the customer explicitly states they are testing the service first. Never provide order links ...
+
+[78] ID: e1393aa0-2b08-41ed-9f12-e7064eb4b330
+DATE: 2026-05-23T18:14:09.592404+00:00
+RULE: When a customer explicitly confirms a plan ('ok pro plan confirm করেন'), never generate a full response with unnecessary details, links, or suggestion...
+
+[79] ID: cdb9d535-c462-47be-946b-2dcecfe41520
+DATE: 2026-05-24T06:36:59.065834+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE STRUCTURAL OVERHAUL - The agent completely deleted the AI's entire 4-paragraph consultative ...
+
+[80] ID: 66ce0093-67b8-4f0f-89d5-6bd4cc9cbbd1
+DATE: 2026-05-23T18:23:40.064134+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY & TONE SHIFTS:
+
+a) OPENING WORD ADDED:
+- Agent added 'জ্বী' (Yes/Okay) at the start. This...
+
+[81] ID: e23cc3d0-31ec-48da-8034-0df47bc02519
+DATE: 2026-05-23T20:31:15.800842+00:00
+RULE: When an agent realizes they are currently unable to provide an accurate technical answer (e.g., verifying plan pricing or technical compatibility), th...
+
+[82] ID: 7b0f69a1-13db-4f60-9d4b-6b2fb5189fe3
+DATE: 2026-05-23T20:36:01.427283+00:00
+RULE: Never acknowledge or explain unrelated screenshots or billing details when the customer has just provided information you requested (domain name) and ...
+
+[83] ID: 7d30b0c7-064e-4ccc-98c8-d30c971e8e5a
+DATE: 2026-05-24T06:46:56.702067+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted opening phrase 'Great question!' entirely. This is a critical deletion ...
+
+[84] ID: c60449b0-d19c-454c-8acc-da3a1ea1d4da
+DATE: 2026-05-23T18:42:32.331257+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Changed 'দেব' (will give) to 'বলতে পারবো' (will be able to tell). This is a sub...
+
+[85] ID: 1fad1af2-3fb0-4053-beab-923b861c51be
+DATE: 2026-05-23T18:26:58.300346+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETION OF FOLLOW-UP QUESTIONS: The agent deleted the entire closing question block ('Can you confi...
+
+[86] ID: 35709af1-2dd7-4f51-aca1-07630fec033d
+DATE: 2026-05-23T18:20:41.131168+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced formal opening 'জ্বী সাহেব, ইমেইল এক্সেস কোরা হয়েছে।' (Yes sir, email...
+
+[87] ID: f2651ba4-26fe-4a45-bc4a-3f2cd7f7b59c
+DATE: 2026-05-24T06:47:41.589811+00:00
+RULE: Never assume customer identity or account details from an image alone. Always verify the customer's email address or account information before taking...
+
+[88] ID: 12f4bd7e-8da0-4c2d-b0ba-20cb9f1c2228
+DATE: 2026-05-24T10:46:02.957964+00:00
+RULE: Never claim a promotion includes features (like a free .COM domain) without verifying it applies to all billing cycles. The AI falsely stated that the...
+
+[89] ID: 61ea2e8c-a83e-4d67-b4ee-dd454d0902ac
+DATE: 2026-05-23T06:16:57.33064+00:00
+RULE: Always verify and use the correct pricing information from official sources; the Web Hosting Ultimate Package costs ৳10,584 yearly, not ৳6,999....
+
+[90] ID: a78b53ee-97d5-4e62-902a-2c508a744fe0
+DATE: 2026-05-23T18:25:48.19368+00:00
+RULE: Style-only correction, no factual error. However, when a customer explicitly requests a call ('call kora jabe please'), immediately acknowledge and fu...
+
+[91] ID: c57a8530-6545-431d-ad7f-ed4d14607103
+DATE: 2026-05-23T18:21:09.22991+00:00
+RULE: Do not provide detailed billing explanations (prorated credits, adjustments, price differences) unless the customer explicitly asks for those specific...
+
+[92] ID: db4377c9-58f5-4374-ac4f-4ea93e684ac8
+DATE: 2026-05-23T18:09:37.58775+00:00
+RULE: Never confirm a plan as 'perfect' without understanding full workload requirements. When customer provides basic info (15 users, local traffic), ackno...
+
+[93] ID: a0b2cf10-10dc-49e7-a89e-e60b1c9cc461
+DATE: 2026-05-23T20:33:27.749222+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Agent removed the closing question 'Which billing cycle works better for you?' comp...
+
+[94] ID: 8b6d768e-bcd1-4762-9107-86ec1190a588
+DATE: 2026-05-24T10:47:20.804225+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES (CRITICAL):
+
+1. REMOVED ENTIRE SECOND PARAGRAPH: '৩ বছরে মাসিক ভাঙলে যা আসে সেটি বছরের...
+
+[95] ID: 72e9c4b5-2fd4-40bb-bd18-a15f908ed0df
+DATE: 2026-05-24T11:10:13.117994+00:00
+RULE: Never assume the content of an image without clear context. The AI incorrectly assumed the screenshot showed a 'Call Support confirmation email' when ...
+
+[96] ID: 794bf6af-ac0b-4da3-b559-5eb88beae03a
+DATE: 2026-05-23T18:32:03.769499+00:00
+RULE: Style-only correction, no factual error. | STYLE: The agent removed the final sentence from the AI draft: 'Let me know if the error persists after tha...
+
+[97] ID: 08aa212b-3a68-4d84-96cc-10ca65959220
+DATE: 2026-05-23T17:54:11.182417+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'আপগ্রেড করতে হবে' (must upgrade) with 'রিকমেন্ড করছি' (I'm recommendi...
+
+[98] ID: 29380f6d-ce0f-4a8a-acd9-b0e1186ed364
+DATE: 2026-05-23T20:37:49.833775+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE LANGUAGE SWITCH:
+The AI draft was in English attempting a sales recovery question ('which b...
+
+[99] ID: 17730374-ed86-4a8b-bf9b-59c772c4e1d1
+DATE: 2026-05-23T20:41:49.023+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION OF UNNECESSARY CALCULATIONS AND PUSHY CLOSING:
+
+a) DELETED LINES - The agent removed ...
+
+[100] ID: 01b5d2d6-57d2-40eb-b12d-62b5080118e7
+DATE: 2026-05-23T18:39:18.71075+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETION OF UNNECESSARY FOLLOW-UP CONTENT:
+
+The agent removed two entire paragraphs that the AI adde...
+
+[101] ID: 9b8463ea-5a30-4199-b32e-58af2edb80d6
+DATE: 2026-05-23T18:33:56.050859+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETIONS FOR BREVITY AND RELEVANCE:
+
+a) DELETED ENTIRE SECOND PARAGRAPH: The AI included 'এটি...
+
+[102] ID: 69e6d006-cb0b-474a-a2d7-130fa0a45dca
+DATE: 2026-05-23T18:27:05.110222+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+
+The agent removed the entire final paragraph: 'ঠিক কোন ধাপে আটকে আছেন বা কোন এরর আসছ...
+
+[103] ID: eccdee2a-6842-4386-a454-370802d02bbb
+DATE: 2026-05-23T20:38:42.934483+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE MESSAGE RECONSTRUCTION - AGENT DELETED THE ENTIRE AI DRAFT AND REWROTE FROM SCRATCH:
+
+a) DE...
+
+[104] ID: 3d43c89a-4ebc-4aea-ab6e-ece67d958d13
+DATE: 2026-05-24T04:30:40.54198+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - MAJOR CORPORATE FLUFF REMOVAL:
+
+1. REMOVED ENTIRE SENTENCE: 'Your satisfaction is wh...
+
+[105] ID: 7e9c2ace-9dc2-43dd-a5d0-364ff9decb19
+DATE: 2026-05-23T18:42:51.988449+00:00
+RULE: When a customer asks for 'VPS Package' without context, provide only the direct link to VPS packages. Do not assume details about locations, root acce...
+
+[106] ID: 6172d029-18f4-41ef-aadb-363f0588a032
+DATE: 2026-05-23T18:40:36.073532+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR STRUCTURAL OVERHAUL - The agent completely replaced the AI's response instead of continuing fr...
+
+[107] ID: 0b2c485b-948d-48b7-bec2-d8455bf753b5
+DATE: 2026-05-23T18:45:57.367992+00:00
+RULE: Do not escalate to technical team or convert to ticket unless absolutely necessary. If the customer's question can be answered with standard guidance ...
+
+[108] ID: a5af754d-ad4f-494f-b05e-061de3d0102c
+DATE: 2026-05-24T18:07:33.718407+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted the greeting 'Hey there!' entirely. The agent removed this informal ope...
+
+[109] ID: f6d5de30-5d1a-4a51-be91-8d72cc257329
+DATE: 2026-05-23T18:00:18.980246+00:00
+RULE: NEVER promise that remaining time will transfer to a new plan 'without any extra charge' when switching between different product types (web hosting t...
+
+[110] ID: f5fc725e-6f74-4f22-a3b6-b1621fa835ca
+DATE: 2026-05-23T17:51:17.53297+00:00
+RULE: Never assume technical requirements or provide step-by-step deployment instructions until you have verified the customer's exact setup. Always ask for...
+
+[111] ID: 90027823-16ef-4db9-8336-dbc450ec92a8
+DATE: 2026-05-23T17:31:16.131923+00:00
+RULE: Do not send proactive sales messages or product recommendations when the customer has already thanked you and is clearly ending the conversation. If t...
+
+[112] ID: 53072270-efc9-4e24-93fe-9249161eaf9d
+DATE: 2026-05-23T06:59:57.034096+00:00
+RULE: Do not specify an exact withdrawal date for affiliate commissions; instead, state that withdrawal is available 30 days after the commission is credite...
+
+[113] ID: 9c789f04-0b7b-403f-b2cf-e1369582f801
+DATE: 2026-05-23T19:08:27.738985+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'আপনার সময় দেওয়ার জন্য ধন্যবাদ' (formal thank you for your time) enti...
+
+[114] ID: 72ed5686-db79-4176-8406-4e9a7f3197aa
+DATE: 2026-05-23T17:26:15.588105+00:00
+RULE: When the agent rejects the AI draft with severe criticism ('onek change / delete korte hocche'), treat this as a complete structural failure. The AI l...
+
+[115] ID: 8208747e-c517-4f2b-87d3-92ba8eae941b
+DATE: 2026-05-24T04:36:33.649389+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced bookish 'হোষ্টিং প্ল্যান' with natural 'প্ল্যান' (omitted 'হোষ্টিং' as...
+
+[116] ID: 586785c1-ccdd-4471-9205-8f67a7913e7c
+DATE: 2026-05-23T17:25:15.987344+00:00
+RULE: Never assume the agent will perform an action (like sending a password reset email) without explicit confirmation from the agent or system. The AI pre...
+
+[117] ID: 451c0d26-3a37-4c9e-b9ae-db32e0ae1d4a
+DATE: 2026-05-24T04:53:31.822177+00:00
+RULE: Never assume or guess the customer's intent when they have already stated a specific problem. The customer clearly mentioned their site is showing an ...
+
+[118] ID: 90f26d07-e6fd-404c-a6cd-f7cc56c0518f
+DATE: 2026-05-24T07:33:07.086231+00:00
+RULE: When the customer responds to an automated greeting in English (after writing 'Call Support'), continue the conversation in English, not Bengali. Matc...
+
+[119] ID: 0bcc094c-1a5a-41d3-b7ce-d93f0ceb3fc9
+DATE: 2026-05-23T19:05:10.714787+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Changed 'টিকেটে বিস্তারিত জানাবেন' (inform in ticket) to 'টিকেটের মেইলের রিপ্লা...
+
+[120] ID: 2e94b410-72fe-405c-880f-5a8f3ed7228f
+DATE: 2026-05-23T20:44:18.479915+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'cPanel hosting' with 'Web hosting' — this is a critical business term...
+
+[121] ID: a64ddd34-a9e4-424f-9a3b-e150b05c413c
+DATE: 2026-05-24T07:03:34.9966+00:00
+RULE: Never tell the customer to provide Hostingar login credentials directly. The correct process is: customer purchases Hostnin hosting first, then provid...
+
+[122] ID: f69e7998-f5bf-45ed-9c3e-5e50dd71dc3a
+DATE: 2026-05-24T07:50:01.494703+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Removed 'পারফেক্ট সলিউশন' (perfect solution) - this is salesy marketing languag...
+
+[123] ID: 51098fcc-1a91-45e3-b19f-a2d1e3dd33c5
+DATE: 2026-05-24T07:52:42.271396+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES ANALYSIS:
+The agent removed the entire third paragraph: 'সিপ্যানেলে React বিল্ডেড ফাইল...
+
+[124] ID: 98219b13-fb66-47e0-af0d-431685184e4d
+DATE: 2026-05-24T11:27:24.819702+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'can you recheck now?' with 'Is it working now?' — the agent shifted f...
+
+[125] ID: df5f02c7-5057-4b79-bf82-444e03c8cdc4
+DATE: 2026-05-23T06:40:37.221829+00:00
+RULE: Do not include unnecessary acknowledgment phrases like 'your point is valid', 'we've taken your feedback', or 'thank you for your response' when the c...
+
+[126] ID: 174f0a09-1cff-4ee0-a49b-948c6caf93b5
+DATE: 2026-05-24T09:31:30.103684+00:00
+RULE: Never provide unsolicited technical explanations, pricing justifications, or consultative advice when the customer has not asked for it. If you lack s...
+
+[127] ID: cb524226-cf03-4058-b434-1748947cadd0
+DATE: 2026-05-24T07:06:29.691598+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent removed the entire second half of the question: 'or are you trying to upd...
+
+[128] ID: 0f8d820c-4d8c-4d85-add4-9ea9a97bc9cf
+DATE: 2026-05-24T07:54:15.286486+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Removed opening phrase 'জ্বী, স্টেপগুলো খুবই সহজ।' (Yes, the steps are very easy) -...
+
+[129] ID: 07fbace1-51f2-4adf-ab04-d44d73a1d073
+DATE: 2026-05-24T09:41:04.41419+00:00
+RULE: When mentioning BDIX hosting offers, always include the free .COM domain benefit that comes with 1-year to 3-year packages. Do not omit promotional bo...
+
+[130] ID: fbe087b7-5e13-4959-9dc1-14b56b216e3c
+DATE: 2026-05-24T11:44:24.123138+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY & TONE SHIFTS:
+
+a) EXTREME BREVITY OVER EXPLANATION: The AI generated an empty draft (no ...
+
+[131] ID: d93e8d85-ad09-4301-a8eb-d8ba79f47842
+DATE: 2026-05-23T20:47:42.821991+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'I appreciate you asking, Istiak.' This opening feels robotic and overl...
+
+[132] ID: 498c1b45-1b09-4048-a812-0bf59259fea7
+DATE: 2026-05-24T10:21:47.111122+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Eliminated the warm greeting 'Hi there!' in favor of minimal formal 'Hello' (ma...
+
+[133] ID: 6b7abca8-590a-4e6d-81a1-99298ffbd8b1
+DATE: 2026-05-23T20:48:13.964468+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETIONS AND TONE SHIFT:
+
+a) DELETED ENTIRE CHUNKS: The agent removed the entire second half ...
+
+[134] ID: ea5f1490-ca7a-424f-96b0-d072d66c182f
+DATE: 2026-05-24T05:47:18.759552+00:00
+RULE: Do not ask unsolicited follow-up questions about marketing strategies (Facebook/Google ads) or website purpose when the customer has not requested rec...
+
+[135] ID: 6cab0ff3-c004-4753-a374-2207b3bde63d
+DATE: 2026-05-24T07:11:50.662044+00:00
+RULE: Never assume the transfer direction without clarifying first. The AI incorrectly assumed the customer wanted to transfer TO Hostnin, when the customer...
+
+[136] ID: 9fae042e-5cf4-47dd-9b55-e21c56d98052
+DATE: 2026-05-24T08:06:06.052298+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE STYLISTIC OVERHAUL - Agent stripped away all corporate verbosity and reduced response to bar...
+
+[137] ID: 7290b4e4-5a8e-46b4-aa10-f7c4d54878eb
+DATE: 2026-05-24T05:52:10.821468+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES AND STRUCTURAL CHANGES:
+
+1. REMOVED GREETING: Agent deleted the opening 'Hey, great qu...
+
+[138] ID: 7e06e8e5-c7ed-4464-94de-9e35b3e9baa1
+DATE: 2026-05-24T08:20:49.393544+00:00
+RULE: Do not list 'Finland' or 'America' as server locations. The verified locations are: Alaska USA, London UK, North-Eastern Island Singapore, Federated S...
+
+[139] ID: f8053186-263f-4790-aeaa-f7160b1637e7
+DATE: 2026-05-24T10:22:17.273703+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'খুঁজছেন' (are searching for) with 'দেখতে চান' (want to see). The agen...
+
+[140] ID: 12a83e59-3958-4b99-ad0f-9a77c6a95089
+DATE: 2026-05-23T20:54:07.990872+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES: The agent removed the entire opening paragraph that repeated/summarized what the cust...
+
+[141] ID: fc694d09-cbaf-4124-bf1b-c01990408ab5
+DATE: 2026-05-23T20:57:12.069171+00:00
+RULE: Never state that auto-renewal 'kicks in and charges your account' automatically on the expiry date without clarifying that customers must renew manual...
+
+[142] ID: 5b9bd393-5619-4682-a0c8-05346c5c3ab4
+DATE: 2026-05-24T05:54:09.016781+00:00
+RULE: Style-only correction, no factual error. | STYLE: CRITICAL TONAL SHIFT - DOUBLE NEGATIVE FOR EMPHASIS:
+
+a) VOCABULARY SHIFTS:
+- Changed 'We are not do...
+
+[143] ID: 0d3ad952-d002-4611-a916-1f19788ace6a
+DATE: 2026-05-24T07:28:27.505486+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced the direct 'কি সাহায্য করতে পারি আজ?' (What can I help with today?) wi...
+
+[144] ID: 1989503e-6485-4637-b953-9edc038532c8
+DATE: 2026-05-22T17:25:49.863596+00:00
+RULE: Do not assume or use customer names (like 'রিয়াদ ভাই') without explicit confirmation, and avoid making unverified statements about the customer's sit...
+
+[145] ID: c1218d66-435b-406d-b370-d5b42b5ecf4a
+DATE: 2026-05-23T20:55:34.123276+00:00
+RULE: Never respond with unrelated information from previous conversation context. The AI draft discussed domain renewal and security (completely irrelevant...
+
+[146] ID: 30f0a145-a30f-4b74-94be-369a9e1392f6
+DATE: 2026-05-24T05:54:48.332335+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED OPENING LINE: The AI started with 'Not completely, no. Here's the exact breakdown:' which cr...
+
+[147] ID: f3727346-369c-4961-983b-47271ba92eb1
+DATE: 2026-05-23T20:58:44.859106+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES AND WHY:
+
+1. The agent removed the entire second paragraph: 'Just keep in mind, if you...
+
+[148] ID: 57c27f44-d20b-4dc0-9d79-e450aa5ff49e
+DATE: 2026-05-24T08:22:55.241393+00:00
+RULE: When a technical issue requires backend investigation (server logs, downtime analysis, resource checks), do NOT promise to 'pull up logs' or provide i...
+
+[149] ID: 053304da-3925-4e91-adbe-3b5bc6cc475a
+DATE: 2026-05-24T09:56:53.1427+00:00
+RULE: When a customer references a website chat they just had and provides a conversation reference ID, do NOT respond in Bengali if the customer wrote in E...
+
+[150] ID: e3eaefb6-845c-420b-a8be-80fd1ebe9681
+DATE: 2026-05-24T09:58:17.963516+00:00
+RULE: When a Bengali-speaking customer describes a technical problem in Bengali, NEVER respond in English. Always match the customer's language. Additionall...
+
+[151] ID: 6ec3c195-7d84-48ce-b1e8-f7edc0d5f843
+DATE: 2026-05-24T10:28:44.417618+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced Romanized Bangla 'echara ar kono somossai' with proper Bengali script ...
+
+[152] ID: 741702d9-f4e0-4b19-81e6-769719a475e4
+DATE: 2026-05-24T11:09:02.177947+00:00
+RULE: When a customer shares an image of a hosting plan and asks for confirmation, do not deflect or ask vague questions. Directly identify the plan in the ...
+
+[153] ID: eb39f692-4d59-4995-9124-465c96c86b87
+DATE: 2026-05-24T06:23:01.842312+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF ENTIRE RESPONSE:
+
+a) COMPLETE INFORMATION REMOVAL: The agent deleted the entire ...
+
+[154] ID: fb91173b-a2f3-415d-95c7-fccda9d19511
+DATE: 2026-05-24T06:23:54.018488+00:00
+RULE: When a customer asks in Bengali about promotional offers (e.g., 'free domain ar offer ki ase'), respond in Bengali, not English. Always mirror the cus...
+
+[155] ID: d2403745-d4f3-4e3b-975e-1033447fed9b
+DATE: 2026-05-23T21:25:57.346486+00:00
+RULE: Before providing technical troubleshooting steps, always verify if the customer has already taken action (e.g., opened a ticket). Check the ticket sys...
+
+[156] ID: cf4304db-f7d5-4823-9660-7b556f3feb9b
+DATE: 2026-05-24T06:32:46.158639+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Changed 'e-commerce' (with hyphen) to 'e commerce' (space-separated). This refl...
+
+[157] ID: 075c078d-0b20-4f7e-ab73-58fd8c5a567a
+DATE: 2026-05-24T11:58:03.574228+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE MESSAGE REDUCTION - The AI drafted a 2-paragraph technical troubleshooting response, but th...
+
+[158] ID: 99ed9246-94b8-4026-b967-b7f32ebcaf0b
+DATE: 2026-05-22T09:47:42.96953+00:00
+RULE: Do not provide multiple contact methods (WhatsApp numbers, alternative emails) or promise emergency actions without verification; instead provide only...
+
+[159] ID: a566eb0e-c80f-4cf5-bec3-6f53c585f7a8
+DATE: 2026-05-23T19:22:01.41059+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+1. Replaced formal 'ক্ষোভ' (bookish term for frustration/anger) with natural conv...
+
+[160] ID: e2ce8a8b-a3cb-4afc-b454-8b9f09c36dc6
+DATE: 2026-05-23T21:28:51.020193+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR TONE AND LENGTH SHIFT:
+
+a) DELETED ENTIRE SENTENCE: The agent removed 'We'll get this sorted f...
+
+[161] ID: d600cbb5-2328-4d0a-8d86-ac0078b09fa7
+DATE: 2026-05-24T06:24:45.12217+00:00
+RULE: Do not limit free domain eligibility to only 'shared and cloud hosting plans (Starter and above)'. The correct policy is: ALL hosting plans include a ...
+
+[162] ID: dace4ba2-42f7-4693-926b-721948bfba56
+DATE: 2026-05-24T06:24:36.17397+00:00
+RULE: Never over-promise on BDIX hosting reliability or uptime. If the customer asks about uptime/reliability for local BD hosting, the agent must proactive...
+
+[163] ID: 693c4ae1-9956-420f-b33c-1921430504b0
+DATE: 2026-05-24T08:44:34.142529+00:00
+RULE: When a customer sends 'Call Support' (a system keyword trigger), the agent must acknowledge in English and immediately state they are calling. Do not ...
+
+[164] ID: 234022b4-86ac-4ce6-946b-07c76368d3a2
+DATE: 2026-05-24T09:44:32.856947+00:00
+RULE: Never assume which package the customer is asking about. When a customer asks 'one year koto?' after seeing multiple plans, always clarify which speci...
+
+[165] ID: 553b3b7b-3828-4997-b95d-af06d66e6915
+DATE: 2026-05-24T10:24:00.526208+00:00
+RULE: Do not diagnose technical errors or provide multi-step troubleshooting instructions when the customer has not provided enough context. Always ask clar...
+
+[166] ID: 515664c2-ee60-49ef-b686-0a9a3212f6d0
+DATE: 2026-05-24T10:57:42.364904+00:00
+RULE: Never provide specific timeframes (like '5-10 minutes') for domain renewal propagation or backend updates unless you have confirmed technical details....
+
+[167] ID: 9f9c4b6d-3168-4c70-a4c7-73e393a2ea37
+DATE: 2026-05-24T11:39:45.757646+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- The AI draft was completely empty/non-existent, while the agent provided a SHOR...
+
+[168] ID: bf83822f-89d1-42ad-b39e-b5b092abab8f
+DATE: 2026-05-24T11:58:50.450704+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'জানাবেন' (informal future tense 'will inform') with 'জানাতে পারবেন' (...
+
+[169] ID: fd8278d7-ddf4-4e81-97f8-6a3c0fb1c3d0
+DATE: 2026-05-24T12:03:02.744897+00:00
+RULE: When a customer asks a question in Bengali (আমার একটি dot com.bd এর domain লাগবে), respond in Bengali, NOT in English. Match the customer's language i...
+
+[170] ID: 44e295be-0c45-466e-8b46-e40d4828984a
+DATE: 2026-05-24T12:09:20.66989+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION OF UNNECESSARY INSTRUCTIONS:
+
+a) REMOVED ENTIRE INSTRUCTIONAL SENTENCES: The agent de...
+
+[171] ID: 8914edde-1699-4378-bb48-cbba94517329
+DATE: 2026-05-24T12:12:17.313041+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- The agent removed the informal address term 'বস' (boss). While 'বস' can sound f...
+
+[172] ID: 3c50b453-3f2e-4838-bc8f-913b3d4308ef
+DATE: 2026-05-24T12:34:18.554907+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Agent completely removed the follow-up diagnostic question: 'Can you tell me, is th...
+
+[173] ID: 3660445d-68b3-4f34-b998-e53393223e2e
+DATE: 2026-05-24T12:35:46.164342+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES AND OVER-EXPLANATION:
+
+The agent removed the entire second paragraph that provided ste...
+
+[174] ID: 8eef2a83-4fdd-4c1f-bc5b-c960c0ec7e1f
+DATE: 2026-05-24T12:49:11.048872+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'Got it' with 'Let me' - The agent avoided casual confirmation languag...
+
+[175] ID: cf4a650e-b669-4abe-b186-d0a3964d5d95
+DATE: 2026-05-24T12:52:43.841242+00:00
+RULE: Do not offer actions or solutions that were not requested by the customer. If the customer is simply asking for clarification about a price discrepanc...
+
+[176] ID: 0a93f821-e103-474c-bf83-b1c791909d30
+DATE: 2026-05-24T12:56:48.241528+00:00
+RULE: Never provide generic payment method instructions or alternative options when the agent has already committed to manually updating the invoice for the...
+
+[177] ID: 6977a475-7e72-46a2-bfef-16d930989520
+DATE: 2026-05-24T13:09:23.309504+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'generate a fresh invoice' with 'update invoice' — agent chose simpler...
+
+[178] ID: 346a866a-abf4-4c3d-b893-4cfa3048cdc4
+DATE: 2026-05-24T14:05:15.177154+00:00
+RULE: Do not add unnecessary follow-up statements that the customer didn't ask for. When the customer asks a simple 'how-to' question, provide the core step...
+
+[179] ID: d2a7c484-abfb-4033-8b21-11ad9a57b6ea
+DATE: 2026-05-24T13:18:42.392034+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent completely removed the second sentence: 'Feel free to reach out anytime i...
+
+[180] ID: 08ddf93c-1adf-4581-a416-b5963ab20aac
+DATE: 2026-05-24T13:25:57.461871+00:00
+RULE: Never provide multi-paragraph technical explanations when the customer has not asked for them. When a customer reports domain availability discrepancy...
+
+[181] ID: 35e0ee10-2fc4-40c7-a3a1-49c3cec19c0b
+DATE: 2026-05-24T13:42:50.140186+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent completely removed the opening acknowledgment 'জ্বী, স্ক্রিণশট দেখছি।' Th...
+
+[182] ID: fdf42ee4-df94-4ae3-b962-97debca9dd7f
+DATE: 2026-05-24T14:07:34.421229+00:00
+RULE: Never provide cPanel login links or credentials without first confirming the customer's domain. The AI assumed the domain without asking, which could ...
+
+[183] ID: 8d65c858-46f1-4504-bef4-6ecb2dc32d0c
+DATE: 2026-05-24T14:09:33.016458+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY INFORMATION:
+
+a) DELETED ENTIRE INSTRUCTIONAL PARAGRAPH: The AI draf...
+
+[184] ID: e8f2f75a-39f3-454c-a2cc-d00b51d644dd
+DATE: 2026-05-24T14:34:49.331257+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted 'ধন্যবাদ রিপ্লাইর জন্য' (thank you for replying) opening. Agent replace...
+
+[185] ID: 16bbd7c3-8d37-4f0e-b76d-aa4a76b3ac49
+DATE: 2026-05-24T14:46:20.653886+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'এখনো অ্যাক্সেস করা যাচ্ছে না' (still cannot be accessed - implies ong...
+
+[186] ID: a76f246f-8704-40b4-bf7e-043e724f16d4
+DATE: 2026-05-24T14:49:20.104189+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES AND WHY:
+
+The agent removed an entire question block: 'এখন আপনার ডোমেইন রেজিস্ট্রার কো...
+
+[187] ID: 985dea64-aa58-466c-ad0f-f7ddb349c188
+DATE: 2026-05-24T14:51:38.922139+00:00
+RULE: Never ask multiple budget/traffic questions at once. Ask ONE specific question at a time. Do not mention 'Google/Facebook ads' unless the customer bri...
+
+[188] ID: d10874bb-6357-4b4e-9fb2-b455c9b13271
+DATE: 2026-05-24T14:54:39.215714+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFT:
+- Replaced 'আপনি' (you, formal standalone pronoun) with direct omission in 'কেমন আ...
+
+[189] ID: 93c8e973-a7d3-4073-a30c-0b45f74a3d78
+DATE: 2026-05-24T16:20:53.744844+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'কত রকম কন্টেন্ট' (how many types of content) with 'কি ধরনের কন্টেন্ট'...
+
+[190] ID: 6ee2e2f0-88b6-4989-846c-0d4cb9b1abba
+DATE: 2026-05-24T14:55:34.813798+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced the robotic phrase 'সম্পূর্ণভাবে হ্যান্ডেল করতে পারবে' (completely han...
+
+[191] ID: 42fc1a6a-15ef-4987-b4a7-20b71e827837
+DATE: 2026-05-24T15:01:21.922096+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Agent removed the entire third paragraph: 'আপনি যদি বেশি ট্রাফিক পান আরও এগিয়ে যেত...
+
+[192] ID: 1358cea5-9012-4cee-b3cf-dcfc6b6b0602
+DATE: 2026-05-24T15:02:51.899284+00:00
+RULE: Never recommend a higher-tier plan (e.g., Ultimate) when the agent already explicitly recommended a lower-tier plan (e.g., Starter) that fits the cust...
+
+[193] ID: 9f6c007e-7826-4e43-8296-927b5edacb18
+DATE: 2026-05-24T15:23:30.895066+00:00
+RULE: When a customer asks about VPS in Bengali ('ami vps nite chai'), NEVER respond with Web Hosting plans. Always match the product category the customer ...
+
+[194] ID: e4baa67f-1b41-42b8-8287-01a93f39277d
+DATE: 2026-05-24T15:25:16.878626+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION OF UNNECESSARY CONTENT:
+
+a) DELETED ENTIRE PARAGRAPH 1: The AI opened with 'জ্বী, অ...
+
+[195] ID: 358776f2-dcd5-45dc-a429-9a19886b4705
+DATE: 2026-05-24T15:30:57.740475+00:00
+RULE: When a customer asks a simple yes/no question ('phone call option ache?'), do NOT provide unsolicited long explanations about VPS vs shared hosting, t...
+
+[196] ID: 585197a1-eba3-400b-8465-61c1662e884e
+DATE: 2026-05-24T16:21:23.231596+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE DELETION FOR CONVERSATIONAL BREVITY:
+
+a) ENTIRE SENTENCES REMOVED:
+- Deleted 'I see you've b...
+
+[197] ID: 1278dc30-3414-4f8d-8014-1aeec07a4bfd
+DATE: 2026-05-24T18:49:41.791164+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION AND BREVITY SHIFT:
+
+a) DELETED ENTIRE UNNECESSARY GUIDANCE SENTENCES: The agent remov...
+
+[198] ID: 8d86fe99-cdbe-4735-9eeb-3a0f32c2e1dc
+DATE: 2026-05-24T16:18:52.133153+00:00
+RULE: Never assume customer requirements or jump to product recommendations without first gathering critical context. Always ask discovery questions to unde...
+
+[199] ID: ca20a8b2-cf4b-4e72-b193-a1f0df4eae6e
+DATE: 2026-05-24T16:23:16.556159+00:00
+RULE: When a customer switches to Bengali mid-conversation and the agent has been responding in Bengali, continue in Bengali. Do not revert to English unles...
+
+[200] ID: 7df0f0b0-25c2-4b27-89ac-655cb7a53170
+DATE: 2026-05-24T16:24:56.874203+00:00
+RULE: The AI recommended the wrong plan (Starter) when the agent specifically recommended the Pro plan. Always recommend the Pro plan for company portfolios...
+
+[201] ID: 6455fbff-833e-48ba-a86a-1345773f6da0
+DATE: 2026-05-24T16:26:57.796156+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE simplification and brevity shift:
+
+a) DELETED ENTIRE GREETING PHRASE: The AI used 'Hey there...
+
+[202] ID: 28b06770-f577-4149-8c91-945432852e0c
+DATE: 2026-05-24T16:30:11.6335+00:00
+RULE: Do not assume troubleshooting steps or provide instructions without first diagnosing the issue. When a customer reports a control panel change not tak...
+
+[203] ID: eb89aa2c-849b-43c9-89f5-770c442f7a74
+DATE: 2026-05-24T16:28:23.052192+00:00
+RULE: When a customer repeats 'just reactjs' after you've already explained the technical requirements multiple times, do NOT re-explain the same technical ...
+
+[204] ID: 65059f50-6e38-4505-94e7-2b0b643975be
+DATE: 2026-05-24T16:31:20.736912+00:00
+RULE: Do not ask for additional information (like hosting plan details) unless the agent's next action requires it. If escalating to a ticket, trust that th...
+
+[205] ID: 44446053-6616-4b56-a9e1-b0134fa9e1c0
+DATE: 2026-05-24T17:22:29.573215+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- DELETED 'Hey there!' greeting entirely. The agent removed this casual opener, c...
+
+[206] ID: 2ad8ca4c-a468-4760-b539-55c3744e03fb
+DATE: 2026-05-24T17:41:29.733317+00:00
+RULE: Do not offer unsolicited additional assistance or ask follow-up questions when the customer has not requested them. If the customer makes a simple req...
+
+[207] ID: 0a3cef84-df20-419e-9a1a-243d4935d027
+DATE: 2026-05-24T18:02:32.078676+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - PRIMARY CHANGE:
+The agent removed the entire first line 'জ্বী, আপনার সাথে কল করেছি। ...
+
+[208] ID: 0bd8aa6d-013f-480e-927c-3ca063094e77
+DATE: 2026-05-24T18:03:24.432951+00:00
+RULE: Style-only correction, no factual error. | STYLE: COMPLETE MESSAGE REPLACEMENT - The agent deleted the entire AI draft and replaced it with a direct, ...
+
+[209] ID: 14218aa8-6bb6-4863-af97-5de8bc86038f
+DATE: 2026-05-24T18:26:10.882388+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY & STRUCTURE ANALYSIS:
+
+a) EXTREME BREVITY - The agent's response is drastically shorter t...
+
+[210] ID: 75da0080-d325-4aa3-844e-8b8a917be349
+DATE: 2026-05-24T18:33:22.289222+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED ENTIRE SENTENCE: The agent removed 'আপনার সর্বশেষ যেই প্রশ্নটি জানতে চেয়েছেন সেটি আমাদের কা...
+
+[211] ID: 560ba1b0-d756-4357-91f4-47f9033af06d
+DATE: 2026-05-24T18:41:43.181599+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+1. Removed opening 'জ্বী' (yes) - Agent opted for a direct start instead of the p...
+
+[212] ID: b3d08348-993d-4951-b3fe-896d4cb54311
+DATE: 2026-05-24T18:44:34.604032+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The AI added an unnecessary follow-up question at the end: 'আপনি কোনটি পছন্দ করবেন,...
+
+[213] ID: a9226d1d-a23c-4ed9-b46f-1a787be42fbb
+DATE: 2026-05-24T18:48:10.178706+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- The agent removed the entire closing line 'যেকোনো প্রয়োজনে আমাদের সাথে থাকুন।' (St...
+
+[214] ID: 093e7f69-285d-4bd7-b976-b99aeea746b2
+DATE: 2026-05-24T19:32:40.979608+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- No vocabulary replacements occurred; the agent kept the same opening phrase 'জ্...
+
+[215] ID: d5219066-e4ec-42c5-932b-913bf6570946
+DATE: 2026-05-24T19:49:15.605288+00:00
+RULE: Do not add unnecessary reassurances like 'everything is fine now' when the customer has not yet confirmed resolution. Only state what you have verifie...
+
+[216] ID: ca1543a2-2226-4a75-b7bb-843384d51212
+DATE: 2026-05-24T19:50:31.932724+00:00
+RULE: Never promise proactive follow-up actions (like 'send you an update via email shortly') or cache-clearing tasks unless explicitly confirmed you will p...
+
+[217] ID: 2817da15-b086-4226-ba3a-46c88dc39ab5
+DATE: 2026-05-24T19:52:01.679409+00:00
+RULE: Never recommend alternative products or plans that the customer did not ask for. If BDIX hosting cannot provide the requested resources, state the lim...
+
+[218] ID: 5b441001-151c-491f-a0d3-f5f10347b04e
+DATE: 2026-05-24T19:55:16.991195+00:00
+RULE: When a customer specifies 5-10K daily active users and 100K total users, recommend Turbo Ultimate (10 Core CPU, 10GB RAM, 100 Mbps I/O) instead of Tur...
+
+[219] ID: ac43ec4d-e032-4672-8c09-ae2f5e5792c0
+DATE: 2026-05-24T20:27:47.772404+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced formal 'শক্তিশালী সার্ভার' (powerful server) with conversational 'স্ট্...
+
+[220] ID: 69a77715-a292-4c68-94f5-9b0e25a8e5b9
+DATE: 2026-05-24T20:30:26.881775+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+1. Replaced '১১০কে+ ইউজার' (direct transliteration using 'k' suffix) with '১ লাখে...
+
+[221] ID: 21d5ac4b-eb33-4a2e-a71a-0bd985574732
+DATE: 2026-05-24T20:33:42.952632+00:00
+RULE: When recommending RAM for high-load dedicated servers handling 5000 requests per second, specify 128GB RAM, not 64GB or lower. Always match the Perfor...
+
+[222] ID: 4473f305-27cb-46b3-85d6-102710ac7ad8
+DATE: 2026-05-24T20:36:57.463542+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Replaced 'এতে' (in this) with 'এই সা‍র্ভারে' (in this server) - more specific a...
+
+[223] ID: 4644cc26-aa80-4e5f-8848-7e9465881f10
+DATE: 2026-05-24T20:38:50.519763+00:00
+RULE: When a customer asks specific technical specs (DDR type, CPU model), provide the EXACT hardware specification directly without asking follow-up questi...
+
+[224] ID: f674b67f-89c8-432d-895e-440d6e3d2501
+DATE: 2026-05-24T20:40:40.531823+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION OF UNNECESSARY ELABORATION:
+
+a) ENTIRE SECOND PARAGRAPH DELETED:
+The AI wrote: 'পারফর...
+
+[225] ID: ba9c6f15-615f-49d9-8105-2bb01e79c844
+DATE: 2026-05-24T20:43:29.268018+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - CRITICAL PATTERN:
+The agent deleted the entire follow-up question 'কোন অন্য কোয়েশ্চ...
+
+[226] ID: bc2234f3-651a-46c6-ac29-2a4182bea287
+DATE: 2026-05-24T20:45:28.970597+00:00
+RULE: cPanel/WHM are NOT built-in with dedicated servers. They are separate paid licenses that customers must purchase independently. Never promise that cPa...
+
+[227] ID: 1f0b61a7-1ec5-4828-92dd-a090c211a266
+DATE: 2026-05-24T20:46:44.201241+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR STRUCTURAL AND TONAL CHANGES:
+
+a) DELETED CORPORATE OVER-PROMISE:
+- AI included: 'আপনার ৫ হাজা...
+
+[228] ID: 4899949a-d28c-47b7-b873-79fd77c11e2a
+DATE: 2026-05-24T20:47:40.564734+00:00
+RULE: When customer asks for cPanel/WHM pricing, provide the specific Admin Cloud License price (4,000 BDT/month) directly. Do not say pricing is unavailabl...
+
+[229] ID: ca89fa0c-e1de-484f-bdf4-ae72a2e96a00
+DATE: 2026-05-24T20:57:05.743701+00:00
+RULE: Do not fabricate pricing or payment structures. If a customer asks whether they need to pay extra fees for bringing their own cPanel license from anot...
+
+[230] ID: 61531bee-ec3b-4c15-ba08-77523702e17f
+DATE: 2026-05-24T20:58:40.017189+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES - Agent removed the closing line 'আপনার যদি কোন আরও প্রশ্ন থাকে তাহলে জানাবেন, আমরা সা...
+
+[231] ID: 506146d8-6d3e-458f-b40f-f617a93a438c
+DATE: 2026-05-24T21:03:01.976965+00:00
+RULE: Never invent promotional offers or discounts that don't exist. The AI fabricated a 'waived setup fee discount' narrative when the reality was simply t...
+
+[232] ID: a0c463f1-939b-4c25-8209-1cda3bfc7faa
+DATE: 2026-05-24T21:05:51.646302+00:00
+RULE: Do not prematurely thank the customer for ordering when they have only asked about setup time. Avoid mentioning 'control panel access' in setup detail...
+
+[233] ID: c8d0b4ed-8d9a-4d23-80d4-b3352c012b31
+DATE: 2026-05-24T21:09:46.722574+00:00
+RULE: Never ask unnecessary follow-up questions about budget or payment options when the customer has already clearly indicated which plan they want to purc...
+
+[234] ID: 3df7388d-6e4e-423f-8201-db312982a283
+DATE: 2026-05-24T21:11:37.198341+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- DELETED 'আমি বুঝেছি' (I understood) - This sounds robotic and unnecessary ackno...
+
+[235] ID: fb1ba32c-d002-41a0-96c2-f8426ad64b0f
+DATE: 2026-05-24T21:14:46.830365+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Changed 'আপনার নম্বরটি নোট করে রেখেছি' to 'আমি আপনার নম্বরটি নোট করে রেখেছি' by...
+
+[236] ID: 7a655efd-99c5-4886-8525-a9e65b5e88a2
+DATE: 2026-05-24T21:30:58.175704+00:00
+RULE: When a customer greets in English ('hey'), respond in English, not Bengali. Match the customer's language choice unless they explicitly switch languag...
+
+[237] ID: 49536be0-ae73-4e87-996d-80b21ec31b02
+DATE: 2026-05-24T21:32:34.471894+00:00
+RULE: When a customer shares their domain and states they purchased hosting today but can't login to cPanel, do NOT assume they received credentials or expl...
+
+[238] ID: 4aee8279-deb9-4e12-83f6-4b50a8fa41f6
+DATE: 2026-05-24T21:45:09.278755+00:00
+RULE: Never promise delivery timelines or specific actions (like 'sending details now') unless you have confirmed the backend process is complete. The AI in...
+
+[239] ID: 01057ff3-b680-4950-9677-aa4794d69e3e
+DATE: 2026-05-24T21:36:37.431798+00:00
+RULE: Never promise specific timelines (like '৫ থেকে ১০ মিনিটের মধ্যে') for bank transfer payments. Always inform customers that bank transfers require proc...
+
+[240] ID: ac8f6581-fa93-4329-a287-5ff6a3f4dec6
+DATE: 2026-05-24T21:40:05.38378+00:00
+RULE: Never promise exact timelines (e.g., 'দুই তিন মিনিটের মধ্যেই') for bank payment processing or server activation, even if NPSB is instant. Always use s...
+
+[241] ID: 3584ba77-0aed-46db-bd40-41bbb1b7884b
+DATE: 2026-05-24T21:43:42.294538+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR STRUCTURAL OVERHAUL:
+
+a) COMPLETE MESSAGE REWRITE - The agent deleted almost the entire AI dra...
+
+[242] ID: fd495ae1-b92d-4593-9966-d97eeaef9e71
+DATE: 2026-05-24T21:46:20.984248+00:00
+RULE: Style-only correction, no factual error. | STYLE: MAJOR DELETION OF REDUNDANT INFORMATION:
+
+a) DELETED ENTIRE FIRST LINE: The AI wrote 'Got it. Check ...
+
+[243] ID: c2245274-0b86-48cb-8673-65ff9ba053a6
+DATE: 2026-05-24T21:47:57.378413+00:00
+RULE: Style-only correction, no factual error. | STYLE: DELETED LINES:
+- Removed the opening confirmation phrase 'Got it. I've updated the nameserver to you...
+
+[244] ID: 182683bb-8a9d-45e0-ab64-23ffd703a7a0
+DATE: 2026-05-24T21:52:00.748265+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Deleted technical phrase 'Once the nameservers fully propagate' entirely. The a...
+
+[245] ID: 95e9ec86-b06b-4251-b548-672e665c106c
+DATE: 2026-05-24T22:17:03.347935+00:00
+RULE: Never assume what the customer is asking about. When a customer says 'আপনি কিছু বুঝেননি' (you didn't understand), do NOT continue explaining your prev...
+
+[246] ID: 62740517-ce17-4615-a6c7-444b47b1fcf7
+DATE: 2026-05-24T22:30:11.382854+00:00
+RULE: Always provide the exact current pricing for packages. The AI incorrectly stated ৳৩,৬০০ for the Pro package when the correct price is ৳৭,১৮৮ for 1 yea...
+
+[247] ID: 3bd3b65f-50c2-4263-87c4-4b974d60daf9
+DATE: 2026-05-25T00:05:20.230476+00:00
+RULE: Do not suggest Intel Xeon E-2388G when the customer originally requested Ryzen 9 7950X. Stay within the same product family (AMD Ryzen) unless explici...
+
+[248] ID: 64211265-bc92-46eb-ac38-ef9bfb36ccba
+DATE: 2026-05-24T22:23:49.981671+00:00
+RULE: Never provide specific configuration details, pricing estimates, or promise 'team will email quotation' when the customer asks for custom specs if you...
+
+[249] ID: 7dd78004-b786-4314-9de7-9b9d72511934
+DATE: 2026-05-24T22:26:22.292561+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- Agent ADDED the opening phrase 'আপনি পুরো সাইট, এপ্লিকেশন সবকিছুরই ব্যাকআপ নিয়...
+
+[250] ID: df66653e-043a-418f-969e-71cd87184a05
+DATE: 2026-05-24T22:28:54.054963+00:00
+RULE: Style-only correction, no factual error. | STYLE: VOCABULARY SHIFTS:
+- AI used 'ভালো, তাহলে সবকিছু ক্লিয়ার হয়েছে বুঝছি' (Good, so I understand every...
+
+[251] ID: d139d586-036d-4615-a023-3fcc1a981226
+DATE: 2026-05-25T00:07:24.438521+00:00
+RULE: Style-only correction, no factual error. | STYLE: MASSIVE OVER-EXPLANATION REMOVAL:
+
+a) DELETED ENTIRE UNNECESSARY SENTENCES:
+   - AI wrote 'আপনার ওনা...
+
+[252] ID: 0ff35690-416e-4f0b-b473-c7c61b9ee2d1
+DATE: 2026-05-25T00:17:32.413426+00:00
+RULE: Do not provide detailed pricing, feature lists, or follow-up qualification questions unless the customer explicitly requests a breakdown or recommenda...

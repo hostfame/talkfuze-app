@@ -1,0 +1,211 @@
+const fs = require('fs');
+
+const content = `import { NextRequest, NextResponse } from 'next/server'
+import { whmcsRequest, getClientDetailsByEmailFast, openTicket } from '@/lib/whmcs'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// POST /api/widget/otp
+// action: "send" | "verify"
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { action, email, otp, conversationId, orgId, intent = 'convert_ticket' } = body
+
+    if (!orgId) {
+      return NextResponse.json({ success: false, error: 'orgId required.' }, { status: 400 })
+    }
+
+    if (action === 'send' || action === 'prepare_otp') {
+      if (!email || !email.includes('@')) {
+        return NextResponse.json({ success: false, error: 'Valid email required.' }, { status: 400 })
+      }
+
+      // Look up client in WHMCS
+      const client = await getClientDetailsByEmailFast(email)
+      if (!client || !client.id) {
+        return NextResponse.json({ success: false, error: 'No account found for this email. Please check and try again.' }, { status: 404 })
+      }
+
+      const code = generateOTP()
+      const expires = Date.now() + 10 * 60 * 1000 // 10 minutes
+
+      // Store OTP in contacts table
+      const { error: upsertErr } = await supabaseAdmin
+        .from('contacts')
+        .upsert({
+          org_id: orgId,
+          platform_type: 'otp',
+          platform_id: email.toLowerCase(),
+          name: client.firstname,
+          metadata: { code, expires, clientId: client.id, conversationId }
+        }, { onConflict: 'org_id, platform_type, platform_id' })
+
+      if (upsertErr) {
+        console.error("OTP UPSERT ERR:", upsertErr);
+        return NextResponse.json({ success: false, error: 'Failed to generate OTP.' }, { status: 500 })
+      }
+
+      // If action is prepare_otp, return early so frontend can optimistically show the OTP screen
+      if (action === 'prepare_otp') {
+         return NextResponse.json({ success: true, name: client.firstname })
+      }
+
+      // Otherwise, continue to dispatch (for backwards compatibility or simple calls)
+      const subject = \`Your Support Chat Login OTP: \${code}\`
+      const message = \`
+Hello \${client.firstname},
+
+Your one-time login code for Support Chat is:
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">\${code}</h1>
+This code expires in <strong>10 minutes</strong>.
+
+If you did not request this, you can safely ignore this email.
+
+- Hostnin Support Team
+\`
+      await whmcsRequest('SendEmail', {
+        customtype: 'general',
+        id: client.id,
+        customsubject: subject,
+        custommessage: message,
+      }, 15000, 1, true)
+
+      return NextResponse.json({ success: true, name: client.firstname })
+    }
+
+    if (action === 'dispatch_email') {
+      if (!email) return NextResponse.json({ success: false, error: 'Email required.' }, { status: 400 })
+      
+      const { data: records } = await supabaseAdmin
+        .from('contacts')
+        .select('metadata')
+        .eq('org_id', orgId)
+        .eq('platform_type', 'otp')
+        .eq('platform_id', email.toLowerCase())
+        .limit(1)
+
+      const record = records && records.length > 0 ? records[0].metadata : null;
+      if (!record || !record.code) return NextResponse.json({ success: false, error: 'No OTP generated.' }, { status: 400 })
+      
+      const client = await getClientDetailsByEmailFast(email)
+      if (!client || !client.id) return NextResponse.json({ success: false }, { status: 404 })
+
+      const subject = \`Your Support Chat Login OTP: \${record.code}\`
+      const message = \`
+Hello \${client.firstname},
+
+Your one-time login code for Support Chat is:
+<h1 style="font-size:36px;letter-spacing:8px;color:#0070f3;font-family:monospace;margin:10px 0;">\${record.code}</h1>
+This code expires in <strong>10 minutes</strong>.
+
+If you did not request this, you can safely ignore this email.
+
+- Hostnin Support Team
+\`
+      await whmcsRequest('SendEmail', {
+        customtype: 'general',
+        id: client.id,
+        customsubject: subject,
+        custommessage: message,
+      }, 15000, 1, true)
+
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === 'verify') {
+      if (!email || !otp) {
+        return NextResponse.json({ success: false, error: 'Email and OTP required.' }, { status: 400 })
+      }
+
+      const { data: records } = await supabaseAdmin
+        .from('contacts')
+        .select('id, metadata')
+        .eq('org_id', orgId)
+        .eq('platform_type', 'otp')
+        .eq('platform_id', email.toLowerCase())
+        .limit(1)
+
+      const contactRec = records && records.length > 0 ? records[0] : null;
+      const record = contactRec ? contactRec.metadata : null;
+
+      if (!record || !record.code) {
+        return NextResponse.json({ success: false, error: 'No OTP request found. Please send a new code.' }, { status: 400 })
+      }
+
+      const cleanup = async () => {
+        await supabaseAdmin.from('contacts').delete().eq('id', contactRec.id)
+      }
+
+      if (Date.now() > record.expires) {
+        await cleanup()
+        return NextResponse.json({ success: false, error: 'OTP expired. Please request a new one.' }, { status: 400 })
+      }
+
+      if (record.code !== otp.trim()) {
+        return NextResponse.json({ success: false, error: 'Incorrect code. Please try again.' }, { status: 400 })
+      }
+
+      // Handle simple login intent
+      if (intent === 'login') {
+        await cleanup()
+        return NextResponse.json({ 
+          success: true, 
+          clientId: record.clientId,
+          name: record.name || 'User',
+          message: 'Login successful' 
+        })
+      }
+
+      // OTP valid - convert chat to ticket (default intent)
+      const { data: messages } = await supabaseAdmin
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', record.conversationId)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      let ticketId: string | null = null
+
+      if (messages && messages.length > 0) {
+        messages.reverse()
+        const subjectMsg = messages.find((m: { sender_type: string; content: string }) => m.sender_type !== 'contact' && m.content) || messages[0]
+        const subject = subjectMsg ? subjectMsg.content.substring(0, 60) + (subjectMsg.content.length > 60 ? '...' : '') : 'WhatsApp Chat Escalation'
+        const transcript = messages.map((m: { sender_type: string; agent?: { name?: string }; content: string }) => {
+          if (m.sender_type === 'system') return \`* \${m.content} *\`
+          if (m.sender_type === 'ai') return \`AI Assistant:\n\${m.content}\`
+          const name = m.sender_type === 'agent' ? m.agent?.name || 'Support Agent' : 'Myself'
+          return \`\${name}:\n\${m.content}\`
+        }).join('\n\n')
+
+        const finalMessage = \`Hi Team! 👋\n\nThis ticket was created from my recent live chat. Please read the chat and help me further.\n\n--- Chat History ---\n\n\${transcript}\`
+        const result = await openTicket(record.clientId, 1, subject, finalMessage)
+        ticketId = result.tid || null
+      }
+
+      await cleanup()
+
+      return NextResponse.json({
+        success: true,
+        ticketId,
+        clientId: record.clientId,
+        name: record.name,
+        message: ticketId
+          ? \`Ticket #\${ticketId} created successfully! Our team will respond shortly.\`
+          : 'Verified! Our team has received your request.',
+      })
+    }
+
+    return NextResponse.json({ success: false, error: 'Invalid action.' }, { status: 400 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
+    console.error('[OTP API]', message)
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
+  }
+}
+`
+
+fs.writeFileSync('src/app/api/widget/otp/route.ts', content);

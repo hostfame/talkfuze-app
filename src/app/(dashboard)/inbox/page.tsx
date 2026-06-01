@@ -53,7 +53,7 @@ export default function InboxPage() {
     }
   }, [])
   const [recordingState, setRecordingState] = useState<Record<string, boolean>>({})
-  const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, avatar_url?: string, activity: 'viewing' | 'typing', timestamp: number }>>>({})
+  const [agentActivity, setAgentActivity] = useState<Record<string, Record<string, { name: string, avatar_url?: string, activity: 'viewing' | 'typing', is_whisper?: boolean, activity_type?: 'typing' | 'recording' | 'editing' | 'drafting', timestamp: number }>>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const typingTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({})
 
@@ -700,6 +700,7 @@ export default function InboxPage() {
             }, 3000);
           }
         } else if (direction === 'agent' && agent_id && agent_id !== currentUser?.id) {
+          const { is_whisper, activity_type } = payload.payload;
           // Track other agents typing - completely remove them when typing stops
           setAgentActivity(prev => {
             const next = { ...prev };
@@ -712,6 +713,8 @@ export default function InboxPage() {
                   name: agent_name || 'Agent',
                   avatar_url: agent_avatar,
                   activity: 'typing',
+                  is_whisper: !!is_whisper,
+                  activity_type: activity_type || 'typing',
                   timestamp: Date.now()
                 }
               };
