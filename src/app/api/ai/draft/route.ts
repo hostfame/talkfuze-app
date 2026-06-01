@@ -29,6 +29,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|amra|amader|tomar|apnar|ki|kobe|kothay|keno|kemon|koyta|valo|bhalo|kharap|ache|achi|nai|na|ha|ji|haan|kore|korbo|korte|koro|korun|hobe|hoiche|hoy|hoite|jabe|jai|jacche|somossa|somosya|kaj|kotha|bhai|vai|bhaiya|vaiya|apu|tk|taka|din|den|daw|debo|dibo|dicchi|nibo|nibe|niben|nile|lagbe|eita|oita|ekhon|pore|kalke|ajke|eta|ota)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
 
 // ============================================================
@@ -294,14 +295,25 @@ export async function POST(req: Request) {
       activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
-    // Server-side language detection: check latest customer message via Unicode range.
+    // Server-side language detection: check latest customer messages for Bengali/Banglish
     // This is the source of truth - not the LLM's guess from a prompt full of Bengali text.
-    // BENGALI_REGEX checks for actual Bengali Unicode script characters (no Banglish fragility).
-    // Default to 'bn' for ambiguous/short messages so Bengali customers aren't broken.
-    const detectedLanguage: 'en' | 'bn' = (
-      latestCustomerMessageCleaned.length > 3 &&
-      !BENGALI_REGEX.test(latestCustomerMessageCleaned)
-    ) ? 'en' : 'bn';
+    let detectedLanguage: 'en' | 'bn' = 'en';
+    const last3CustomerMessages = customerMessages.slice(-3).map(m => m.content).join(' ');
+    
+    if (BENGALI_REGEX.test(last3CustomerMessages)) {
+      // 1. Bengali script detected anywhere in last 3 messages -> Bengali
+      detectedLanguage = 'bn';
+    } else if (BANGLISH_REGEX.test(latestCustomerMessageCleaned)) {
+      // 2. Banglish word detected in the latest message -> Bengali
+      detectedLanguage = 'bn';
+    } else if (latestCustomerMessageCleaned.length <= 15) {
+      // 3. Ambiguous short message -> check last 3 customer messages for Banglish too
+      if (BANGLISH_REGEX.test(last3CustomerMessages)) {
+        detectedLanguage = 'bn';
+      } else {
+        detectedLanguage = 'bn'; // Default to 'bn' as safe fallback for local customers
+      }
+    }
 
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
     const cappedContextMessages = conversationLines.slice(-20).join('\n');
