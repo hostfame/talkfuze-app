@@ -51,6 +51,10 @@ export async function whmcsRequest<T extends WHMCSResponse>(
             const requestHeaders: Record<string, string> = {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'User-Agent': 'HostninPortal/1.0',
+                // Domain identity header - validated by bridge's ALLOWED_ORIGINS check.
+                // This ensures the bridge only accepts calls from our own infrastructure,
+                // even if the bridge_secret were ever compromised.
+                'X-Origin-Domain': 'talkfuze.com',
             };
 
             // Pass real user IP so bridge can do per-user rate limiting

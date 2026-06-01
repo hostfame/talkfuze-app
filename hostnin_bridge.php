@@ -33,8 +33,23 @@ if (file_exists($bridgeSecretFile)) {
 }
 
 // Allowed IP addresses (add your CapRover server IP for maximum security)
-// Example: ['1.2.3.4', '5.6.7.8']
+// Example: ['203.0.113.10', '198.51.100.5']
 define('ALLOWED_IPS', []);
+
+// Allowed origin domains - requests MUST come from these domains.
+// Any subdomain of these is also allowed (e.g. portal.hostnin.com, app.talkfuze.com).
+// The Next.js bridge client sends 'X-Origin-Domain: talkfuze.com' on every request.
+// If ALLOWED_ORIGINS is empty, no domain restriction is enforced (NOT recommended for production).
+define('ALLOWED_ORIGINS', [
+    'talkfuze.com',
+    'hostnin.com',
+]);
+
+// Enable HMAC request signing (recommended: true in production).
+// When enabled, every request must include 'request_ts' (Unix timestamp) and 'request_sig'
+// (HMAC-SHA256 of "action:timestamp" signed with BRIDGE_SECRET).
+// Protects against replay attacks - signature is valid for 5 minutes only.
+define('ENABLE_HMAC_SIGNING', false); // Set to true after deploying updated Next.js client
 
 // Enable logging for debugging (disable in production)
 define('BRIDGE_DEBUG', false);
@@ -60,6 +75,67 @@ function bridgeLog($message)
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         file_put_contents($logFile, "[{$timestamp}] [{$ip}] {$message}\n", FILE_APPEND);
     }
+}
+
+// Check allowed origin domain
+// The origin is sent as a custom header 'X-Origin-Domain' from our Next.js backend.
+// We check it here to ensure only our own domains can call the bridge.
+function checkOriginAllowed()
+{
+    if (empty(ALLOWED_ORIGINS)) {
+        return true; // No domain restriction configured
+    }
+
+    // Read the origin domain header sent by our Next.js client
+    $originDomain = $_SERVER['HTTP_X_ORIGIN_DOMAIN'] ?? '';
+
+    if (empty($originDomain)) {
+        bridgeLog('BLOCKED: Missing X-Origin-Domain header');
+        return false;
+    }
+
+    // Normalize - strip any port or protocol
+    $originDomain = strtolower(trim($originDomain));
+    $originDomain = preg_replace('/^https?:\/\//', '', $originDomain);
+    $originDomain = explode(':', $originDomain)[0]; // strip port
+    $originDomain = explode('/', $originDomain)[0]; // strip path
+
+    foreach (ALLOWED_ORIGINS as $allowed) {
+        $allowed = strtolower(trim($allowed));
+        // Exact match OR subdomain match (e.g. app.hostnin.com matches hostnin.com)
+        if ($originDomain === $allowed || str_ends_with($originDomain, '.' . $allowed)) {
+            return true;
+        }
+    }
+
+    bridgeLog('BLOCKED: Origin domain not allowed: ' . $originDomain);
+    return false;
+}
+
+// Verify HMAC request signature (replay attack protection)
+// Next.js sends: request_ts=<unix_timestamp>&request_sig=<hmac_sha256("action:ts", secret)>
+// Signature is only valid within a 5-minute window.
+function verifyHmacSignature($action, $timestamp, $signature)
+{
+    if (!ENABLE_HMAC_SIGNING) {
+        return true; // Signing not enforced yet
+    }
+
+    if (empty($timestamp) || empty($signature)) {
+        return false;
+    }
+
+    $now = time();
+    $ts = (int) $timestamp;
+
+    // Reject requests older than 5 minutes or more than 1 minute in the future
+    if (abs($now - $ts) > 300) {
+        bridgeLog('BLOCKED: HMAC timestamp out of range: ' . $ts);
+        return false;
+    }
+
+    $expected = hash_hmac('sha256', $action . ':' . $ts, BRIDGE_SECRET);
+    return hash_equals($expected, $signature);
 }
 
 // IP Restriction Check
@@ -160,6 +236,12 @@ try {
         die(json_encode(['result' => 'error', 'message' => 'Access denied']));
     }
 
+    // Check origin domain restriction
+    if (!checkOriginAllowed()) {
+        http_response_code(403);
+        die(json_encode(['result' => 'error', 'message' => 'Access denied']));
+    }
+
     // Verify bridge secret
     $providedSecret = $_POST['bridge_secret'] ?? '';
     if (!verifySecret($providedSecret)) {
@@ -174,6 +256,15 @@ try {
         bridgeLog('ERROR: No action specified');
         http_response_code(400);
         die(json_encode(['result' => 'error', 'message' => 'No action specified']));
+    }
+
+    // Verify HMAC signature (replay attack protection)
+    $requestTs = $_POST['request_ts'] ?? '';
+    $requestSig = $_POST['request_sig'] ?? '';
+    if (!verifyHmacSignature($action, $requestTs, $requestSig)) {
+        bridgeLog('BLOCKED: Invalid or expired HMAC signature for action: ' . $action);
+        http_response_code(401);
+        die(json_encode(['result' => 'error', 'message' => 'Invalid request signature']));
     }
 
     // Check rate limit
