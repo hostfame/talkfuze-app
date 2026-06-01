@@ -18,6 +18,7 @@ import type { AppMessage, ConversationParticipant, ConversationWithDetails, Quic
 // removed generateAiDraft import
 import { logAiDraft, completeAiDraftLog } from "@/actions/ai-learning"
 import { playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
+import { postTabSync } from "@/lib/tab-sync"
 
 interface StagedAttachment {
   file: File;
@@ -2164,6 +2165,21 @@ export default function ChatThread({
     setParticipants([...participants, { user_id: currentUser.id, role: 'agent' } as unknown as ConversationParticipant])
     setIsInternal(false) // Auto-switch to reply mode
     setIsJoining(true)
+
+    // INSTANT CLIENT-SIDE BROADCAST to instantly stop ringing on other devices
+    try {
+      supabase.channel(`typing:${orgId}`).send({
+        type: 'broadcast',
+        event: 'conversationJoined',
+        payload: {
+          conversation_id: conversationId,
+          user_id: currentUser.id,
+          user_name: currentUser.name,
+        }
+      });
+      // Also tell other tabs in THIS browser (Supabase sends 1 msg per client, not per tab)
+      postTabSync({ type: 'conversationJoined', conversation_id: conversationId, user_id: currentUser.id, user_name: currentUser.name });
+    } catch (err) {}
     
     try {
       const updated = await joinConversation(conversationId)
@@ -3090,6 +3106,21 @@ export default function ChatThread({
       const prevParticipants = [...participants]
       setParticipants([...participants, { user_id: currentUser?.id, role: 'agent' } as unknown as ConversationParticipant])
       
+      // INSTANT CLIENT-SIDE BROADCAST to instantly stop ringing on other devices
+      try {
+        supabase.channel(`typing:${orgId}`).send({
+          type: 'broadcast',
+          event: 'conversationJoined',
+          payload: {
+            conversation_id: conversationId,
+            user_id: currentUser?.id,
+            user_name: currentUser?.name,
+          }
+        });
+        // Also tell other tabs in THIS browser
+        postTabSync({ type: 'conversationJoined', conversation_id: conversationId, user_id: currentUser?.id || '', user_name: currentUser?.name });
+      } catch (err) {}
+
       const currentStoreMsgs = useInboxStore.getState().messagesMap[conversationId] || [];
       const lastMsg = currentStoreMsgs[currentStoreMsgs.length - 1];
       const lastTime = lastMsg ? new Date(lastMsg.created_at).getTime() : 0;
@@ -5695,23 +5726,9 @@ export default function ChatThread({
                   }
                 }}
                   placeholder={isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                  className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] placeholder:text-transparent ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
-                  style={{ color: 'transparent', caretColor: isInternal ? '#d97706' : '#0070f3' }}
+                  className={`w-full bg-transparent p-4 text-[14px] focus:outline-none min-h-[90px] resize-none overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] font-normal leading-relaxed relative z-[2] ${isInternal ? 'text-amber-950 dark:text-amber-100 placeholder:text-amber-700/55 dark:placeholder:text-amber-500/40' : 'text-slate-800 dark:text-[#d1d7db] placeholder:text-slate-400 dark:placeholder:text-[#8696a0]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''} ${isAiStreaming ? 'caret-blue-500' : ''}`}
+                  style={{ caretColor: isInternal ? '#d97706' : '#0070f3' }}
                 ></textarea>
-                
-                {/* Synchronized rich formatting backdrop overlay */}
-                <div 
-                  ref={overlayRef}
-                  className={`absolute inset-0 p-4 text-[14px] font-normal leading-relaxed whitespace-pre-wrap break-words overflow-y-auto pointer-events-none select-none z-[1] [&::-webkit-scrollbar]:!hidden [&::-webkit-scrollbar]:!w-0 [&::-webkit-scrollbar]:!h-0 [-ms-overflow-style:none] [scrollbar-width:none] text-left ${isInternal ? 'text-amber-950 dark:text-amber-100' : 'text-slate-800 dark:text-[#d1d7db]'} ${stagedAttachments.length > 0 ? 'pt-2 min-h-[60px]' : ''}`}
-                >
-                  {input ? (
-                    formatComposerMarkdown(input)
-                  ) : (
-                    <span className={isInternal ? 'text-amber-700/55 dark:text-amber-500/40' : 'text-slate-400 dark:text-[#8696a0]'}>
-                      {isInternal ? "Add an internal whisper (customer won't see this)..." : "Reply to customer... Type '/' for quick replies"}
-                    </span>
-                  )}
-                </div>
               </div>
               
 

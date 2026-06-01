@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth-context"
 import { playUISound, sendDesktopNotification, updateTabBadge, startTabTitleFlash, playUnassignedRingLoop, stopUnassignedRingLoop, playIncomingRingtoneLoop, stopIncomingRingtoneLoop } from "@/lib/sounds"
 import type { AppMessage, ConversationWithDetails, UserProfile } from "@/lib/types"
 import { normalizeMessage, normalizeConversation } from "@/lib/sanitizers"
+import { postTabSync, subscribeTabSync } from "@/lib/tab-sync"
 
 export default function InboxPage() {
   const currentUser = useAuth()
@@ -741,7 +742,7 @@ export default function InboxPage() {
       })
       .on('broadcast', { event: 'conversationJoined' }, (payload) => {
         // Instantly mark conversation as picked up in the store so the ring stops immediately
-        const { conversation_id, user_id } = payload.payload || {};
+        const { conversation_id, user_id, user_name } = payload.payload || {};
         if (!conversation_id || !user_id) return;
         const store = useInboxStore.getState();
         const conv = store.conversations.find(c => c.id === conversation_id);
@@ -754,6 +755,8 @@ export default function InboxPage() {
             });
           }
         }
+        // Relay to other tabs on the same browser (Supabase sends 1 msg per client, not per tab)
+        postTabSync({ type: 'conversationJoined', conversation_id, user_id, user_name });
       })
       .on('broadcast', { event: 'conversationLeft' }, (payload) => {
         const { conversation_id, user_id } = payload.payload || {};
@@ -766,6 +769,8 @@ export default function InboxPage() {
             participants: currentParticipants.filter((p: any) => p.user_id !== user_id && p.id !== user_id)
           });
         }
+        // Relay to other tabs on the same browser
+        postTabSync({ type: 'conversationLeft', conversation_id, user_id });
       })
       .subscribe();
       
@@ -836,6 +841,38 @@ export default function InboxPage() {
       window.removeEventListener('scroll', handleActivity);
     }
   }, [ORG_ID, currentUser?.id]);
+
+  // ── BroadcastChannel: receive signals from OTHER tabs in this same browser ──
+  // Supabase Realtime sends one WebSocket message per browser instance, not per tab.
+  // This makes Tab B aware of what Tab A just did, instantly, with zero network.
+  useEffect(() => {
+    const unsub = subscribeTabSync((event) => {
+      const store = useInboxStore.getState();
+      if (event.type === 'conversationJoined') {
+        const { conversation_id, user_id, user_name } = event;
+        const conv = store.conversations.find(c => c.id === conversation_id);
+        if (conv) {
+          const currentParticipants = Array.isArray(conv.participants) ? conv.participants : [];
+          const alreadyIn = currentParticipants.some((p: any) => p.user_id === user_id || p.id === user_id);
+          if (!alreadyIn) {
+            store.updateConversation(conversation_id, {
+              participants: [...currentParticipants, { id: user_id } as any]
+            });
+          }
+        }
+      } else if (event.type === 'conversationLeft') {
+        const { conversation_id, user_id } = event;
+        const conv = store.conversations.find(c => c.id === conversation_id);
+        if (conv) {
+          const currentParticipants = Array.isArray(conv.participants) ? conv.participants : [];
+          store.updateConversation(conversation_id, {
+            participants: currentParticipants.filter((p: any) => p.user_id !== user_id && p.id !== user_id)
+          });
+        }
+      }
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     // Periodically clean up stale agent activity (older than 10s)
@@ -913,6 +950,75 @@ export default function InboxPage() {
       stopUnassignedRingLoop();
     }
   }, [conversations, messagesMap, pendingIncomingCall]);
+
+  // ── Participant poll: safety net for missed Supabase broadcasts ──
+  // Runs a lightweight DB poll every 3s ONLY while there are actively ringing conversations.
+  // If a broadcast was dropped (flaky WS), this catches the join within 3s max.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !ORG_ID) return;
+
+    // Find ringing conversation IDs (same logic as ring effect above)
+    const ringingConvIds = conversations
+      .filter(c => {
+        if (c.status !== 'open') return false;
+        const hasAgentParticipant = c.participants && c.participants.length > 0;
+        if (hasAgentParticipant) return false;
+        let msgs: any[] = [];
+        if (messagesMap[c.id] && messagesMap[c.id].length > 0) msgs = messagesMap[c.id];
+        else if ((c as any).latestMessage) msgs = (c as any).latestMessage;
+        else if (c.messages) msgs = c.messages;
+        const hasAgentReply = msgs.some((m: any) => m.sender_type === 'agent' || (m.sender_type === 'system' && m.content?.includes('joined the conversation')));
+        if (hasAgentReply) return false;
+        const contactMsgs = msgs.filter((m: any) => m.sender_type === 'contact');
+        if (contactMsgs.length === 0) return false;
+        const newestTime = Math.max(...contactMsgs.map((m: any) => new Date(m.created_at).getTime()));
+        return newestTime > Date.now() - (5 * 60 * 1000);
+      })
+      .map(c => c.id);
+
+    // No ringing convos - no polling needed
+    if (ringingConvIds.length === 0) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id, user_id')
+          .in('conversation_id', ringingConvIds);
+
+        if (!data || data.length === 0) return;
+
+        // Group by conversation_id
+        const byConv: Record<string, string[]> = {};
+        data.forEach((row: any) => {
+          if (!byConv[row.conversation_id]) byConv[row.conversation_id] = [];
+          byConv[row.conversation_id].push(row.user_id);
+        });
+
+        // Update Zustand for any conv that now has participants
+        const store = useInboxStore.getState();
+        Object.entries(byConv).forEach(([convId, userIds]) => {
+          const conv = store.conversations.find(c => c.id === convId);
+          if (conv) {
+            const currentParticipants = Array.isArray(conv.participants) ? conv.participants : [];
+            const newParticipants = userIds
+              .filter(uid => !currentParticipants.some((p: any) => p.user_id === uid || p.id === uid))
+              .map(uid => ({ id: uid } as any));
+            if (newParticipants.length > 0) {
+              console.log('[ParticipantPoll] Caught missed join signal for conv:', convId);
+              store.updateConversation(convId, {
+                participants: [...currentParticipants, ...newParticipants]
+              });
+            }
+          }
+        });
+      } catch (err) {
+        // Silent - poll is a safety net only
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [conversations, messagesMap, ORG_ID]);
 
   // Repeat alerts for unread chats to prevent agents from missing messages
   useEffect(() => {
