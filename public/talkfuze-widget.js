@@ -112,6 +112,12 @@
             animation: tfPulse 2s infinite;
         }
 
+        #tf-launcher.tf-hide-for-focus {
+            opacity: 0 !important;
+            transform: scale(0.5) !important;
+            pointer-events: none !important;
+        }
+
         .tf-icon {
             position: absolute;
             width: 28px;
@@ -204,7 +210,7 @@
             pointer-events: auto;
             opacity: 0;
             transform: translateX(12px) scale(0.97);
-            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             cursor: text;
             overflow: hidden;
@@ -214,6 +220,11 @@
         #tf-nudge.tf-nudge-show {
             opacity: 1;
             transform: translateX(0) scale(1);
+        }
+
+        #tf-nudge.tf-nudge-focused {
+            right: ${MARGIN}px;
+            width: ${320 + BUTTON_SIZE + 16}px;
         }
 
         #tf-nudge-input {
@@ -488,6 +499,18 @@
     nudge.addEventListener('click', (e) => {
         if (e.target !== nudgeSend && !nudgeSend.contains(e.target)) {
             nudgeInput.focus();
+        }
+    });
+
+    nudgeInput.addEventListener('focus', () => {
+        nudge.classList.add('tf-nudge-focused');
+        launcher.classList.add('tf-hide-for-focus');
+    });
+
+    nudgeInput.addEventListener('blur', () => {
+        if (nudgeInput.value.trim() === '') {
+            nudge.classList.remove('tf-nudge-focused');
+            launcher.classList.remove('tf-hide-for-focus');
         }
     });
 
