@@ -146,14 +146,16 @@ export default function ContactSidebar({
   messages = [],
   isOpen = true,
   onClose,
-  onlineUsers = new Set()
+  onlineUsers = new Set(),
+  currentUser
 }: { 
   conversation?: ConversationWithDetails | null, 
   orgId: string, 
   messages?: any[],
   isOpen?: boolean,
   onClose?: () => void,
-  onlineUsers?: Set<string>
+  onlineUsers?: Set<string>,
+  currentUser?: any
 }) {
   const { triggerDial, convertingTickets, setConvertingTicket, pendingIpUnblock, setPendingIpUnblock, crmCache, setCrmCache } = useInboxStore()
   const contact = firstRelation<Contact>(conversation?.contact)
@@ -941,7 +943,7 @@ export default function ContactSidebar({
     if (!conversation?.id || !whmcsClient?.id) return;
     setConvertingTicket(conversation.id, true);
     try {
-      const result = await convertChatToTicket(conversation.id, whmcsClient.id);
+      const result = await convertChatToTicket(conversation.id, whmcsClient.id, 1, currentUser?.id);
       if (result.success) {
         const tickets = await fetchWhmcsTickets(whmcsClient.id);
         setWhmcsTickets(tickets);

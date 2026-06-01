@@ -32,14 +32,13 @@ function SparklineBars({ data }: { data: { day: string; count: number }[] }) {
   const max = Math.max(...data.map(d => d.count), 1);
   const dayShort = ['S','M','T','W','T','F','S'];
   return (
-    <div className="flex items-end gap-[3px] h-10">
+    <div className="flex items-end gap-[3px] h-[36px]">
       {data.map((d, i) => {
-        const h = Math.max(3, Math.round((d.count / max) * 36));
+        const h = Math.max(3, Math.round((d.count / max) * 24));
         const isToday = i === data.length - 1;
         const date = new Date(d.day + 'T00:00:00Z');
         return (
-          <div key={d.day} className="flex flex-col items-center gap-0.5" title={`${d.day}: ${d.count} msgs`}>
-            <span className={`text-[8px] font-bold leading-none ${d.count > 0 ? 'text-slate-500 dark:text-[#8696a0]' : 'text-transparent'}`}>{d.count}</span>
+          <div key={d.day} className="flex flex-col items-center justify-end h-full gap-0.5" title={`${d.day}: ${d.count} msgs`}>
             <div
               style={{ height: `${h}px` }}
               className={`w-[8px] rounded-sm shrink-0 ${
@@ -604,23 +603,22 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Right Section: Visual data (absolutely positioned to prevent overlap) */}
-                    <div className="hidden lg:flex flex-col items-end gap-1 absolute top-2 right-5">
-                      {/* 7-day sparkline */}
-                      {agent.dailyTrend && agent.dailyTrend.length > 0 && (
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-medium leading-none uppercase tracking-wider">7-day trend</span>
-                          <SparklineBars data={agent.dailyTrend} />
-                        </div>
-                      )}
+                    {agent.dailyTrend && agent.dailyTrend.length > 0 && (
+                      <div className="hidden lg:flex flex-col items-end gap-1 absolute top-2 right-5">
+                        <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-medium leading-none uppercase tracking-wider">7-day trend</span>
+                        <SparklineBars data={agent.dailyTrend} />
+                      </div>
+                    )}
 
-                      {/* Active shift */}
-                      {agent.activeShiftText && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-semibold leading-none uppercase tracking-wider">Shift:</span>
-                          <ActiveShiftText text={agent.activeShiftText} />
-                        </div>
-                      )}
-                    </div>
+                    {/* Active Shift in absolute bottom-right */}
+                    {agent.activeShiftText && (
+                      <div className="hidden lg:flex items-center gap-1.5 absolute bottom-2.5 right-5">
+                        <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-bold leading-none uppercase tracking-wider">Shift:</span>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-[#d1d7db] leading-none uppercase">
+                          {agent.activeShiftText === '12AM - 12AM' ? 'All Day' : agent.activeShiftText}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })

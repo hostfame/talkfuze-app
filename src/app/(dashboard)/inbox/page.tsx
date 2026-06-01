@@ -1304,6 +1304,7 @@ export default function InboxPage() {
           isOpen={isRightSidebarOpen}
           onClose={() => setIsRightSidebarOpen(false)}
           onlineUsers={onlineUsers}
+          currentUser={currentUser}
         />
       </div>
     </div>
