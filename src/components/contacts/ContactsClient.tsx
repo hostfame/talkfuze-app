@@ -62,9 +62,8 @@ const SOURCE_CONFIG: Record<string, { label: string; bg: string }> = {
 
 function getInitials(name: string) {
   if (!name) return '?'
-  const parts = name.trim().split(' ').filter(Boolean)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return name.substring(0, 2).toUpperCase()
+  const trimmed = name.trim()
+  return trimmed ? trimmed[0].toUpperCase() : '?'
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -342,7 +341,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 font-bold text-sm shrink-0">
               {getInitials(contact.name)}
             </div>
             <div className="min-w-0">
@@ -686,7 +685,7 @@ function DuplicatesModal({ onClose, onRefresh }: { onClose: () => void; onRefres
                   {group.map((contact, ci) => (
                     <div key={contact.id} className={`flex items-center justify-between px-4 py-3 ${ci < group.length - 1 ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}>
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-350 text-xs font-bold shrink-0">
                           {getInitials(contact.name)}
                         </div>
                         <div className="min-w-0">
@@ -953,7 +952,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
 
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
-                      <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${isSelected ? 'bg-blue-200 dark:bg-blue-800 text-blue-800' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'}`}>
+                      <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${isSelected ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}>
                         {getInitials(contact.name)}
                       </div>
                       <div className="flex flex-col min-w-0">
