@@ -17,19 +17,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   let endDate = new Date();
   
   if (period === 'weekly') {
-    startDate.setDate(localMidnight.getDate() - 7);
+    startDate = new Date(localMidnight.getTime() - 7 * 24 * 60 * 60 * 1000);
   } else if (period === 'monthly') {
-    startDate.setDate(localMidnight.getDate() - 30);
+    startDate = new Date(localMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
   } else if (period === 'custom' && customStartDate) {
-    startDate = new Date(customStartDate);
-    // Ensure it's treated as BD midnight for that date
-    startDate.setUTCHours(0,0,0,0);
-    startDate = new Date(startDate.getTime() - 6 * 60 * 60 * 1000);
-    
+    const parts = customStartDate.split('-').map(Number);
+    const customBdMidnight = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
+    startDate = new Date(customBdMidnight.getTime() - 6 * 60 * 60 * 1000);
+
     if (customEndDate) {
-      endDate = new Date(customEndDate);
-      endDate.setUTCHours(23,59,59,999);
-      endDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
+      const eParts = customEndDate.split('-').map(Number);
+      const customBdEnd = new Date(Date.UTC(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999));
+      endDate = new Date(customBdEnd.getTime() - 6 * 60 * 60 * 1000);
     }
   }
 
@@ -453,18 +452,18 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
   let endDate = new Date();
   
   if (period === 'weekly') {
-    startDate.setDate(localMidnight.getDate() - 7);
+    startDate = new Date(localMidnight.getTime() - 7 * 24 * 60 * 60 * 1000);
   } else if (period === 'monthly') {
-    startDate.setDate(localMidnight.getDate() - 30);
+    startDate = new Date(localMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
   } else if (period === 'custom' && customStartDate) {
-    startDate = new Date(customStartDate);
-    startDate.setUTCHours(0,0,0,0);
-    startDate = new Date(startDate.getTime() - 6 * 60 * 60 * 1000);
-    
+    const parts = customStartDate.split('-').map(Number);
+    const customBdMidnight = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, 0, 0));
+    startDate = new Date(customBdMidnight.getTime() - 6 * 60 * 60 * 1000);
+
     if (customEndDate) {
-      endDate = new Date(customEndDate);
-      endDate.setUTCHours(23,59,59,999);
-      endDate = new Date(endDate.getTime() - 6 * 60 * 60 * 1000);
+      const eParts = customEndDate.split('-').map(Number);
+      const customBdEnd = new Date(Date.UTC(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999));
+      endDate = new Date(customBdEnd.getTime() - 6 * 60 * 60 * 1000);
     }
   }
 
