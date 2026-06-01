@@ -50,11 +50,11 @@ const LABEL_OPTIONS = [
 
 // All sources use only blue and gray tones - distinguished by shade, not hue
 const SOURCE_CONFIG: Record<string, { label: string; bg: string }> = {
-  whatsapp:  { label: 'WhatsApp',  bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-  messenger: { label: 'Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-200' },
-  widget:    { label: 'Widget',    bg: 'bg-slate-100 text-slate-700 border-slate-200' },
-  instagram: { label: 'Instagram', bg: 'bg-slate-50 text-slate-600 border-slate-200' },
-  manual:    { label: 'Manual',    bg: 'bg-slate-50 text-slate-500 border-slate-200' },
+  whatsapp:  { label: 'WhatsApp',  bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  messenger: { label: 'Messenger', bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  widget:    { label: 'Widget',    bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  instagram: { label: 'Instagram', bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  manual:    { label: 'Manual',    bg: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,13 +75,10 @@ function formatRelativeTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString()
 }
 
-// Score badge: blue for high, slate for mid/low - no rainbow
+// Score badge: always gray for minimal structure
 function ScoreBadge({ score }: { score: number }) {
-  const cls = score >= 60
-    ? 'text-blue-600 bg-blue-50 border-blue-200'
-    : 'text-slate-500 bg-slate-100 border-slate-200'
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}`}>
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border text-slate-500 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
       <TrendingUp size={9} />
       {score}
     </span>
@@ -121,7 +118,7 @@ function AddContactModal({ onClose, onSuccess }: { onClose: () => void; onSucces
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <p className="text-[12px] text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 flex items-center gap-2">
-              <AlertTriangle size={12} className="text-blue-500 shrink-0" /> {error}
+              <AlertTriangle size={12} className="text-slate-500 shrink-0" /> {error}
             </p>
           )}
           <div>
@@ -377,7 +374,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
           <div className="flex items-center gap-2 shrink-0">
             {contact.is_at_risk && (
               <span className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded-full border border-slate-300">
-                <AlertTriangle size={10} className="text-blue-500" /> At Risk
+                <AlertTriangle size={10} className="text-slate-500" /> At Risk
               </span>
             )}
             <ScoreBadge score={contact.contact_score} />
@@ -514,7 +511,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                       const msgs = (conv.messages || []).filter((m: any) => !m.is_internal).slice(0, 3)
                       return (
                         <div key={conv.id} className="relative pl-9">
-                          <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 bg-blue-500" />
+                          <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 bg-slate-400" />
                           <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${src.bg}`}>
@@ -531,7 +528,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                             {msgs.length > 0 && (
                               <div className="space-y-1">
                                 {msgs.map((m: any) => (
-                                  <p key={m.id} className={`text-[12px] px-2 py-1 rounded-lg ${m.sender_type === 'agent' ? 'bg-blue-50 text-blue-700 text-right' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                                  <p key={m.id} className={`text-[12px] px-2 py-1 rounded-lg ${m.sender_type === 'agent' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-right' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>
                                     {m.content_type === 'text' ? m.content : `[${m.content_type}]`}
                                   </p>
                                 ))}
@@ -586,7 +583,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                   {hostnin.invoices && hostnin.invoices.length > 0 && (
                     <div>
                       <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <AlertTriangle size={10} className="text-blue-500" /> Unpaid Invoices ({hostnin.invoices.length})
+                        <AlertTriangle size={10} className="text-slate-500" /> Unpaid Invoices ({hostnin.invoices.length})
                       </p>
                       <div className="space-y-1.5">
                         {hostnin.invoices.slice(0, 3).map((inv: any) => (
@@ -892,7 +889,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
           <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{totalCount}</span>
           {atRiskCount > 0 && (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-full">
-              <AlertTriangle size={10} className="text-blue-500" /> {atRiskCount} at risk
+              <AlertTriangle size={10} className="text-slate-500" /> {atRiskCount} at risk
             </span>
           )}
         </h1>
@@ -1025,7 +1022,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
 
                   <td className="py-3.5 px-4">
                     <span className={`text-[12px] ${contact.is_at_risk ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>
-                      {contact.is_at_risk && <AlertTriangle size={11} className="inline mr-1 text-blue-500" />}
+                      {contact.is_at_risk && <AlertTriangle size={11} className="inline mr-1 text-slate-500" />}
                       {formatRelativeTime(contact.last_contacted_at)}
                     </span>
                   </td>

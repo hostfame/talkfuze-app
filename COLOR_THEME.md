@@ -79,8 +79,8 @@ The following color families are **completely prohibited** in all TalkFuze UI co
 | Success / Paid / Active | `bg-green-50 text-green-700` | `bg-blue-50 text-blue-700 border-blue-200` |
 | Error / Unpaid / Warning | `bg-red-50 text-red-600` | `bg-slate-100 text-slate-700 border-slate-300` |
 | Inactive / Disabled / Churned | `bg-gray-100 text-gray-500` | `bg-slate-100 text-slate-500 border-slate-200` |
-| At Risk / Flagged | `text-red-500`, `bg-red-50` | `text-slate-700 font-medium` + `text-blue-500` icon |
-| Score High | `text-green-600 bg-green-50` | `text-blue-600 bg-blue-50 border-blue-200` |
+| At Risk / Flagged | `text-red-500`, `bg-red-50` | `text-slate-700 font-medium` + `text-slate-500` icon |
+| Score High | `text-green-600 bg-green-50` | `text-slate-500 bg-slate-100 border-slate-200` |
 | Score Low | `text-red-600 bg-red-50` | `text-slate-500 bg-slate-100 border-slate-200` |
 | Notes / Sticky | `bg-amber-500` button | `bg-blue-600` button |
 | Save / Confirm | `text-green-600` check icon | `text-blue-600` check icon |
@@ -112,16 +112,14 @@ The following color families are **completely prohibited** in all TalkFuze UI co
 ## Example Source Badges (Correct)
 
 ```tsx
-// WhatsApp - blue
-'bg-blue-50 text-blue-700 border-blue-200'
+// WhatsApp - gray
+'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
 
-// Messenger - darker blue
-'bg-blue-100 text-blue-800 border-blue-200'
+// Messenger - gray
+'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
 
 // Widget / Instagram / Manual - slate shades
-'bg-slate-100 text-slate-700 border-slate-200'
-'bg-slate-50 text-slate-600 border-slate-200'
-'bg-slate-50 text-slate-500 border-slate-200'
+'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
 ```
 
 ---
