@@ -6,7 +6,7 @@ import { getLeaderboardStats, getMissedChatsStats } from "@/actions/leaderboard"
 import { 
   Clock, 
   MessageSquare, 
-  Zap, 
+  Activity,
   BrainCircuit,
   Phone, 
   Target, 
@@ -19,8 +19,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  CheckCircle2,
-  CalendarDays
+  Ticket
 } from "lucide-react"
 
 // ---------- Tiny Sparkline Bars ----------
@@ -48,58 +47,63 @@ function SparklineBars({ data }: { data: { day: string; count: number }[] }) {
   );
 }
 
-// ---------- Tiny 24h Heatmap Row ----------
-function HeatmapRow({ data }: { data: number[] }) {
-  const max = Math.max(...data, 1);
+// ---------- Active Shift Text ----------
+function ActiveShiftText({ text }: { text: string }) {
+  if (!text) return <span className="text-xs text-slate-400 dark:text-[#8696a0]">-</span>;
   return (
-    <div className="flex gap-[1.5px]">
-      {data.map((count, h) => {
-        const intensity = count / max;
-        const opacity = count === 0 ? 0.06 : 0.15 + intensity * 0.85;
-        return (
-          <div
-            key={h}
-            title={`${h}:00 BDT - ${count} msgs`}
-            className="rounded-[2px] shrink-0"
-            style={{
-              width: '7px',
-              height: '14px',
-              backgroundColor: `rgba(0, 112, 243, ${opacity})`,
-            }}
-          />
-        );
-      })}
-    </div>
+    <span className="text-xs font-semibold text-slate-600 dark:text-[#d1d7db]">
+      {text}
+    </span>
   );
 }
 
 // ---------- Full-size Heatmap for Modal ----------
 function HeatmapFull({ data }: { data: number[] }) {
   const max = Math.max(...data, 1);
-  const labels = ['12A','1','2','3','4','5','6','7','8','9','10','11','12P','1','2','3','4','5','6','7','8','9','10','11'];
+  const labels = ['12A','1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12P','1P','2P','3P','4P','5P','6P','7P','8P','9P','10P','11P'];
   return (
     <div>
-      <div className="flex gap-[3px] mb-1">
-        {data.map((count, h) => {
+      <div className="grid grid-cols-12 gap-1 mb-1">
+        {data.slice(0, 12).map((count, h) => {
           const intensity = count / max;
-          const opacity = count === 0 ? 0.06 : 0.12 + intensity * 0.88;
+          const opacity = count === 0 ? 0.05 : 0.15 + intensity * 0.85;
           return (
-            <div
-              key={h}
-              title={`${h}:00 BDT - ${count} msgs`}
-              className="rounded-[3px] shrink-0 flex-1"
-              style={{
-                height: '28px',
-                backgroundColor: `rgba(0, 112, 243, ${opacity})`,
-              }}
-            />
+            <div key={h} className="flex flex-col items-center">
+              <div
+                title={`${labels[h]} - ${count} messages`}
+                className="w-full rounded-md"
+                style={{
+                  height: '24px',
+                  backgroundColor: `rgba(0, 112, 243, ${opacity})`,
+                }}
+              />
+              <span className="text-[9px] text-slate-400 dark:text-[#8696a0] mt-0.5">{labels[h]}</span>
+            </div>
           );
         })}
       </div>
-      <div className="flex gap-[3px]">
-        {labels.map((l, i) => (
-          <div key={i} className="flex-1 text-center text-[8px] text-slate-400 dark:text-[#8696a0] shrink-0">{l}</div>
-        ))}
+      <div className="grid grid-cols-12 gap-1">
+        {data.slice(12).map((count, h) => {
+          const intensity = count / max;
+          const opacity = count === 0 ? 0.05 : 0.15 + intensity * 0.85;
+          return (
+            <div key={h + 12} className="flex flex-col items-center">
+              <div
+                title={`${labels[h + 12]} - ${count} messages`}
+                className="w-full rounded-md"
+                style={{
+                  height: '24px',
+                  backgroundColor: `rgba(0, 112, 243, ${opacity})`,
+                }}
+              />
+              <span className="text-[9px] text-slate-400 dark:text-[#8696a0] mt-0.5">{labels[h + 12]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between mt-2">
+        <span className="text-[10px] font-medium text-slate-400 dark:text-[#8696a0]">AM</span>
+        <span className="text-[10px] font-medium text-slate-400 dark:text-[#8696a0]">PM</span>
       </div>
     </div>
   );
@@ -155,13 +159,7 @@ function TrendArrow({ today, yesterday }: { today: number; yesterday: number }) 
   return <Minus size={14} className="text-slate-400 shrink-0" />;
 }
 
-// ---------- Tenure helper ----------
-function getTenureDays(joinedAt: string | null): number | null {
-  if (!joinedAt) return null;
-  const joined = new Date(joinedAt);
-  const now = new Date();
-  return Math.floor((now.getTime() - joined.getTime()) / (1000 * 60 * 60 * 24));
-}
+
 
 export default function LeaderboardPage() {
   const user = useAuth()
@@ -308,9 +306,6 @@ export default function LeaderboardPage() {
               </div>
             ) : (
               stats.map((agent, index) => {
-                const resolutionRate = agent.chatsCount > 0
-                  ? Math.round((agent.resolvedCount / agent.chatsCount) * 100)
-                  : 0;
 
                 return (
                   <div
@@ -345,6 +340,18 @@ export default function LeaderboardPage() {
                         <span className="text-[11px] font-medium text-slate-500 dark:text-[#8696a0] capitalize px-1.5 py-0.5 bg-slate-100 dark:bg-[#202c33] rounded mt-0.5 inline-block">
                           {agent.role}
                         </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {agent.activeDaysCount > 0 && (
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-[#8696a0] px-1.5 py-0.5 bg-slate-100 dark:bg-[#202c33] rounded">
+                              {agent.activeDaysCount}/7 days
+                            </span>
+                          )}
+                          {agent.peakHour >= 0 && (
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-[#8696a0] px-1.5 py-0.5 bg-slate-100 dark:bg-[#202c33] rounded">
+                              Peak: {agent.peakHour === 0 ? '12AM' : agent.peakHour === 12 ? '12PM' : agent.peakHour < 12 ? `${agent.peakHour}AM` : `${agent.peakHour - 12}PM`}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -364,14 +371,14 @@ export default function LeaderboardPage() {
                         </span>
                       </div>
 
-                      {/* Convos + resolution rate */}
+                      {/* Tickets Created */}
                       <div className="flex flex-col min-w-[80px]">
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#8696a0] mb-0.5 font-medium">
-                          <CheckCircle2 size={12} /> Resolved
+                          <Ticket size={12} /> Tickets
                         </div>
-                        <span className="text-xl font-bold text-slate-800 dark:text-[#e9edef] leading-none">{agent.resolvedCount}</span>
+                        <span className="text-xl font-bold text-slate-800 dark:text-[#e9edef] leading-none">{agent.ticketsCreated}</span>
                         <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-0.5">
-                          {resolutionRate}% of {agent.chatsCount} chats
+                          of {agent.chatsCount} chats
                         </span>
                       </div>
 
@@ -419,11 +426,11 @@ export default function LeaderboardPage() {
                         </div>
                       )}
 
-                      {/* 24h heatmap */}
-                      {agent.hourlyActivity && (
+                      {/* Active shift */}
+                      {agent.activeShiftText && (
                         <div className="flex flex-col items-start gap-1">
-                          <span className="text-[10px] text-slate-400 dark:text-[#8696a0] font-medium">Work hours (BDT)</span>
-                          <HeatmapRow data={agent.hourlyActivity} />
+                          <span className="text-[10px] text-slate-400 dark:text-[#8696a0] font-medium">Shift (BST)</span>
+                          <ActiveShiftText text={agent.activeShiftText} />
                         </div>
                       )}
                     </div>
@@ -445,6 +452,21 @@ export default function LeaderboardPage() {
                   </h2>
                   <span className="text-sm text-slate-500">Unanswered for &gt;30 mins</span>
                 </div>
+                {/* Blame summary */}
+                <div className="flex flex-wrap items-center gap-2 px-2 mb-3">
+                  {(() => {
+                    const counts: Record<string, number> = {};
+                    missedChats.forEach((c: any) => {
+                      const name = c.missedByAgent || 'Unassigned';
+                      counts[name] = (counts[name] || 0) + 1;
+                    });
+                    return Object.entries(counts).map(([name, count]) => (
+                      <span key={name} className="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#202c33] text-slate-600 dark:text-[#d1d7db]">
+                        {name}: {count}
+                      </span>
+                    ));
+                  })()}
+                </div>
                 {missedChats.map((chat) => (
                   <div 
                     key={chat.id}
@@ -455,7 +477,12 @@ export default function LeaderboardPage() {
                         {chat.contactName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-800 dark:text-[#e9edef] text-base">{chat.contactName}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-800 dark:text-[#e9edef] text-base">{chat.contactName}</h3>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400">
+                            {chat.missedByAgent || 'Unassigned'}
+                          </span>
+                        </div>
                         <p className="text-sm text-slate-500 dark:text-[#8696a0] mt-0.5 max-w-xl truncate">
                           &quot;{chat.lastMessageContent}&quot;
                         </p>
@@ -525,12 +552,7 @@ export default function LeaderboardPage() {
                   <Award size={14} className="text-slate-400 dark:text-[#8696a0]" />
                   Rank #{selectedAgent.rank} - {period} board
                 </p>
-                {getTenureDays(selectedAgent.joinedAt) !== null && (
-                  <p className="text-xs text-slate-400 dark:text-[#8696a0] mt-0.5 flex items-center gap-1">
-                    <CalendarDays size={12} />
-                    Member for {getTenureDays(selectedAgent.joinedAt)} days
-                  </p>
-                )}
+
               </div>
             </div>
 
@@ -573,7 +595,7 @@ export default function LeaderboardPage() {
               {/* Hourly Heatmap */}
               {selectedAgent.hourlyActivity && (
                 <div className="bg-slate-50 dark:bg-[#182229] rounded-2xl p-4 border border-slate-200/60 dark:border-[#222e35]">
-                  <h3 className="text-[11px] font-bold text-slate-500 dark:text-[#8696a0] tracking-wider uppercase mb-3">Work Shift Heatmap (Last 14 Days, BDT)</h3>
+                  <h3 className="text-[11px] font-bold text-slate-500 dark:text-[#8696a0] tracking-wider uppercase mb-3">Work Shift Heatmap (Last 14 Days, BST)</h3>
                   <HeatmapFull data={selectedAgent.hourlyActivity} />
                 </div>
               )}
@@ -581,11 +603,9 @@ export default function LeaderboardPage() {
               {/* Resolution Rate */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                  <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Resolved</span>
-                  <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.resolvedCount}</span>
-                  <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-0.5">
-                    {selectedAgent.chatsCount > 0 ? Math.round((selectedAgent.resolvedCount / selectedAgent.chatsCount) * 100) : 0}% rate
-                  </span>
+                  <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Tickets Created</span>
+                  <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.ticketsCreated}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-0.5">Each ticket = potential churn save</span>
                 </div>
                 <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
                   <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Avg Reply</span>
@@ -604,7 +624,7 @@ export default function LeaderboardPage() {
               {/* Target Progress */}
               <div className="bg-slate-50 dark:bg-[#182229] rounded-2xl p-5 border border-slate-200/60 dark:border-[#222e35] space-y-4">
                 <h3 className="text-[11px] font-bold text-slate-500 dark:text-[#8696a0] tracking-wider uppercase flex items-center gap-1.5">
-                  <Target size={13} className="text-[#0070f3]" /> {period} Target Metrics
+                  <Target size={13} className="text-slate-400 dark:text-[#8696a0]" /> {period} Target Metrics
                 </h3>
                 
                 <div className="space-y-2">
@@ -655,8 +675,8 @@ export default function LeaderboardPage() {
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
-                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Sysadmin Escalations</span>
-                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.escalatedTicketsCount} tickets</span>
+                    <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Tickets Created</span>
+                    <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.ticketsCreated} tickets</span>
                   </div>
 
                   <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
@@ -675,7 +695,7 @@ export default function LeaderboardPage() {
                       <span className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wide">Engagement Efficiency</span>
                       <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef] mt-1">{selectedAgent.actionsPerHour || 0} <span className="text-sm font-medium text-slate-500">actions / hour</span></span>
                     </div>
-                    <Zap size={22} className="text-blue-500" />
+                    <Activity size={22} className="text-slate-400 dark:text-[#8696a0]" />
                   </div>
                 </div>
               </div>
@@ -721,7 +741,7 @@ export default function LeaderboardPage() {
                     </div>
                   )}
 
-                  {selectedAgent.escalatedTicketsCount >= 1 && (
+                  {selectedAgent.ticketsCreated >= 1 && (
                     <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
                         <Wrench size={16} />
@@ -733,14 +753,14 @@ export default function LeaderboardPage() {
                     </div>
                   )}
 
-                  {selectedAgent.resolvedCount >= 5 && (
+                  {selectedAgent.ticketsCreated >= 10 && (
                     <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
-                        <CheckCircle2 size={16} />
+                        <Ticket size={16} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Resolution Machine</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Resolved {selectedAgent.resolvedCount}+ conversations this period.</p>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">Ticket Pro</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Created {selectedAgent.ticketsCreated}+ support tickets this period.</p>
                       </div>
                     </div>
                   )}
@@ -748,8 +768,8 @@ export default function LeaderboardPage() {
                   {!(selectedAgent.firstResponseSlaPercent >= 85 && selectedAgent.totalFirstResponses > 0) &&
                     !(selectedAgent.emergencyResponseTime > 0 && selectedAgent.emergencyResponseTime <= 90) &&
                     !(selectedAgent.callsCount >= 1) &&
-                    !(selectedAgent.escalatedTicketsCount >= 1) &&
-                    !(selectedAgent.resolvedCount >= 5) && (
+                    !(selectedAgent.ticketsCreated >= 1) &&
+                    !(selectedAgent.ticketsCreated >= 10) && (
                       <div className="text-center py-4 border border-dashed border-slate-200 dark:border-[#222e35] rounded-xl text-slate-400 text-xs">
                         Keep grinding to unlock Hostnin support badges!
                       </div>

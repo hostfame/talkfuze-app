@@ -116,22 +116,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     console.error("Error fetching heartbeats for active time:", err);
   }
 
-  // 6. Get resolved conversations to compute resolvedCount per agent
-  // We need conversations that are resolved AND the agent sent at least 1 message in them
-  let resolvedConvIds = new Set<string>();
-  try {
-    const { data: resolvedConvs } = await supabaseAdmin
-      .from('conversations')
-      .select('id')
-      .eq('org_id', orgId)
-      .eq('status', 'resolved');
-    if (resolvedConvs) {
-      resolvedConvs.forEach((c: any) => resolvedConvIds.add(c.id));
-    }
-  } catch (err) {
-    console.error("Error fetching resolved conversations:", err);
-  }
-
   // 7. Process stats per agent
   const statsMap: Record<string, any> = {};
   
@@ -141,7 +125,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       name: agent.name,
       avatar_url: agent.avatar_url,
       role: agent.role,
-      joinedAt: agent.created_at || null,
       messagesCount: 0,
       whispersCount: 0,
       chatsCount: 0,
@@ -158,16 +141,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       emergencyResponseTime: 0,
       totalEmergencyResponseTimeMs: 0,
       emergencyResponseTimeCount: 0,
-      escalatedTicketsCount: 0,
+      ticketsCreated: 0,
       aiDraftCount: 0,
       aiAssistedPercent: 0,
-      resolvedCount: 0,
       msgsToday: 0,
       msgsYesterday: 0,
-      // hourlyActivity[h] = message count in hour h (BDT, 0-23) over last 14 days
+      // hourlyActivity[h] = message count in hour h (BST, 0-23) over last 14 days
       hourlyActivity: new Array(24).fill(0),
       // dailyTrend: last 7 days
       dailyTrend: [] as { day: string; count: number }[],
+      activeDaysCount: 0,
+      peakHour: -1,
+      activeShiftText: '',
     };
   });
 
@@ -200,7 +185,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   if (allMessages && allMessages.length > 0) {
     const agentChats: Record<string, Set<string>> = {};
     const agentTimestamps: Record<string, number[]> = {};
-    const agentConvSet: Record<string, Set<string>> = {}; // all convs agent touched in period
+
     
     const convMessages: Record<string, typeof allMessages> = {};
 
@@ -224,28 +209,19 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
         if (!agentChats[agentId]) agentChats[agentId] = new Set();
         agentChats[agentId].add(msg.conversation_id);
 
-        if (!agentConvSet[agentId]) agentConvSet[agentId] = new Set();
-        agentConvSet[agentId].add(msg.conversation_id);
+
 
         if (!agentTimestamps[agentId]) agentTimestamps[agentId] = [];
         agentTimestamps[agentId].push(new Date(msg.created_at).getTime());
       } else if (msg.sender_type === 'system' && msg.sender_id && statsMap[msg.sender_id]) {
         const contentStr = (msg.content || '').toLowerCase();
         if (contentStr.includes('ticket is created')) {
-          statsMap[msg.sender_id].escalatedTicketsCount++;
+          statsMap[msg.sender_id].ticketsCreated++;
         }
       }
     });
 
-    // Compute resolvedCount: conversations the agent touched that are resolved
-    Object.keys(agentConvSet).forEach(agentId => {
-      if (!statsMap[agentId]) return;
-      let resolved = 0;
-      agentConvSet[agentId].forEach(convId => {
-        if (resolvedConvIds.has(convId)) resolved++;
-      });
-      statsMap[agentId].resolvedCount = resolved;
-    });
+
 
     // Calculate response times & hosting SLAs
     Object.values(convMessages).forEach(msgs => {
@@ -329,14 +305,14 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     });
   }
 
-  // 8. Compute hourlyActivity (last 14 days, BDT hour 0-23) and msgsToday/msgsYesterday from recentMessages
+  // 8. Compute hourlyActivity (last 14 days, BST hour 0-23) and msgsToday/msgsYesterday from recentMessages
   if (recentMessages && recentMessages.length > 0) {
     recentMessages.forEach(msg => {
       const agentId = msg.sender_id;
       if (!agentId || !statsMap[agentId]) return;
 
       const msgTime = new Date(msg.created_at);
-      // Convert to BDT: UTC+6
+      // Convert to BST: UTC+6
       const bdtTime = new Date(msgTime.getTime() + 6 * 60 * 60 * 1000);
       const hour = bdtTime.getUTCHours(); // 0-23 in BDT
 
@@ -351,6 +327,25 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       }
     });
   }
+
+  // 8b. Compute peakHour and activeShiftText from hourlyActivity
+  Object.keys(statsMap).forEach(agentId => {
+    const hourly = statsMap[agentId].hourlyActivity;
+    const maxVal = Math.max(...hourly);
+    if (maxVal > 0) {
+      statsMap[agentId].peakHour = hourly.indexOf(maxVal);
+      const threshold = maxVal * 0.1;
+      const activeHours = hourly.map((v: number, i: number) => v > threshold ? i : -1).filter((i: number) => i >= 0);
+      if (activeHours.length > 0) {
+        const formatHr = (h: number) => {
+          if (h === 0) return '12AM';
+          if (h === 12) return '12PM';
+          return h < 12 ? `${h}AM` : `${h - 12}PM`;
+        };
+        statsMap[agentId].activeShiftText = `${formatHr(activeHours[0])} - ${formatHr((activeHours[activeHours.length - 1] + 1) % 24)}`;
+      }
+    }
+  });
 
   // 9. Compute dailyTrend (last 7 days per agent) using recentMessages
   if (recentMessages && recentMessages.length > 0) {
@@ -383,10 +378,11 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       }
     });
 
-    // Convert buckets to sorted array
+    // Convert buckets to sorted array and compute activeDaysCount
     Object.keys(statsMap).forEach(agentId => {
       const buckets = statsMap[agentId]._trendBuckets;
       statsMap[agentId].dailyTrend = sevenDaysLabels.map(day => ({ day, count: buckets[day] || 0 }));
+      statsMap[agentId].activeDaysCount = statsMap[agentId].dailyTrend.filter((d: any) => d.count > 0).length;
       delete statsMap[agentId]._trendBuckets;
     });
   } else {
@@ -471,6 +467,40 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
     }
   }
 
+  // Fetch agents for this org
+  const { data: agents } = await supabaseAdmin
+    .from('users')
+    .select('id, name')
+    .eq('org_id', orgId);
+
+  // Compute hourly activity per agent (last 14 days) for shift assignment
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const { data: recentAgentMsgs } = await supabaseAdmin
+    .from('messages')
+    .select('sender_id, created_at')
+    .eq('org_id', orgId)
+    .eq('sender_type', 'agent')
+    .eq('is_internal', false)
+    .gte('created_at', fourteenDaysAgo.toISOString());
+
+  // Build hourly activity map per agent
+  const agentHourlyActivity: Record<string, number[]> = {};
+  const agentNames: Record<string, string> = {};
+  if (agents) {
+    agents.forEach((a: any) => {
+      agentHourlyActivity[a.id] = new Array(24).fill(0);
+      agentNames[a.id] = a.name;
+    });
+  }
+  if (recentAgentMsgs) {
+    recentAgentMsgs.forEach((msg: any) => {
+      if (!agentHourlyActivity[msg.sender_id]) return;
+      const bdtTime = new Date(new Date(msg.created_at).getTime() + 6 * 60 * 60 * 1000);
+      const hour = bdtTime.getUTCHours();
+      agentHourlyActivity[msg.sender_id][hour]++;
+    });
+  }
+
   // Get all conversations
   let query = supabaseAdmin
     .from('conversations')
@@ -516,6 +546,23 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
       const timeDiffMins = (now.getTime() - msgTime) / (1000 * 60);
       
       if (timeDiffMins >= 30) {
+        // Determine which agent should have handled this based on shift activity
+        const bdtMsgTime = new Date(msgTime + 6 * 60 * 60 * 1000);
+        const missedHour = bdtMsgTime.getUTCHours();
+        
+        let missedByAgent = 'Unassigned';
+        let missedByAgentId = '';
+        let maxActivity = 0;
+        
+        Object.keys(agentHourlyActivity).forEach(agentId => {
+          const activity = agentHourlyActivity[agentId][missedHour];
+          if (activity > 0 && activity > maxActivity) {
+            maxActivity = activity;
+            missedByAgent = agentNames[agentId] || 'Unknown';
+            missedByAgentId = agentId;
+          }
+        });
+
         const contact = Array.isArray(conv.contacts) ? conv.contacts[0] : conv.contacts;
         missedChats.push({
           id: conv.id,
@@ -524,7 +571,9 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
           lastMessageTime: lastMsg.created_at,
           lastMessageContent: lastMsg.content,
           status: conv.status,
-          timeSinceLastMessage: Math.floor(timeDiffMins)
+          timeSinceLastMessage: Math.floor(timeDiffMins),
+          missedByAgent,
+          missedByAgentId
         });
       }
     }
