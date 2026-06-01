@@ -4374,79 +4374,7 @@ export default function WidgetPage() {
                     </div>
                    )}
 
-              {/* Unlock Voice & Callback Support Modal */}
-              {isIdentityModalOpen && (
-                <>
-                  <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onClick={() => setIsIdentityModalOpen(false)} />
-                  <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 z-50 border-t border-slate-105 dark:border-slate-800 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
-                    <form onSubmit={handleSaveIdentity}>
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="font-bold text-slate-800 dark:text-white text-[18px] tracking-tight">Unlock Call Support</h3>
-                        <button 
-                          type="button"
-                          onClick={() => setIsIdentityModalOpen(false)} 
-                          className="text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-350 bg-slate-50 dark:bg-slate-805 hover:bg-slate-100 dark:hover:bg-slate-750 rounded-full p-1.5 transition-colors cursor-pointer"
-                        >
-                          <X size={18} strokeWidth={2.5} />
-                        </button>
-                      </div>
-                      
-                      <p className="text-slate-500 dark:text-slate-400 text-[13px] mb-5 leading-relaxed">
-                        Add your phone number and name below. This enables our support team to verify your profile and connect with you directly via call or WhatsApp to resolve your queries instantly!
-                      </p>
-
-                      <div className="flex flex-col gap-4 mb-6">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Your Name</label>
-                          <input
-                            type="text"
-                            name="name"
-                            autoComplete="name"
-                            required
-                            value={tempName}
-                            onChange={e => setTempName(e.target.value)}
-                            placeholder="e.g., Mujahid Islam"
-                            className="w-full bg-[#f9fafb] dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-850 dark:text-slate-150"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
-                          <input
-                            type="tel"
-                            name="tel"
-                            autoComplete="tel"
-                            required
-                            value={tempPhone}
-                            onChange={e => setTempPhone(e.target.value)}
-                            placeholder="e.g., 01700000000"
-                            className="w-full bg-[#f9fafb] dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-850 dark:text-slate-150"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setIsIdentityModalOpen(false)}
-                          className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-semibold py-3 rounded-xl text-[13px] border border-slate-200 dark:border-slate-700 transition-all active:scale-[0.98] cursor-pointer"
-                        >
-                          No Thanks
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isUpdatingIdentity || !tempName.trim() || tempPhone.trim().length < 11}
-                          className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(30,41,59,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          {isUpdatingIdentity ? (
-                            <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Saving...</>
-                          ) : 'Unlock Call Support'}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </>
-              )}
+              
                </div>
              </div>
 
@@ -5296,6 +5224,80 @@ export default function WidgetPage() {
           </button>
         </div>
       )}
+
+      {/* Unlock Voice & Callback Support Modal */}
+              {isIdentityModalOpen && (
+                <>
+                  <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onClick={() => setIsIdentityModalOpen(false)} />
+                  <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 z-50 border-t border-slate-105 dark:border-slate-800 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
+                    <form onSubmit={handleSaveIdentity}>
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-bold text-slate-800 dark:text-white text-[18px] tracking-tight">Unlock Call Support</h3>
+                        <button 
+                          type="button"
+                          onClick={() => setIsIdentityModalOpen(false)} 
+                          className="text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-350 bg-slate-50 dark:bg-slate-805 hover:bg-slate-100 dark:hover:bg-slate-750 rounded-full p-1.5 transition-colors cursor-pointer"
+                        >
+                          <X size={18} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                      
+                      <p className="text-slate-500 dark:text-slate-400 text-[13px] mb-5 leading-relaxed">
+                        Add your phone number and name below. This enables our support team to verify your profile and connect with you directly via call or WhatsApp to resolve your queries instantly!
+                      </p>
+
+                      <div className="flex flex-col gap-4 mb-6">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Your Name</label>
+                          <input
+                            type="text"
+                            name="name"
+                            autoComplete="name"
+                            required
+                            value={tempName}
+                            onChange={e => setTempName(e.target.value)}
+                            placeholder="e.g., Mujahid Islam"
+                            className="w-full bg-[#f9fafb] dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-850 dark:text-slate-150"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider mb-1.5">Phone Number</label>
+                          <input
+                            type="tel"
+                            name="tel"
+                            autoComplete="tel"
+                            required
+                            value={tempPhone}
+                            onChange={e => setTempPhone(e.target.value)}
+                            placeholder="e.g., 01700000000"
+                            className="w-full bg-[#f9fafb] dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/5 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-850 dark:text-slate-150"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsIdentityModalOpen(false)}
+                          className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-semibold py-3 rounded-xl text-[13px] border border-slate-200 dark:border-slate-700 transition-all active:scale-[0.98] cursor-pointer"
+                        >
+                          No Thanks
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isUpdatingIdentity || !tempName.trim() || tempPhone.trim().length < 11}
+                          className="flex-1 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-semibold py-3 rounded-xl text-[13px] transition-all shadow-[0_4px_12px_rgba(30,41,59,0.2)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isUpdatingIdentity ? (
+                            <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Saving...</>
+                          ) : 'Unlock Call Support'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </>
+              )}
 
       {/* Visual Microphone Permission Guide Modal */}
       {showMicPermissionGuide && (
