@@ -53,3 +53,7 @@ test*.js
 test*.ts
 check*.js
 
+test_hardmode.mjs
+test_language_detection.mjs
+test_hardmode.mjs
+test_language_detection.mjs

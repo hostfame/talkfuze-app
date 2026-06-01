@@ -664,6 +664,17 @@ export default function WidgetPage() {
   const [isPreChatSubmitting, setIsPreChatSubmitting] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
+  // Profile edit modal state (WHMCS logged-in users)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [profileFirstName, setProfileFirstName] = useState("")
+  const [profileLastName, setProfileLastName] = useState("")
+  const [profilePhone, setProfilePhone] = useState("")
+  const [profileCompany, setProfileCompany] = useState("")
+  const [profileEmail, setProfileEmail] = useState("")
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileSaveError, setProfileSaveError] = useState("")
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
+
   const handleImageZoom = (url: string) => {
     try {
       if (window !== window.parent) {
@@ -2689,7 +2700,10 @@ export default function WidgetPage() {
   // Dynamic values with fallbacks
   const themeColor = settings?.color || 'linear-gradient(to bottom right, #2563eb, #1d4ed8)' // tailwind blue-600 to blue-700
   const isCustomColor = !!settings?.color
-  const greetingTitle = settings?.greetingTitle || 'Hey there! 👋'
+  const firstName = whmcsUser?.name ? whmcsUser.name.split(' ')[0] : null
+  const greetingTitle = firstName
+    ? `Hey, ${firstName}! 👋`
+    : (settings?.greetingTitle || 'Hey there! 👋')
   const greetingSubtitle = settings?.greetingSubtitle || 'How can we help?'
   
   const lastAgentMessage = [...messages].reverse().find(m => (m.sender_type === 'agent' || m.sender_type === 'system') && m.agent);
@@ -3470,6 +3484,45 @@ export default function WidgetPage() {
                   </div>
                </div>
             </div>
+
+            {/* My Profile Card - only shows when logged in via WHMCS/SSO */}
+            {whmcsUser && (
+              <div
+                className="group bg-white rounded-[16px] shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden cursor-pointer hover:shadow-[0_6px_20px_rgba(0,0,0,0.08)] transition-all"
+                onClick={async () => {
+                  setProfileSaveError('')
+                  setProfileSaveSuccess(false)
+                  // Fetch current profile from WHMCS
+                  try {
+                    const res = await fetch(`/api/widget/whmcs/profile?clientId=${whmcsUser.clientId}&deviceId=${deviceId}&orgId=${org_id}`)
+                    const data = await res.json()
+                    if (data.success && data.profile) {
+                      setProfileFirstName(data.profile.firstname || '')
+                      setProfileLastName(data.profile.lastname || '')
+                      setProfilePhone(data.profile.phonenumber || '')
+                      setProfileCompany(data.profile.companyname || '')
+                      setProfileEmail(data.profile.email || '')
+                    }
+                  } catch {}
+                  setIsProfileModalOpen(true)
+                }}
+              >
+                <div className="p-4 flex items-center justify-between text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                      <User size={16} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">My Profile</h3>
+                      <p className="text-[13px] text-slate-500 tracking-tight">{whmcsUser.name || 'Update your info'}</p>
+                    </div>
+                  </div>
+                  <div className="w-[32px] h-[32px] bg-slate-100 group-hover:bg-slate-200 text-slate-500 group-hover:text-slate-700 rounded-full flex items-center justify-center shrink-0 transition-colors">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>
+                  </div>
+                </div>
+              </div>
+            )}
             
           </div>
         </div>
@@ -4369,6 +4422,143 @@ export default function WidgetPage() {
               )}
                </div>
              </div>
+
+             {/* My Profile Edit Modal - for WHMCS logged-in users */}
+             {isProfileModalOpen && (
+               <>
+                 <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onClick={() => setIsProfileModalOpen(false)} />
+                 <div className="absolute bottom-0 left-0 right-0 bg-white z-50 border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
+                   <form onSubmit={async (e) => {
+                     e.preventDefault()
+                     if (!whmcsUser) return
+                     setIsSavingProfile(true)
+                     setProfileSaveError('')
+                     setProfileSaveSuccess(false)
+                     try {
+                       const res = await fetch('/api/widget/whmcs/profile', {
+                         method: 'PATCH',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({
+                           clientId: whmcsUser.clientId,
+                           deviceId,
+                           orgId: org_id,
+                           firstname: profileFirstName.trim(),
+                           lastname: profileLastName.trim(),
+                           phonenumber: profilePhone.trim(),
+                           companyname: profileCompany.trim(),
+                         })
+                       })
+                       const data = await res.json()
+                       if (data.success) {
+                         const newName = [profileFirstName.trim(), profileLastName.trim()].filter(Boolean).join(' ')
+                         const updatedUser = { ...whmcsUser, name: newName || whmcsUser.name }
+                         setWhmcsUser(updatedUser)
+                         localStorage.setItem('whmcs_user', JSON.stringify(updatedUser))
+                         setProfileSaveSuccess(true)
+                         setTimeout(() => setIsProfileModalOpen(false), 1200)
+                       } else {
+                         setProfileSaveError(data.error || 'Failed to save. Try again.')
+                       }
+                     } catch {
+                       setProfileSaveError('Network error. Try again.')
+                     } finally {
+                       setIsSavingProfile(false)
+                     }
+                   }}>
+                     <div className="flex justify-between items-center mb-3">
+                       <h3 className="font-bold text-slate-800 text-[18px] tracking-tight">My Profile</h3>
+                       <button
+                         type="button"
+                         onClick={() => setIsProfileModalOpen(false)}
+                         className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-full p-1.5 transition-colors cursor-pointer"
+                       >
+                         <X size={18} strokeWidth={2.5} />
+                       </button>
+                     </div>
+
+                     <p className="text-slate-500 text-[13px] mb-5 leading-relaxed">Update your account info. Changes sync to your Hostnin account instantly.</p>
+
+                     <div className="flex flex-col gap-3.5 mb-5">
+                       <div className="grid grid-cols-2 gap-3">
+                         <div>
+                           <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">First Name</label>
+                           <input
+                             type="text"
+                             value={profileFirstName}
+                             onChange={e => setProfileFirstName(e.target.value)}
+                             placeholder="e.g. Imran"
+                             className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Last Name</label>
+                           <input
+                             type="text"
+                             value={profileLastName}
+                             onChange={e => setProfileLastName(e.target.value)}
+                             placeholder="e.g. Mahmud"
+                             className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                           />
+                         </div>
+                       </div>
+
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+                         <input
+                           type="tel"
+                           value={profilePhone}
+                           onChange={e => setProfilePhone(e.target.value)}
+                           placeholder="e.g. 01700000000"
+                           className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                         />
+                       </div>
+
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Company (Optional)</label>
+                         <input
+                           type="text"
+                           value={profileCompany}
+                           onChange={e => setProfileCompany(e.target.value)}
+                           placeholder="e.g. Hostnin Ltd."
+                           className="w-full bg-[#f9fafb] border border-slate-200 rounded-xl p-3 text-[14px] outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                         />
+                       </div>
+
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                         <input
+                           type="email"
+                           value={profileEmail}
+                           readOnly
+                           className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-[14px] text-slate-400 cursor-not-allowed outline-none"
+                         />
+                         <p className="text-[11px] text-slate-400 mt-1">Email cannot be changed here for security.</p>
+                       </div>
+                     </div>
+
+                     {profileSaveError && (
+                       <p className="text-red-500 text-[13px] mb-3">{profileSaveError}</p>
+                     )}
+                     {profileSaveSuccess && (
+                       <p className="text-green-600 text-[13px] mb-3 flex items-center gap-1.5">
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                         Profile updated!
+                       </p>
+                     )}
+
+                     <button
+                       type="submit"
+                       disabled={isSavingProfile || profileSaveSuccess}
+                       className="w-full bg-[#0070f3] hover:bg-[#0062d2] disabled:bg-slate-400 text-white font-semibold py-3.5 rounded-xl text-[14px] transition-all shadow-[0_4px_12px_rgba(0,112,243,0.25)] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                     >
+                       {isSavingProfile ? (
+                         <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>Saving...</>
+                       ) : profileSaveSuccess ? 'Saved!' : 'Save Changes'}
+                     </button>
+                   </form>
+                 </div>
+               </>
+             )}
 
              {/* Convert to Ticket Modal */}
              {showTicketLogin && (

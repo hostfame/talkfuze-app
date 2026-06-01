@@ -55,7 +55,50 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Look for existing anonymous widget contact by deviceId
+    // 1. Primary lookup: find contact by whmcs_client_id (cross-device persistent history).
+    // If same WHMCS client opens widget on a new device, we find their existing contact
+    // (with full chat history) instead of creating a fresh anonymous one.
+    const { data: clientIdContacts } = await supabaseAdmin
+      .from('contacts')
+      .select('id, name, email, metadata, platform_id')
+      .eq('org_id', orgId)
+      .eq('platform_type', 'widget')
+      .filter('metadata->>whmcs_client_id', 'eq', String(clientId))
+      .limit(1)
+
+    const clientIdContact = clientIdContacts && clientIdContacts.length > 0 ? clientIdContacts[0] : null
+
+    if (clientIdContact) {
+      // Found existing contact by WHMCS client ID (may be on a different device)
+      const existingMeta = (clientIdContact.metadata || {}) as Record<string, any>
+      const displayName = name || clientIdContact.name || email.split('@')[0]
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0070f3&color=fff&length=1`
+      const isCrossDevice = clientIdContact.platform_id !== deviceId
+
+      // Refresh identity and update platform_id to this device so device-based
+      // lookups (messages, conversations) also work here
+      await supabaseAdmin
+        .from('contacts')
+        .update({
+          name: displayName,
+          email: email.toLowerCase(),
+          avatar_url: avatarUrl,
+          platform_id: deviceId,
+          metadata: { ...existingMeta, whmcs_client_id: clientId, identified_at: new Date().toISOString() }
+        })
+        .eq('id', clientIdContact.id)
+
+      return NextResponse.json({
+        success: true,
+        contactId: clientIdContact.id,
+        name: displayName,
+        clientId: parseInt(String(clientId), 10),
+        merged: true,
+        crossDevice: isCrossDevice
+      })
+    }
+
+    // 2. Fallback: look for anonymous contact by deviceId (same device, first identification)
     const { data: existingContacts } = await supabaseAdmin
       .from('contacts')
       .select('id, name, email, metadata')
@@ -94,10 +137,11 @@ export async function POST(req: NextRequest) {
         contactId: existingContact.id,
         name: displayName,
         clientId: parseInt(String(clientId), 10),
-        merged: true
+        merged: true,
+        crossDevice: false
       })
     } else {
-      // No existing contact for this deviceId - create one pre-identified
+      // No existing contact - create one pre-identified
       const { data: newContact, error: insertErr } = await supabaseAdmin
         .from('contacts')
         .insert({
@@ -125,7 +169,8 @@ export async function POST(req: NextRequest) {
         contactId: newContact!.id,
         name: displayName,
         clientId: parseInt(String(clientId), 10),
-        merged: false
+        merged: false,
+        crossDevice: false
       })
     }
   } catch (error: unknown) {
