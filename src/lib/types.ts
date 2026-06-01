@@ -110,6 +110,7 @@ export interface Database {
           phone: string | null
           avatar_url: string | null
           metadata: Json | null
+          custom_attributes: Json | null
           status: string | null
           created_at: string
         }
@@ -123,6 +124,7 @@ export interface Database {
           phone?: string | null
           avatar_url?: string | null
           metadata?: Json | null
+          custom_attributes?: Json | null
           status?: string | null
           created_at?: string
         }
@@ -136,6 +138,7 @@ export interface Database {
           phone?: string | null
           avatar_url?: string | null
           metadata?: Json | null
+          custom_attributes?: Json | null
           status?: string | null
           created_at?: string
         }

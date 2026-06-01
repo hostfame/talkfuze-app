@@ -1670,6 +1670,17 @@ export default function WidgetPage() {
             .catch(err => console.error('[Widget SSO] Runtime identify failed:', err));
         }
       }
+
+      if (event.data?.type === 'TALKFUZE_SET_ATTRIBUTES') {
+        const payload = event.data.payload;
+        if (payload && org_id && deviceId) {
+          fetch('/api/widget/attributes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orgId: org_id, deviceId, attributes: payload })
+          }).catch(err => console.error('[Widget] Failed to update attributes:', err));
+        }
+      }
     }
     
     window.addEventListener('message', handleMessage)

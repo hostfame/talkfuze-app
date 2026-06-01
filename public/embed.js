@@ -686,11 +686,12 @@
         // Desktop only
         if (window.innerWidth <= 768) return;
 
-        // Skip if already fired or widget is open
-        if (nudgeFired || isOpen) return;
+        // Skip if already fired, widget is open, or user already engaged
+        const hasEngaged = localStorage.getItem('tf_has_engaged') === 'true';
+        if (nudgeFired || isOpen || hasEngaged) return;
 
         const fireNudge = () => {
-            if (nudgeFired || isOpen) return;
+            if (nudgeFired || isOpen || localStorage.getItem('tf_has_engaged') === 'true') return;
             nudgeFired = true;
             showNudge();
             
@@ -737,6 +738,11 @@
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
         sessionStorage.setItem('tf_widget_open', isOpen);
+
+        // If they open the widget, consider them engaged and stop nudging them forever
+        if (isOpen) {
+            localStorage.setItem('tf_has_engaged', 'true');
+        }
 
         if (isOpen) {
             hideNudge();
@@ -785,8 +791,18 @@
 
     launcher.addEventListener('click', toggleWidget);
 
-    // Listen for messages from iframe
     window.addEventListener('message', (event) => {
+        // Handle custom attributes update from parent window
+        if (event.data && event.data.type === 'TALKFUZE_UPDATE_CONTEXT') {
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_SET_ATTRIBUTES',
+                    payload: event.data.payload
+                }, '*');
+            }
+            return;
+        }
+
         if (event.source !== iframe.contentWindow) return;
 
         if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
@@ -827,6 +843,53 @@
             }
         }
 
+        if (event.data && event.data.type === 'TALKFUZE_ZOOM_IMAGE') {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.zIndex = '2147483647';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.cursor = 'zoom-out';
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.2s';
+            
+            const img = document.createElement('img');
+            img.src = event.data.src;
+            img.style.maxWidth = '90vw';
+            img.style.maxHeight = '90vh';
+            img.style.objectFit = 'contain';
+            img.style.borderRadius = '8px';
+            img.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            img.style.transform = 'scale(0.95)';
+            img.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+            
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+            
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    overlay.style.opacity = '1';
+                    img.style.transform = 'scale(1)';
+                });
+            });
+            
+            overlay.addEventListener('click', () => {
+                overlay.style.opacity = '0';
+                img.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 200);
+            });
+        }
+
         // Override avatar from iframe if it sends one (e.g. active agent in conversation)
         if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
             if (event.data.avatarUrl) {
@@ -864,6 +927,18 @@
                     clientId: data.clientId || '',
                     signature: data.signature,
                     timestamp: data.timestamp
+                }, '*');
+            }
+        },
+        setCustomAttributes: function(data) {
+            if (typeof data !== 'object' || data === null) {
+                console.error('TalkFuze.setCustomAttributes: data must be an object');
+                return;
+            }
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_SET_ATTRIBUTES',
+                    payload: data
                 }, '*');
             }
         },

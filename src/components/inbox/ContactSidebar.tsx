@@ -209,7 +209,42 @@ export default function ContactSidebar({
 
   const [activeTab, setActiveTab] = useState<'details' | 'copilot' | 'cobrowse'>('details')
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
+  const [isContextExpanded, setIsContextExpanded] = useState(true)
   const [isAgentsExpanded, setIsAgentsExpanded] = useState(true)
+
+  const [customAttributes, setCustomAttributes] = useState<any>(contact?.custom_attributes || {})
+
+  useEffect(() => {
+    if (contact?.custom_attributes) {
+      setCustomAttributes(contact.custom_attributes);
+    }
+  }, [contact?.custom_attributes]);
+
+  useEffect(() => {
+    if (!contact?.id) return;
+
+    const channel = supabase
+      .channel(`contact_attributes:${contact.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'contacts',
+          filter: `id=eq.${contact.id}`
+        },
+        (payload) => {
+          if (payload.new && payload.new.custom_attributes) {
+            setCustomAttributes(payload.new.custom_attributes);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [contact?.id]);
   
   // Co-Browsing States
   const [coBrowseStatus, setCoBrowseStatus] = useState<'idle' | 'requested' | 'active' | 'declined' | 'connection_lost'>('idle')
@@ -1497,6 +1532,33 @@ export default function ContactSidebar({
               </div>
             )}
           </div>
+
+          {/* Live Context Card (Expandable) */}
+          {Object.keys(customAttributes || {}).length > 0 && (
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 mt-2.5">
+              <button 
+                onClick={() => setIsContextExpanded(!isContextExpanded)}
+                className="w-full flex justify-between items-center text-[12px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Database size={13} />
+                  Live Context
+                </span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${isContextExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isContextExpanded && (
+                <div className="mt-2.5 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {Object.entries(customAttributes).map(([key, value]) => (
+                    <div key={key} className="flex flex-col">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">{key}</span>
+                      <span className="text-[12px] text-slate-800 dark:text-slate-200 break-words">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Agents Joined Section */}
