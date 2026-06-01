@@ -513,6 +513,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   const WHMCS_TO_TALKFUZE: Record<string, string> = {
     'Tanvir Ahmed': 'Asad',
     'Kamrul Hasan': 'Rafy',
+    'Kamrul Hasan Rafy': 'Rafy',
     'Abrar  Hamid': 'Mujahid',
     'Abrar Hamid': 'Mujahid',
     'Mahfuz  Rahman': 'Mahfuz',
@@ -520,8 +521,8 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     'Ayesha Mim': 'Aisha',
     'Mahmudul  Hossen': 'Mahmud',
     'Mahmudul Hossen': 'Mahmud',
-    'Salehin  Sikdar': 'Salehin',
-    'Salehin Sikdar': 'Salehin',
+    'Salehin  Sikdar': 'Mahmud',
+    'Salehin Sikdar': 'Mahmud',
     'Saiful Islam': 'Imran',
   };
 
