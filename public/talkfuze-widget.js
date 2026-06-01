@@ -271,7 +271,7 @@
             width: 280px;
             height: ${NUDGE_HEIGHT}px;
             padding: 0;
-            pointer-events: auto;
+            pointer-events: none;
             opacity: 0;
             transform: translateX(12px) scale(0.97);
             transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
@@ -284,6 +284,7 @@
         #tf-nudge.tf-nudge-show {
             opacity: 1;
             transform: translateX(0) scale(1);
+            pointer-events: auto;
         }
 
         #tf-nudge.tf-nudge-focused {
@@ -716,10 +717,10 @@
     });
 
     nudgeInput.addEventListener('blur', () => {
-        if (nudgeInput.value.trim() === '') {
-            nudge.classList.remove('tf-nudge-focused');
-            launcher.classList.remove('tf-hide-for-focus');
-        }
+        // Always reset - if user typed but blurred without sending,
+        // the expanded nudge + hidden launcher must not stay stuck
+        nudge.classList.remove('tf-nudge-focused');
+        launcher.classList.remove('tf-hide-for-focus');
     });
 
     // Send button click
