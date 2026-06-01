@@ -459,7 +459,7 @@ export default function LeaderboardPage() {
                   <div
                     key={agent.id}
                     onClick={() => setSelectedAgent({ ...agent, rank: index + 1 })}
-                    className="flex items-center gap-4 px-5 py-4 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm relative overflow-hidden cursor-pointer hover:border-slate-300 dark:hover:border-[#374248] hover:shadow-md hover:scale-[1.005] transition-all"
+                    className="flex items-center gap-4 pl-5 pr-5 lg:pr-36 py-4 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-sm relative overflow-hidden cursor-pointer hover:border-slate-300 dark:hover:border-[#374248] hover:shadow-md hover:scale-[1.005] transition-all"
                   >
                     {/* Rank Badge */}
                     <div className="w-10 flex items-center justify-center shrink-0">
@@ -603,20 +603,20 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
 
-                    {/* Right Section: Visual data (hidden on small screens) */}
-                    <div className="hidden lg:flex items-center gap-4 shrink-0">
+                    {/* Right Section: Visual data (absolutely positioned to prevent overlap) */}
+                    <div className="hidden lg:flex flex-col items-end gap-1 absolute top-2 right-5">
                       {/* 7-day sparkline */}
                       {agent.dailyTrend && agent.dailyTrend.length > 0 && (
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-[10px] text-slate-400 dark:text-[#8696a0] font-medium">7-day trend</span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-medium leading-none uppercase tracking-wider">7-day trend</span>
                           <SparklineBars data={agent.dailyTrend} />
                         </div>
                       )}
 
                       {/* Active shift */}
                       {agent.activeShiftText && (
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-[10px] text-slate-400 dark:text-[#8696a0] font-medium">Shift (BST)</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[9px] text-slate-400 dark:text-[#8696a0] font-semibold leading-none uppercase tracking-wider">Shift:</span>
                           <ActiveShiftText text={agent.activeShiftText} />
                         </div>
                       )}

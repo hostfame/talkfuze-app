@@ -391,6 +391,7 @@ try {
         'GetUnpaidInvoicesWithClients', // Custom endpoint to fetch unpaid invoices with phonenumbers
         'GetDailyRevenue', // Custom endpoint to fetch 30-day revenue
         'GetAbandonedCartsForCall', // Custom endpoint to fetch abandoned carts for outbound robocalls
+        'GetTicketStatsForLeaderboard', // Custom endpoint for leaderboard stats
     ];
 
     if (!in_array($action, $allowedActions) && $action !== 'CheckAffiliatePromoOwner' && $action !== 'DomainRelayUpdateNS' && $action !== 'UnblockIP') {
@@ -1003,6 +1004,131 @@ try {
             bridgeLog('GetDailyRevenue ERROR: ' . $e->getMessage());
             http_response_code(500);
             die(json_encode(['result' => 'error', 'message' => 'Failed to fetch daily revenue']));
+        }
+        exit;
+    }
+
+    // ============================================
+    // CUSTOM ACTION: GetTicketStatsForLeaderboard
+    // ============================================
+    if ($action === 'GetTicketStatsForLeaderboard') {
+        $days = (int) ($_POST['days'] ?? 14);
+
+        $whmcsPath = __DIR__;
+        if (file_exists($whmcsPath . '/init.php')) {
+            require_once $whmcsPath . '/init.php';
+        }
+
+        try {
+            // Calculate start date
+            $startDate = date('Y-m-d H:i:s', time() - ($days * 86400));
+
+            // Fetch active admins
+            $admins = \WHMCS\Database\Capsule::table('tbladmins')
+                ->where('disabled', 0)
+                ->get(['id', 'firstname', 'lastname', 'username']);
+
+            // Fetch replies in the period
+            $replies = \WHMCS\Database\Capsule::table('tblticketreplies')
+                ->where('date', '>=', $startDate)
+                ->where('admin', '!=', '')
+                ->get(['admin', 'tid', 'date']);
+
+            // Fetch feedbacks in the period
+            $feedbacks = \WHMCS\Database\Capsule::table('tblticketfeedback')
+                ->where('datetime', '>=', $startDate)
+                ->get(['adminid', 'rating']);
+
+            // Fetch tickets by status
+            $statusCounts = \WHMCS\Database\Capsule::table('tbltickets')
+                ->select('status', \WHMCS\Database\Capsule::raw('COUNT(*) as count'))
+                ->groupBy('status')
+                ->get();
+
+            $ticketsByStatus = [];
+            foreach ($statusCounts as $row) {
+                $ticketsByStatus[$row->status] = (int) $row->count;
+            }
+
+            // Initialize admin stats map
+            $adminStats = [];
+            foreach ($admins as $admin) {
+                $fullName = preg_replace('/\s+/', ' ', trim($admin->firstname . ' ' . $admin->lastname));
+                $adminStats[$fullName] = [
+                    'name' => $fullName,
+                    'replies' => 0,
+                    'tickets' => [],
+                    'total_rating' => 0,
+                    'feedback_count' => 0,
+                    'hourly_activity' => array_fill(0, 24, 0),
+                ];
+            }
+
+            // Process replies
+            foreach ($replies as $reply) {
+                $replyAdmin = preg_replace('/\s+/', ' ', trim($reply->admin));
+                
+                // Find matching admin (case insensitive and space normalized)
+                $foundKey = null;
+                foreach (array_keys($adminStats) as $name) {
+                    if (strcasecmp($name, $replyAdmin) === 0) {
+                        $foundKey = $name;
+                        break;
+                    }
+                }
+
+                if ($foundKey !== null) {
+                    $adminStats[$foundKey]['replies']++;
+                    $adminStats[$foundKey]['tickets'][$reply->tid] = true;
+                    $hour = (int) date('H', strtotime($reply->date));
+                    $adminStats[$foundKey]['hourly_activity'][$hour]++;
+                }
+            }
+
+            // Process feedbacks
+            foreach ($feedbacks as $fb) {
+                // Find admin by ID
+                $foundAdmin = null;
+                foreach ($admins as $admin) {
+                    if ((int) $admin->id === (int) $fb->adminid) {
+                        $foundAdmin = $admin;
+                        break;
+                    }
+                }
+
+                if ($foundAdmin !== null) {
+                    $fullName = preg_replace('/\s+/', ' ', trim($foundAdmin->firstname . ' ' . $foundAdmin->lastname));
+                    if (isset($adminStats[$fullName])) {
+                        $adminStats[$fullName]['total_rating'] += (float) $fb->rating;
+                        $adminStats[$fullName]['feedback_count']++;
+                    }
+                }
+            }
+
+            // Build final stats array format expected by TalkFuze
+            $finalAdminStats = [];
+            foreach ($adminStats as $name => $data) {
+                $finalAdminStats[] = [
+                    'name' => $data['name'],
+                    'replies' => $data['replies'],
+                    'tickets_handled' => count($data['tickets']),
+                    'avg_rating' => $data['feedback_count'] > 0 ? round($data['total_rating'] / $data['feedback_count'], 2) : null,
+                    'feedback_count' => $data['feedback_count'],
+                    'hourly_activity' => $data['hourly_activity']
+                ];
+            }
+
+            echo json_encode([
+                'result' => 'success',
+                'admin_stats' => $finalAdminStats,
+                'tickets_by_status' => $ticketsByStatus,
+                'period_days' => $days
+            ]);
+
+        } catch (Exception $e) {
+            bridgeLog('GetTicketStatsForLeaderboard ERROR: ' . $e->getMessage());
+            http_response_code(500);
+            die(json_encode(['result' => 'error', 'message' => 'Failed to fetch ticket stats for leaderboard']));
         }
         exit;
     }
