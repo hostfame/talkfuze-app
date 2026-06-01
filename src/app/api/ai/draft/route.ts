@@ -25,12 +25,122 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 // ============================================================
-// LANGUAGE & INTENT CONSTANTS
+// LANGUAGE DETECTION CONSTANTS & HELPERS
 // ============================================================
 
 const BENGALI_REGEX = /[\u0985-\u09B9\u09DC-\u09DF\u09BE-\u09CC\u0981-\u0983]/;
-const BANGLISH_REGEX = /\b(ami|tumi|apni|amra|amader|tomar|apnar|ki|kobe|kothay|keno|kemon|koyta|valo|bhalo|kharap|ache|achi|nai|na|ha|ji|haan|kore|korbo|korte|koro|korun|hobe|hoiche|hoy|hoite|jabe|jai|jacche|somossa|somosya|kaj|kotha|bhai|vai|bhaiya|vaiya|apu|tk|taka|din|den|daw|debo|dibo|dicchi|nibo|nibe|niben|nile|lagbe|eita|oita|ekhon|pore|kalke|ajke|eta|ota)\b/i;
+const BANGLISH_REGEX = /\b(ami|tumi|apni|amra|amader|tomar|apnar|ki|kobe|kothay|keno|kemon|koyta|valo|bhalo|kharap|ache|achi|nai|ji|haan|kore|korbo|korte|koro|korun|hobe|hoiche|hoy|hoite|jabe|jai|jacche|somossa|somosya|kaj|kotha|bhai|vai|bhaiya|vaiya|apu|taka|den|daw|debo|dibo|dicchi|nibo|nibe|niben|nile|lagbe|eita|oita|ekhon|pore|kalke|ajke)\b/i;
 const AMBIGUOUS_MSG = /^(done|ok|yes|no|send|check|update|hi|hello|please|thx|thanks|okey|yep|sure|ji|ha|hallo)$/i;
+// Pasted email bodies contain their own English text that doesn't reflect the customer's language
+const EMAIL_BODY_REGEX = /Subject:\s*.+[\r\n]+.*Message:/i;
+// Placeholder-only messages carry no language signal
+const PLACEHOLDER_REGEX = /^\[(image|attachment|video|audio|file)\]$/i;
+
+/**
+ * Strips noise from the message window before language detection:
+ * - Removes system/agent messages
+ * - Removes [image]/[attachment] placeholders
+ * - Removes pasted email bodies (which are English even when customer speaks Banglish)
+ * Returns last 3 cleaned customer messages as an array of strings.
+ */
+function cleanMessagesForDetection(parsedMessages: { sender: string; content: string }[]): string[] {
+  return parsedMessages
+    .filter(m => m.sender !== 'Agent' && m.sender !== 'System Auto-Reply')
+    .filter(m => !PLACEHOLDER_REGEX.test(m.content.trim()))
+    .filter(m => !EMAIL_BODY_REGEX.test(m.content))
+    .slice(-3)
+    .map(m => m.content.substring(0, 300));
+}
+
+/**
+ * Composite language scorer - synchronous fallback, zero latency, zero cost.
+ * Applies weighted signals to decide between Bengali (BN) and English (EN).
+ * Lean toward Bengali since ~95%+ of Hostnin customers are Bangladeshi.
+ */
+function scoreLanguageComposite(messages: string[]): 'en' | 'bn' {
+  if (messages.length === 0) return 'bn';
+  const combined = messages.join(' ');
+  const latest = messages[messages.length - 1] || '';
+
+  // Highest priority: Bengali Unicode script is unambiguous
+  if (BENGALI_REGEX.test(combined)) return 'bn';
+
+  let score = 0;
+
+  // Banglish word in latest message - strongest Banglish signal
+  if (BANGLISH_REGEX.test(latest)) score += 50;
+  // Banglish word in recent history
+  else if (BANGLISH_REGEX.test(combined)) score += 25;
+
+  // Short/ambiguous message - lean Bengali (most Hostnin customers)
+  if (latest.trim().length <= 12) score += 20;
+
+  // Pure English signal: long sentence with only Latin chars and proper words
+  const isLikelyEnglish = latest.trim().length > 25 &&
+    /^[a-zA-Z0-9\s.,!?'"():;@/-]+$/.test(latest.trim()) &&
+    !BANGLISH_REGEX.test(latest);
+  if (isLikelyEnglish) score -= 50;
+
+  return score >= 20 ? 'bn' : 'en';
+}
+
+/**
+ * LLM-based language classifier using gpt-4o-mini.
+ * Runs in parallel with the vector embedding call - adds ~0ms net latency.
+ * Has a 300ms hard timeout; falls back to composite scorer on any failure.
+ * Understands semantic context: "ok" after Bengali = still Bengali.
+ */
+async function detectLanguageWithLLM(
+  cleanedMessages: string[],
+  openaiKey: string,
+  compositeFallback: 'en' | 'bn'
+): Promise<'en' | 'bn'> {
+  if (cleanedMessages.length === 0) return compositeFallback;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300);
+
+  try {
+    const messagesText = cleanedMessages.map((m, i) => `[${i + 1}] ${m}`).join('\n');
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 3,
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a language classifier. Reply with ONE word only: EN, BN, or BL. EN=English. BN=Bengali script. BL=Romanized Bengali (Banglish, e.g. "ekhon ki korbo", "ami kinbo", "thik ache"). If unsure, output BL.'
+          },
+          {
+            role: 'user',
+            content: `What language is the customer currently using?\n${messagesText}`
+          }
+        ]
+      })
+    });
+
+    clearTimeout(timeoutId);
+    if (!res.ok) return compositeFallback;
+
+    const data = await res.json();
+    const result = (data.choices?.[0]?.message?.content || '').trim().toUpperCase().replace(/[^A-Z]/g, '');
+
+    if (result === 'EN') return 'en';
+    if (result === 'BN' || result === 'BL') return 'bn';
+    return compositeFallback;
+  } catch {
+    clearTimeout(timeoutId);
+    return compositeFallback;
+  }
+}
 
 // ============================================================
 // SYSTEM PROMPT BUILDER
@@ -295,24 +405,20 @@ export async function POST(req: Request) {
       activeStateInstruction = `[ACTIVE STATE]: The customer is waiting for a human reply. Note: Any [System Auto-Reply] messages in the history are automated bot notices; they do NOT resolve the customer's query. You must politely greet and answer the customer's actual questions.`;
     }
 
-    // Server-side language detection: check latest customer messages for Bengali/Banglish
-    // This is the source of truth - not the LLM's guess from a prompt full of Bengali text.
-    let detectedLanguage: 'en' | 'bn' = 'en';
-    const last3CustomerMessages = customerMessages.slice(-3).map(m => m.content).join(' ');
-    
-    if (BENGALI_REGEX.test(last3CustomerMessages)) {
-      // 1. Bengali script detected anywhere in last 3 messages -> Bengali
+    // ── LANGUAGE DETECTION ─────────────────────────────────────────────────
+    // Strategy: composite scorer runs synchronously NOW (0ms) so learningPromise
+    // can start. LLM classifier runs in parallel and overrides before prompt assembly.
+    // Language is detected from the LAST 2-3 CUSTOMER messages only (rolling window).
+    // This naturally handles mid-conversation language switches: Bengali → English → Bengali.
+    // No per-conversation caching - we re-detect every turn like a human agent would.
+    const detectionMessages = cleanMessagesForDetection(parsedMessages);
+
+    // Composite detection: sync, 0ms - seed value used by learningPromise
+    let detectedLanguage: 'en' | 'bn' = scoreLanguageComposite(detectionMessages);
+
+    // If agent gave a Copilot instruction in Banglish/Bengali, honour it over customer language
+    if (instruction && (BENGALI_REGEX.test(instruction) || BANGLISH_REGEX.test(instruction))) {
       detectedLanguage = 'bn';
-    } else if (BANGLISH_REGEX.test(latestCustomerMessageCleaned)) {
-      // 2. Banglish word detected in the latest message -> Bengali
-      detectedLanguage = 'bn';
-    } else if (latestCustomerMessageCleaned.length <= 15) {
-      // 3. Ambiguous short message -> check last 3 customer messages for Banglish too
-      if (BANGLISH_REGEX.test(last3CustomerMessages)) {
-        detectedLanguage = 'bn';
-      } else {
-        detectedLanguage = 'bn'; // Default to 'bn' as safe fallback for local customers
-      }
     }
 
     const conversationLines = contextMessages.split('\n').map((l: string) => l.trim()).filter(Boolean);
@@ -434,7 +540,22 @@ export async function POST(req: Request) {
 
     const orgSettingsPromise = supabaseAdmin.from('organizations').select('settings').eq('id', orgId).single();
 
-    const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock, masterBlueprint }, { data: orgData }] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise]);
+    // LLM language classifier: runs in parallel with vector search (0ms net latency added).
+    // 300ms timeout built into detectLanguageWithLLM - falls back to composite on timeout/error.
+    // Skipped for: translations, instruction-driven (language already determined above), empty windows.
+    const languageDetectionPromise = (
+      process.env.OPENAI_API_KEY &&
+      !isTranslation &&
+      !instruction &&
+      detectionMessages.length > 0
+    )
+      ? detectLanguageWithLLM(detectionMessages, process.env.OPENAI_API_KEY, detectedLanguage)
+      : Promise.resolve(detectedLanguage);
+
+    const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock, masterBlueprint }, { data: orgData }, llmDetectedLanguage] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise, languageDetectionPromise]);
+
+    // Override composite result with LLM classification (more accurate, especially for Banglish)
+    detectedLanguage = llmDetectedLanguage;
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
 
     const fewShotBlock = rawFewShotBlock;
