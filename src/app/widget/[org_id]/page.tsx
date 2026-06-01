@@ -636,7 +636,7 @@ export default function WidgetPage() {
   
   // WHMCS Tickets State
   const [ticketView, setTicketView] = useState<'login' | 'list' | 'detail' | 'new'>('login')
-  const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string, email?: string, avatar_url?: string | null } | null>(null)
+  const [whmcsUser, setWhmcsUser] = useState<{ clientId: number, name?: string, email?: string, avatar_url?: string | null, fallback_avatar_url?: string | null } | null>(null)
   const [whmcsTickets, setWhmcsTickets] = useState<any[]>([])
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [ticketEmail, setTicketEmail] = useState("")
@@ -674,6 +674,7 @@ export default function WidgetPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileSaveError, setProfileSaveError] = useState("")
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
+  const [profileAvatarError, setProfileAvatarError] = useState(false)
 
   const handleImageZoom = (url: string) => {
     try {
@@ -1650,7 +1651,7 @@ export default function WidgetPage() {
       }
       // SSO: Runtime identify via postMessage (for SPA login flows)
       if (event.data?.type === 'TALKFUZE_IDENTIFY') {
-        const { email, name, clientId, signature, timestamp, avatarUrl } = event.data;
+        const { email, name, clientId, signature, timestamp, avatarUrl, fallbackAvatarUrl } = event.data;
         if (email && signature && timestamp && deviceId && org_id) {
           fetch('/api/widget/identify', {
             method: 'POST',
@@ -1668,7 +1669,7 @@ export default function WidgetPage() {
             .then(res => res.json())
             .then(data => {
               if (data.success && data.clientId) {
-                const user = { clientId: data.clientId, name: data.name || name || 'User', email: email, avatar_url: avatarUrl };
+                const user = { clientId: data.clientId, name: data.name || name || 'User', email: email, avatar_url: avatarUrl, fallback_avatar_url: fallbackAvatarUrl };
                 setWhmcsUser(user);
                 localStorage.setItem('whmcs_user', JSON.stringify(user));
                 setTicketView('list');
@@ -3520,7 +3521,12 @@ export default function WidgetPage() {
                 <div className="p-4 flex items-center justify-between text-left">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full border border-slate-100 shadow-sm overflow-hidden bg-slate-50 flex items-center justify-center shrink-0">
-                      <img src={whmcsUser.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(whmcsUser.name || 'User')}&backgroundColor=0070f3&textColor=ffffff`} alt={whmcsUser.name || 'User'} className="w-full h-full object-cover" />
+                      <img 
+                        src={profileAvatarError ? (whmcsUser.fallback_avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(whmcsUser.name || 'User')}&backgroundColor=0070f3&textColor=ffffff`) : (whmcsUser.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(whmcsUser.name || 'User')}&backgroundColor=0070f3&textColor=ffffff`)} 
+                        onError={() => setProfileAvatarError(true)}
+                        alt={whmcsUser.name || 'User'} 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                     <div>
                       <h3 className="font-bold text-slate-800 text-[15px] tracking-tight mb-0.5">My Profile</h3>
