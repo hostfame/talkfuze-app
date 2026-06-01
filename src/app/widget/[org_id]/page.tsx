@@ -660,8 +660,6 @@ export default function WidgetPage() {
   const [tempPhone, setTempPhone] = useState("01")
   const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false)
   const [hasProvidedContact, setHasProvidedContact] = useState(false)
-  const [preChatEmail, setPreChatEmail] = useState("")
-  const [isPreChatSubmitting, setIsPreChatSubmitting] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
   const handleImageZoom = (url: string) => {
@@ -4162,39 +4160,6 @@ export default function WidgetPage() {
                           <StopCircle size={20} />
                         </button>
                       </div>
-                    </div>
-                  ) : !hasContactMessage && !hasProvidedContact ? (
-                    <div className="p-4 pt-3 flex flex-col gap-3 min-h-[52px]">
-                      <p className="text-[13px] text-slate-500 font-medium leading-tight">To start chatting, please enter your email so we can reach you if you get disconnected.</p>
-                      <form onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (!preChatEmail.includes('@') || isPreChatSubmitting) return;
-                        setIsPreChatSubmitting(true);
-                        try {
-                          await updateWidgetContactDetails(org_id, deviceId, "Web Visitor", "", preChatEmail);
-                          setHasProvidedContact(true);
-                        } catch (err) {
-                          console.error(err);
-                        } finally {
-                          setIsPreChatSubmitting(false);
-                        }
-                      }} className="flex gap-2">
-                        <input 
-                          type="email" 
-                          required 
-                          value={preChatEmail}
-                          onChange={e => setPreChatEmail(e.target.value)}
-                          placeholder="Email address..." 
-                          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[14px] outline-none focus:border-[#0070f3] focus:ring-1 focus:ring-[#0070f3] transition-all text-slate-800"
-                        />
-                        <button 
-                          type="submit" 
-                          disabled={isPreChatSubmitting || !preChatEmail}
-                          className="bg-[#0070f3] hover:bg-[#0062d2] text-white px-4 py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-50"
-                        >
-                          {isPreChatSubmitting ? '...' : 'Start'}
-                        </button>
-                      </form>
                     </div>
                   ) : (
                     <textarea 
