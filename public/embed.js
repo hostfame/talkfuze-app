@@ -108,7 +108,6 @@
             transform: scale(0.95) translateY(10px);
             transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
-            margin-bottom: 20px;
             display: none;
             background-color: #1a2744;
         }

@@ -54,16 +54,21 @@ const sortMessagesComparator = (a: WidgetMessage, b: WidgetMessage) => {
   const timeA = safeParseDate(a.created_at);
   const timeB = safeParseDate(b.created_at);
   
+  // Same timestamp or close (within 2s): system events (joined/left) always before regular messages
+  // This ensures "Agent joined the chat" appears before their first message even with backend insertion delays
+  if (Math.abs(timeA - timeB) < 2000) {
+    const aIsSystem = a.sender_type === 'system';
+    const bIsSystem = b.sender_type === 'system';
+    const aIsAgent = a.sender_type === 'agent';
+    const bIsAgent = b.sender_type === 'agent';
+    
+    if (aIsSystem && bIsAgent) return -1;
+    if (bIsSystem && aIsAgent) return 1;
+  }
+  
   if (timeA !== timeB && timeA !== 0 && timeB !== 0) {
     return timeA - timeB;
   }
-  
-  // Same timestamp: system events (joined/left) always before regular messages
-  // This ensures "Agent joined the chat" appears before their first message
-  const aIsSystem = a.sender_type === 'system';
-  const bIsSystem = b.sender_type === 'system';
-  if (aIsSystem && !bIsSystem) return -1;
-  if (!aIsSystem && bIsSystem) return 1;
   
   // Stable fallback if timestamps are identical or failed to parse
   if (a.id && b.id && a.id !== b.id) {
@@ -1631,11 +1636,9 @@ export default function WidgetPage() {
       if (event.data?.type === 'TALKFUZE_PREFILL_MESSAGE') {
         const text = event.data?.message?.trim();
         if (text) {
+          setActiveConversationId(prev => prev || 'new');
           setActiveTab('chat');
-          // Small delay to let the tab transition complete before sending
-          setTimeout(() => {
-            handleSend(text);
-          }, 350);
+          handleSend(text);
         }
       }
       // SSO: Runtime identify via postMessage (for SPA login flows)
