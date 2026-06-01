@@ -3,34 +3,83 @@
     if (window.TalkFuzeWidgetInitialized) return;
     window.TalkFuzeWidgetInitialized = true;
 
-    // Find the script tag to extract parameters
-    const scripts = document.getElementsByTagName('script');
-    let currentScript = null;
-    let orgId = null;
+    // Set parameters
+    let orgId = 'ec2f8436-05dc-4621-8a7f-57202f865b8e';
     let baseUrl = 'https://app.talkfuze.com';
+    let scriptTag = null;
 
-    for (let i = 0; i < scripts.length; i++) {
-        const src = scripts[i].src;
-        if (src && src.includes('talkfuze-widget.js')) {
-            currentScript = scripts[i];
-            orgId = currentScript.getAttribute('data-org-id');
-            if (src.startsWith('http://localhost')) {
-                const url = new URL(src);
-                baseUrl = url.origin;
+    // Allow dynamic override if the script tag has data-org-id
+    const injector = document.getElementById('talkfuze-script-injector');
+    if (injector) {
+        scriptTag = injector;
+        const dynamicOrgId = injector.getAttribute('data-org-id');
+        if (dynamicOrgId) orgId = dynamicOrgId;
+    }
+
+    // Fallback: Find the script tag by searching src/attributes
+    if (!injector) {
+        const scripts = document.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            const dataOrgId = scripts[i].getAttribute('data-org-id');
+            if (dataOrgId) {
+                orgId = dataOrgId;
+                scriptTag = scripts[i];
+                if (src && src.startsWith('http://localhost')) {
+                    baseUrl = new URL(src).origin;
+                }
+                break;
             }
-            break;
+            if (src && (src.includes('talkfuze-widget.js') || src.includes('embed.js'))) {
+                orgId = scripts[i].getAttribute('data-org-id') || orgId;
+                scriptTag = scripts[i];
+                if (src.startsWith('http://localhost')) {
+                    baseUrl = new URL(src).origin;
+                }
+                break;
+            }
         }
     }
 
     if (!orgId) {
-        console.error('TalkFuze Widget: Missing data-org-id attribute on the script tag.');
+        console.error('TalkFuze Widget: Missing data-org-id.');
         return;
     }
 
+    // SSO Identity: Read user data from script tag attributes
+    let userIdentity = null;
+    if (scriptTag) {
+        const userEmail = scriptTag.getAttribute('data-user-email');
+        const userName = scriptTag.getAttribute('data-user-name');
+        const userClientId = scriptTag.getAttribute('data-user-client-id');
+        const userSig = scriptTag.getAttribute('data-user-sig');
+        const userTs = scriptTag.getAttribute('data-user-ts');
+
+        if (userEmail && userSig && userTs) {
+            userIdentity = {
+                email: userEmail,
+                name: userName || '',
+                clientId: userClientId || '',
+                sig: userSig,
+                ts: userTs
+            };
+        }
+    }
+
     const isMobile = window.innerWidth <= 480;
-    const WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
+    let WIDGET_URL = `${baseUrl}/widget/${orgId}?is_mobile=${isMobile}`;
+
+    // Append identity params to iframe URL if available
+    if (userIdentity) {
+        WIDGET_URL += `&user_email=${encodeURIComponent(userIdentity.email)}`;
+        WIDGET_URL += `&user_name=${encodeURIComponent(userIdentity.name)}`;
+        WIDGET_URL += `&user_client_id=${encodeURIComponent(userIdentity.clientId)}`;
+        WIDGET_URL += `&user_sig=${encodeURIComponent(userIdentity.sig)}`;
+        WIDGET_URL += `&user_ts=${encodeURIComponent(userIdentity.ts)}`;
+    }
     const BUTTON_SIZE = 60;
     const MARGIN = 20;
+    const NUDGE_HEIGHT = 54;
 
     const style = document.createElement('style');
     style.innerHTML = `
@@ -46,21 +95,22 @@
         }
 
         #tf-iframe-container {
-            width: 400px;
-            height: 700px;
-            max-height: calc(100vh - ${MARGIN * 2 + BUTTON_SIZE + 20}px);
-            max-width: calc(100vw - ${MARGIN * 2}px);
-            background: #1a2744;
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 14}px;
+            right: ${MARGIN}px;
+            width: 390px;
+            max-width: calc(100vw - 32px);
+            height: min(700px, calc(100vh - 160px));
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.15), 0 8px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
             opacity: 0;
-            transform: scale(0.95) translateY(20px);
-            transform-origin: bottom right;
-            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: auto;
+            transform: scale(0.95) translateY(10px);
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
             margin-bottom: 20px;
             display: none;
+            background-color: #1a2744;
         }
 
         #tf-iframe-container.tf-open {
@@ -70,6 +120,7 @@
         #tf-iframe-container.tf-animate-in {
             opacity: 1;
             transform: scale(1) translateY(0);
+            pointer-events: auto;
         }
 
         #tf-iframe {
@@ -84,22 +135,21 @@
             height: ${BUTTON_SIZE}px;
             border-radius: 50%;
             background-color: #0070f3;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 16px rgba(0, 112, 243, 0.45), 0 2px 6px rgba(0,0,0,0.12);
             cursor: pointer;
             pointer-events: auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, opacity 0.35s ease;
             position: relative;
+            opacity: 0;
+            transform: scale(0.7);
         }
 
-        #tf-launcher:hover {
-            transform: scale(1.05);
-        }
-
-        #tf-launcher:active {
-            transform: scale(0.95);
+        #tf-launcher.tf-launcher-ready {
+            opacity: 1;
+            transform: scale(1);
         }
 
         @keyframes tfPulse {
@@ -118,16 +168,26 @@
             pointer-events: none !important;
         }
 
+        #tf-launcher:hover {
+            transform: scale(1.06);
+            box-shadow: 0 6px 20px rgba(0, 112, 243, 0.55), 0 3px 8px rgba(0,0,0,0.15);
+            animation: none;
+        }
+
+        #tf-launcher:active {
+            transform: scale(0.94);
+        }
+
         .tf-icon {
             position: absolute;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             fill: white;
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
 
         #tf-icon-chat {
-            opacity: 1;
+            opacity: 0;
             transform: rotate(0deg) scale(1);
         }
 
@@ -153,37 +213,41 @@
             border-radius: 50%;
             object-fit: cover;
             opacity: 0;
-            transform: scale(0.5);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.4s ease;
         }
 
         #tf-agent-avatar.tf-show {
             opacity: 1;
-            transform: scale(1);
+        }
+
+        /* When widget is open, hide avatar so X icon is visible */
+        .tf-open #tf-agent-avatar {
+            opacity: 0 !important;
         }
 
         .tf-badge {
             position: absolute;
-            top: -4px;
-            right: -4px;
+            top: -3px;
+            right: -3px;
             background-color: #ef4444;
             color: white;
-            font-size: 12px;
-            font-weight: bold;
-            height: 22px;
-            min-width: 22px;
-            border-radius: 11px;
+            font-size: 11px;
+            font-weight: 700;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 0 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
             opacity: 0;
             transform: scale(0.5);
             transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             pointer-events: none;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border: 2px solid white;
         }
 
         .tf-badge.tf-show {
@@ -287,6 +351,83 @@
             fill: none;
         }
 
+        /* =============================================
+           REPLY NUDGE - Floating bar for unread messages
+           ============================================= */
+        #tf-reply-nudge {
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 16}px;
+            right: ${MARGIN}px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            display: flex;
+            align-items: center;
+            max-width: 320px;
+            padding: 12px 16px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            cursor: pointer;
+            z-index: 2147483646;
+        }
+
+        #tf-reply-nudge.tf-reply-show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        
+        #tf-reply-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            display: none;
+        }
+        
+        #tf-reply-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #tf-reply-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #tf-reply-text {
+            font-size: 14px;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #tf-reply-close {
+            margin-left: 12px;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 18px;
+            line-height: 1;
+        }
+        
+        #tf-reply-close:hover {
+            color: #64748b;
+        }
+
         @media (max-width: 768px) {
             #tf-nudge {
                 display: none !important;
@@ -349,9 +490,65 @@
         checkAndTriggerNudge();
     }
 
+    // Skeleton loading overlay - prevents white flash while iframe loads
+    const skeleton = document.createElement('div');
+    skeleton.id = 'tf-skeleton';
+    skeleton.style.cssText = `
+        position:absolute;
+        inset:0;
+        background:#0f172a;
+        border-radius:16px;
+        z-index:10;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;
+        transition:opacity 0.3s ease;
+    `;
+    skeleton.innerHTML = `
+        <div style="padding:20px 20px 16px;display:flex;align-items:center;gap:12px;background:#0f172a;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
+            <div style="flex:1;">
+                <div style="height:10px;width:120px;border-radius:6px;background:rgba(255,255,255,0.1);margin-bottom:7px;"></div>
+                <div style="height:8px;width:80px;border-radius:6px;background:rgba(255,255,255,0.06);"></div>
+            </div>
+        </div>
+        <div style="flex:1;background:#f8fafc;padding:20px 16px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
+                <div style="background:#e2e8f0;border-radius:12px 12px 12px 3px;padding:10px 14px;max-width:65%;">
+                    <div style="height:9px;width:110px;background:#cbd5e1;border-radius:4px;margin-bottom:6px;"></div>
+                    <div style="height:9px;width:80px;background:#cbd5e1;border-radius:4px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;">
+                <div style="background:#dbeafe;border-radius:12px 12px 3px 12px;padding:10px 14px;max-width:55%;">
+                    <div style="height:9px;width:90px;background:#bfdbfe;border-radius:4px;"></div>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-end;">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
+                <div style="background:#e2e8f0;border-radius:12px 12px 12px 3px;padding:10px 14px;max-width:70%;">
+                    <div style="height:9px;width:140px;background:#cbd5e1;border-radius:4px;"></div>
+                </div>
+            </div>
+        </div>
+        <div style="background:#fff;border-top:1px solid #e2e8f0;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:38px;border-radius:20px;background:#f1f5f9;"></div>
+            <div style="width:38px;height:38px;border-radius:50%;background:#0070f3;flex-shrink:0;"></div>
+        </div>
+    `;
+
     iframe.onload = () => {
         sendPageView();
+        // Fade out skeleton once iframe is ready
+        setTimeout(() => {
+            skeleton.style.opacity = '0';
+            setTimeout(() => { skeleton.remove(); }, 320);
+        }, 100);
     };
+
+    iframeContainer.appendChild(skeleton);
+    iframeContainer.appendChild(iframe);
 
     // SPA Navigation Tracking
     const originalPushState = history.pushState;
@@ -370,7 +567,6 @@
         setTimeout(sendPageView, 100);
     });
 
-    iframeContainer.appendChild(iframe);
 
     // Create launcher button
     const launcher = document.createElement('div');
@@ -378,13 +574,13 @@
 
     const chatIcon = `
         <svg id="tf-icon-chat" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z" fill="currentColor"/>
+            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z" fill="white"/>
         </svg>
     `;
 
     const closeIcon = `
         <svg id="tf-icon-close" class="tf-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+            <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="white"/>
         </svg>
     `;
 
@@ -407,7 +603,7 @@
     const chatIconEl = document.getElementById('tf-icon-chat');
 
     function revealLauncher() {
-        launcher.style.opacity = '1';
+        launcher.classList.add('tf-launcher-ready');
     }
 
     function showAvatar(url) {
@@ -436,17 +632,20 @@
     function startAvatarCarousel(agents) {
         agentAvatars = agents;
         if (agents.length === 0) {
+            // No avatars - show chat icon
             if (chatIconEl) chatIconEl.style.opacity = '1';
             return;
         }
+        // Show first avatar immediately
         showAvatar(agents[0].avatar_url);
+        // Rotate every 10 seconds if multiple agents
         if (agents.length > 1) {
             if (avatarRotateTimer) clearInterval(avatarRotateTimer);
             avatarRotateTimer = setInterval(rotateAvatar, 10000);
         }
     }
 
-    // Fallback avatars if API returns none
+    // Fallback avatars if API returns none (uses TalkFuze app's team photos)
     const FALLBACK_AVATARS = [
         { avatar_url: `${baseUrl}/team/4.avif` },
         { avatar_url: `${baseUrl}/team/5.avif` },
@@ -460,16 +659,18 @@
             if (data.success && data.agents && data.agents.length > 0) {
                 startAvatarCarousel(data.agents);
             } else {
+                // No agents configured - use fallback team photos
                 startAvatarCarousel(FALLBACK_AVATARS);
             }
         })
         .catch(() => {
+            // Network error - use fallback
             startAvatarCarousel(FALLBACK_AVATARS);
         });
 
-    // ==========================================
+    // =============================================
     // Nudge - Floating pill input bar (desktop only)
-    // ==========================================
+    // =============================================
     const nudge = document.createElement('div');
     nudge.id = 'tf-nudge';
     nudge.innerHTML = `
@@ -490,13 +691,15 @@
     let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
 
     function openWidgetWithMessage(text) {
+        const trimmed = (text || '').trim();
+        if (trimmed) {
+            // Send message immediately to avoid white flash of empty tab
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: trimmed }, '*');
+            }
+        }
         if (!isOpen) toggleWidget(true);
         hideNudge();
-        if (text && text.trim()) {
-            setTimeout(() => {
-                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: text.trim() }, '*');
-            }, 380);
-        }
     }
 
     // Clicking anywhere on pill focuses the input
@@ -521,20 +724,17 @@
     // Send button click
     nudgeSend.addEventListener('click', (e) => {
         e.stopPropagation();
-        openWidgetWithMessage(nudgeInput.value);
+        const text = nudgeInput.value;
+        nudgeInput.value = '';
+        openWidgetWithMessage(text);
     });
 
     // Enter key sends
     nudgeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            openWidgetWithMessage(nudgeInput.value);
-        }
-    });
-
-    // Typing opens the widget
-    nudgeInput.addEventListener('input', () => {
-        if (nudgeInput.value.length === 1 && !isOpen) {
-            openWidgetWithMessage('');
+            const text = nudgeInput.value;
+            nudgeInput.value = '';
+            openWidgetWithMessage(text);
         }
     });
 
@@ -561,11 +761,12 @@
         // Desktop only
         if (window.innerWidth <= 768) return;
 
-        // Skip if already fired or widget is open
-        if (nudgeFired || isOpen) return;
+        // Skip if already fired, widget is open, or user already engaged
+        const hasEngaged = localStorage.getItem('tf_has_engaged') === 'true';
+        if (nudgeFired || isOpen || hasEngaged) return;
 
         const fireNudge = () => {
-            if (nudgeFired || isOpen) return;
+            if (nudgeFired || isOpen || localStorage.getItem('tf_has_engaged') === 'true') return;
             nudgeFired = true;
             showNudge();
             
@@ -606,15 +807,21 @@
         }
     }
 
-    // Kick off nudge immediately after setup - don't rely on iframe.onload timing
+    // Kick off nudge check shortly after setup
     setTimeout(checkAndTriggerNudge, 500);
 
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
         sessionStorage.setItem('tf_widget_open', isOpen);
 
+        // If they open the widget, consider them engaged and stop nudging them forever
+        if (isOpen) {
+            localStorage.setItem('tf_has_engaged', 'true');
+        }
+
         if (isOpen) {
             hideNudge();
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
             if (nudgeTimer) clearTimeout(nudgeTimer);
             launcher.classList.add('tf-open');
             launcher.classList.remove('tf-pulsing');
@@ -660,8 +867,73 @@
 
     launcher.addEventListener('click', toggleWidget);
 
-    // Listen for messages from iframe
+    // =============================================
+    // Reply Nudge UI
+    // =============================================
+    const replyNudge = document.createElement('div');
+    replyNudge.id = 'tf-reply-nudge';
+    replyNudge.innerHTML = `
+        <img id="tf-reply-avatar" src="" alt="Agent" />
+        <div id="tf-reply-content">
+            <div id="tf-reply-name">Support</div>
+            <div id="tf-reply-text">New message</div>
+        </div>
+        <div id="tf-reply-close">×</div>
+    `;
+    document.body.appendChild(replyNudge);
+
+    replyNudge.addEventListener('click', (e) => {
+        if (e.target.id === 'tf-reply-close') {
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
+        } else {
+            toggleWidget(true);
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
+        }
+    });
+
+    let replyNudgeTimer = null;
+    function showReplyNudge(text, name, avatar) {
+        hideNudge();
+        
+        const avatarEl = document.getElementById('tf-reply-avatar');
+        if (avatarEl) {
+            if (avatar) {
+                avatarEl.src = avatar;
+                avatarEl.style.display = 'block';
+            } else if (agentAvatars.length > 0) {
+                avatarEl.src = agentAvatars[0].avatar_url;
+                avatarEl.style.display = 'block';
+            } else {
+                avatarEl.src = FALLBACK_AVATARS[0].avatar_url;
+                avatarEl.style.display = 'block';
+            }
+        }
+        
+        document.getElementById('tf-reply-name').innerText = name || 'Support';
+        document.getElementById('tf-reply-text').innerText = text || 'Sent an attachment';
+        
+        replyNudge.classList.add('tf-reply-show');
+        
+        if (replyNudgeTimer) clearTimeout(replyNudgeTimer);
+        replyNudgeTimer = setTimeout(hideReplyNudge, 8000); // 8s auto hide
+    }
+
+    function hideReplyNudge() {
+        replyNudge.classList.remove('tf-reply-show');
+    }
+
     window.addEventListener('message', (event) => {
+        // Handle custom attributes update from parent window
+        if (event.data && event.data.type === 'TALKFUZE_UPDATE_CONTEXT') {
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_SET_ATTRIBUTES',
+                    payload: event.data.payload
+                }, '*');
+            }
+            return;
+        }
+
         if (event.source !== iframe.contentWindow) return;
 
         if (event.data && event.data.type === 'TALKFUZE_CLOSE') {
@@ -696,12 +968,65 @@
                 if (event.data.count > 0) {
                     badgeEl.innerText = event.data.count > 9 ? '9+' : event.data.count;
                     badgeEl.classList.add('tf-show');
+                    
+                    if (!isOpen && event.data.message) {
+                        showReplyNudge(event.data.message, event.data.senderName, event.data.avatarUrl);
+                    }
                 } else {
                     badgeEl.classList.remove('tf-show');
+                    if (typeof hideReplyNudge === 'function') hideReplyNudge();
                 }
             }
         }
 
+        if (event.data && event.data.type === 'TALKFUZE_ZOOM_IMAGE') {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.zIndex = '2147483647';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.cursor = 'zoom-out';
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.2s';
+            
+            const img = document.createElement('img');
+            img.src = event.data.src;
+            img.style.maxWidth = '90vw';
+            img.style.maxHeight = '90vh';
+            img.style.objectFit = 'contain';
+            img.style.borderRadius = '8px';
+            img.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            img.style.transform = 'scale(0.95)';
+            img.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+            
+            overlay.appendChild(img);
+            document.body.appendChild(overlay);
+            
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    overlay.style.opacity = '1';
+                    img.style.transform = 'scale(1)';
+                });
+            });
+            
+            overlay.addEventListener('click', () => {
+                overlay.style.opacity = '0';
+                img.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 200);
+            });
+        }
+
+        // Override avatar from iframe if it sends one (e.g. active agent in conversation)
         if (event.data && event.data.type === 'TALKFUZE_AGENT_AVATAR') {
             if (event.data.avatarUrl) {
                 // Stop carousel and pin to this agent's avatar
@@ -719,5 +1044,49 @@
             }
         }
     });
+
+    // =============================================
+    // TalkFuze SDK - Public API
+    // =============================================
+    window.TalkFuze = {
+        // Identify a logged-in user at runtime (for SPA login flows)
+        identify: function(data) {
+            if (!data || !data.email || !data.signature || !data.timestamp) {
+                console.error('TalkFuze.identify: email, signature, and timestamp are required');
+                return;
+            }
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_IDENTIFY',
+                    email: data.email,
+                    name: data.name || '',
+                    clientId: data.clientId || '',
+                    signature: data.signature,
+                    timestamp: data.timestamp
+                }, '*');
+            }
+        },
+        setCustomAttributes: function(data) {
+            if (typeof data !== 'object' || data === null) {
+                console.error('TalkFuze.setCustomAttributes: data must be an object');
+                return;
+            }
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'TALKFUZE_SET_ATTRIBUTES',
+                    payload: data
+                }, '*');
+            }
+        },
+        open: function() {
+            if (!isOpen) toggleWidget();
+        },
+        close: function() {
+            if (isOpen) toggleWidget();
+        },
+        toggle: function() {
+            toggleWidget();
+        }
+    };
 
 })();

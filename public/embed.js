@@ -100,7 +100,7 @@
             right: ${MARGIN}px;
             width: 390px;
             max-width: calc(100vw - 32px);
-            height: min(700px, calc(100vh - 110px));
+            height: min(700px, calc(100vh - 160px));
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -349,6 +349,83 @@
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
+        }
+
+        /* =============================================
+           REPLY NUDGE - Floating bar for unread messages
+           ============================================= */
+        #tf-reply-nudge {
+            position: fixed;
+            bottom: ${MARGIN + BUTTON_SIZE + 16}px;
+            right: ${MARGIN}px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            display: flex;
+            align-items: center;
+            max-width: 320px;
+            padding: 12px 16px;
+            pointer-events: auto;
+            opacity: 0;
+            transform: translateY(10px) scale(0.95);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            cursor: pointer;
+            z-index: 2147483646;
+        }
+
+        #tf-reply-nudge.tf-reply-show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        
+        #tf-reply-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            display: none;
+        }
+        
+        #tf-reply-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #tf-reply-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #tf-reply-text {
+            font-size: 14px;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #tf-reply-close {
+            margin-left: 12px;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 18px;
+            line-height: 1;
+        }
+        
+        #tf-reply-close:hover {
+            color: #64748b;
         }
 
         @media (max-width: 768px) {
@@ -615,16 +692,14 @@
 
     function openWidgetWithMessage(text) {
         const trimmed = (text || '').trim();
+        if (trimmed) {
+            // Send message immediately to avoid white flash of empty tab
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: trimmed }, '*');
+            }
+        }
         if (!isOpen) toggleWidget(true);
         hideNudge();
-        if (trimmed) {
-            // Wait for widget to open + iframe to be ready, then send message
-            setTimeout(() => {
-                if (iframe.contentWindow) {
-                    iframe.contentWindow.postMessage({ type: 'TALKFUZE_PREFILL_MESSAGE', message: trimmed }, '*');
-                }
-            }, 500);
-        }
     }
 
     // Clicking anywhere on pill focuses the input
@@ -746,6 +821,7 @@
 
         if (isOpen) {
             hideNudge();
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
             if (nudgeTimer) clearTimeout(nudgeTimer);
             launcher.classList.add('tf-open');
             launcher.classList.remove('tf-pulsing');
@@ -790,6 +866,61 @@
     }
 
     launcher.addEventListener('click', toggleWidget);
+
+    // =============================================
+    // Reply Nudge UI
+    // =============================================
+    const replyNudge = document.createElement('div');
+    replyNudge.id = 'tf-reply-nudge';
+    replyNudge.innerHTML = `
+        <img id="tf-reply-avatar" src="" alt="Agent" />
+        <div id="tf-reply-content">
+            <div id="tf-reply-name">Support</div>
+            <div id="tf-reply-text">New message</div>
+        </div>
+        <div id="tf-reply-close">×</div>
+    `;
+    document.body.appendChild(replyNudge);
+
+    replyNudge.addEventListener('click', (e) => {
+        if (e.target.id === 'tf-reply-close') {
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
+        } else {
+            toggleWidget(true);
+            if (typeof hideReplyNudge === 'function') hideReplyNudge();
+        }
+    });
+
+    let replyNudgeTimer = null;
+    function showReplyNudge(text, name, avatar) {
+        hideNudge();
+        
+        const avatarEl = document.getElementById('tf-reply-avatar');
+        if (avatarEl) {
+            if (avatar) {
+                avatarEl.src = avatar;
+                avatarEl.style.display = 'block';
+            } else if (agentAvatars.length > 0) {
+                avatarEl.src = agentAvatars[0].avatar_url;
+                avatarEl.style.display = 'block';
+            } else {
+                avatarEl.src = FALLBACK_AVATARS[0].avatar_url;
+                avatarEl.style.display = 'block';
+            }
+        }
+        
+        document.getElementById('tf-reply-name').innerText = name || 'Support';
+        document.getElementById('tf-reply-text').innerText = text || 'Sent an attachment';
+        
+        replyNudge.classList.add('tf-reply-show');
+        
+        if (replyNudgeTimer) clearTimeout(replyNudgeTimer);
+        replyNudgeTimer = setTimeout(hideReplyNudge, 8000); // 8s auto hide
+    }
+
+    function hideReplyNudge() {
+        replyNudge.classList.remove('tf-reply-show');
+    }
 
     window.addEventListener('message', (event) => {
         // Handle custom attributes update from parent window
@@ -837,8 +968,13 @@
                 if (event.data.count > 0) {
                     badgeEl.innerText = event.data.count > 9 ? '9+' : event.data.count;
                     badgeEl.classList.add('tf-show');
+                    
+                    if (!isOpen && event.data.message) {
+                        showReplyNudge(event.data.message, event.data.senderName, event.data.avatarUrl);
+                    }
                 } else {
                     badgeEl.classList.remove('tf-show');
+                    if (typeof hideReplyNudge === 'function') hideReplyNudge();
                 }
             }
         }

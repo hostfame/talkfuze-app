@@ -2051,7 +2051,13 @@ export default function WidgetPage() {
                     
                     if (!isWidgetOpenRef.current) {
                         unreadCountRef.current += 1;
-                        window.parent.postMessage({ type: 'TALKFUZE_UNREAD_COUNT', count: unreadCountRef.current }, '*');
+                        window.parent.postMessage({ 
+                            type: 'TALKFUZE_UNREAD_COUNT', 
+                            count: unreadCountRef.current,
+                            message: newMsg.content,
+                            senderName: newMsg.agent?.name || 'Agent',
+                            avatarUrl: newMsg.agent?.avatar_url
+                        }, '*');
                     }
                     
                     if (wasDelayed && pendingDelaysRef.current === 0) {
