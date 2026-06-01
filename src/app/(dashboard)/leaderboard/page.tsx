@@ -542,6 +542,19 @@ export default function LeaderboardPage() {
                         </span>
                       </div>
 
+                      {/* WHMCS Ticket Replies */}
+                      {(agent.whmcsReplies > 0 || agent.whmcsTicketsHandled > 0) && (
+                        <div className="flex flex-col min-w-[72px]">
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#8696a0] mb-0.5 font-medium">
+                            <Wrench size={12} /> WHMCS
+                          </div>
+                          <span className="text-xl font-bold text-slate-800 dark:text-[#e9edef] leading-none">{agent.whmcsReplies}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-0.5">
+                            {agent.whmcsTicketsHandled} tickets
+                          </span>
+                        </div>
+                      )}
+
                       {/* Avg response time */}
                       <div className="flex flex-col min-w-[72px]">
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#8696a0] mb-0.5 font-medium">
@@ -919,6 +932,68 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Section F: WHMCS Ticket Overview */}
+                {analyticsData.whmcsAdminStats && analyticsData.whmcsAdminStats.length > 0 && (
+                  <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase mb-4 flex items-center gap-1.5">
+                      <Wrench size={13} /> WHMCS Ticket Overview (Last 14 Days)
+                    </h3>
+
+                    {/* Status summary */}
+                    {analyticsData.ticketsByStatus && Object.keys(analyticsData.ticketsByStatus).length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {Object.entries(analyticsData.ticketsByStatus).map(([status, count]: [string, any]) => (
+                          <span key={status} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-600 dark:text-[#d1d7db] border border-slate-200/60 dark:border-[#2a3942]">
+                            {status}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Admin stats table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100 dark:border-[#222e35]">
+                            <th className="text-left text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 pr-4 w-[120px]">Agent</th>
+                            <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Replies</th>
+                            <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Tickets Handled</th>
+                            <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Avg Rating</th>
+                            <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Feedback</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analyticsData.whmcsAdminStats.map((admin: any) => (
+                            <tr key={admin.name} className="border-b border-slate-50 dark:border-[#1a2730]">
+                              <td className="text-[12px] font-semibold text-slate-700 dark:text-[#d1d7db] py-2.5 pr-4">{admin.name}</td>
+                              <td className="text-center py-2.5">
+                                <span className="text-[12px] font-bold text-slate-700 dark:text-[#d1d7db]">{admin.replies}</span>
+                              </td>
+                              <td className="text-center py-2.5">
+                                <span className="text-[12px] font-bold text-slate-700 dark:text-[#d1d7db]">{admin.tickets_handled}</span>
+                              </td>
+                              <td className="text-center py-2.5">
+                                {admin.avg_rating !== null && admin.avg_rating !== undefined ? (
+                                  <span className={`text-[12px] font-bold ${
+                                    admin.avg_rating >= 9.0 ? 'text-emerald-600 dark:text-emerald-400' :
+                                    admin.avg_rating >= 7.0 ? 'text-[#0070f3]' :
+                                    admin.avg_rating >= 5.0 ? 'text-amber-500' : 'text-rose-500'
+                                  }`}>{admin.avg_rating}/10</span>
+                                ) : (
+                                  <span className="text-[11px] text-slate-400">N/A</span>
+                                )}
+                              </td>
+                              <td className="text-center py-2.5">
+                                <span className="text-[12px] font-bold text-slate-700 dark:text-[#d1d7db]">{admin.feedback_count}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           ) : null}
@@ -1110,6 +1185,41 @@ export default function LeaderboardPage() {
                 </div>
               </div>
 
+              {/* WHMCS Ticket Performance */}
+              {(selectedAgent.whmcsReplies > 0 || selectedAgent.whmcsTicketsHandled > 0) && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase flex items-center gap-1.5">
+                    <Wrench size={13} className="text-slate-400 dark:text-[#8696a0]" /> WHMCS Ticket Performance
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
+                      <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Ticket Replies</span>
+                      <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.whmcsReplies}</span>
+                    </div>
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
+                      <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Unique Tickets</span>
+                      <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.whmcsTicketsHandled}</span>
+                    </div>
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
+                      <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Customer Rating</span>
+                      {selectedAgent.whmcsAvgRating !== null && selectedAgent.whmcsAvgRating !== undefined ? (
+                        <span className={`text-2xl font-bold ${
+                          selectedAgent.whmcsAvgRating >= 9.0 ? 'text-emerald-600 dark:text-emerald-400' :
+                          selectedAgent.whmcsAvgRating >= 7.0 ? 'text-[#0070f3]' :
+                          selectedAgent.whmcsAvgRating >= 5.0 ? 'text-amber-500' : 'text-rose-500'
+                        }`}>{selectedAgent.whmcsAvgRating}/10</span>
+                      ) : (
+                        <span className="text-lg font-semibold text-slate-400 dark:text-[#8696a0]">No ratings</span>
+                      )}
+                    </div>
+                    <div className="p-4 rounded-xl border border-slate-100 dark:border-[#222e35] bg-white dark:bg-[#111b21] flex flex-col shadow-sm">
+                      <span className="text-xs text-slate-400 dark:text-[#8696a0] font-medium mb-1">Feedback Count</span>
+                      <span className="text-2xl font-bold text-slate-800 dark:text-[#e9edef]">{selectedAgent.whmcsFeedbackCount}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Badges */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase">Earned Hosting Badges</h3>
@@ -1175,11 +1285,24 @@ export default function LeaderboardPage() {
                     </div>
                   )}
 
+                  {selectedAgent.whmcsReplies >= 100 && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 dark:bg-[#182229] border border-slate-100 dark:border-[#222e35] rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#202c33] text-slate-500 dark:text-[#8696a0] border border-slate-200/50 dark:border-[#2a3942] flex items-center justify-center shrink-0">
+                        <Ticket size={16} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">WHMCS Power Agent</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#8696a0]">Delivered {selectedAgent.whmcsReplies}+ ticket replies through WHMCS this period.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {!(selectedAgent.firstResponseSlaPercent >= 85 && selectedAgent.totalFirstResponses > 0) &&
                     !(selectedAgent.emergencyResponseTime > 0 && selectedAgent.emergencyResponseTime <= 90) &&
                     !(selectedAgent.callsCount >= 1) &&
                     !(selectedAgent.ticketsCreated >= 1) &&
-                    !(selectedAgent.ticketsCreated >= 10) && (
+                    !(selectedAgent.ticketsCreated >= 10) &&
+                    !(selectedAgent.whmcsReplies >= 100) && (
                       <div className="text-center py-4 border border-dashed border-slate-200 dark:border-[#222e35] rounded-xl text-slate-400 text-xs">
                         Keep grinding to unlock Hostnin support badges!
                       </div>
