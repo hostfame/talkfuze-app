@@ -420,15 +420,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   // 9b. Compute productivity score AFTER activeDaysCount is ready
   Object.keys(statsMap).forEach(agentId => {
     const s = statsMap[agentId];
-    const msgScore = Math.min(40, (s.messagesCount / (period === 'daily' ? 80 : period === 'weekly' ? 160 : 640)) * 40);
-    const slaScore = s.firstResponseSlaPercent >= 0 ? (s.firstResponseSlaPercent / 100) * 25 : 0;
-    const respScore = s.avgResponseTime > 0 ? Math.max(0, 20 - (s.avgResponseTime / 3)) : (s.messagesCount > 0 ? 5 : 0);
-    const consistScore = ((s.activeDaysCount || 0) / 7) * 15;
-    const totalScore = Math.round(Math.min(100, msgScore + slaScore + respScore + consistScore));
+    // Messages: 50pts - generous targets (daily 30, weekly 100, monthly 300)
+    const msgTarget = period === 'daily' ? 30 : period === 'weekly' ? 100 : 300;
+    const msgScore = Math.min(50, (s.messagesCount / msgTarget) * 50);
+    // Response time: 25pts - under 5min = full, up to 30min = partial
+    const respScore = s.avgResponseTime > 0 ? Math.max(0, 25 * (1 - Math.min(1, s.avgResponseTime / 30))) : (s.messagesCount > 0 ? 15 : 0);
+    // Consistency: 25pts - days active out of 7
+    const consistScore = ((s.activeDaysCount || 0) / 7) * 25;
+    const totalScore = Math.round(Math.min(100, msgScore + respScore + consistScore));
     statsMap[agentId].productivityScore = totalScore;
 
-    // Grade: A+ (95+), A (85+), B+ (75+), B (65+), C (50+), D (35+), F (<35)
-    const grade = totalScore >= 95 ? 'A+' : totalScore >= 85 ? 'A' : totalScore >= 75 ? 'B+' : totalScore >= 65 ? 'B' : totalScore >= 50 ? 'C' : totalScore >= 35 ? 'D' : 'F';
+    // Grade thresholds (more generous)
+    const grade = totalScore >= 85 ? 'A+' : totalScore >= 70 ? 'A' : totalScore >= 55 ? 'B+' : totalScore >= 40 ? 'B' : totalScore >= 25 ? 'C' : totalScore >= 10 ? 'D' : 'F';
     statsMap[agentId].performanceGrade = grade;
   });
 
