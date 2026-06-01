@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, LogOut, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight, Gauge } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight, Gauge } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -4806,17 +4806,12 @@ export default function WidgetPage() {
             {ticketView === 'list' && (
               <div className="flex flex-col h-full absolute inset-0 bg-[#f8fafc] animate-in slide-in-from-left-4 fade-in duration-300">
                  {/* Header */}
-                 <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
-                    <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Support Tickets</h2>
-                    <div className="flex items-center gap-2">
-                       <button onClick={() => { localStorage.removeItem('whmcs_user'); setWhmcsUser(null); setTicketView('login'); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Log out">
-                          <LogOut size={16} />
-                       </button>
-                       <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
-                         <Plus size={14} /> New Ticket
-                       </button>
-                    </div>
-                 </div>
+                  <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 bg-white shadow-sm shrink-0">
+                     <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Support Tickets</h2>
+                     <button onClick={() => setTicketView('new')} className="text-blue-600 hover:text-blue-700 font-semibold text-[13px] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors shrink-0">
+                       <Plus size={14} /> New Ticket
+                     </button>
+                  </div>
                  {/* List */}
                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 pb-[100px]">
                     {whmcsTickets.length === 0 ? (
