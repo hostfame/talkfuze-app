@@ -4378,11 +4378,13 @@ export default function WidgetPage() {
                </div>
              </div>
 
-             {/* My Profile Edit Modal - for WHMCS logged-in users */}
+             
+
+      {/* My Profile Edit Modal - for WHMCS logged-in users */}
              {isProfileModalOpen && (
                <>
                  <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onClick={() => setIsProfileModalOpen(false)} />
-                 <div className="absolute bottom-0 left-0 right-0 bg-white z-50 border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300">
+                 <div className="absolute bottom-0 left-0 right-0 bg-white z-50 border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] rounded-t-[24px] p-6 pb-8 animate-in slide-in-from-bottom-8 duration-300 max-h-[calc(100%-20px)] overflow-y-auto">
                    <form onSubmit={async (e) => {
                      e.preventDefault()
                      if (!whmcsUser) return
