@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getLeaderboardStats, getMissedChatsStats } from "@/actions/leaderboard"
+import { getLeaderboardStats, getMissedChatsStats, getAnalyticsStats } from "@/actions/leaderboard"
 import { 
   Clock, 
   MessageSquare, 
@@ -15,11 +15,13 @@ import {
   ShieldAlert,
   Wrench,
   AlertCircle,
+  AlertTriangle,
   Eye,
   TrendingUp,
   TrendingDown,
   Minus,
-  Ticket
+  Ticket,
+  BarChart3
 } from "lucide-react"
 
 // ---------- Tiny Sparkline Bars ----------
@@ -163,11 +165,12 @@ function TrendArrow({ today, yesterday }: { today: number; yesterday: number }) 
 
 export default function LeaderboardPage() {
   const user = useAuth()
-  const [view, setView] = useState<'leaderboard' | 'missed'>('leaderboard')
+  const [view, setView] = useState<'leaderboard' | 'missed' | 'analytics'>('leaderboard')
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily')
   const [customDate, setCustomDate] = useState<string>(() => new Date().toISOString().split('T')[0])
   const [stats, setStats] = useState<any[]>([])
   const [missedChats, setMissedChats] = useState<any[]>([])
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null)
 
@@ -179,9 +182,12 @@ export default function LeaderboardPage() {
         if (view === 'leaderboard') {
           const data = await getLeaderboardStats(user.org_id, period, period === 'custom' ? customDate : undefined)
           setStats(data)
-        } else {
+        } else if (view === 'missed') {
           const data = await getMissedChatsStats(user.org_id, period, period === 'custom' ? customDate : undefined)
           setMissedChats(data)
+        } else if (view === 'analytics') {
+          const data = await getAnalyticsStats(user.org_id)
+          setAnalyticsData(data)
         }
       } catch (e) {
         console.error(e)
@@ -250,43 +256,60 @@ export default function LeaderboardPage() {
             >
               Missed Chats
             </button>
-          </div>
-        </div>
-        
-        <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942] items-center">
-          {(['daily', 'weekly', 'monthly'] as const).map(p => (
             <button
-              key={p}
-              onClick={() => {
-                setPeriod(p)
-                setSelectedAgent(null)
-              }}
-              className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all capitalize ${
-                period === p 
-                  ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
+              onClick={() => setView('analytics')}
+              className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all ${
+                view === 'analytics' 
+                  ? 'bg-white dark:bg-[#2a3942] text-[#0070f3] shadow-sm' 
                   : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
               }`}
             >
-              {p}
+              Analytics
             </button>
-          ))}
-          <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-[#2a3942]">
-            <input
-              type="date"
-              value={customDate}
-              onChange={(e) => {
-                setCustomDate(e.target.value)
-                setPeriod('custom')
-                setSelectedAgent(null)
-              }}
-              className={`px-3 py-1 text-[13px] font-medium rounded-md bg-transparent focus:outline-none transition-all ${
-                period === 'custom' 
-                  ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
-                  : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
-              }`}
-            />
           </div>
         </div>
+        
+        {view !== 'analytics' && (
+          <div className="flex bg-slate-100 dark:bg-[#202c33] p-1 rounded-lg border border-slate-200 dark:border-[#2a3942] items-center">
+            {(['daily', 'weekly', 'monthly'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPeriod(p)
+                  setSelectedAgent(null)
+                }}
+                className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all capitalize ${
+                  period === p 
+                    ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
+                    : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-[#2a3942]">
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => {
+                  setCustomDate(e.target.value)
+                  setPeriod('custom')
+                  setSelectedAgent(null)
+                }}
+                className={`px-3 py-1 text-[13px] font-medium rounded-md bg-transparent focus:outline-none transition-all ${
+                  period === 'custom' 
+                    ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
+                    : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+                }`}
+              />
+            </div>
+          </div>
+        )}
+        {view === 'analytics' && (
+          <span className="text-xs font-medium text-slate-400 dark:text-[#8696a0] px-3 py-1.5 bg-slate-100 dark:bg-[#202c33] rounded-lg border border-slate-200 dark:border-[#2a3942]">
+            Last 14 days
+          </span>
+        )}
       </div>
 
       {/* Main Content */}
@@ -509,6 +532,256 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )
+          ) : view === 'analytics' ? (
+            !analyticsData ? (
+              <div className="text-center py-20 text-slate-500 dark:text-[#8696a0]">
+                No analytics data available.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Section A: Customer Demand vs Agent Coverage */}
+                <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase flex items-center gap-1.5">
+                      <BarChart3 size={13} className="text-[#0070f3]" /> Customer Demand vs Agent Coverage (BST, Last 14 Days)
+                    </h3>
+                    <div className="flex items-center gap-4 text-[10px] text-slate-400 dark:text-[#8696a0]">
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-slate-300 dark:bg-[#2a3942] inline-block" /> Demand</span>
+                      <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-[#0070f3] inline-block" /> Supply</span>
+                    </div>
+                  </div>
+                  {(() => {
+                    const maxVal = Math.max(...analyticsData.customerDemand, ...analyticsData.totalAgentSupply, 1);
+                    const labels = ['12A','1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12P','1P','2P','3P','4P','5P','6P','7P','8P','9P','10P','11P'];
+                    const deadZoneSet = new Set(analyticsData.deadZones);
+                    return (
+                      <div>
+                        <div className="flex items-end gap-[3px] h-[140px] mb-1">
+                          {analyticsData.customerDemand.map((demand: number, h: number) => {
+                            const supply = analyticsData.totalAgentSupply[h];
+                            const demandH = Math.max(2, Math.round((demand / maxVal) * 130));
+                            const supplyH = Math.max(0, Math.round((supply / maxVal) * 130));
+                            const isGap = demand > 0 && supply === 0;
+                            const isUnderstaffed = demand > supply * 1.5 && demand > 10;
+                            return (
+                              <div key={h} className="flex-1 flex flex-col items-center justify-end relative group">
+                                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-500 dark:text-[#8696a0] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 bg-white dark:bg-[#111b21] px-1 rounded shadow-sm border border-slate-200 dark:border-[#222e35]">
+                                  {demand}D / {supply}S
+                                </span>
+                                <div className="w-full relative" style={{ height: `${demandH}px` }}>
+                                  <div
+                                    className="absolute inset-0 rounded-t-sm bg-slate-200 dark:bg-[#2a3942]"
+                                  />
+                                  <div
+                                    className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-[#0070f3]"
+                                    style={{ height: `${supplyH}px` }}
+                                  />
+                                </div>
+                                {(isGap || isUnderstaffed) && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-rose-500 rounded-b" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-[3px]">
+                          {labels.map((label, i) => (
+                            <div key={i} className={`flex-1 text-center text-[8px] font-medium ${analyticsData.deadZones?.includes(i) ? 'text-rose-500' : 'text-slate-400 dark:text-[#8696a0]'}`}>
+                              {label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Dead zone alerts */}
+                  {analyticsData.deadZones && analyticsData.deadZones.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {analyticsData.deadZones.map((h: number) => {
+                        const formatHr = (hour: number) => hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`;
+                        return (
+                          <div key={h} className="flex items-center gap-2 px-3 py-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl text-xs font-medium text-rose-700 dark:text-rose-400">
+                            <AlertTriangle size={14} className="shrink-0" />
+                            DEAD ZONE: {formatHr(h)} BST - No agent coverage. {analyticsData.customerDemand[h]} customer messages went unattended.
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Section B: Day-of-Week Consistency Grid */}
+                <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase mb-4">Day-of-Week Message Distribution (Last 14 Days)</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 dark:border-[#222e35]">
+                          <th className="text-left text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 pr-4 w-[120px]">Agent</th>
+                          {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                            <th key={d} className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-2 min-w-[56px]">{d}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData.agentNames.map((name: string) => {
+                          const row = analyticsData.dayOfWeekGrid[name];
+                          if (!row) return null;
+                          // Reorder: Mon=1,Tue=2,...,Sat=6,Sun=0
+                          const ordered = [row[1], row[2], row[3], row[4], row[5], row[6], row[0]];
+                          const rowMax = Math.max(...ordered, 1);
+                          const rowAvg = ordered.reduce((a: number, b: number) => a + b, 0) / 7;
+                          return (
+                            <tr key={name} className="border-b border-slate-50 dark:border-[#1a2730]">
+                              <td className="text-[12px] font-semibold text-slate-700 dark:text-[#d1d7db] py-2 pr-4">{name}</td>
+                              {ordered.map((val: number, i: number) => {
+                                const intensity = val / rowMax;
+                                const isLow = val < rowAvg * 0.2 && rowAvg > 10;
+                                return (
+                                  <td key={i} className="text-center py-2 px-1">
+                                    <span
+                                      className={`inline-block px-2 py-1 rounded-md text-[11px] font-bold min-w-[40px] ${
+                                        isLow
+                                          ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400'
+                                          : 'text-slate-700 dark:text-[#d1d7db]'
+                                      }`}
+                                      style={!isLow ? {
+                                        backgroundColor: `rgba(0, 112, 243, ${val === 0 ? 0.03 : 0.08 + intensity * 0.3})`,
+                                      } : undefined}
+                                    >
+                                      {val}
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Section C: Response Time Distribution */}
+                <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase mb-4 flex items-center gap-1.5">
+                    <Clock size={13} /> Response Time Distribution
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 dark:border-[#222e35]">
+                          <th className="text-left text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 pr-4 w-[120px]">Agent</th>
+                          <th className="text-center text-[11px] font-bold text-emerald-600 dark:text-emerald-400 py-2 px-2">&lt;1min</th>
+                          <th className="text-center text-[11px] font-bold text-[#0070f3] py-2 px-2">1-5min</th>
+                          <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-2">5-15min</th>
+                          <th className="text-center text-[11px] font-bold text-amber-500 py-2 px-2">15-60min</th>
+                          <th className="text-center text-[11px] font-bold text-rose-500 py-2 px-2">&gt;1hr</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData.agentNames.map((name: string) => {
+                          const b = analyticsData.responseTimeBuckets[name];
+                          if (!b || b.total === 0) return null;
+                          const pct = (v: number) => Math.round((v / b.total) * 100);
+                          return (
+                            <tr key={name} className="border-b border-slate-50 dark:border-[#1a2730]">
+                              <td className="text-[12px] font-semibold text-slate-700 dark:text-[#d1d7db] py-2.5 pr-4">{name}</td>
+                              <td className="text-center py-2.5"><span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{pct(b.under1m)}%</span> <span className="text-[9px] text-slate-400">({b.under1m})</span></td>
+                              <td className="text-center py-2.5"><span className="text-[11px] font-bold text-[#0070f3]">{pct(b.m1to5)}%</span> <span className="text-[9px] text-slate-400">({b.m1to5})</span></td>
+                              <td className="text-center py-2.5"><span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">{pct(b.m5to15)}%</span> <span className="text-[9px] text-slate-400">({b.m5to15})</span></td>
+                              <td className="text-center py-2.5"><span className="text-[11px] font-bold text-amber-500">{pct(b.m15to60)}%</span> <span className="text-[9px] text-slate-400">({b.m15to60})</span></td>
+                              <td className="text-center py-2.5"><span className="text-[11px] font-bold text-rose-500">{pct(b.over1h)}%</span> <span className="text-[9px] text-slate-400">({b.over1h})</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Section D: Quality Metrics */}
+                <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase mb-4 flex items-center gap-1.5">
+                    <Award size={13} /> Quality Metrics
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 dark:border-[#222e35]">
+                          <th className="text-left text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 pr-4 w-[120px]">Agent</th>
+                          <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Avg Reply Length</th>
+                          <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Satisfaction Score</th>
+                          <th className="text-center text-[11px] font-bold text-slate-500 dark:text-[#8696a0] py-2 px-3">Tickets Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analyticsData.agentNames.map((name: string) => {
+                          const q = analyticsData.qualityMetrics[name];
+                          const s = analyticsData.sentimentByAgent[name];
+                          if (!q) return null;
+                          const satScore = s && (s.positive + s.negative) > 0
+                            ? Math.round((s.positive / (s.positive + s.negative)) * 100)
+                            : null;
+                          return (
+                            <tr key={name} className="border-b border-slate-50 dark:border-[#1a2730]">
+                              <td className="text-[12px] font-semibold text-slate-700 dark:text-[#d1d7db] py-2.5 pr-4">{name}</td>
+                              <td className="text-center py-2.5">
+                                <span className="text-[12px] font-bold text-slate-700 dark:text-[#d1d7db]">{q.avgMsgLength}</span>
+                                <span className="text-[10px] text-slate-400 ml-1">chars</span>
+                              </td>
+                              <td className="text-center py-2.5">
+                                {satScore !== null ? (
+                                  <span className={`text-[12px] font-bold ${satScore >= 70 ? 'text-emerald-600 dark:text-emerald-400' : satScore >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                    {satScore}% positive
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-slate-400">N/A</span>
+                                )}
+                              </td>
+                              <td className="text-center py-2.5">
+                                <span className="text-[12px] font-bold text-slate-700 dark:text-[#d1d7db]">{q.ticketsCreated}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Section E: Coverage Gap Alerts */}
+                {analyticsData.coverageGaps && analyticsData.coverageGaps.length > 0 && (
+                  <div className="bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] p-5 shadow-sm">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-[#8696a0] tracking-wider uppercase mb-4 flex items-center gap-1.5">
+                      <AlertTriangle size={13} className="text-rose-500" /> Coverage Gap Alerts
+                    </h3>
+                    <div className="space-y-2">
+                      {analyticsData.coverageGaps.map((gap: any, i: number) => {
+                        const formatHr = (hour: number) => hour === 0 ? '12AM' : hour === 12 ? '12PM' : hour < 12 ? `${hour}AM` : `${hour - 12}PM`;
+                        const isDead = gap.supply === 0;
+                        return (
+                          <div key={i} className={`flex items-start gap-2.5 px-4 py-3 rounded-xl border text-xs font-medium ${
+                            isDead
+                              ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-400'
+                              : 'bg-amber-50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-400'
+                          }`}>
+                            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                            <div>
+                              {isDead ? (
+                                <span>DEAD ZONE: {formatHr(gap.hour)} BST - No agent coverage. {gap.demand} customer messages went unattended.</span>
+                              ) : (
+                                <span>UNDERSTAFFED: {formatHr(gap.hour)} BST - {gap.demand} customer messages vs {gap.supply} agent replies.{gap.agents.length > 0 ? ` Active: ${gap.agents.join(', ')}` : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           ) : null}

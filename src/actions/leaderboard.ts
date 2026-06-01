@@ -581,3 +581,202 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
 
   return missedChats.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 }
+
+export async function getAnalyticsStats(orgId: string) {
+  noStore();
+  if (!orgId) return null;
+
+  const now = new Date();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  // 1. Get ALL messages (both contact and agent) from last 14 days
+  const { data: allMsgs } = await supabaseAdmin
+    .from('messages')
+    .select('sender_type, sender_id, created_at, is_internal, content, conversation_id')
+    .eq('org_id', orgId)
+    .gte('created_at', fourteenDaysAgo.toISOString())
+    .order('created_at', { ascending: true });
+
+  if (!allMsgs) return null;
+
+  // 2. Get all agents
+  const { data: agents } = await supabaseAdmin
+    .from('users')
+    .select('id, name')
+    .eq('org_id', orgId);
+
+  // 3. Compute CUSTOMER demand by hour (BST)
+  const customerDemand = new Array(24).fill(0);
+  // 4. Compute AGENT supply by hour (BST) - per agent
+  const agentSupply: Record<string, number[]> = {};
+  agents?.forEach((a: any) => { agentSupply[a.name] = new Array(24).fill(0); });
+  // 5. Combined agent supply
+  const totalAgentSupply = new Array(24).fill(0);
+
+  allMsgs.forEach((msg: any) => {
+    const msgDate = new Date(msg.created_at);
+    const bstHour = (msgDate.getUTCHours() + 6) % 24;
+
+    if (msg.sender_type === 'contact') {
+      customerDemand[bstHour]++;
+    } else if (msg.sender_type === 'agent' && !msg.is_internal) {
+      totalAgentSupply[bstHour]++;
+      const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+      if (agent && agentSupply[agent.name]) {
+        agentSupply[agent.name][bstHour]++;
+      }
+    }
+  });
+
+  // 6. Coverage gaps: hours where demand > 0 but supply = 0, or understaffed
+  const coverageGaps: { hour: number; demand: number; supply: number; agents: string[] }[] = [];
+  for (let h = 0; h < 24; h++) {
+    const activeAgents = agents?.filter((a: any) => agentSupply[a.name][h] > 0).map((a: any) => a.name) || [];
+    if (customerDemand[h] > 0 && totalAgentSupply[h] === 0) {
+      coverageGaps.push({ hour: h, demand: customerDemand[h], supply: 0, agents: [] });
+    } else if (customerDemand[h] > totalAgentSupply[h] * 1.5 && customerDemand[h] > 10) {
+      coverageGaps.push({ hour: h, demand: customerDemand[h], supply: totalAgentSupply[h], agents: activeAgents });
+    }
+  }
+
+  // 7. Day-of-week grid per agent (0=Sun ... 6=Sat)
+  const dayOfWeekGrid: Record<string, number[]> = {};
+  agents?.forEach((a: any) => { dayOfWeekGrid[a.name] = new Array(7).fill(0); });
+
+  allMsgs.forEach((msg: any) => {
+    if (msg.sender_type === 'agent' && !msg.is_internal) {
+      const msgDate = new Date(msg.created_at);
+      const bstDate = new Date(msgDate.getTime() + 6 * 60 * 60 * 1000);
+      const dow = bstDate.getUTCDay();
+      const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+      if (agent && dayOfWeekGrid[agent.name]) {
+        dayOfWeekGrid[agent.name][dow]++;
+      }
+    }
+  });
+
+  // 8. Response time distribution per agent
+  const convMessages: Record<string, typeof allMsgs> = {};
+  allMsgs.forEach((msg: any) => {
+    if (!convMessages[msg.conversation_id]) convMessages[msg.conversation_id] = [];
+    convMessages[msg.conversation_id].push(msg);
+  });
+
+  const responseTimeBuckets: Record<string, { under1m: number; m1to5: number; m5to15: number; m15to60: number; over1h: number; total: number }> = {};
+  agents?.forEach((a: any) => {
+    responseTimeBuckets[a.name] = { under1m: 0, m1to5: 0, m5to15: 0, m15to60: 0, over1h: 0, total: 0 };
+  });
+
+  Object.values(convMessages).forEach((msgs: any) => {
+    let lastContactTime: number | null = null;
+    msgs.forEach((msg: any) => {
+      if (msg.sender_type === 'contact') {
+        if (lastContactTime === null) lastContactTime = new Date(msg.created_at).getTime();
+      } else if (msg.sender_type === 'agent' && !msg.is_internal && lastContactTime !== null) {
+        const replyTime = new Date(msg.created_at).getTime();
+        const diffMs = replyTime - lastContactTime;
+        if (diffMs > 0 && diffMs < 12 * 60 * 60 * 1000) {
+          const diffMin = diffMs / (60 * 1000);
+          const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+          if (agent && responseTimeBuckets[agent.name]) {
+            const bucket = responseTimeBuckets[agent.name];
+            if (diffMin < 1) bucket.under1m++;
+            else if (diffMin < 5) bucket.m1to5++;
+            else if (diffMin < 15) bucket.m5to15++;
+            else if (diffMin < 60) bucket.m15to60++;
+            else bucket.over1h++;
+            bucket.total++;
+          }
+        }
+        lastContactTime = null;
+      }
+    });
+  });
+
+  // 9. Quality metrics per agent
+  const qualityMetrics: Record<string, { avgMsgLength: number; totalLength: number; msgCount: number; ticketsCreated: number }> = {};
+  agents?.forEach((a: any) => {
+    qualityMetrics[a.name] = { avgMsgLength: 0, totalLength: 0, msgCount: 0, ticketsCreated: 0 };
+  });
+
+  allMsgs.forEach((msg: any) => {
+    if (msg.sender_type === 'agent' && !msg.is_internal && msg.content) {
+      const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+      if (agent && qualityMetrics[agent.name]) {
+        qualityMetrics[agent.name].totalLength += msg.content.length;
+        qualityMetrics[agent.name].msgCount++;
+      }
+    }
+    // Count ticket creation system messages
+    if (msg.sender_type === 'system' && msg.sender_id && msg.content) {
+      const contentStr = (msg.content || '').toLowerCase();
+      if (contentStr.includes('ticket is created')) {
+        const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+        if (agent && qualityMetrics[agent.name]) {
+          qualityMetrics[agent.name].ticketsCreated++;
+        }
+      }
+    }
+  });
+  Object.values(qualityMetrics).forEach((q: any) => {
+    if (q.msgCount > 0) q.avgMsgLength = Math.round(q.totalLength / q.msgCount);
+  });
+
+  // 10. Customer satisfaction proxy - sentiment from keywords
+  const sentimentByAgent: Record<string, { positive: number; negative: number; total: number }> = {};
+  agents?.forEach((a: any) => { sentimentByAgent[a.name] = { positive: 0, negative: 0, total: 0 }; });
+
+  const positiveWords = ['thank', 'thanks', 'solved', 'fixed', 'great', 'awesome', 'perfect', 'excellent', 'good job', 'appreciate', 'happy', 'wonderful', 'love'];
+  const negativeWords = ['not working', 'still down', 'hello?', 'anyone there', 'no response', 'worst', 'terrible', 'disappointed', 'angry', 'fraud', 'scam', 'waiting', 'not solved'];
+
+  Object.values(convMessages).forEach((msgs: any) => {
+    const agentCounts: Record<string, number> = {};
+    msgs.forEach((msg: any) => {
+      if (msg.sender_type === 'agent' && !msg.is_internal) {
+        const agent = agents?.find((a: any) => a.id.toString() === msg.sender_id?.toString());
+        if (agent) agentCounts[agent.name] = (agentCounts[agent.name] || 0) + 1;
+      }
+    });
+    const primaryAgent = Object.entries(agentCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!primaryAgent || !sentimentByAgent[primaryAgent]) return;
+
+    msgs.forEach((msg: any) => {
+      if (msg.sender_type === 'contact' && msg.content) {
+        const lower = msg.content.toLowerCase();
+        const hasPositive = positiveWords.some(w => lower.includes(w));
+        const hasNegative = negativeWords.some(w => lower.includes(w));
+        if (hasPositive) sentimentByAgent[primaryAgent].positive++;
+        if (hasNegative) sentimentByAgent[primaryAgent].negative++;
+        sentimentByAgent[primaryAgent].total++;
+      }
+    });
+  });
+
+  // 11. Peak demand hours (top 3)
+  const peakDemandHours = customerDemand
+    .map((count: number, hour: number) => ({ hour, count }))
+    .sort((a: any, b: any) => b.count - a.count)
+    .slice(0, 3);
+
+  // 12. Dead zones (hours with demand but no supply)
+  const deadZones: number[] = [];
+  for (let h = 0; h < 24; h++) {
+    if (customerDemand[h] > 5 && totalAgentSupply[h] === 0) {
+      deadZones.push(h);
+    }
+  }
+
+  return {
+    customerDemand,
+    totalAgentSupply,
+    agentSupply,
+    coverageGaps,
+    deadZones,
+    peakDemandHours,
+    dayOfWeekGrid,
+    responseTimeBuckets,
+    qualityMetrics,
+    sentimentByAgent,
+    agentNames: agents?.map((a: any) => a.name) || []
+  };
+}
