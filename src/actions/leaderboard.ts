@@ -518,7 +518,12 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     stats.whmcsFeedbackCount = agentWhmcs.feedback_count;
   });
 
-  return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
+  // Exclude CEO/owner accounts from leaderboard rankings
+  const HIDDEN_FROM_LEADERBOARD = ['Imran', 'imran'];
+
+  return Object.values(statsMap)
+    .filter((s: any) => !HIDDEN_FROM_LEADERBOARD.some(name => s.name?.toLowerCase() === name.toLowerCase()))
+    .sort((a: any, b: any) => b.messagesCount - a.messagesCount);
 }
 
 export async function getMissedChatsStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
