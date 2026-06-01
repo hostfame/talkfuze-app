@@ -686,7 +686,8 @@
     const nudgeInput = nudge.querySelector('#tf-nudge-input');
     const nudgeSend = nudge.querySelector('#tf-nudge-send');
 
-    let isOpen = sessionStorage.getItem('tf_widget_open') === 'true';
+    // Always start closed - sessionStorage open state caused broken DOM states on reload
+    let isOpen = false;
     const swooshAudio = new Audio(baseUrl + '/swoosh.mp3');
     let isSoundMuted = localStorage.getItem('tf_widget_muted') === 'true';
 
@@ -812,12 +813,13 @@
 
     function toggleWidget(playSound = true) {
         isOpen = !isOpen;
-        sessionStorage.setItem('tf_widget_open', isOpen);
 
         // If they open the widget, consider them engaged and stop nudging them forever
         if (isOpen) {
             localStorage.setItem('tf_has_engaged', 'true');
         }
+
+        const isMobileView = window.innerWidth <= 768;
 
         if (isOpen) {
             hideNudge();
@@ -827,7 +829,7 @@
             launcher.classList.remove('tf-pulsing');
             iframeContainer.classList.add('tf-open');
 
-            if (window.innerWidth <= 768) {
+            if (isMobileView) {
                 document.body.style.overflow = 'hidden';
                 container.classList.add('tf-mobile-open');
             }
@@ -837,7 +839,12 @@
                 iframeContainer.classList.add('tf-animate-in');
             }, 10);
 
-            iframe.contentWindow.postMessage({ type: 'TALKFUZE_OPENED' }, '*');
+            // Guard: iframe may not be ready yet
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'TALKFUZE_OPENED' }, '*');
+                }
+            } catch(e) {}
 
             const badgeEl = document.getElementById('tf-badge');
             if (badgeEl) badgeEl.classList.remove('tf-show');
@@ -845,7 +852,12 @@
             launcher.classList.remove('tf-open');
             iframeContainer.classList.remove('tf-animate-in');
 
-            if (window.innerWidth <= 480) {
+            // Use same breakpoint (768) as open path - mismatch was leaving invisible blocking overlay
+            if (isMobileView) {
+                document.body.style.overflow = '';
+                container.classList.remove('tf-mobile-open');
+            } else {
+                // Always clean up just in case (e.g. window was resized between open/close)
                 document.body.style.overflow = '';
                 container.classList.remove('tf-mobile-open');
             }
@@ -855,15 +867,17 @@
                 iframeContainer.classList.remove('tf-open');
             }, 300);
 
-            iframe.contentWindow.postMessage({ type: 'TALKFUZE_CLOSED' }, '*');
+            // Guard: iframe may not be ready yet
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'TALKFUZE_CLOSED' }, '*');
+                }
+            } catch(e) {}
         }
     }
 
-    // Initialize state on load
-    if (isOpen) {
-        isOpen = false;
-        toggleWidget(false);
-    }
+    // Widget always starts closed on fresh load
+    // (removed sessionStorage restore - it caused broken DOM states when iframe wasn't ready)
 
     launcher.addEventListener('click', toggleWidget);
 
