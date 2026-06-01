@@ -4164,7 +4164,7 @@ export default function WidgetPage() {
                       </div>
                     </div>
                   ) : !hasContactMessage && !hasProvidedContact ? (
-                    <div className="p-4 pt-3 flex flex-col gap-3 min-h-[52px]">
+                    <div className="p-4 pt-3 flex flex-col gap-3 min-h-[52px] animate-in fade-in slide-in-from-bottom-2 duration-500">
                       <p className="text-[13px] text-slate-500 font-medium leading-tight">To start chatting, please enter your email so we can reach you if you get disconnected.</p>
                       <form onSubmit={async (e) => {
                         e.preventDefault();
@@ -4229,7 +4229,7 @@ export default function WidgetPage() {
                         }
                       }}
                       placeholder="Message..."
-                      className="w-full bg-transparent border-none focus:ring-0 resize-none text-[15px] text-slate-800 placeholder:text-slate-400 p-4 pb-0 min-h-[52px] max-h-[120px] outline-none"
+                      className="w-full bg-transparent border-none focus:ring-0 resize-none text-[15px] text-slate-800 placeholder:text-slate-400 p-4 pb-0 min-h-[52px] max-h-[120px] outline-none animate-in fade-in duration-500"
                       rows={1}
                     ></textarea>
                   )}
