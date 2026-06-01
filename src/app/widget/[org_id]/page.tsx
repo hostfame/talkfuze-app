@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight, Gauge } from "lucide-react"
+import { Send, Zap, X, Bot, Home, MessageCircle, Ticket, Info, ChevronRight, ChevronLeft, Mic, StopCircle, Plus, ChevronDown, Loader2, Paperclip, Video, Database, Phone, PhoneOff, User, Sparkles, Shield, Eye, Lock, Globe, MessageSquare, Wrench, ArrowUpRight, Gauge, Settings } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { sendWidgetMessage, getWidgetMessages, getWidgetSettings, uploadWidgetMedia, startNewConversation, getWidgetConversations, markMessagesAsRead, getAgentProfile, updateWidgetContactDetails, getWidgetContact } from "@/actions/chat"
@@ -3501,9 +3501,21 @@ export default function WidgetPage() {
                   if (isProfileModalOpen) return; // Prevent multiple clicks
                   setProfileSaveError('')
                   setProfileSaveSuccess(false)
+                  
+                  // OPTIMISTIC UI: Instantly populate known fields so the modal opens butter-smooth and doesn't look empty
+                  if (whmcsUser.name) {
+                    const nameParts = whmcsUser.name.split(' ');
+                    setProfileFirstName(nameParts[0] || '');
+                    setProfileLastName(nameParts.slice(1).join(' ') || '');
+                  }
+                  if (whmcsUser.email) {
+                    setProfileEmail(whmcsUser.email);
+                  }
+                  
                   setIsProfileModalOpen(true) // Open immediately
-                  setIsSavingProfile(true) // Use as loading state
-                  // Fetch current profile from WHMCS
+                  setIsSavingProfile(false) // Ready to save immediately
+                  
+                  // Silently fetch current profile from WHMCS in background
                   try {
                     const res = await fetch(`/api/widget/whmcs/profile?clientId=${whmcsUser.clientId}&deviceId=${deviceId}&orgId=${org_id}`)
                     const data = await res.json()
@@ -3515,7 +3527,6 @@ export default function WidgetPage() {
                       setProfileEmail(data.profile.email || '')
                     }
                   } catch {}
-                  setIsSavingProfile(false)
                 }}
               >
                 <div className="p-4 flex items-center justify-between text-left">
@@ -3534,7 +3545,7 @@ export default function WidgetPage() {
                     </div>
                   </div>
                   <div className="w-[32px] h-[32px] bg-slate-100 group-hover:bg-slate-200 text-slate-500 group-hover:text-slate-700 rounded-full flex items-center justify-center shrink-0 transition-colors">
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.4 1.899a.85.85 0 0 1 1.201 0l4.5 4.5A.85.85 0 1 1 11.9 7.6L8.85 4.552V13.5a.85.85 0 0 1-1.7 0V4.552L4.101 7.601A.85.85 0 1 1 2.9 6.399z" /></svg>
+                    <Settings size={15} />
                   </div>
                 </div>
               </div>
