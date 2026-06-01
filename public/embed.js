@@ -355,9 +355,7 @@
             #tf-nudge {
                 display: none !important;
             }
-        }
 
-        @media (max-width: 480px) {
             #tf-widget-container.tf-mobile-open {
                 bottom: 0px !important;
                 right: 0px !important;
@@ -369,6 +367,10 @@
             }
 
             #tf-widget-container.tf-mobile-open #tf-iframe-container {
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
                 width: 100% !important;
                 height: 100% !important;
                 max-width: 100% !important;
@@ -743,7 +745,7 @@
             launcher.classList.remove('tf-pulsing');
             iframeContainer.classList.add('tf-open');
 
-            if (window.innerWidth <= 480) {
+            if (window.innerWidth <= 768) {
                 document.body.style.overflow = 'hidden';
                 container.classList.add('tf-mobile-open');
             }
