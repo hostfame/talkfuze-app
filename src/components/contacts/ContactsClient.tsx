@@ -49,12 +49,12 @@ const LABEL_OPTIONS = [
 ]
 
 // All sources use only blue and gray tones - distinguished by shade, not hue
-const SOURCE_CONFIG: Record<string, { label: string; bg: string; dot: string }> = {
-  whatsapp:  { label: 'WhatsApp',  bg: 'bg-blue-50 text-blue-700 border-blue-200',   dot: 'bg-blue-500' },
-  messenger: { label: 'Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-200',  dot: 'bg-blue-700' },
-  widget:    { label: 'Widget',    bg: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-500' },
-  instagram: { label: 'Instagram', bg: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
-  manual:    { label: 'Manual',    bg: 'bg-slate-50 text-slate-500 border-slate-200', dot: 'bg-slate-300' },
+const SOURCE_CONFIG: Record<string, { label: string; bg: string }> = {
+  whatsapp:  { label: 'WhatsApp',  bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+  messenger: { label: 'Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-200' },
+  widget:    { label: 'Widget',    bg: 'bg-slate-100 text-slate-700 border-slate-200' },
+  instagram: { label: 'Instagram', bg: 'bg-slate-50 text-slate-600 border-slate-200' },
+  manual:    { label: 'Manual',    bg: 'bg-slate-50 text-slate-500 border-slate-200' },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -369,8 +369,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                   {contact.name}
                 </button>
               )}
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${source.bg} mt-0.5`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${source.dot}`} />
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${source.bg} mt-0.5`}>
                 {source.label}
               </span>
             </div>
@@ -515,7 +514,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                       const msgs = (conv.messages || []).filter((m: any) => !m.is_internal).slice(0, 3)
                       return (
                         <div key={conv.id} className="relative pl-9">
-                          <div className={`absolute left-1.5 top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 ${src.dot}`} />
+                          <div className="absolute left-1.5 top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 bg-blue-500" />
                           <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${src.bg}`}>
@@ -996,8 +995,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${src.bg}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${src.dot}`} />
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium border ${src.bg}`}>
                       {src.label}
                     </span>
                   </td>
