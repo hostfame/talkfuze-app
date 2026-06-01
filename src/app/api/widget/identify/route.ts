@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import crypto from 'crypto'
+import * as crypto from 'crypto'
 
 const WIDGET_SECRET = process.env.TALKFUZE_WIDGET_SECRET || ''
 

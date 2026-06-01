@@ -9,59 +9,112 @@ const normalizeArray = (val: any) => {
   return [val];
 };
 
-export async function fetchWhmcsClient(phoneOrEmail: string) {
-  try {
-    const cleanSearch = phoneOrEmail.trim()
-    
-    // If it's an email, use direct email lookup first for accuracy
-    if (cleanSearch.includes('@')) {
-      const emailResult = await getClientDetailsByEmailFast(cleanSearch)
-      if (emailResult && emailResult.id) {
-        return emailResult
-      }
+/**
+ * Normalize any phone string into the best WHMCS search candidates.
+ * WHMCS (Hostnin) stores numbers in local BD format: 01XXXXXXXXX (11 digits).
+ * TalkFuze stores them in various formats:
+ *   - WhatsApp: 8801XXXXXXXXX (13 digits, no +)
+ *   - Widget: +8801XXXXXXXXX (14 chars, with +)
+ *   - Partial: 1XXXXXXXXX (10 digits, missing 0 prefix)
+ *   - platform_id: may contain the canonical full number
+ * We generate all plausible variants and try each.
+ */
+function buildPhoneSearchCandidates(raw: string, platformId?: string): string[] {
+  const candidates = new Set<string>()
+
+  const sources = [raw, platformId || ''].filter(Boolean)
+
+  for (const src of sources) {
+    // Strip everything except digits
+    const d = src.replace(/\D/g, '')
+    if (!d || d.length < 7) continue
+
+    // BD numbers are 11 digits locally (01XXXXXXXXX) or 13 with country code (8801XXXXXXXXX)
+    // Extract the core 9-digit suffix (after 01 or 8801)
+    let core9 = ''
+    if (d.startsWith('880') && d.length >= 12) {
+      // 8801XXXXXXXXX -> drop 880, get 01XXXXXXXXX
+      const local = d.slice(3) // e.g. 01715296979
+      candidates.add(local)      // 01715296979
+      candidates.add('0' + local.slice(1)) // ensure 0-prefix
+      core9 = local.slice(2)     // 715296979
+    } else if (d.startsWith('01') && d.length === 11) {
+      candidates.add(d)          // 01715296979
+      core9 = d.slice(2)         // 715296979
+    } else if (d.startsWith('1') && d.length === 10) {
+      candidates.add('0' + d)    // 01715296979
+      core9 = d.slice(1)         // 715296979
+    } else {
+      // Unknown format - just add it raw and use last 9 digits
+      candidates.add(d)
+      core9 = d.length >= 9 ? d.slice(-9) : d
     }
 
-    // Extract digits only
-    const digits = cleanSearch.replace(/\D/g, '')
-    if (!digits) return null
+    // Always add the last-9 core (most reliable suffix match)
+    if (core9 && core9.length === 9) {
+      candidates.add(core9)
+      candidates.add('880' + '1' + core9) // 8801XXXXXXXXX
+    }
 
-    // Call custom action to search by phone
-    const phoneResult = await getClientByPhone(digits)
-    if (phoneResult && phoneResult.clients && phoneResult.clients.length > 0) {
-      // Find exact match by comparing digits-only representations
-      const exactMatch = phoneResult.clients.find(c => {
+    // Add with country code prefix variants
+    if (d.startsWith('01') && d.length === 11) {
+      candidates.add('880' + d.slice(1)) // 8801XXXXXXXXX from 01XXXXXXXXX
+    }
+  }
+
+  return Array.from(candidates).filter(c => c.length >= 9)
+}
+
+export async function fetchWhmcsClient(phoneOrEmail: string, platformId?: string) {
+  try {
+    const cleanSearch = phoneOrEmail.trim()
+
+    // Email lookup - fastest and most accurate
+    if (cleanSearch.includes('@')) {
+      const emailResult = await getClientDetailsByEmailFast(cleanSearch)
+      if (emailResult && emailResult.id) return emailResult
+      // Email lookup failed - don't proceed with phone if this is an email
+      return null
+    }
+
+    // Build all phone variants to try
+    const candidates = buildPhoneSearchCandidates(cleanSearch, platformId)
+    if (candidates.length === 0) return null
+
+    // Try each candidate - first one to return a match wins
+    for (const candidate of candidates) {
+      const phoneResult = await getClientByPhone(candidate)
+      if (!phoneResult?.clients?.length) continue
+
+      // Score each result - prefer tighter suffix match
+      const candidateDigits = candidate.replace(/\D/g, '')
+      const suffix9 = candidateDigits.slice(-9)
+
+      const exactMatch = phoneResult.clients.find((c: any) => {
         if (!c.phonenumber) return false
-        const clientDigits = c.phonenumber.replace(/\D/g, '')
-        
-        // Exact match of all digits
-        if (clientDigits === digits) return true
-
-        // Match if suffix of last 9 digits matches (e.g. 01868123428 vs 8801868123428)
-        if (clientDigits.length >= 9 && digits.length >= 9) {
-          const clientSuffix = clientDigits.substring(clientDigits.length - 9)
-          const searchSuffix = digits.substring(digits.length - 9)
-          if (clientSuffix === searchSuffix) return true
+        const cd = c.phonenumber.replace(/\D/g, '')
+        if (cd === candidateDigits) return true
+        if (cd.length >= 9 && candidateDigits.length >= 9) {
+          return cd.slice(-9) === suffix9
         }
-
         return false
       })
 
-      const matchedClient = exactMatch || phoneResult.clients[0]
-      if (matchedClient && matchedClient.id) {
-        try {
-          const fullClient = await getClientDetails(matchedClient.id)
-          if (fullClient && fullClient.result === 'success') {
-            return fullClient
-          }
-        } catch (e) {
-          console.error("Failed to fetch full client details by id:", e)
-        }
+      const matched = exactMatch || phoneResult.clients[0]
+      if (!matched?.id) continue
+
+      try {
+        const full = await getClientDetails(matched.id)
+        if (full?.result === 'success') return full
+      } catch (e) {
+        console.error('Failed to fetch full client details:', e)
       }
-      return matchedClient
+      return matched
     }
+
     return null
   } catch (error) {
-    console.error("Failed to fetch WHMCS client:", error)
+    console.error('Failed to fetch WHMCS client:', error)
     return null
   }
 }
@@ -162,46 +215,38 @@ export async function fetchWhmcsDashboardData(clientId: number) {
   }
 }
 
-export async function fetchWhmcsDashboardDataBySearch(searchQuery: string) {
+export async function fetchWhmcsDashboardDataBySearch(searchQuery: string, platformId?: string) {
   try {
     const cleanSearch = searchQuery.trim();
     if (!cleanSearch) {
       return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
     }
 
-    // 1. Resolve client using our highly optimized fetchWhmcsClient
-    const client = await fetchWhmcsClient(cleanSearch);
+    // Pass platformId through so fetchWhmcsClient can use it as an additional phone source
+    const client = await fetchWhmcsClient(cleanSearch, platformId);
 
     if (client && client.id) {
-      // 2. Fetch dashboard data using client ID in parallel via working endpoints
       try {
         const [services, tickets, invoices] = await Promise.all([
           fetchWhmcsServices(client.id),
           fetchWhmcsTickets(client.id),
           fetchWhmcsUnpaidInvoices(client.id)
         ]);
-        
         return {
-          client: client,
+          client,
           services: services || { products: [], domains: [] },
           tickets: tickets || [],
           invoices: invoices || []
         };
       } catch (innerError) {
-        console.error("Failed to fetch inner WHMCS services for client:", innerError);
-        // If services fail, we still have the client object to return!
-        return {
-            client: client,
-            services: { products: [], domains: [] },
-            tickets: [],
-            invoices: []
-        };
+        console.error('Failed to fetch inner WHMCS services for client:', innerError);
+        return { client, services: { products: [], domains: [] }, tickets: [], invoices: [] };
       }
     }
-    
+
     return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
   } catch (error) {
-    console.error("Failed to fetch WHMCS dashboard data by search:", error)
+    console.error('Failed to fetch WHMCS dashboard data by search:', error)
     return { client: null, services: { products: [], domains: [] }, tickets: [], invoices: [] }
   }
 }

@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Plus, Download, Upload, MoreHorizontal, MessageSquare,
-  Trash2, Tag, User, Phone, Mail, AlertTriangle, Star,
+  Trash2, Tag, User, Phone, Mail, AlertTriangle,
   ChevronLeft, ChevronRight, X, Check, Copy, Clock,
-  Building2, FileText, TrendingUp, GitMerge, StickyNote,
-  Loader2, ExternalLink, RefreshCw, Filter
+  Building2, TrendingUp, GitMerge, StickyNote,
+  Loader2, ExternalLink, Filter
 } from 'lucide-react'
 import {
   getContacts, createContact, deleteContact, bulkDeleteContacts,
@@ -38,25 +38,23 @@ type ContactRow = {
   metadata?: any
 }
 
+// All labels use only blue and gray tones
 const LABEL_OPTIONS = [
-  { value: 'hot-lead', label: 'Hot Lead', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { value: 'vip', label: 'VIP', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  { value: 'unpaid', label: 'Unpaid', color: 'bg-red-100 text-red-700 border-red-200' },
-  { value: 'customer', label: 'Customer', color: 'bg-green-100 text-green-700 border-green-200' },
-  { value: 'prospect', label: 'Prospect', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { value: 'churned', label: 'Churned', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  { value: 'hot-lead',  label: 'Hot Lead',  color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { value: 'vip',       label: 'VIP',        color: 'bg-blue-600 text-white border-blue-600' },
+  { value: 'unpaid',    label: 'Unpaid',     color: 'bg-slate-200 text-slate-800 border-slate-300' },
+  { value: 'customer',  label: 'Customer',   color: 'bg-blue-50 text-blue-600 border-blue-200' },
+  { value: 'prospect',  label: 'Prospect',   color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  { value: 'churned',   label: 'Churned',    color: 'bg-slate-100 text-slate-500 border-slate-200' },
 ]
 
-const LABEL_COLOR_MAP: Record<string, string> = Object.fromEntries(
-  LABEL_OPTIONS.map(l => [l.value, l.color])
-)
-
+// All sources use only blue and gray tones - distinguished by shade, not hue
 const SOURCE_CONFIG: Record<string, { label: string; bg: string; dot: string }> = {
-  whatsapp: { label: 'WhatsApp', bg: 'bg-green-50 text-green-700 border-green-200', dot: 'bg-green-500' },
-  messenger: { label: 'Messenger', bg: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-  widget: { label: 'Widget', bg: 'bg-violet-50 text-violet-700 border-violet-200', dot: 'bg-violet-500' },
-  instagram: { label: 'Instagram', bg: 'bg-pink-50 text-pink-700 border-pink-200', dot: 'bg-pink-500' },
-  manual: { label: 'Manual', bg: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  whatsapp:  { label: 'WhatsApp',  bg: 'bg-blue-50 text-blue-700 border-blue-200',   dot: 'bg-blue-500' },
+  messenger: { label: 'Messenger', bg: 'bg-blue-100 text-blue-800 border-blue-200',  dot: 'bg-blue-700' },
+  widget:    { label: 'Widget',    bg: 'bg-slate-100 text-slate-700 border-slate-200', dot: 'bg-slate-500' },
+  instagram: { label: 'Instagram', bg: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+  manual:    { label: 'Manual',    bg: 'bg-slate-50 text-slate-500 border-slate-200', dot: 'bg-slate-300' },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,12 +75,13 @@ function formatRelativeTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString()
 }
 
+// Score badge: blue for high, slate for mid/low - no rainbow
 function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 70 ? 'text-green-600 bg-green-50 border-green-200'
-    : score >= 40 ? 'text-amber-600 bg-amber-50 border-amber-200'
-      : 'text-red-600 bg-red-50 border-red-200'
+  const cls = score >= 60
+    ? 'text-blue-600 bg-blue-50 border-blue-200'
+    : 'text-slate-500 bg-slate-100 border-slate-200'
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${color}`}>
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${cls}`}>
       <TrendingUp size={9} />
       {score}
     </span>
@@ -120,23 +119,30 @@ function AddContactModal({ onClose, onSuccess }: { onClose: () => void; onSucces
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+          {error && (
+            <p className="text-[12px] text-slate-700 bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 flex items-center gap-2">
+              <AlertTriangle size={12} className="text-blue-500 shrink-0" /> {error}
+            </p>
+          )}
           <div>
             <label className="text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">Name *</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name" className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">Phone</label>
             <div className="relative">
               <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+8801XXXXXXXXX" className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+8801XXXXXXXXX"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
             <label className="text-[12px] font-medium text-slate-600 dark:text-slate-400 mb-1 block">Email</label>
             <div className="relative">
               <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" type="email" className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" type="email"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
@@ -152,8 +158,12 @@ function AddContactModal({ onClose, onSuccess }: { onClose: () => void; onSucces
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               {loading ? 'Adding...' : 'Add Contact'}
             </button>
@@ -169,6 +179,7 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [preview, setPreview] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string>('')
+  const [isError, setIsError] = useState(false)
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -203,8 +214,8 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       })
       const res = await importContacts(rows)
       setLoading(false)
-      if (res.success) { setResult(`Imported ${res.imported} contacts`); onSuccess() }
-      else setResult(`Error: ${res.error}`)
+      if (res.success) { setResult(`Imported ${res.imported} contacts`); setIsError(false); onSuccess() }
+      else { setResult(`Error: ${res.error}`); setIsError(true) }
     }
     reader.readAsText(file)
   }
@@ -245,10 +256,15 @@ function ImportModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               </div>
             </div>
           )}
-          {result && <p className={`text-sm rounded-lg px-3 py-2 ${result.startsWith('Error') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>{result}</p>}
+          {result && (
+            <p className={`text-sm rounded-lg px-3 py-2 border ${isError ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+              {result}
+            </p>
+          )}
           <div className="flex gap-2">
             <button onClick={onClose} className="flex-1 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-colors">Cancel</button>
-            <button onClick={handleImport} disabled={!file || loading} className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button onClick={handleImport} disabled={!file || loading}
+              className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               {loading ? 'Importing...' : 'Import'}
             </button>
@@ -273,8 +289,6 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
   const [activeLabels, setActiveLabels] = useState<string[]>(contact.labels || [])
   const [labelMenuOpen, setLabelMenuOpen] = useState(false)
 
-  const { updateContactName: updateName, updateContactNotes } = require('@/actions/contacts')
-
   async function loadTimeline() {
     if (loadingTimeline || timeline.length > 0) return
     setLoadingTimeline(true)
@@ -287,9 +301,14 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
   async function loadHostnin() {
     if (loadingHostnin || hostnin !== null) return
     setLoadingHostnin(true)
+    // Use phone, email, AND platform_id as search sources.
+    // platform_id often contains the most canonical phone (e.g. 8801715296979@s.whatsapp.net).
     const search = contact.displayPhone || contact.phone || contact.email || ''
-    if (!search) { setHostnin(false); setLoadingHostnin(false); return }
-    const data = await fetchWhmcsDashboardDataBySearch(search)
+    if (!search && !contact.platform_id) { setHostnin(false); setLoadingHostnin(false); return }
+    const data = await fetchWhmcsDashboardDataBySearch(
+      search || contact.platform_id,
+      contact.platform_id  // passed as secondary source to normalizer
+    )
     setHostnin(data)
     setLoadingHostnin(false)
   }
@@ -329,21 +348,24 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="w-[480px] bg-white dark:bg-slate-900 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shrink-0">
               {getInitials(contact.name)}
             </div>
             <div className="min-w-0">
               {editingName ? (
                 <div className="flex items-center gap-1">
-                  <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()} className="text-sm font-semibold text-slate-900 dark:text-slate-100 border border-blue-400 rounded px-2 py-0.5 focus:outline-none bg-white dark:bg-slate-800 w-[180px]" autoFocus />
-                  <button onClick={saveName} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={14} /></button>
+                  <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveName()}
+                    className="text-sm font-semibold text-slate-900 dark:text-slate-100 border border-blue-400 rounded px-2 py-0.5 focus:outline-none bg-white dark:bg-slate-800 w-[180px]" autoFocus />
+                  <button onClick={saveName} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Check size={14} /></button>
                   <button onClick={() => setEditingName(false)} className="p-1 text-slate-400 hover:bg-slate-100 rounded"><X size={14} /></button>
                 </div>
               ) : (
-                <button onClick={() => setEditingName(true)} className="text-sm font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors truncate text-left max-w-[200px] block">
+                <button onClick={() => setEditingName(true)}
+                  className="text-sm font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 transition-colors truncate text-left max-w-[200px] block">
                   {contact.name}
                 </button>
               )}
@@ -355,8 +377,8 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {contact.is_at_risk && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-semibold rounded-full border border-red-200">
-                <AlertTriangle size={10} /> At Risk
+              <span className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded-full border border-slate-300">
+                <AlertTriangle size={10} className="text-blue-500" /> At Risk
               </span>
             )}
             <ScoreBadge score={contact.contact_score} />
@@ -375,21 +397,22 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
         </div>
 
         <div className="flex-1 overflow-y-auto">
+
           {/* Overview Tab */}
           {tab === 'overview' && (
             <div className="p-5 space-y-5">
-              {/* Contact info */}
               <div className="space-y-2.5">
                 {contact.displayPhone && (
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                      <Phone size={14} className="text-slate-500" />
+                      <Phone size={14} className="text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">Phone</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100 font-medium font-mono">{contact.displayPhone}</p>
                     </div>
-                    <button onClick={() => navigator.clipboard.writeText(contact.displayPhone || '')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors">
+                    <button onClick={() => navigator.clipboard.writeText(contact.displayPhone || '')}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                       <Copy size={13} />
                     </button>
                   </div>
@@ -397,20 +420,21 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                 {contact.email && (
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                      <Mail size={14} className="text-slate-500" />
+                      <Mail size={14} className="text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">Email</p>
                       <p className="text-sm text-slate-900 dark:text-slate-100 font-medium truncate">{contact.email}</p>
                     </div>
-                    <button onClick={() => navigator.clipboard.writeText(contact.email || '')} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors">
+                    <button onClick={() => navigator.clipboard.writeText(contact.email || '')}
+                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                       <Copy size={13} />
                     </button>
                   </div>
                 )}
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                    <Clock size={14} className="text-slate-500" />
+                    <Clock size={14} className="text-slate-400" />
                   </div>
                   <div>
                     <p className="text-[11px] text-slate-400 uppercase tracking-wider">Last Contact</p>
@@ -419,7 +443,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                 </div>
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                    <MessageSquare size={14} className="text-slate-500" />
+                    <MessageSquare size={14} className="text-slate-400" />
                   </div>
                   <div>
                     <p className="text-[11px] text-slate-400 uppercase tracking-wider">Conversations</p>
@@ -432,7 +456,8 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Labels</p>
-                  <button onClick={() => setLabelMenuOpen(!labelMenuOpen)} className="text-[11px] text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                  <button onClick={() => setLabelMenuOpen(!labelMenuOpen)}
+                    className="text-[11px] text-blue-500 hover:text-blue-700 flex items-center gap-1">
                     <Tag size={11} /> Manage
                   </button>
                 </div>
@@ -459,8 +484,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
               {/* Actions */}
               <div className="space-y-2">
                 {contact.latest_conversation_id && (
-                  <button
-                    onClick={() => router.push(`/inbox?c=${contact.latest_conversation_id}`)}
+                  <button onClick={() => router.push(`/inbox?c=${contact.latest_conversation_id}`)}
                     className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors">
                     <MessageSquare size={15} /> View Chat
                   </button>
@@ -485,7 +509,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                 <div className="relative">
                   <div className="absolute left-3.5 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
                   <div className="space-y-4">
-                    {timeline.map((conv: any, i: number) => {
+                    {timeline.map((conv: any) => {
                       const type = Array.isArray(conv.channels) ? conv.channels[0]?.type : conv.channels?.type
                       const src = SOURCE_CONFIG[type] || SOURCE_CONFIG.manual
                       const msgs = (conv.messages || []).filter((m: any) => !m.is_internal).slice(0, 3)
@@ -498,7 +522,8 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                                 {src.label}
                               </span>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${conv.status === 'resolved' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {/* Status: blue for resolved, gray for open - no green/amber */}
+                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${conv.status === 'resolved' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                                   {conv.status}
                                 </span>
                                 <span className="text-[11px] text-slate-400">{formatRelativeTime(conv.last_message_at)}</span>
@@ -513,8 +538,7 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                                 ))}
                               </div>
                             )}
-                            <button
-                              onClick={() => router.push(`/inbox?c=${conv.id}`)}
+                            <button onClick={() => router.push(`/inbox?c=${conv.id}`)}
                               className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 flex items-center gap-1">
                               <ExternalLink size={10} /> Open in inbox
                             </button>
@@ -544,40 +568,39 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Client card */}
+                  {/* Client card - blue toned */}
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{hostnin.client.firstname} {hostnin.client.lastname}</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{hostnin.client.firstname} {hostnin.client.lastname}</p>
                         <p className="text-[12px] text-blue-600 dark:text-blue-300">{hostnin.client.email}</p>
-                        <p className="text-[12px] text-blue-500 mt-0.5">ID: #{hostnin.client.id}</p>
+                        <p className="text-[12px] text-slate-400 mt-0.5">ID: #{hostnin.client.id}</p>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${hostnin.client.status === 'Active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                      {/* Active = blue, inactive = slate - no green/red */}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${hostnin.client.status === 'Active' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-300'}`}>
                         {hostnin.client.status || 'Active'}
                       </span>
                     </div>
                   </div>
 
-                  {/* Unpaid invoices */}
+                  {/* Unpaid invoices - slate with blue accent, no red */}
                   {hostnin.invoices && hostnin.invoices.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <AlertTriangle size={10} /> Unpaid Invoices ({hostnin.invoices.length})
+                      <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <AlertTriangle size={10} className="text-blue-500" /> Unpaid Invoices ({hostnin.invoices.length})
                       </p>
                       <div className="space-y-1.5">
                         {hostnin.invoices.slice(0, 3).map((inv: any) => (
-                          <div key={inv.id} className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                            <div>
-                              <p className="text-[12px] font-medium text-red-700">#{inv.id} - {inv.date}</p>
-                            </div>
-                            <span className="text-[12px] font-bold text-red-700">{inv.currencyprefix}{inv.balance}</span>
+                          <div key={inv.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <p className="text-[12px] font-medium text-slate-700">#{inv.id} - {inv.date}</p>
+                            <span className="text-[12px] font-bold text-blue-700">{inv.currencyprefix}{inv.balance}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Services */}
+                  {/* Services - slate rows, blue active badge */}
                   {hostnin.services?.products && hostnin.services.products.length > 0 && (
                     <div>
                       <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -585,22 +608,25 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
                       </p>
                       <div className="space-y-1.5">
                         {hostnin.services.products.slice(0, 4).map((p: any) => (
-                          <div key={p.id} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                          <div key={p.id} className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
                             <div>
                               <p className="text-[12px] font-medium text-slate-700 dark:text-slate-300">{p.name}</p>
                               {p.domain && <p className="text-[11px] text-slate-400 font-mono">{p.domain}</p>}
                             </div>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{p.status}</span>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${p.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                              {p.status}
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
+                  {/* All paid - blue check, not green */}
                   {hostnin.invoices?.length === 0 && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                      <Check size={14} className="text-green-600 shrink-0" />
-                      <p className="text-[12px] text-green-700 font-medium">All invoices paid</p>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <Check size={14} className="text-blue-600 shrink-0" />
+                      <p className="text-[12px] text-blue-700 font-medium">All invoices paid</p>
                     </div>
                   )}
                 </div>
@@ -612,17 +638,17 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
           {tab === 'notes' && (
             <div className="p-5 flex flex-col h-full gap-4">
               <div className="flex items-center gap-2">
-                <StickyNote size={14} className="text-amber-500" />
+                <StickyNote size={14} className="text-blue-500" />
                 <p className="text-[12px] font-medium text-slate-600 dark:text-slate-400">Sticky notes - visible to all agents</p>
               </div>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                placeholder="Add notes about this contact... (e.g. 'Interested in premium plan, follow up Monday')"
+                placeholder="Add notes about this contact..."
                 className="flex-1 min-h-[200px] resize-none p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-400"
               />
               <button onClick={saveNotes} disabled={savingNotes}
-                className="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {savingNotes ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 {savingNotes ? 'Saving...' : 'Save Notes'}
               </button>
@@ -665,7 +691,7 @@ function DuplicatesModal({ onClose, onRefresh }: { onClose: () => void; onRefres
             <div className="flex items-center justify-center py-12"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
           ) : groups.length === 0 ? (
             <div className="text-center py-12">
-              <Check size={32} className="mx-auto mb-2 text-green-400" />
+              <Check size={32} className="mx-auto mb-2 text-blue-400" />
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">No duplicates found</p>
               <p className="text-[12px] text-slate-400 mt-1">All contacts have unique phone numbers</p>
             </div>
@@ -677,7 +703,7 @@ function DuplicatesModal({ onClose, onRefresh }: { onClose: () => void; onRefres
                   {group.map((contact, ci) => (
                     <div key={contact.id} className={`flex items-center justify-between px-4 py-3 ${ci < group.length - 1 ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}>
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 text-xs font-bold shrink-0">
                           {getInitials(contact.name)}
                         </div>
                         <div className="min-w-0">
@@ -687,7 +713,7 @@ function DuplicatesModal({ onClose, onRefresh }: { onClose: () => void; onRefres
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {ci === 0 ? (
-                          <span className="text-[10px] font-semibold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">Keep</span>
+                          <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Keep</span>
                         ) : (
                           <button onClick={() => handleMerge(group[0].id, contact.id)} disabled={merging === contact.id}
                             className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50">
@@ -732,26 +758,32 @@ function RowActions({ contact, onDelete, onOpenDetail, onViewChat }: {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded opacity-0 group-hover:opacity-100 transition-all">
+      <button onClick={() => setOpen(!open)}
+        className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded opacity-0 group-hover:opacity-100 transition-all">
         <MoreHorizontal size={16} />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           {contact.latest_conversation_id && (
-            <button onClick={() => { onViewChat(); setOpen(false) }} className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 transition-colors">
+            <button onClick={() => { onViewChat(); setOpen(false) }}
+              className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 transition-colors">
               <MessageSquare size={13} className="text-blue-500" /> View Chat
             </button>
           )}
-          <button onClick={() => { onOpenDetail(); setOpen(false) }} className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={() => { onOpenDetail(); setOpen(false) }}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             <User size={13} /> View Profile
           </button>
           {(contact.displayPhone || contact.phone) && (
-            <button onClick={() => { navigator.clipboard.writeText(contact.displayPhone || contact.phone || ''); setOpen(false) }} className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <button onClick={() => { navigator.clipboard.writeText(contact.displayPhone || contact.phone || ''); setOpen(false) }}
+              className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
               <Copy size={13} /> Copy Phone
             </button>
           )}
           <div className="border-t border-slate-100 dark:border-slate-700" />
-          <button onClick={() => { onDelete(); setOpen(false) }} className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors">
+          {/* Delete: slate styling, no red - consistent with mono palette */}
+          <button onClick={() => { onDelete(); setOpen(false) }}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <Trash2 size={13} /> Delete
           </button>
         </div>
@@ -767,7 +799,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
   initialTotal: number
 }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   const [contacts, setContacts] = useState<ContactRow[]>(initialContacts)
   const [totalCount, setTotalCount] = useState(initialTotal)
@@ -777,7 +809,6 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
   const [loading, setLoading] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  // Modals
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showDuplicates, setShowDuplicates] = useState(false)
@@ -799,10 +830,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
   function handleSearch(q: string) {
     setSearch(q)
     if (searchDebounce.current) clearTimeout(searchDebounce.current)
-    searchDebounce.current = setTimeout(() => {
-      setPage(1)
-      loadContacts(1, q, labelFilter)
-    }, 350)
+    searchDebounce.current = setTimeout(() => { setPage(1); loadContacts(1, q, labelFilter) }, 350)
   }
 
   function handleLabelFilter(lf: string) {
@@ -821,20 +849,14 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
     const data = await getAllContactsForExport()
     const headers = ['Name', 'Phone', 'Email', 'Source', 'Labels', 'Created At']
     const rows = data.map((c: any) => [
-      c.name || '',
-      c.phone || '',
-      c.email || '',
-      c.platform_type || '',
-      (c.labels || []).join('; '),
-      new Date(c.created_at).toLocaleDateString()
+      c.name || '', c.phone || '', c.email || '', c.platform_type || '',
+      (c.labels || []).join('; '), new Date(c.created_at).toLocaleDateString()
     ])
     const csv = [headers, ...rows].map(r => r.map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
+    a.href = url; a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
     URL.revokeObjectURL(url)
   }
 
@@ -852,30 +874,26 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
   }
 
   function toggleSelect(id: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === contacts.length) setSelectedIds(new Set())
-    else setSelectedIds(new Set(contacts.map(c => c.id)))
+    setSelectedIds(selectedIds.size === contacts.length ? new Set() : new Set(contacts.map(c => c.id)))
   }
 
   const atRiskCount = contacts.filter(c => c.is_at_risk).length
 
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 overflow-hidden">
+
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           Contacts
           <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{totalCount}</span>
           {atRiskCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-              <AlertTriangle size={10} /> {atRiskCount} at risk
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-full">
+              <AlertTriangle size={10} className="text-blue-500" /> {atRiskCount} at risk
             </span>
           )}
         </h1>
@@ -884,13 +902,8 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" size={14} />}
-            <input
-              type="text"
-              value={search}
-              onChange={e => handleSearch(e.target.value)}
-              placeholder="Search contacts..."
-              className="pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-[220px] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-slate-200 focus:w-[280px]"
-            />
+            <input type="text" value={search} onChange={e => handleSearch(e.target.value)} placeholder="Search contacts..."
+              className="pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-[220px] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-slate-200 focus:w-[280px]" />
           </div>
 
           {/* Label filter */}
@@ -900,23 +913,20 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
             {LABEL_OPTIONS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
           </select>
 
-          {/* Dedup */}
-          <button onClick={() => setShowDuplicates(true)} title="Find duplicates" className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button onClick={() => setShowDuplicates(true)} title="Find duplicates"
+            className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <GitMerge size={17} />
           </button>
-
-          {/* Import */}
-          <button onClick={() => setShowImport(true)} title="Import CSV" className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button onClick={() => setShowImport(true)} title="Import CSV"
+            className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <Upload size={17} />
           </button>
-
-          {/* Export */}
-          <button onClick={handleExport} title="Export CSV" className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button onClick={handleExport} title="Export CSV"
+            className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
             <Download size={17} />
           </button>
-
-          {/* Add contact */}
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
             <Plus size={15} /> Add Contact
           </button>
         </div>
@@ -924,14 +934,13 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="px-6 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 flex items-center gap-3 shrink-0">
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{selectedIds.size} selected</span>
-          <button onClick={handleBulkDelete} className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition-colors font-medium">
+        <div className="px-6 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 shrink-0">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedIds.size} selected</span>
+          <button onClick={handleBulkDelete}
+            className="flex items-center gap-1.5 text-sm text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors font-medium">
             <Trash2 size={13} /> Delete selected
           </button>
-          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-slate-500 hover:text-slate-700 ml-auto">
-            Clear
-          </button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-slate-400 hover:text-slate-600 ml-auto">Clear</button>
         </div>
       )}
 
@@ -959,18 +968,20 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
               const isSelected = selectedIds.has(contact.id)
               return (
                 <tr key={contact.id}
-                  className={`group transition-colors cursor-pointer ${isSelected ? 'bg-blue-50 dark:bg-blue-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                  className={`group transition-colors cursor-pointer ${isSelected ? 'bg-blue-50/60 dark:bg-blue-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setDetailContact(contact)}>
+
                   <td className="py-3.5 px-4 w-10" onClick={e => { e.stopPropagation(); toggleSelect(contact.id) }}>
                     <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(contact.id)} className="rounded border-slate-300 cursor-pointer" />
                   </td>
 
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
-                      <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${isSelected ? 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'}`}>
+                      <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${isSelected ? 'bg-blue-200 dark:bg-blue-800 text-blue-800' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'}`}>
                         {getInitials(contact.name)}
+                        {/* At-risk dot - blue outline instead of red */}
                         {contact.is_at_risk && (
-                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" title="At risk - no reply in 24h+" />
+                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-slate-400 rounded-full border-2 border-white dark:border-slate-900" title="No reply in 24h+" />
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
@@ -1008,15 +1019,15 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-600 dark:text-slate-400">
-                      <MessageSquare size={13} className="text-blue-400" />
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
+                      <MessageSquare size={13} className="text-slate-400" />
                       {contact.conversation_count}
                     </span>
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className={`text-[12px] ${contact.is_at_risk ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
-                      {contact.is_at_risk && <AlertTriangle size={11} className="inline mr-1" />}
+                    <span className={`text-[12px] ${contact.is_at_risk ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>
+                      {contact.is_at_risk && <AlertTriangle size={11} className="inline mr-1 text-blue-500" />}
                       {formatRelativeTime(contact.last_contacted_at)}
                     </span>
                   </td>
@@ -1028,9 +1039,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                   <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {contact.latest_conversation_id && (
-                        <button
-                          onClick={() => router.push(`/inbox?c=${contact.latest_conversation_id}`)}
-                          title="View Chat"
+                        <button onClick={() => router.push(`/inbox?c=${contact.latest_conversation_id}`)} title="View Chat"
                           className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all">
                           <MessageSquare size={15} />
                         </button>
@@ -1073,7 +1082,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               <ChevronLeft size={16} />
             </button>
-            <span className="text-[13px] text-slate-600 dark:text-slate-400 px-2">Page {page} of {totalPages}</span>
+            <span className="text-[13px] text-slate-500 px-2">Page {page} of {totalPages}</span>
             <button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               <ChevronRight size={16} />

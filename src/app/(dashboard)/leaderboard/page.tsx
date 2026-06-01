@@ -488,6 +488,16 @@ export default function LeaderboardPage() {
                         <span className="text-[11px] font-medium text-slate-500 dark:text-[#8696a0] capitalize px-1.5 py-0.5 bg-slate-100 dark:bg-[#202c33] rounded mt-0.5 inline-block">
                           {agent.role}
                         </span>
+                        {agent.performanceGrade && (
+                          <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block ml-1 ${
+                            agent.performanceGrade.startsWith('A') ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
+                            agent.performanceGrade.startsWith('B') ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0070f3]' :
+                            agent.performanceGrade === 'C' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
+                            'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400'
+                          }`}>
+                            {agent.performanceGrade}
+                          </span>
+                        )}
                         <div className="flex items-center gap-1.5 mt-0.5">
                           {agent.activeDaysCount > 0 && (
                             <span className="text-[10px] font-semibold text-slate-500 dark:text-[#8696a0] px-1.5 py-0.5 bg-slate-100 dark:bg-[#202c33] rounded">
@@ -500,6 +510,22 @@ export default function LeaderboardPage() {
                             </span>
                           )}
                         </div>
+                        {/* Productivity Score Bar */}
+                        {agent.productivityScore > 0 && (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <div className="w-16 h-[5px] bg-slate-200 dark:bg-[#202c33] rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  agent.productivityScore >= 75 ? 'bg-emerald-500' : agent.productivityScore >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                }`}
+                                style={{ width: `${agent.productivityScore}%` }}
+                              />
+                            </div>
+                            <span className={`text-[9px] font-bold ${
+                              agent.productivityScore >= 75 ? 'text-emerald-600 dark:text-emerald-400' : agent.productivityScore >= 50 ? 'text-amber-500' : 'text-rose-500'
+                            }`}>{agent.productivityScore}%</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

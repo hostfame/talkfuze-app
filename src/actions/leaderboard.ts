@@ -154,6 +154,8 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       activeDaysCount: 0,
       peakHour: -1,
       activeShiftText: '',
+      productivityScore: 0,
+      performanceGrade: 'F',
     };
   });
 
@@ -329,23 +331,54 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     });
   }
 
-  // 8b. Compute peakHour and activeShiftText from hourlyActivity
+  // 8b. Compute peakHour, activeShiftText, and productivityScore from hourlyActivity
   Object.keys(statsMap).forEach(agentId => {
     const hourly = statsMap[agentId].hourlyActivity;
     const maxVal = Math.max(...hourly);
     if (maxVal > 0) {
       statsMap[agentId].peakHour = hourly.indexOf(maxVal);
-      const threshold = maxVal * 0.1;
+      // Use a higher threshold (20%) to get the core working hours
+      const threshold = maxVal * 0.2;
       const activeHours = hourly.map((v: number, i: number) => v > threshold ? i : -1).filter((i: number) => i >= 0);
-      if (activeHours.length > 0) {
+      if (activeHours.length > 0 && activeHours.length < 24) {
         const formatHr = (h: number) => {
           if (h === 0) return '12AM';
           if (h === 12) return '12PM';
           return h < 12 ? `${h}AM` : `${h - 12}PM`;
         };
-        statsMap[agentId].activeShiftText = `${formatHr(activeHours[0])} - ${formatHr((activeHours[activeHours.length - 1] + 1) % 24)}`;
+        // Find the largest gap between consecutive active hours (wrap-around aware)
+        // The shift starts AFTER the largest gap and ends BEFORE the largest gap
+        let maxGap = 0;
+        let gapEndIdx = 0; // index in activeHours array where the gap ends (= shift starts)
+        for (let i = 0; i < activeHours.length; i++) {
+          const current = activeHours[i];
+          const next = activeHours[(i + 1) % activeHours.length];
+          const gap = (next - current + 24) % 24;
+          if (gap > maxGap) {
+            maxGap = gap;
+            gapEndIdx = (i + 1) % activeHours.length;
+          }
+        }
+        const shiftStart = activeHours[gapEndIdx];
+        const shiftEnd = (activeHours[(gapEndIdx - 1 + activeHours.length) % activeHours.length] + 1) % 24;
+        statsMap[agentId].activeShiftText = `${formatHr(shiftStart)} - ${formatHr(shiftEnd)}`;
+      } else if (activeHours.length >= 24) {
+        statsMap[agentId].activeShiftText = 'All Day';
       }
     }
+
+    // Compute productivity score (0-100)
+    const s = statsMap[agentId];
+    const msgScore = Math.min(40, (s.messagesCount / (period === 'daily' ? 80 : period === 'weekly' ? 160 : 640)) * 40);
+    const slaScore = (s.firstResponseSlaPercent / 100) * 25;
+    const respScore = s.avgResponseTime > 0 ? Math.max(0, 20 - (s.avgResponseTime / 3)) : 10;
+    const consistScore = ((s.activeDaysCount || 0) / 7) * 15;
+    const totalScore = Math.round(Math.min(100, msgScore + slaScore + respScore + consistScore));
+    statsMap[agentId].productivityScore = totalScore;
+
+    // Grade: A+ (95+), A (85+), B+ (75+), B (65+), C (50+), D (35+), F (<35)
+    const grade = totalScore >= 95 ? 'A+' : totalScore >= 85 ? 'A' : totalScore >= 75 ? 'B+' : totalScore >= 65 ? 'B' : totalScore >= 50 ? 'C' : totalScore >= 35 ? 'D' : 'F';
+    statsMap[agentId].performanceGrade = grade;
   });
 
   // 9. Compute dailyTrend (last 7 days per agent) using recentMessages
