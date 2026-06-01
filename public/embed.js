@@ -143,7 +143,6 @@
             justify-content: center;
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, opacity 0.35s ease;
             position: relative;
-            overflow: hidden;
             opacity: 0;
             transform: scale(0.7);
         }
