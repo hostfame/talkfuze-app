@@ -4058,8 +4058,21 @@ export default function WidgetPage() {
                <div className="bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-visible pointer-events-auto flex flex-col relative">
                   
                   {showEmojiPicker && (
-                    <div ref={emojiPickerRef} className="absolute bottom-[105%] right-0 mb-2 z-50 shadow-xl rounded-xl overflow-hidden border border-slate-100">
-                      <EmojiPicker onEmojiClick={handleEmojiClick} width={280} height={300} searchDisabled skinTonesDisabled previewConfig={{showPreview: false}} />
+                    <div ref={emojiPickerRef} className="absolute bottom-full right-0 mb-3 z-50 p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] bg-white rounded-2xl border border-slate-100 w-[280px]">
+                      <div className="grid grid-cols-8 gap-1">
+                        {['😀', '😄', '😂', '😊', '😍', '😐', '🙁', '😒', '😢', '😭', '🎉', '❤️', '👌', '👍', '👎', '🙏'].map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              setInput(prev => prev + emoji);
+                              // Optional: setShowEmojiPicker(false) if we want to auto-close
+                            }}
+                            className="text-2xl hover:bg-slate-100 p-1 rounded-lg transition-colors flex items-center justify-center aspect-square"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
