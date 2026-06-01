@@ -196,7 +196,7 @@
            ============================================= */
         #tf-nudge {
             position: fixed;
-            bottom: ${MARGIN + Math.round((BUTTON_SIZE - 54) / 2)}px;
+            bottom: ${MARGIN + Math.round((BUTTON_SIZE - NUDGE_HEIGHT) / 2)}px;
             right: ${MARGIN + BUTTON_SIZE + 16}px;
             background: #ffffff;
             border-radius: 100px;
@@ -204,13 +204,13 @@
             border: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             align-items: center;
-            width: 320px;
-            height: 54px;
+            width: 280px;
+            height: ${NUDGE_HEIGHT}px;
             padding: 0;
             pointer-events: auto;
             opacity: 0;
             transform: translateX(12px) scale(0.97);
-            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.3s cubic-bezier(0.16, 1, 0.3, 1), right 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             cursor: text;
             overflow: hidden;
@@ -224,7 +224,9 @@
 
         #tf-nudge.tf-nudge-focused {
             right: ${MARGIN}px;
-            width: ${320 + BUTTON_SIZE + 16}px;
+            width: ${280 + BUTTON_SIZE + 16}px;
+            border-color: rgba(0, 112, 243, 0.4);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(0, 112, 243, 0.15);
         }
 
         #tf-nudge-input {
@@ -565,12 +567,11 @@
             nudgeFired = true;
             showNudge();
             
-            // Show fake badge and pulse
+            // Show fake badge
             const badgeEl = document.getElementById('tf-badge');
             if (badgeEl && !badgeEl.classList.contains('tf-show')) {
                 badgeEl.innerText = '1';
                 badgeEl.classList.add('tf-show');
-                launcher.classList.add('tf-pulsing');
             }
         };
 
