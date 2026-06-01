@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, Plus, Download, Upload, MoreHorizontal, MessageSquare,
-  Trash2, Tag, User, Phone, Mail, AlertTriangle,
+  Trash2, Tag, User, Phone, PhoneCall, Mail, AlertTriangle,
   ChevronLeft, ChevronRight, X, Check, Copy, Clock,
   Building2, TrendingUp, GitMerge, StickyNote,
   Loader2, ExternalLink, Filter
@@ -16,6 +16,7 @@ import {
   detectDuplicateContacts, mergeContacts
 } from '@/actions/contacts'
 import { fetchWhmcsDashboardDataBySearch } from '@/actions/whmcs'
+import { useInboxStore } from '@/lib/store'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,15 +76,7 @@ function formatRelativeTime(dateStr: string) {
   return new Date(dateStr).toLocaleDateString()
 }
 
-// Score badge: always gray for minimal structure
-function ScoreBadge({ score }: { score: number }) {
-  return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border text-slate-500 bg-slate-100 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
-      <TrendingUp size={9} />
-      {score}
-    </span>
-  )
-}
+
 
 // ─── Modals ───────────────────────────────────────────────────────────────────
 
@@ -372,12 +365,6 @@ function ContactDetailDrawer({ contact, onClose, onRefresh }: { contact: Contact
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {contact.is_at_risk && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded-full border border-slate-300">
-                <AlertTriangle size={10} className="text-slate-500" /> At Risk
-              </span>
-            )}
-            <ScoreBadge score={contact.contact_score} />
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><X size={16} /></button>
           </div>
         </div>
@@ -795,6 +782,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
   initialTotal: number
 }) {
   const router = useRouter()
+  const { triggerDial } = useInboxStore()
   const [, startTransition] = useTransition()
 
   const [contacts, setContacts] = useState<ContactRow[]>(initialContacts)
@@ -877,8 +865,6 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
     setSelectedIds(selectedIds.size === contacts.length ? new Set() : new Set(contacts.map(c => c.id)))
   }
 
-  const atRiskCount = contacts.filter(c => c.is_at_risk).length
-
   return (
     <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 overflow-hidden">
 
@@ -887,11 +873,6 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           Contacts
           <span className="text-sm font-normal text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">{totalCount}</span>
-          {atRiskCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-full">
-              <AlertTriangle size={10} className="text-slate-500" /> {atRiskCount} at risk
-            </span>
-          )}
         </h1>
         <div className="flex items-center gap-2">
           {/* Search */}
@@ -951,7 +932,6 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Source</th>
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Labels</th>
-              <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Score</th>
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Chats</th>
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Last Contact</th>
               <th className="py-3 px-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Created</th>
@@ -975,15 +955,23 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                     <div className="flex items-center gap-3">
                       <div className={`relative w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 ${isSelected ? 'bg-blue-200 dark:bg-blue-800 text-blue-800' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'}`}>
                         {getInitials(contact.name)}
-                        {/* At-risk dot - blue outline instead of red */}
-                        {contact.is_at_risk && (
-                          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-slate-400 rounded-full border-2 border-white dark:border-slate-900" title="No reply in 24h+" />
-                        )}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-[13px] font-medium text-slate-900 dark:text-slate-100 truncate max-w-[180px]">{contact.name || 'No name'}</span>
                         {contact.displayPhone ? (
-                          <span className="text-[12px] text-slate-500 font-mono truncate">{contact.displayPhone}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] text-slate-500 font-mono truncate">{contact.displayPhone}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                triggerDial(contact.phone || contact.platform_id)
+                              }}
+                              title="Call Contact"
+                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors shrink-0"
+                            >
+                              <Phone size={11} strokeWidth={2.5} />
+                            </button>
+                          </div>
                         ) : contact.email ? (
                           <span className="text-[12px] text-slate-400 truncate">{contact.email}</span>
                         ) : null}
@@ -1010,10 +998,6 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <ScoreBadge score={contact.contact_score} />
-                  </td>
-
-                  <td className="py-3.5 px-4">
                     <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500">
                       <MessageSquare size={13} className="text-slate-400" />
                       {contact.conversation_count}
@@ -1021,8 +1005,7 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <span className={`text-[12px] ${contact.is_at_risk ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>
-                      {contact.is_at_risk && <AlertTriangle size={11} className="inline mr-1 text-slate-500" />}
+                    <span className="text-[12px] text-slate-400">
                       {formatRelativeTime(contact.last_contacted_at)}
                     </span>
                   </td>
@@ -1033,6 +1016,12 @@ export default function ContactsClient({ initialContacts, initialTotal }: {
 
                   <td className="py-3.5 px-4 text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
+                      {contact.displayPhone && (
+                        <button onClick={() => triggerDial(contact.phone || contact.platform_id)} title="Call via Dialer"
+                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded opacity-0 group-hover:opacity-100 transition-all">
+                          <PhoneCall size={15} />
+                        </button>
+                      )}
                       {contact.latest_conversation_id && (
                         <button onClick={() => router.push(`/inbox?c=${contact.latest_conversation_id}`)} title="View Chat"
                           className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all">
