@@ -1,5 +1,6 @@
 "use server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { getTicketStatsForLeaderboard } from "@/lib/whmcs"
 import { unstable_noStore as noStore } from "next/cache"
 
 export async function getLeaderboardStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
@@ -434,6 +435,50 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     }
   });
 
+  // 12. Fetch WHMCS ticket stats (non-blocking - don't fail if WHMCS is down)
+  const WHMCS_TO_TALKFUZE: Record<string, string> = {
+    'Tanvir Ahmed': 'Asad',
+    'Kamrul Hasan': 'Rafy',
+    'Abrar  Hamid': 'Mujahid',
+    'Abrar Hamid': 'Mujahid',
+    'Mahfuz  Rahman': 'Mahfuz',
+    'Mahfuz Rahman': 'Mahfuz',
+    'Ayesha Mim': 'Aisha',
+    'Mahmudul  Hossen': 'Mahmud',
+    'Mahmudul Hossen': 'Mahmud',
+    'Salehin  Sikdar': 'Salehin',
+    'Salehin Sikdar': 'Salehin',
+    'Saiful Islam': 'Imran',
+  };
+
+  let whmcsTicketStats: Record<string, { replies: number; tickets_handled: number; avg_rating: number | null; feedback_count: number }> = {};
+  try {
+    const whmcsData = await getTicketStatsForLeaderboard(
+      period === 'daily' ? 1 : period === 'weekly' ? 7 : 30
+    );
+
+    for (const adminStat of whmcsData.admin_stats) {
+      const talkfuzeName = WHMCS_TO_TALKFUZE[adminStat.name] || adminStat.name;
+      whmcsTicketStats[talkfuzeName] = {
+        replies: adminStat.replies,
+        tickets_handled: adminStat.tickets_handled,
+        avg_rating: adminStat.avg_rating,
+        feedback_count: adminStat.feedback_count,
+      };
+    }
+  } catch (err) {
+    console.error('[Leaderboard] WHMCS ticket stats fetch failed:', err);
+  }
+
+  // Merge WHMCS fields into each agent
+  Object.values(statsMap).forEach((stats: any) => {
+    const agentWhmcs = whmcsTicketStats[stats.name] || { replies: 0, tickets_handled: 0, avg_rating: null, feedback_count: 0 };
+    stats.whmcsReplies = agentWhmcs.replies;
+    stats.whmcsTicketsHandled = agentWhmcs.tickets_handled;
+    stats.whmcsAvgRating = agentWhmcs.avg_rating;
+    stats.whmcsFeedbackCount = agentWhmcs.feedback_count;
+  });
+
   return Object.values(statsMap).sort((a: any, b: any) => b.messagesCount - a.messagesCount);
 }
 
@@ -768,6 +813,46 @@ export async function getAnalyticsStats(orgId: string) {
     }
   }
 
+  // 13. Fetch WHMCS ticket stats for analytics
+  let whmcsAdminStats: Array<{ name: string; replies: number; tickets_handled: number; avg_rating: number | null; feedback_count: number }> = [];
+  let ticketsByStatus: Record<string, number> = {};
+  try {
+    const WHMCS_TO_TALKFUZE: Record<string, string> = {
+      'Tanvir Ahmed': 'Asad',
+      'Kamrul Hasan': 'Rafy',
+      'Abrar  Hamid': 'Mujahid',
+      'Abrar Hamid': 'Mujahid',
+      'Mahfuz  Rahman': 'Mahfuz',
+      'Mahfuz Rahman': 'Mahfuz',
+      'Ayesha Mim': 'Aisha',
+      'Mahmudul  Hossen': 'Mahmud',
+      'Mahmudul Hossen': 'Mahmud',
+      'Salehin  Sikdar': 'Salehin',
+      'Salehin Sikdar': 'Salehin',
+      'Saiful Islam': 'Imran',
+    };
+
+    const whmcsData = await getTicketStatsForLeaderboard(14);
+    ticketsByStatus = whmcsData.tickets_by_status || {};
+
+    // Deduplicate mapped names (double-space vs single-space)
+    const seenNames = new Set<string>();
+    for (const adminStat of whmcsData.admin_stats) {
+      const mapped = WHMCS_TO_TALKFUZE[adminStat.name] || adminStat.name;
+      if (seenNames.has(mapped)) continue;
+      seenNames.add(mapped);
+      whmcsAdminStats.push({
+        name: mapped,
+        replies: adminStat.replies,
+        tickets_handled: adminStat.tickets_handled,
+        avg_rating: adminStat.avg_rating,
+        feedback_count: adminStat.feedback_count,
+      });
+    }
+  } catch (err) {
+    console.error('[Analytics] WHMCS ticket stats fetch failed:', err);
+  }
+
   return {
     customerDemand,
     totalAgentSupply,
@@ -779,6 +864,8 @@ export async function getAnalyticsStats(orgId: string) {
     responseTimeBuckets,
     qualityMetrics,
     sentimentByAgent,
-    agentNames: agents?.map((a: any) => a.name) || []
+    agentNames: agents?.map((a: any) => a.name) || [],
+    whmcsAdminStats,
+    ticketsByStatus,
   };
 }

@@ -833,6 +833,30 @@ export async function addTicketReply(
     }>('AddTicketReply', params, 30000, 3, true);
 }
 
+// ============================================
+// TICKET LEADERBOARD STATS
+// ============================================
+
+export async function getTicketStatsForLeaderboard(days: number = 14) {
+    const result = await whmcsRequest<{
+        result: 'success';
+        admin_stats: Array<{
+            name: string;
+            replies: number;
+            tickets_handled: number;
+            avg_rating: number | null;
+            feedback_count: number;
+            hourly_activity: number[];
+        }>;
+        tickets_by_status: Record<string, number>;
+        period_days: number;
+    }>('GetTicketStatsForLeaderboard', {
+        days: days,
+    }, 30000, 2);
+
+    return result;
+}
+
 export async function getSupportDepartments() {
     const result = await whmcsRequest<{
         result: 'success';
