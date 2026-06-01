@@ -3,6 +3,41 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { getTicketStatsForLeaderboard } from "@/lib/whmcs"
 import { unstable_noStore as noStore } from "next/cache"
 
+async function fetchSupabaseInChunks<T>(
+  queryFn: (columns: string, options?: any) => any,
+  selectFields: string,
+  limit: number = 50000,
+  chunkSize: number = 1000
+): Promise<T[]> {
+  const { count, error: countErr } = await queryFn('*', { count: 'exact', head: true });
+  if (countErr) {
+    console.error('[Chunks] Count query failed:', countErr);
+    return [];
+  }
+  if (count === null || count === 0) return [];
+
+  const totalToFetch = Math.min(count, limit);
+  const chunkPromises: Promise<any>[] = [];
+
+  for (let offset = 0; offset < totalToFetch; offset += chunkSize) {
+    const end = Math.min(offset + chunkSize - 1, totalToFetch - 1);
+    chunkPromises.push(queryFn(selectFields).range(offset, end));
+  }
+
+  const results = await Promise.all(chunkPromises);
+  const allRows: T[] = [];
+  for (const res of results) {
+    if (res.error) {
+      console.error('[Chunks] Chunk query error:', res.error);
+      continue;
+    }
+    if (res.data) {
+      allRows.push(...res.data);
+    }
+  }
+  return allRows;
+}
+
 export async function getLeaderboardStats(orgId: string, period: 'daily' | 'weekly' | 'monthly' | 'custom' = 'daily', customStartDate?: string, customEndDate?: string) {
   noStore();
   if (!orgId) return [];
@@ -51,47 +86,48 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   if (!agents) return [];
 
   // 2. Get all messages in this period
-  let messagesQuery = supabaseAdmin
-    .from('messages')
-    .select('id, sender_id, sender_type, conversation_id, created_at, is_internal, content')
-    .eq('org_id', orgId)
-    .gte('created_at', startDate.toISOString());
-    
-  if (period === 'custom') {
-    messagesQuery = messagesQuery.lte('created_at', endDate.toISOString());
-  }
-  
-  const { data: allMessages } = await messagesQuery.order('created_at', { ascending: true }).limit(50000);
+  const messagesQueryFn = (columns: string, options?: any) => {
+    let q = supabaseAdmin
+      .from('messages')
+      .select(columns, options)
+      .eq('org_id', orgId)
+      .gte('created_at', startDate.toISOString());
+    if (period === 'custom') {
+      q = q.lte('created_at', endDate.toISOString());
+    }
+    return q.order('created_at', { ascending: true });
+  };
+  const allMessages = await fetchSupabaseInChunks<any>(messagesQueryFn, 'id, sender_id, sender_type, conversation_id, created_at, is_internal, content');
 
   // 3. Fetch last 14 days messages for hourly heatmap (always, regardless of selected period)
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-  const { data: recentMessages } = await supabaseAdmin
-    .from('messages')
-    .select('sender_id, created_at, sender_type, is_internal')
-    .eq('org_id', orgId)
-    .eq('sender_type', 'agent')
-    .eq('is_internal', false)
-    .gte('created_at', fourteenDaysAgo.toISOString())
-    .order('created_at', { ascending: true })
-    .limit(50000);
+  const recentMessagesQueryFn = (columns: string, options?: any) => {
+    return supabaseAdmin
+      .from('messages')
+      .select(columns, options)
+      .eq('org_id', orgId)
+      .eq('sender_type', 'agent')
+      .eq('is_internal', false)
+      .gte('created_at', fourteenDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+  };
+  const recentMessages = await fetchSupabaseInChunks<any>(recentMessagesQueryFn, 'sender_id, created_at, sender_type, is_internal');
 
   // 4. Get call logs in this period
   let calls: any[] = [];
   try {
-    let callLogsQuery = supabaseAdmin
-      .from('call_logs')
-      .select('agent_name, duration_seconds')
-      .eq('org_id', orgId)
-      .gte('created_at', startDate.toISOString());
-      
-    if (period === 'custom') {
-      callLogsQuery = callLogsQuery.lte('created_at', endDate.toISOString());
-    }
-    
-    const { data: callLogs } = await callLogsQuery.limit(50000);
-    if (callLogs) {
-      calls = callLogs;
-    }
+    const callLogsQueryFn = (columns: string, options?: any) => {
+      let q = supabaseAdmin
+        .from('call_logs')
+        .select(columns, options)
+        .eq('org_id', orgId)
+        .gte('created_at', startDate.toISOString());
+      if (period === 'custom') {
+        q = q.lte('created_at', endDate.toISOString());
+      }
+      return q;
+    };
+    calls = await fetchSupabaseInChunks<any>(callLogsQueryFn, 'agent_name, duration_seconds');
   } catch (err) {
     console.error("Error fetching call logs for leaderboard:", err);
   }
@@ -99,20 +135,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
   // 5. Get heartbeats for active time
   let heartbeats: any[] = [];
   try {
-    let heartbeatsQuery = supabaseAdmin
-      .from('agent_activity_heartbeats')
-      .select('agent_id')
-      .eq('org_id', orgId)
-      .gte('created_at', startDate.toISOString());
-      
-    if (period === 'custom') {
-      heartbeatsQuery = heartbeatsQuery.lte('created_at', endDate.toISOString());
-    }
-    
-    const { data: heartbeatLogs } = await heartbeatsQuery.limit(50000);
-    if (heartbeatLogs) {
-      heartbeats = heartbeatLogs;
-    }
+    const heartbeatsQueryFn = (columns: string, options?: any) => {
+      let q = supabaseAdmin
+        .from('agent_activity_heartbeats')
+        .select(columns, options)
+        .eq('org_id', orgId)
+        .gte('created_at', startDate.toISOString());
+      if (period === 'custom') {
+        q = q.lte('created_at', endDate.toISOString());
+      }
+      return q;
+    };
+    heartbeats = await fetchSupabaseInChunks<any>(heartbeatsQueryFn, 'agent_id');
   } catch (err) {
     console.error("Error fetching heartbeats for active time:", err);
   }
@@ -437,17 +471,18 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
 
   // 10. Query AI draft usage
   try {
-    let aiDraftsQuery = supabaseAdmin
-      .from('ai_draft_logs')
-      .select('agent_id')
-      .eq('org_id', orgId)
-      .gte('created_at', startDate.toISOString());
-      
-    if (period === 'custom') {
-      aiDraftsQuery = aiDraftsQuery.lte('created_at', endDate.toISOString());
-    }
-      
-    const { data: aiDrafts } = await aiDraftsQuery.limit(50000);
+    const aiDraftsQueryFn = (columns: string, options?: any) => {
+      let q = supabaseAdmin
+        .from('ai_draft_logs')
+        .select(columns, options)
+        .eq('org_id', orgId)
+        .gte('created_at', startDate.toISOString());
+      if (period === 'custom') {
+        q = q.lte('created_at', endDate.toISOString());
+      }
+      return q;
+    };
+    const aiDrafts = await fetchSupabaseInChunks<any>(aiDraftsQueryFn, 'agent_id');
 
     if (aiDrafts) {
       aiDrafts.forEach(draft => {
@@ -564,14 +599,16 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
 
   // Compute hourly activity per agent (last 14 days) for shift assignment
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-  const { data: recentAgentMsgs } = await supabaseAdmin
-    .from('messages')
-    .select('sender_id, created_at')
-    .eq('org_id', orgId)
-    .eq('sender_type', 'agent')
-    .eq('is_internal', false)
-    .gte('created_at', fourteenDaysAgo.toISOString())
-    .limit(50000);
+  const recentAgentMsgsQueryFn = (columns: string, options?: any) => {
+    return supabaseAdmin
+      .from('messages')
+      .select(columns, options)
+      .eq('org_id', orgId)
+      .eq('sender_type', 'agent')
+      .eq('is_internal', false)
+      .gte('created_at', fourteenDaysAgo.toISOString());
+  };
+  const recentAgentMsgs = await fetchSupabaseInChunks<any>(recentAgentMsgsQueryFn, 'sender_id, created_at');
 
   // Build hourly activity map per agent
   const agentHourlyActivity: Record<string, number[]> = {};
@@ -592,36 +629,34 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
   }
 
   // Get all conversations
-  let query = supabaseAdmin
-    .from('conversations')
-    .select(`
-      id,
-      created_at,
-      status,
-      messages (
-        id,
-        content,
-        sender_type,
-        created_at
-      ),
-      contacts (
-        id,
-        name,
-        phone
-      )
-    `)
-    .eq('org_id', orgId)
-    .gte('last_message_at', startDate.toISOString());
-    
-  if (period === 'custom') {
-    query = query.lte('last_message_at', endDate.toISOString());
-  }
+  const conversationsQueryFn = (columns: string, options?: any) => {
+    let q = supabaseAdmin
+      .from('conversations')
+      .select(columns, options)
+      .eq('org_id', orgId)
+      .gte('last_message_at', startDate.toISOString());
+    if (period === 'custom') {
+      q = q.lte('last_message_at', endDate.toISOString());
+    }
+    return q;
+  };
 
-  const { data: conversations, error } = await query.limit(50000);
-  if (error || !conversations) {
-    console.error("Error fetching conversations for missed chats:", error);
-    return [];
-  }
+  const conversations = await fetchSupabaseInChunks<any>(conversationsQueryFn, `
+    id,
+    created_at,
+    status,
+    messages (
+      id,
+      content,
+      sender_type,
+      created_at
+    ),
+    contacts (
+      id,
+      name,
+      phone
+    )
+  `);
 
   const missedChats: any[] = [];
 
@@ -680,13 +715,15 @@ export async function getAnalyticsStats(orgId: string) {
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
   // 1. Get ALL messages (both contact and agent) from last 14 days
-  const { data: allMsgs } = await supabaseAdmin
-    .from('messages')
-    .select('sender_type, sender_id, created_at, is_internal, content, conversation_id')
-    .eq('org_id', orgId)
-    .gte('created_at', fourteenDaysAgo.toISOString())
-    .order('created_at', { ascending: true })
-    .limit(50000);
+  const allMsgsQueryFn = (columns: string, options?: any) => {
+    return supabaseAdmin
+      .from('messages')
+      .select(columns, options)
+      .eq('org_id', orgId)
+      .gte('created_at', fourteenDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+  };
+  const allMsgs = await fetchSupabaseInChunks<any>(allMsgsQueryFn, 'sender_type, sender_id, created_at, is_internal, content, conversation_id');
 
   if (!allMsgs) return null;
 
