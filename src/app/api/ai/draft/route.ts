@@ -88,12 +88,19 @@ function scoreLanguageComposite(messages: string[]): 'en' | 'bn' {
  * LLM-based language classifier using gpt-4o-mini.
  * Runs in parallel with the vector embedding call - adds ~0ms net latency.
  * Has a 300ms hard timeout; falls back to composite scorer on any failure.
- * Understands semantic context: "ok" after Bengali = still Bengali.
+ *
+ * Fixes applied (ev.skill evaluation):
+ * Bug 1: Phonetic Banglish examples grounded in prompt so LLM generalises
+ *        to misspellings like "hoise", "eikhane", "hocche"
+ * Bug 2: Explicit language override intent detected ("reply in Bangla please")
+ * Bug 1+2: Bangladesh base-rate prior - lean BL on genuine ambiguity
+ * Bug 1: Agent's last reply language passed as additional context signal
  */
 async function detectLanguageWithLLM(
   cleanedMessages: string[],
   openaiKey: string,
-  compositeFallback: 'en' | 'bn'
+  compositeFallback: 'en' | 'bn',
+  agentLastReplyLang?: 'bn' | 'en' | null
 ): Promise<'en' | 'bn'> {
   if (cleanedMessages.length === 0) return compositeFallback;
 
@@ -102,6 +109,9 @@ async function detectLanguageWithLLM(
 
   try {
     const messagesText = cleanedMessages.map((m, i) => `[${i + 1}] ${m}`).join('\n');
+    const agentContext = agentLastReplyLang
+      ? `\nAgent's last reply was in: ${agentLastReplyLang === 'bn' ? 'Bengali (strong signal customer is Bengali)' : 'English'}`
+      : '';
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -117,11 +127,25 @@ async function detectLanguageWithLLM(
         messages: [
           {
             role: 'system',
-            content: 'You are a language classifier. Reply with ONE word only: EN, BN, or BL. EN=English. BN=Bengali script. BL=Romanized Bengali (Banglish, e.g. "ekhon ki korbo", "ami kinbo", "thik ache"). If unsure, output BL.'
+            content: `You are a language classifier for a Bangladeshi web hosting company's live support chat.
+Base rate: 95% of customers are Bangladeshi. When genuinely ambiguous, lean BL.
+
+Romanized Bengali (Banglish) is phonetically inconsistent - spelling varies wildly. Examples:
+- "hoise" = হয়েছে | "eikhane" / "ekhane" = এখানে | "hocche" / "hosse" = হচ্ছে
+- "korte parben" = করতে পারবেন | "site load hocche na" is Banglish (not English)
+- "bhai", "vai", "plz fix koro", "amr site", "khulche na" are all Banglish
+- English technical words (server, site, load, fix) mixed with Bangla structure = Banglish
+
+EXPLICIT LANGUAGE REQUESTS override writing language:
+- Customer says "please reply in Bengali/Bangla/Bangali" → output BL
+- Customer says "please reply in English" → output EN
+
+Reply with ONE word only: EN, BN, or BL.
+EN = pure English sentences. BN = Bengali Unicode script. BL = Romanized Bengali/Banglish.`
           },
           {
             role: 'user',
-            content: `What language is the customer currently using?\n${messagesText}`
+            content: `What language is the customer currently using?${agentContext}\n\nCustomer messages:\n${messagesText}`
           }
         ]
       })
@@ -147,7 +171,22 @@ async function detectLanguageWithLLM(
 // Personality + Dynamic situational context modules
 // ============================================================
 
-function buildSystemPrompt(hasSalesIntent: boolean, hasSupportIntent: boolean, activeSubBrain: string, lang: 'en' | 'bn' = 'bn'): string {
+/**
+ * Builds the main system prompt.
+ *
+ * @param lang            - Detected customer language ('bn' | 'en')
+ * @param instructionLang - When agent uses Copilot mode, the language of their
+ *                          instruction ('en' | 'bn'). When set, replaces the
+ *                          ambiguous langMatchingSection with an ABSOLUTE LOCK,
+ *                          removing the competing authority that caused Bug 3.
+ */
+function buildSystemPrompt(
+  hasSalesIntent: boolean,
+  hasSupportIntent: boolean,
+  activeSubBrain: string,
+  lang: 'en' | 'bn' = 'bn',
+  instructionLang?: 'en' | 'bn'
+): string {
   // Gate Bangla style guide - only inject for Bengali conversations
   // For English conversations this removes ~400 tokens of Bengali content that biases the model
   const currentBanglaStyle = lang === 'bn' ? banglaStyleContent : '';
@@ -157,7 +196,18 @@ function buildSystemPrompt(hasSalesIntent: boolean, hasSupportIntent: boolean, a
   const supportTriageContent = (!hasSalesIntent && hasSupportIntent) ? getSupportTriageContent() : "";
   const globalBrain = getGlobalBrain();
 
-  const langMatchingSection = `## LANGUAGE DETECTION RULES (CRITICAL)
+  // Bug 3 fix: when agent instruction language is known, replace the ambiguous
+  // LANGUAGE DETECTION RULES (which caused the model to second-guess our server-side
+  // decision by re-reading Banglish customer messages) with a single absolute lock.
+  // This eliminates the two competing authorities.
+  const langMatchingSection = instructionLang
+    ? `## LANGUAGE LOCK (ABSOLUTE - DO NOT OVERRIDE)
+The agent's instruction is written in ${instructionLang === 'en' ? 'English' : 'Bengali'}.
+You MUST reply in ${instructionLang === 'en' ? 'English ONLY' : 'pure Bengali script ONLY'}.
+Output '[Language: ${instructionLang === 'en' ? 'English' : 'Bengali'}]' as the first line of your response.
+Do NOT switch languages regardless of what language the customer messages are written in.
+The agent is directing the reply language - follow the agent, not the customer.`
+    : `## LANGUAGE DETECTION RULES (CRITICAL)
 Match the customer's language autonomously:
 1. PURE ENGLISH: If the customer writes in English (e.g. "Which hosting plan is best?"), output '[Language: English]' and reply in English.
 2. BENGALI SCRIPT: If the customer writes in Bengali script (e.g. "ভাইয়া কোন প্যাকেজটা ভালো হবে?"), output '[Language: Bengali]' and reply in pure Bengali script.
@@ -542,20 +592,34 @@ export async function POST(req: Request) {
 
     // LLM language classifier: runs in parallel with vector search (0ms net latency added).
     // 300ms timeout built into detectLanguageWithLLM - falls back to composite on timeout/error.
-    // Skipped for: translations, instruction-driven (language already determined above), empty windows.
+    // Bug 1 fix: pass agent's last reply language as context signal to classifier.
+    // Now also runs when instruction exists - Banglish instruction still needs detection.
+    const agentLastReplyLang: 'bn' | 'en' | null = (() => {
+      const lastAgentMsg = [...parsedMessages].reverse().find(m => m.sender === 'Agent');
+      if (!lastAgentMsg) return null;
+      return BENGALI_REGEX.test(lastAgentMsg.content) ? 'bn' : 'en';
+    })();
+
     const languageDetectionPromise = (
       process.env.OPENAI_API_KEY &&
       !isTranslation &&
-      !instruction &&
       detectionMessages.length > 0
     )
-      ? detectLanguageWithLLM(detectionMessages, process.env.OPENAI_API_KEY, detectedLanguage)
+      ? detectLanguageWithLLM(detectionMessages, process.env.OPENAI_API_KEY, detectedLanguage, agentLastReplyLang)
       : Promise.resolve(detectedLanguage);
 
     const [imageBlock, vectorSearchRes, { fewShotBlock: rawFewShotBlock, masterBlueprint }, { data: orgData }, llmDetectedLanguage] = await Promise.all([imagePromise, vectorSearchPromise, learningPromise, orgSettingsPromise, languageDetectionPromise]);
 
     // Override composite result with LLM classification (more accurate, especially for Banglish)
     detectedLanguage = llmDetectedLanguage;
+
+    // Bug 3 fix: compute instruction language AFTER LLM detection resolves.
+    // When agent gives a Copilot instruction, we pass instructionLang to buildSystemPrompt
+    // which replaces the ambiguous LANGUAGE DETECTION RULES with an ABSOLUTE LOCK.
+    // This eliminates the two competing authorities (server vs system prompt rules).
+    const instructionLang: 'en' | 'bn' | undefined = instruction
+      ? (BENGALI_REGEX.test(instruction) || BANGLISH_REGEX.test(instruction) ? 'bn' : 'en')
+      : undefined;
     const activeSubBrain = vectorSearchRes?.activeSubBrain || "";
 
     const fewShotBlock = rawFewShotBlock;
@@ -832,7 +896,7 @@ ${detectedLanguage === 'en' && !instruction ? `Reply language: English. The cust
                 messages: [
                   {
                     role: "system",
-                    content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain, detectedLanguage)
+                    content: buildSystemPrompt(hasSalesIntent, hasSupportIntent, activeSubBrain, detectedLanguage, instructionLang)
                   },
                   {
                     role: "user",
