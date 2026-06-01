@@ -596,8 +596,8 @@ export default function LeaderboardPage() {
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#8696a0] mb-0.5 font-medium">
                           SLA
                         </div>
-                        <span className={`text-xl font-bold leading-none ${agent.firstResponseSlaPercent >= 80 ? 'text-emerald-600 dark:text-emerald-400' : agent.firstResponseSlaPercent >= 60 ? 'text-amber-500' : 'text-rose-500'}`}>
-                          {agent.firstResponseSlaPercent}%
+                        <span className={`text-xl font-bold leading-none ${agent.firstResponseSlaPercent < 0 ? 'text-slate-400 dark:text-[#8696a0]' : agent.firstResponseSlaPercent >= 80 ? 'text-emerald-600 dark:text-emerald-400' : agent.firstResponseSlaPercent >= 60 ? 'text-amber-500' : 'text-rose-500'}`}>
+                          {agent.firstResponseSlaPercent < 0 ? 'N/A' : `${agent.firstResponseSlaPercent}%`}
                         </span>
                         <span className="text-[10px] text-slate-400 dark:text-[#8696a0] mt-0.5">under 60s</span>
                       </div>

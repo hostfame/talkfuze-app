@@ -297,7 +297,8 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       if (stats.totalFirstResponses > 0) {
         stats.firstResponseSlaPercent = Math.round((stats.firstResponsesUnder60s / stats.totalFirstResponses) * 100);
       } else {
-        stats.firstResponseSlaPercent = 100;
+        // No first responses = no SLA data, show 0% instead of misleading 100%
+        stats.firstResponseSlaPercent = stats.messagesCount > 0 ? 0 : -1; // -1 means N/A
       }
       if (stats.emergencyResponseTimeCount > 0) {
         const avgEmergencyMs = stats.totalEmergencyResponseTimeMs / stats.emergencyResponseTimeCount;
@@ -366,19 +367,6 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
         statsMap[agentId].activeShiftText = 'All Day';
       }
     }
-
-    // Compute productivity score (0-100)
-    const s = statsMap[agentId];
-    const msgScore = Math.min(40, (s.messagesCount / (period === 'daily' ? 80 : period === 'weekly' ? 160 : 640)) * 40);
-    const slaScore = (s.firstResponseSlaPercent / 100) * 25;
-    const respScore = s.avgResponseTime > 0 ? Math.max(0, 20 - (s.avgResponseTime / 3)) : 10;
-    const consistScore = ((s.activeDaysCount || 0) / 7) * 15;
-    const totalScore = Math.round(Math.min(100, msgScore + slaScore + respScore + consistScore));
-    statsMap[agentId].productivityScore = totalScore;
-
-    // Grade: A+ (95+), A (85+), B+ (75+), B (65+), C (50+), D (35+), F (<35)
-    const grade = totalScore >= 95 ? 'A+' : totalScore >= 85 ? 'A' : totalScore >= 75 ? 'B+' : totalScore >= 65 ? 'B' : totalScore >= 50 ? 'C' : totalScore >= 35 ? 'D' : 'F';
-    statsMap[agentId].performanceGrade = grade;
   });
 
   // 9. Compute dailyTrend (last 7 days per agent) using recentMessages
@@ -428,6 +416,21 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       });
     });
   }
+
+  // 9b. Compute productivity score AFTER activeDaysCount is ready
+  Object.keys(statsMap).forEach(agentId => {
+    const s = statsMap[agentId];
+    const msgScore = Math.min(40, (s.messagesCount / (period === 'daily' ? 80 : period === 'weekly' ? 160 : 640)) * 40);
+    const slaScore = s.firstResponseSlaPercent >= 0 ? (s.firstResponseSlaPercent / 100) * 25 : 0;
+    const respScore = s.avgResponseTime > 0 ? Math.max(0, 20 - (s.avgResponseTime / 3)) : (s.messagesCount > 0 ? 5 : 0);
+    const consistScore = ((s.activeDaysCount || 0) / 7) * 15;
+    const totalScore = Math.round(Math.min(100, msgScore + slaScore + respScore + consistScore));
+    statsMap[agentId].productivityScore = totalScore;
+
+    // Grade: A+ (95+), A (85+), B+ (75+), B (65+), C (50+), D (35+), F (<35)
+    const grade = totalScore >= 95 ? 'A+' : totalScore >= 85 ? 'A' : totalScore >= 75 ? 'B+' : totalScore >= 65 ? 'B' : totalScore >= 50 ? 'C' : totalScore >= 35 ? 'D' : 'F';
+    statsMap[agentId].performanceGrade = grade;
+  });
 
   // 10. Query AI draft usage
   try {
