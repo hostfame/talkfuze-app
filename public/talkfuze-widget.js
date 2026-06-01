@@ -102,6 +102,16 @@
             transform: scale(0.95);
         }
 
+        @keyframes tfPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 112, 243, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 112, 243, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 112, 243, 0); }
+        }
+
+        #tf-launcher.tf-pulsing {
+            animation: tfPulse 2s infinite;
+        }
+
         .tf-icon {
             position: absolute;
             width: 28px;
@@ -531,18 +541,39 @@
             if (nudgeFired || isOpen) return;
             nudgeFired = true;
             showNudge();
-            if (scrollListener) window.removeEventListener('scroll', scrollListener);
+            
+            // Show fake badge and pulse
+            const badgeEl = document.getElementById('tf-badge');
+            if (badgeEl && !badgeEl.classList.contains('tf-show')) {
+                badgeEl.innerText = '1';
+                badgeEl.classList.add('tf-show');
+                launcher.classList.add('tf-pulsing');
+            }
         };
 
-        // After 8 seconds on page
-        nudgeTimer = setTimeout(fireNudge, 8000);
+        // After 10 seconds on page
+        nudgeTimer = setTimeout(fireNudge, 10000);
 
-        // Or after 300px scroll - whichever first
+        // Scroll listener for firing nudge AND hiding at footer
         if (!scrollListener) {
             scrollListener = () => {
-                if (window.scrollY > 300) {
+                if (!nudgeFired && window.scrollY > 300) {
                     clearTimeout(nudgeTimer);
                     fireNudge();
+                }
+
+                if (nudgeFired && !isOpen) {
+                    const scrollBottom = window.innerHeight + window.scrollY;
+                    const docHeight = Math.max(
+                        document.body.scrollHeight, document.documentElement.scrollHeight,
+                        document.body.offsetHeight, document.documentElement.offsetHeight
+                    );
+                    
+                    if (docHeight - scrollBottom < 200) {
+                        hideNudge();
+                    } else if (!nudge.classList.contains('tf-nudge-show')) {
+                        showNudge();
+                    }
                 }
             };
             window.addEventListener('scroll', scrollListener, { passive: true });
@@ -560,6 +591,7 @@
             hideNudge();
             if (nudgeTimer) clearTimeout(nudgeTimer);
             launcher.classList.add('tf-open');
+            launcher.classList.remove('tf-pulsing');
             iframeContainer.classList.add('tf-open');
 
             if (window.innerWidth <= 480) {
