@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { getLeaderboardStats, getMissedChatsStats, getAnalyticsStats } from "@/actions/leaderboard"
 import { 
@@ -21,7 +21,10 @@ import {
   TrendingDown,
   Minus,
   Ticket,
-  BarChart3
+  BarChart3,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 
 // ---------- Tiny Sparkline Bars ----------
@@ -162,6 +165,142 @@ function TrendArrow({ today, yesterday }: { today: number; yesterday: number }) 
 }
 
 
+// ---------- Custom Date Picker ----------
+function CustomDatePicker({ value, onChange }: { value: string; onChange: (date: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => {
+    const d = value ? new Date(value + 'T00:00:00') : new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const daysInMonth = new Date(viewDate.year, viewDate.month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(viewDate.year, viewDate.month, 1).getDay();
+  const monthName = new Date(viewDate.year, viewDate.month).toLocaleString('en-US', { month: 'long' });
+
+  const days: (number | null)[] = [];
+  for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
+  for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+  const selectedParts = value ? value.split('-').map(Number) : [];
+  const isSelected = (day: number) =>
+    selectedParts.length === 3 &&
+    viewDate.year === selectedParts[0] &&
+    viewDate.month === selectedParts[1] - 1 &&
+    day === selectedParts[2];
+
+  const isToday = (day: number) => {
+    const now = new Date();
+    return viewDate.year === now.getFullYear() && viewDate.month === now.getMonth() && day === now.getDate();
+  };
+
+  const handleSelect = (day: number) => {
+    const mm = String(viewDate.month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    onChange(`${viewDate.year}-${mm}-${dd}`);
+    setIsOpen(false);
+  };
+
+  const prevMonth = () => {
+    setViewDate(prev => prev.month === 0 ? { year: prev.year - 1, month: 11 } : { ...prev, month: prev.month - 1 });
+  };
+  const nextMonth = () => {
+    setViewDate(prev => prev.month === 11 ? { year: prev.year + 1, month: 0 } : { ...prev, month: prev.month + 1 });
+  };
+
+  const goToToday = () => {
+    const now = new Date();
+    setViewDate({ year: now.getFullYear(), month: now.getMonth() });
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    onChange(`${now.getFullYear()}-${mm}-${dd}`);
+    setIsOpen(false);
+  };
+
+  const displayText = value || 'Pick date';
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-4 py-1.5 text-[13px] font-medium rounded-md transition-all flex items-center gap-2 ${
+          value
+            ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm'
+            : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
+        }`}
+      >
+        <CalendarIcon size={14} />
+        {displayText}
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-[#111b21] rounded-2xl border border-slate-200 dark:border-[#222e35] shadow-2xl p-4 w-[280px] animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between mb-3">
+            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#202c33] text-slate-500 dark:text-[#8696a0] transition-colors">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm font-bold text-slate-800 dark:text-[#e9edef]">
+              {monthName} {viewDate.year}
+            </span>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#202c33] text-slate-500 dark:text-[#8696a0] transition-colors">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5 mb-1">
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+              <div key={d} className="text-center text-[11px] font-semibold text-slate-400 dark:text-[#8696a0] py-1">{d}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-0.5">
+            {days.map((day, idx) => (
+              <div key={idx} className="aspect-square flex items-center justify-center">
+                {day !== null && (
+                  <button
+                    onClick={() => handleSelect(day)}
+                    className={`w-8 h-8 rounded-lg text-[13px] font-medium transition-all ${
+                      isSelected(day)
+                        ? 'bg-[#0070f3] text-white shadow-sm'
+                        : isToday(day)
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-[#0070f3] font-bold ring-1 ring-[#0070f3]/30'
+                        : 'text-slate-700 dark:text-[#d1d7db] hover:bg-slate-100 dark:hover:bg-[#202c33]'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-100 dark:border-[#222e35]">
+            <button
+              onClick={() => { onChange(''); setIsOpen(false); }}
+              className="text-[12px] text-slate-400 dark:text-[#8696a0] hover:text-slate-600 dark:hover:text-[#d1d7db] font-medium"
+            >
+              Clear
+            </button>
+            <button
+              onClick={goToToday}
+              className="text-[12px] text-[#0070f3] hover:text-blue-700 font-semibold"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LeaderboardPage() {
   const user = useAuth()
@@ -288,19 +427,17 @@ export default function LeaderboardPage() {
               </button>
             ))}
             <div className="flex items-center ml-2 pl-2 border-l border-slate-200 dark:border-[#2a3942]">
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => {
-                  setCustomDate(e.target.value)
-                  setPeriod('custom')
-                  setSelectedAgent(null)
+              <CustomDatePicker
+                value={period === 'custom' ? customDate : ''}
+                onChange={(date) => {
+                  if (date) {
+                    setCustomDate(date);
+                    setPeriod('custom');
+                  } else {
+                    setPeriod('daily');
+                  }
+                  setSelectedAgent(null);
                 }}
-                className={`px-3 py-1 text-[13px] font-medium rounded-md bg-transparent focus:outline-none transition-all ${
-                  period === 'custom' 
-                    ? 'bg-white dark:bg-[#2a3942] text-slate-800 dark:text-[#e9edef] shadow-sm' 
-                    : 'text-slate-500 dark:text-[#8696a0] hover:text-slate-700 dark:hover:text-[#d1d7db]'
-                }`}
               />
             </div>
           </div>

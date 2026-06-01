@@ -61,7 +61,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     messagesQuery = messagesQuery.lte('created_at', endDate.toISOString());
   }
   
-  const { data: allMessages } = await messagesQuery.order('created_at', { ascending: true });
+  const { data: allMessages } = await messagesQuery.order('created_at', { ascending: true }).limit(50000);
 
   // 3. Fetch last 14 days messages for hourly heatmap (always, regardless of selected period)
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -72,7 +72,8 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
     .eq('sender_type', 'agent')
     .eq('is_internal', false)
     .gte('created_at', fourteenDaysAgo.toISOString())
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(50000);
 
   // 4. Get call logs in this period
   let calls: any[] = [];
@@ -87,7 +88,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       callLogsQuery = callLogsQuery.lte('created_at', endDate.toISOString());
     }
     
-    const { data: callLogs } = await callLogsQuery;
+    const { data: callLogs } = await callLogsQuery.limit(50000);
     if (callLogs) {
       calls = callLogs;
     }
@@ -108,7 +109,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       heartbeatsQuery = heartbeatsQuery.lte('created_at', endDate.toISOString());
     }
     
-    const { data: heartbeatLogs } = await heartbeatsQuery;
+    const { data: heartbeatLogs } = await heartbeatsQuery.limit(50000);
     if (heartbeatLogs) {
       heartbeats = heartbeatLogs;
     }
@@ -407,7 +408,7 @@ export async function getLeaderboardStats(orgId: string, period: 'daily' | 'week
       aiDraftsQuery = aiDraftsQuery.lte('created_at', endDate.toISOString());
     }
       
-    const { data: aiDrafts } = await aiDraftsQuery;
+    const { data: aiDrafts } = await aiDraftsQuery.limit(50000);
 
     if (aiDrafts) {
       aiDrafts.forEach(draft => {
@@ -481,7 +482,8 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
     .eq('org_id', orgId)
     .eq('sender_type', 'agent')
     .eq('is_internal', false)
-    .gte('created_at', fourteenDaysAgo.toISOString());
+    .gte('created_at', fourteenDaysAgo.toISOString())
+    .limit(50000);
 
   // Build hourly activity map per agent
   const agentHourlyActivity: Record<string, number[]> = {};
@@ -527,7 +529,7 @@ export async function getMissedChatsStats(orgId: string, period: 'daily' | 'week
     query = query.lte('last_message_at', endDate.toISOString());
   }
 
-  const { data: conversations, error } = await query;
+  const { data: conversations, error } = await query.limit(50000);
   if (error || !conversations) {
     console.error("Error fetching conversations for missed chats:", error);
     return [];
@@ -595,7 +597,8 @@ export async function getAnalyticsStats(orgId: string) {
     .select('sender_type, sender_id, created_at, is_internal, content, conversation_id')
     .eq('org_id', orgId)
     .gte('created_at', fourteenDaysAgo.toISOString())
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(50000);
 
   if (!allMsgs) return null;
 
