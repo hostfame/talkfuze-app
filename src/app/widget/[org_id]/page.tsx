@@ -1692,6 +1692,13 @@ export default function WidgetPage() {
           }).catch(err => console.error('[Widget] Failed to update attributes:', err));
         }
       }
+
+      if (event.data?.type === 'TALKFUZE_LOGOUT') {
+        // Parent page (Hostnin) logged out - clear widget user state
+        localStorage.removeItem('whmcs_user');
+        setWhmcsUser(null);
+        setTicketView('login');
+      }
     }
     
     window.addEventListener('message', handleMessage)
